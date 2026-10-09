@@ -127,6 +127,7 @@ internal class Analizador(
     /** La última vez que hubo un código a la vista o una lectura. */
     private var ultimoIndicio = 0L
     private var verificadosSeguidos = 0
+    private var indiciosSeguidos = 0
     private var previoX = Float.NaN
     private var previoY = Float.NaN
     private val indicaciones = ArrayList<Indicacion>(MAX_INDICACIONES)
@@ -255,11 +256,12 @@ internal class Analizador(
         // 4) El candidato: lo leído, luego lo que el motor ve sin leer, luego el localizador si se sostiene 2 cuadros.
         val es1D = loc.encontrado && loc.tipo == 1
         verificadosSeguidos = if (es1D && loc.verificado) verificadosSeguidos + 1 else 0
+        indiciosSeguidos = if (pareceCodigo) indiciosSeguidos + 1 else 0
         var caja: Caja? = masCercana(leidas)
         // ML Kit también ve «potenciales» en hojas rayadas y en texto: solo cuentan si el localizador ve barras ahí.
         if (caja == null && pareceCodigo) caja = masCercanaCaja(potenciales)?.takeIf { cercaDe(it, loc, t) }
         var delLocalizador = false
-        if (caja == null && verificadosSeguidos >= CUADROS_LOCALIZADOR) {
+        if (caja == null && (verificadosSeguidos >= CUADROS_LOCALIZADOR || indiciosSeguidos >= CUADROS_INDICIO)) {
             caja = cajaLocalizador(loc, t)
             delLocalizador = true
         }
@@ -295,7 +297,12 @@ internal class Analizador(
         val indicacion = guia.actualizar(o)
         if (indicacion != indicacionRegistrada) {
             indicacionRegistrada = indicacion
-            Log.i(ETIQUETA, "Indicación: $indicacion")
+            Log.i(
+                ETIQUETA,
+                "Indicación: $indicacion (dx %.2f dy %.2f largo %.2f módulo %.1f nitidez %.2f brillo %.0f saturados %.2f enfoque %.2f%s%s)"
+                    .format(o.dx, o.dy, o.largoRelativo, o.moduloPx, o.nitidez, o.brillo, o.saturados, o.proporcionEnfoque,
+                        if (o.enfocando) " enfocando" else "", if (o.cortado) " cortado" else ""),
+            )
         }
 
         if (candidato || aceptada != null) ultimoIndicio = ahora
@@ -508,6 +515,7 @@ internal class Analizador(
         ultimoIndicio = 0L
         inicioCandidato = 0L
         verificadosSeguidos = 0
+        indiciosSeguidos = 0
         previoX = Float.NaN
         previoY = Float.NaN
         indicaciones.clear()
@@ -749,11 +757,17 @@ internal class Analizador(
     }
 
     /**
-     * El localizador ve barras con la proporción de oscuro y claro de un código, aunque esté borroso (con desenfoque se
-     * pierden transiciones y la verificación completa falla). Las hojas rayadas y el texto no la cumplen.
+     * El localizador ve un código aunque no lo pueda verificar: con desenfoque o reflejo se pierden transiciones y la
+     * verificación completa falla, pero las barras siguen siendo coherentes, continuas de una línea a otra y con la
+     * proporción de oscuro y claro de un código (o lavadas por un reflejo). Las hojas rayadas (proporción ~0.17) y el
+     * texto (continuidad < 0.3) no lo cumplen (docs/escaner.md, «Localizador»).
      */
-    private fun pareceCodigo(loc: Localizacion) =
-        loc.encontrado && loc.tipo == 1 && (loc.verificado || loc.oscuroClaro in OSCURO_CLARO_MIN..OSCURO_CLARO_MAX)
+    private fun pareceCodigo(loc: Localizacion) = loc.encontrado && loc.tipo == 1 && (
+        loc.verificado || (
+            loc.coherencia >= COHERENCIA_INDICIO && loc.continuidad >= CONTINUIDAD_INDICIO &&
+                (loc.oscuroClaro in OSCURO_CLARO_MIN..OSCURO_CLARO_MAX || loc.saturados >= SATURADOS_INDICIO)
+            )
+        )
 
     private fun esPista(i: Indicacion) =
         i != Indicacion.APUNTA && i != Indicacion.LEYENDO && i != Indicacion.LEIDO && i != Indicacion.YA_LEIDO
@@ -797,6 +811,11 @@ internal class Analizador(
         const val MUESTRAS_LUZ = 2000f
         const val BORDE_PX = 4f
         const val CUADROS_LOCALIZADOR = 2
+        /** Un indicio sin verificar tiene que sostenerse más cuadros que uno verificado. */
+        const val CUADROS_INDICIO = 3
+        const val COHERENCIA_INDICIO = 0.95f
+        const val CONTINUIDAD_INDICIO = 0.9f
+        const val SATURADOS_INDICIO = 0.06f
         const val OSCURO_CLARO_MIN = 0.35f
         const val OSCURO_CLARO_MAX = 2.8f
         const val MAX_INDICACIONES = 32

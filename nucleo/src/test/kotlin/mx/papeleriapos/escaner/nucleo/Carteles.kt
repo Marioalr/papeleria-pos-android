@@ -30,9 +30,10 @@ object Carteles {
         "izquierda" to Escena(centroX = 0.2f, anchoRelativo = 0.45f),
         "abajo" to Escena(centroY = 0.85f, anchoRelativo = 0.5f),
         "girado" to Escena(anchoRelativo = 0.6f, giroGrados = 30f),
-        "borroso" to Escena(anchoRelativo = 0.6f, desenfoque = 3),
+        // El emulador agranda el cartel ~1.4×: r=2 aquí son ~3 px en el cuadro, borroso pero todavía con barras.
+        "borroso" to Escena(anchoRelativo = 0.6f, desenfoque = 2),
         "oscuro" to Escena(anchoRelativo = 0.6f, fondo = 25, espacio = 45, barra = 10),
-        "reflejo" to Escena(anchoRelativo = 0.6f, reflejo = 0.4f),
+        "reflejo" to Escena(anchoRelativo = 0.6f, reflejo = 0.35f),
     )
 
     fun escribir(carpeta: File, ancho: Int = 1280, alto: Int = 960, anchoVisible: Int = 490) {

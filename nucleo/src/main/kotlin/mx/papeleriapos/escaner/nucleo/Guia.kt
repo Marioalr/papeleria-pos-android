@@ -185,9 +185,9 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         // Borroso y demasiado cerca: la lente ya no alcanza a enfocar; acercarse más no sirve.
         val muyCerca = borroso && (
             (o.proporcionEnfoque >= 0f && o.proporcionEnfoque >= u.enfoqueCercano) ||
-                (o.desenfocado && eLargo > LARGO_DESENFOCADO_CERCA) || eLargo > LARGO_BORROSO_CERCA ||
-                eModulo > MODULO_BORROSO_CERCA
+                (o.desenfocado && eLargo > LARGO_DESENFOCADO_CERCA) || eLargo > LARGO_BORROSO_CERCA
             )
+        // El ancho del módulo no entra aquí: borroso se infla (mide 9 px donde hay 3.5) y pediría alejarse de más.
 
         val h = when {
             // Ya contado: moverse, acercarse o la luz ya no importan; lo único que sirve es retirarlo.
@@ -279,7 +279,6 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         // Señales de «demasiado cerca para enfocar» cuando no hay distancia de enfoque (equipos LIMITED/LEGACY).
         const val LARGO_DESENFOCADO_CERCA = 0.6f
         const val LARGO_BORROSO_CERCA = 0.75f
-        const val MODULO_BORROSO_CERCA = 7f
 
         fun esDireccion(i: Indicacion) = i == Indicacion.IZQUIERDA || i == Indicacion.DERECHA ||
             i == Indicacion.ARRIBA || i == Indicacion.ABAJO

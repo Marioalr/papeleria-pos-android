@@ -53,6 +53,11 @@ data class Diagnostico(
     val rangoFps: String = "",
     val camaraFisica: String = "",
     val estadoEnfoque: String = "",
+    /** Cuadros que entregó la cámara (producidos) y que se analizaron, desde que se abrió: la diferencia se descartó. */
+    val cuadrosProducidos: Long = 0,
+    val cuadrosAnalizados: Long = 0,
+    /** El estado de CameraX (`CameraState`): abriendo, abierta, error y su código. */
+    val estadoCamara: String = "",
 )
 
 /** Una lectura aceptada con lo que tardó (para la retroalimentación y la sesión de prueba). */
@@ -88,6 +93,8 @@ data class EstadoEscaner(
     val zoom: Float = 1f,
     val mensajeError: String? = null,
     val diagnostico: Diagnostico = Diagnostico(),
+    /** Las marcas de la apertura en curso (docs/escaner.md, «Apertura»). */
+    val apertura: Apertura = Apertura(),
 )
 
 /** Configuración del escáner; se puede cambiar en caliente con [ControladorEscaner.configurar]. */

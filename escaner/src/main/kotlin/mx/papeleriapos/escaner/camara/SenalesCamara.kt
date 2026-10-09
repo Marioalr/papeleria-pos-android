@@ -48,11 +48,17 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
         get() = estadoAf == CaptureResult.CONTROL_AF_STATE_PASSIVE_UNFOCUSED ||
             estadoAf == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED
 
-    /** Qué tan cerca está enfocando respecto a lo más cerca que puede: ≈1 = en su límite (hay que alejarse). */
+    /**
+     * Qué tan cerca está enfocando respecto a lo más cerca que puede: ≈1 = en su límite (hay que alejarse). Ambas van en
+     * dioptrías, así que en un equipo bien calibrado nunca pasa de 1; si pasa (el emulador da 10–20, y algunos equipos
+     * LIMITED reportan valores sin calibrar), el dato no sirve y se toma como desconocido.
+     */
     fun proporcionEnfoque(): Float {
         val d = distanciaEnfoque
         val m = distanciaMinima
-        return if (d > 0f && m > 0f) d / m else -1f
+        if (d <= 0f || m <= 0f) return -1f
+        val p = d / m
+        return if (p > PROPORCION_MAXIMA_CREIBLE) -1f else p
     }
 
     fun textoAf(): String = when (estadoAf) {
@@ -75,3 +81,5 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
         const val SIN_DATO = -1
     }
 }
+
+private const val PROPORCION_MAXIMA_CREIBLE = 1.2f
