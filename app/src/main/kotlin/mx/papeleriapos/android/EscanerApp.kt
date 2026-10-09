@@ -93,6 +93,16 @@ internal object Arranque {
     }
 
     /**
+     * Lo llama un punto de entrada que no es Activity (el mosaico de Ajustes rápidos, que el sistema enlaza al abrir el
+     * panel): si todavía no se creó ninguna Activity, el proceso no nació para una, y la que llegue después es tibia. Sin
+     * esto, en API < 35 un toque al mosaico 1–5 s después de abrir el panel contaría como frío y el tiempo incluiría lo
+     * que tardó el dedo.
+     */
+    fun procesoNoNacioParaActividad() {
+        if (actividadesCreadas == 0) origen = OrigenProceso.OTRO
+    }
+
+    /**
      * Al principio del `onCreate` de una Activity del escáner: frío si es la primera del proceso y el proceso nació para
      * ella (API 35+: lo dice el sistema; antes: menos de 5 s desde `Application.onCreate`), si no tibio. El mosaico de
      * Ajustes rápidos arranca el proceso al abrir el panel, antes del toque: eso es tibio.
@@ -147,7 +157,11 @@ internal object Arranque {
         reportero.addReporter()
         actividad.lifecycleScope.launch {
             // El estado se publica justo al poner la marca: sirve de aviso.
-            controlador.estado.first { MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS) }
+            // Si otra apertura reemplaza a la propia antes del primer análisis, se deja de esperar (sin reportar).
+            controlador.estado.first {
+                MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS) || !MarcasApertura.esActual(propia)
+            }
+            if (!MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS)) return@launch
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) marcasAlSistema(actividad)
             reportero.removeReporter()
         }

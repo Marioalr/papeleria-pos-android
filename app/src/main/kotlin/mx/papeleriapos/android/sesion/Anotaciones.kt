@@ -49,6 +49,17 @@ data class Anotaciones(
         return if (limpia.isEmpty()) copy(notas = notas - n) else copy(notas = notas + (n to limpia))
     }
 
+    /**
+     * Se quitó el intento [n] (el último: «Deshacer» de un fallo). Su número lo toma el siguiente, así que la condición
+     * elegida después de él (un bloque que empezaba en n + 1) rige desde [n]; su nota se borra.
+     */
+    fun alQuitarIntento(n: Int): Anotaciones {
+        val movidos = bloques.map { if (it.desde > n) it.copy(desde = n) else it }
+        // Si quedan varios en el mismo número, rige el último que se eligió.
+        val unicos = movidos.groupBy { it.desde }.map { (_, mismos) -> mismos.last() }.sortedBy { it.desde }
+        return copy(bloques = unicos.unidos(), notas = notas - n)
+    }
+
     private fun List<Bloque>.unidos(): List<Bloque> {
         val salida = ArrayList<Bloque>(size)
         for (b in this) {

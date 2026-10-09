@@ -74,4 +74,16 @@ class AnotacionesTest {
         val texto = a.aTexto().replace("OTRA", "INVENTADA")
         assertEquals(listOf(Bloque(2, Condicion.VARIOS_CODIGOS)), Anotaciones.deTexto(texto).bloques)
     }
+
+    @Test
+    fun `deshacer un fallo mueve la condicion elegida despues al numero que se libera`() {
+        // «No leyó» fue el #5 con condición normal; luego se eligió «poca luz» para el siguiente (#6); se deshace el #5.
+        val a = Anotaciones(inicioSesion = 1L).conNota(5, "no enfocaba").conCondicion(Condicion.entries[1], 6)
+        val b = a.alQuitarIntento(5)
+        // El siguiente intento toma el #5 y debe llevar la condición que muestra la barra.
+        assertEquals(b.condicionActual, b.condicionDe(5))
+        assertEquals("", b.notaDe(5))
+        // Lo de antes no cambia.
+        assertEquals(a.condicionDe(4), b.condicionDe(4))
+    }
 }

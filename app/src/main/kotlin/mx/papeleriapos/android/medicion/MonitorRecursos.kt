@@ -67,8 +67,10 @@ class MonitorRecursos(
     private val app = contexto.applicationContext
     private val bateria = app.getSystemService(Context.BATTERY_SERVICE) as BatteryManager?
     private val energia = app.getSystemService(Context.POWER_SERVICE) as PowerManager?
-    private val calculadora = CalculadoraRecursos()
-    private val horaIso = HoraIso()
+    // Perezosos: el monitor se crea en el hilo principal (al abrir la pantalla) y el calendario carga datos de zona y
+    // de ICU la primera vez; así eso pasa en el hilo del monitor, con la primera muestra.
+    private val calculadora by lazy { CalculadoraRecursos() }
+    private val horaIso by lazy { HoraIso() }
     private val escribirHora: (StringBuilder, Long) -> Unit = horaIso::agregar
     private val fila = StringBuilder(512)
     private val fuenteHeadroom = FuenteHeadroom {

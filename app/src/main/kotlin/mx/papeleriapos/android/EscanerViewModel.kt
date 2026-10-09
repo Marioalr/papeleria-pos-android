@@ -89,6 +89,7 @@ class EscanerViewModel(
             // Una sesión que sigue tras cerrar la app: su CPU cuenta desde aquí, no desde que se creó la pantalla.
             if (recuperada != null && _sesion.value == null) medidor.reiniciarVentana()
             _sesion.update { it ?: recuperada }
+            RegistroAperturas.sesionActiva(_sesion.value?.inicio)
             // Desde aquí cada cambio se respalda; si llegan varios juntos basta con el último.
             _sesion.drop(1).conflate().collect { s -> withContext(Dispatchers.IO) { almacen.guardar(s, equipo) } }
         }
@@ -175,6 +176,7 @@ class EscanerViewModel(
         aperturas.olvidar()
         RegistroAperturas.borrar(app)
         _sesion.value = SesionPrueba(nombre.trim().ifEmpty { equipo.dispositivo }, System.currentTimeMillis())
+        RegistroAperturas.sesionActiva(_sesion.value?.inicio)
     }
 
     /** Termina la sesión: sus archivos (intentos, recursos y aperturas) se borran; ya se exportaron o se descartaron. */
@@ -182,6 +184,7 @@ class EscanerViewModel(
         val s = _sesion.value ?: return
         val app = getApplication<Application>()
         _sesion.value = null
+        RegistroAperturas.sesionActiva(null)
         MonitorDeSesion.terminar(s.inicio)
         RegistroAperturas.borrar(app)
         viewModelScope.launch(Dispatchers.IO) { MonitorDeSesion.borrar(app, s.inicio) }
@@ -206,7 +209,7 @@ class EscanerViewModel(
         _sesion.value = s.quitarUltimoFallo()
         // Si llevaba las columnas de la apertura, las lleva el siguiente; su nota no pasa al que tome su número.
         if (u.medicion.apertura.tipo.isNotEmpty()) aperturas.olvidar()
-        AnotacionesSesion.cambiar(s) { it.conNota(u.n, "") }
+        AnotacionesSesion.cambiar(s) { it.alQuitarIntento(u.n) }
         EditorAnotaciones.guardar(getApplication())
         antirreboteFallo.olvidar()
     }

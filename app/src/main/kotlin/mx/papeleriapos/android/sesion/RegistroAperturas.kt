@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.PasoApertura
@@ -104,6 +105,18 @@ object RegistroAperturas {
     /** La clave de la última apertura registrada (en el hilo principal): cada una va una sola vez. */
     private var ultima = 0L
 
+    /**
+     * El inicio de la sesión activa según la app ([SIN_SESION] si no hay); [DESCONOCIDA] mientras este proceso no lo sepa
+     * (el escaneo rápido abierto sin la app): entonces se lee de disco. Así no depende de que `sesion.txt` ya se haya
+     * escrito o borrado, que pasa en otro hilo.
+     */
+    @Volatile private var sesionEnMemoria = DESCONOCIDA
+
+    /** Lo dice la app cada vez que la sesión empieza, se recupera o termina. */
+    fun sesionActiva(inicio: Long?) {
+        sesionEnMemoria = inicio ?: SIN_SESION
+    }
+
     fun archivo(contexto: Context): File = File(File(contexto.filesDir, "sesion"), "aperturas.csv")
 
     /** Registra [apertura] si no se registró ya. [origen]: [CsvAperturas.ORIGEN_APP] o [CsvAperturas.ORIGEN_RAPIDO]. */
@@ -113,8 +126,10 @@ object RegistroAperturas {
         ultima = clave
         val app = contexto.applicationContext
         val hora = System.currentTimeMillis()
+        val enMemoria = sesionEnMemoria
+        if (enMemoria == SIN_SESION) return
         alcance.launch {
-            val inicio = AlmacenSesion(app).inicioActivo() ?: return@launch
+            val inicio = (if (enMemoria == DESCONOCIDA) AlmacenSesion(app).inicioActivo() else enMemoria) ?: return@launch
             try {
                 val a = archivo(app)
                 a.parentFile?.mkdirs()
@@ -132,8 +147,11 @@ object RegistroAperturas {
         alcance.launch { archivo(app).delete() }
     }
 
-    /** El contenido para exportarlo; null si no hay. Fuera del hilo principal. */
-    fun leer(contexto: Context): String? = archivo(contexto).takeIf { it.exists() }?.readText()
+    /** El contenido para exportarlo; null si no hay. En el mismo hilo que escribe, así no se lee a medias. */
+    suspend fun leer(contexto: Context): String? =
+        withContext(alcance.coroutineContext) { archivo(contexto).takeIf { it.exists() }?.readText() }
 
     private const val ETIQUETA = "RegistroAperturas"
+    private const val DESCONOCIDA = -1L
+    private const val SIN_SESION = -2L
 }

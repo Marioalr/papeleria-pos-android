@@ -55,6 +55,9 @@ class AperturaBenchmark {
             StartupTimingMetric(),
             TraceSectionMetric("escaner.hastaPrimerCuadro", TraceSectionMetric.Mode.First),
             TraceSectionMetric("escaner.enlazar", TraceSectionMetric.Mode.First),
+            // La espera de CameraX (en frío, su inicialización) y la elección del rango de FPS, antes de enlazar.
+            TraceSectionMetric("escaner.esperaProveedor", TraceSectionMetric.Mode.First),
+            TraceSectionMetric("escaner.rangosFps", TraceSectionMetric.Mode.First),
             TraceSectionMetric("escaner.cuadro", TraceSectionMetric.Mode.Average),
             TraceSectionMetric("escaner.localizar", TraceSectionMetric.Mode.Average),
             TraceSectionMetric("escaner.leer", TraceSectionMetric.Mode.Average),

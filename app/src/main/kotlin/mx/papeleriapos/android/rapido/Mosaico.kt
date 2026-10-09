@@ -15,6 +15,7 @@ import android.service.quicksettings.TileService
 import android.util.Log
 import android.window.SplashScreen
 import androidx.core.content.ContextCompat
+import mx.papeleriapos.android.Arranque
 import mx.papeleriapos.android.R
 
 /**
@@ -25,6 +26,12 @@ import mx.papeleriapos.android.R
  * `activityLaunchForClick` (sin llamar a [onClick]); antes, [onClick] lanza la Activity.
  */
 class MosaicoEscanerService : TileService() {
+    override fun onCreate() {
+        super.onCreate()
+        // Si el panel arrancó el proceso, la Activity que llegue con el toque es tibia, no fría.
+        Arranque.procesoNoNacioParaActividad()
+    }
+
     override fun onStartListening() {
         super.onStartListening()
         val mosaico = qsTile ?: return

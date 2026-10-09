@@ -56,6 +56,9 @@ class AperturaCamaraTest {
         inst.uiAutomation.grantRuntimePermission(ctx.packageName, Manifest.permission.CAMERA)
         // Sin proporción ni rango guardados: se prueba también el camino de calcularlos.
         ctx.getSharedPreferences(ARCHIVO_APERTURA, Context.MODE_PRIVATE).edit().clear().commit()
+        // La validación del rango corre una vez por proceso: cada prueba empieza como un proceso nuevo.
+        ValidacionFps.olvidar(true)
+        ValidacionFps.olvidar(false)
     }
 
     @After
@@ -160,6 +163,7 @@ class AperturaCamaraTest {
         assertEquals(1, c.enlacesHechos)
         // La validación (solo tras enlazar con lo guardado) corrige lo guardado para la próxima, sin volver a enlazar.
         atenderHasta(c, ControladorCamara.VALIDAR_FPS_TRAS_MS + 5_000) { memoria.rangoFps(true) == guardado }
+        assertEquals("La validación no restauró el rango fijo", guardado, memoria.rangoFps(true))
         assertEquals(1, c.enlacesHechos)
     }
 

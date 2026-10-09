@@ -583,21 +583,28 @@ class ControladorCamara(
         val nueva = SessionConfig.Builder(vista, analisis).setViewPort(puerto)
             .apply { if (rango != null) setFrameRateRange(rango) }
             .build()
+        // El oyente de este enlace va ANTES del bind: al reenlazar, CameraPipe puede reutilizar el dispositivo abierto y
+        // publicar OPEN de inmediato; si el oyente llegara después, se perdería (sin vigilante ni enfoque inicial). El
+        // valor actual de cameraState NO se procesa: todavía es el del enlace anterior. getCameraInfo da el mismo
+        // adaptador de estado que la cámara enlazada.
+        val numero = maquina.nuevoEnlace(fpsFijo = rango != null)
+        val oyente = Consumer<CameraState> { e -> alCambiarEstado(numero, e) }
+        val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+        info.addCameraStateListener(principal, oyente)
+        oyenteEstado = oyente
+        infoOyente = info
         MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_INICIO)
         Trace.beginSection("escaner.enlazar")
-        val cam = try {
-            p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
+        try {
+            return p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
+        } catch (e: Exception) {
+            info.removeCameraStateListener(oyente)
+            oyenteEstado = null
+            infoOyente = null
+            throw e
         } finally {
             Trace.endSection()
         }
-        // El oyente de este enlace, en cuanto existe: lo que la cámara publique desde aquí es de este enlace. El valor
-        // actual de cameraState NO se procesa: todavía es el del enlace anterior.
-        val numero = maquina.nuevoEnlace(fpsFijo = rango != null)
-        val oyente = Consumer<CameraState> { e -> alCambiarEstado(numero, e) }
-        oyenteEstado = oyente
-        infoOyente = cam.cameraInfo
-        cam.cameraInfo.addCameraStateListener(principal, oyente)
-        return cam
     }
 
     /** El rango de FPS de entre los que acepta esta sesión ([elegirRangoFps]); null = que decida CameraX. */
