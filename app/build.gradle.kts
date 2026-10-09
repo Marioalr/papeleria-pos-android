@@ -1,11 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // Baseline Profile y Startup Profile (docs: generarlos con :baselineprofile; medir con :benchmark).
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
 val versionApp = "0.1.0"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
+
+// -PconX86: agrega x86_64 a benchmarkRelease (el release solo trae ARM; el emulador x86_64 corre ARM traducido, más lento).
+val conX86 = providers.gradleProperty("conX86").isPresent
 
 android {
     namespace = "mx.papeleriapos.android"
@@ -27,6 +32,23 @@ android {
             proguardFiles("proguard-rules.pro")
             ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
+        // Los dos tipos que usa el plugin androidx.baselineprofile, declarados aquí por AGP 9: si el plugin los copia del
+        // release (initWith), nonMinifiedRelease hereda optimization { enable = true } y sale ofuscado, y el perfil
+        // tendría nombres que no existen en el APK final. Declarados aquí, el plugin solo los hace no depurables,
+        // perfilables y firmados con la llave de depuración.
+        create("nonMinifiedRelease") {
+            // Sin R8: el perfil se genera con los nombres reales; R8 los reescribe al armar el release. Todas las ABI.
+            optimization { enable = false }
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+        create("benchmarkRelease") {
+            // Lo mismo que el release (R8, perfil incluido), instalable para Macrobenchmark.
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            if (conX86) ndk { abiFilters += "x86_64" }
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -40,6 +62,14 @@ android {
         // Robolectric necesita los recursos para las pruebas de Compose.
         unitTests.isIncludeAndroidResources = true
     }
+}
+
+baselineProfile {
+    // Un solo perfil en src/main/generated/baselineProfiles (baseline-prof.txt y startup-prof.txt): lo usan release y
+    // benchmarkRelease. Se genera a mano con :app:generateBaselineProfile y va en git.
+    mergeIntoMain = true
+    saveInSrc = true
+    automaticGenerationDuringBuild = false
 }
 
 fun commitActual(): String =
@@ -69,6 +99,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    // Instala el Baseline Profile al instalar desde fuera de Play (1.4.1: el mínimo para el plugin 1.5).
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
