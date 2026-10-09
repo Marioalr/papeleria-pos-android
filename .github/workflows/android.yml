@@ -57,4 +57,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.nombre }}" --title "$GITHUB_REF_NAME" --notes-file CAMBIOS.md --verify-tag
+        run: |
+          # Las notas son la sección de esta versión en CAMBIOS.md («## 0.1.0 …» hasta la siguiente «## »).
+          awk -v v="## ${GITHUB_REF_NAME#v}" 'index($0, v) == 1 { f = 1; next } /^## / { if (f) exit } f' CAMBIOS.md > notas.md
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.nombre }}" --title "$GITHUB_REF_NAME" --notes-file notas.md --verify-tag
