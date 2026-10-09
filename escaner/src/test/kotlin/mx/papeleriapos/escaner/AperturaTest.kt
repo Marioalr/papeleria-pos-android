@@ -1,5 +1,6 @@
 package mx.papeleriapos.escaner
 
+import android.app.ApplicationStartInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -99,13 +100,93 @@ class AperturaTest {
     }
 
     @Test
-    fun frioSoloSiEsLaPrimeraActividadYElProcesoNacioParaElla() {
+    fun cadaControladorMarcaSoloEnSuApertura() {
+        // El controlador de la app tomó el número de su apertura (en onCreate u ON_RESUME).
+        val deLaApp = MarcasApertura.numero
+        assertTrue(MarcasApertura.esActual(deLaApp))
+        assertTrue(MarcasApertura.marcarSi(deLaApp, PasoApertura.PRIMER_ANALISIS, 10 * ms))
+        // Se abre el escaneo rápido: otra apertura. Un cuadro en vuelo del controlador de la app ya no marca en ella.
+        MarcasApertura.nueva(TipoArranque.TIBIO)
+        val delRapido = MarcasApertura.numero
+        assertFalse(MarcasApertura.esActual(deLaApp))
+        assertFalse(MarcasApertura.marcarSi(deLaApp, PasoApertura.PRIMER_CUADRO_SENSOR, 20 * ms))
+        assertFalse(MarcasApertura.marcarSi(deLaApp, PasoApertura.PRIMER_ANALISIS, 20 * ms))
+        assertFalse(MarcasApertura.tiene(PasoApertura.PRIMER_ANALISIS))
+        // El del escaneo rápido sí.
+        assertTrue(MarcasApertura.marcarSi(delRapido, PasoApertura.PRIMER_ANALISIS, 30 * ms))
+        assertEquals(30 * ms, MarcasApertura.apertura.marcas[PasoApertura.PRIMER_ANALISIS])
+        // Sin número (el ciclo no está al frente) nunca marca.
+        assertFalse(MarcasApertura.marcarSi(0, PasoApertura.PRIMERA_LECTURA, 40 * ms))
+    }
+
+    @Test
+    fun laAppEsperaElPrimerAnalisisDeSuPropiaApertura() {
+        val propia = MarcasApertura.numero
+        assertFalse(MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS))
+        MarcasApertura.marcarSi(propia, PasoApertura.PRIMER_ANALISIS, 10 * ms)
+        assertTrue(MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS))
+        // Otra apertura que ya tiene su primer análisis no cuenta para la anterior.
+        MarcasApertura.nueva(TipoArranque.CALIENTE)
+        MarcasApertura.marcarSi(MarcasApertura.numero, PasoApertura.PRIMER_ANALISIS, 20 * ms)
+        assertFalse(MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS))
+        assertTrue(MarcasApertura.tieneEn(MarcasApertura.numero, PasoApertura.PRIMER_ANALISIS))
+    }
+
+    @Test
+    fun cadaAperturaNuevaTieneOtroNumeroYCambiarElTipoNo() {
+        val antes = MarcasApertura.numero
+        MarcasApertura.tipo(TipoArranque.FRIO)
+        assertEquals(antes, MarcasApertura.numero)
+        MarcasApertura.nueva(TipoArranque.CALIENTE)
+        assertEquals(antes + 1, MarcasApertura.numero)
+    }
+
+    @Test
+    fun conElRegistroDelSistemaMandaElOrigenDelProceso() {
         val app = 5_000 * ms
-        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, app, app + 150 * ms))
-        // Justo en el umbral todavía es frío; pasado, el proceso ya vivía (lo arrancó el mosaico al abrir el panel).
-        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, app, app + UMBRAL_PROCESO_PRECALENTADO_NS))
-        assertEquals(TipoArranque.TIBIO, tipoDeArranque(true, app, app + UMBRAL_PROCESO_PRECALENTADO_NS + 1))
-        assertEquals(TipoArranque.TIBIO, tipoDeArranque(false, app, app + 100 * ms))
-        assertEquals(TipoArranque.DESCONOCIDO, tipoDeArranque(true, 0L, app))
+        // Nació para una Activity: frío aunque haya tardado (gama baja sin el perfil compilado).
+        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, OrigenProceso.ACTIVIDAD, app, app + 8_000 * ms))
+        // Nació por el mosaico (al abrir el panel) y el toque llegó rápido: tibio de todos modos.
+        assertEquals(TipoArranque.TIBIO, tipoDeArranque(true, OrigenProceso.OTRO, app, app + 300 * ms))
+        // No es la primera Activity del proceso: tibio, diga lo que diga el registro.
+        assertEquals(TipoArranque.TIBIO, tipoDeArranque(false, OrigenProceso.ACTIVIDAD, app, app + 100 * ms))
+    }
+
+    @Test
+    fun sinElRegistroDecideElTiempoDesdeLaApplication() {
+        val app = 5_000 * ms
+        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, OrigenProceso.NO_SE, app, app + 150 * ms))
+        // Un frío lento (más de 1 s, el umbral anterior) sigue siendo frío: antes se reportaba como tibio y más corto.
+        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, OrigenProceso.NO_SE, app, app + 2_500 * ms))
+        assertEquals(TipoArranque.FRIO, tipoDeArranque(true, OrigenProceso.NO_SE, app, app + UMBRAL_PROCESO_PRECALENTADO_NS))
+        // Pasado el umbral el proceso ya vivía (lo arrancó el mosaico al abrir el panel, un servicio o un aviso).
+        assertEquals(TipoArranque.TIBIO, tipoDeArranque(true, OrigenProceso.NO_SE, app, app + UMBRAL_PROCESO_PRECALENTADO_NS + 1))
+        assertEquals(TipoArranque.TIBIO, tipoDeArranque(false, OrigenProceso.NO_SE, app, app + 100 * ms))
+        assertEquals(TipoArranque.DESCONOCIDO, tipoDeArranque(true, OrigenProceso.NO_SE, 0L, app))
+        assertEquals(5_000_000_000L, UMBRAL_PROCESO_PRECALENTADO_NS)
+    }
+
+    @Test
+    fun laRazonDelSistemaDiceSiElProcesoNacioParaUnaActivity() {
+        for (r in listOf(
+            ApplicationStartInfo.START_REASON_LAUNCHER,
+            ApplicationStartInfo.START_REASON_LAUNCHER_RECENTS,
+            ApplicationStartInfo.START_REASON_START_ACTIVITY,
+        )) {
+            assertEquals(OrigenProceso.ACTIVIDAD, origenDeRazon(r))
+        }
+        // El mosaico de Ajustes rápidos es un servicio; los avisos, trabajos y demás también arrancan el proceso antes.
+        for (r in listOf(
+            ApplicationStartInfo.START_REASON_SERVICE,
+            ApplicationStartInfo.START_REASON_BROADCAST,
+            ApplicationStartInfo.START_REASON_CONTENT_PROVIDER,
+            ApplicationStartInfo.START_REASON_JOB,
+            ApplicationStartInfo.START_REASON_PUSH,
+            ApplicationStartInfo.START_REASON_ALARM,
+            ApplicationStartInfo.START_REASON_BOOT_COMPLETE,
+            ApplicationStartInfo.START_REASON_OTHER,
+        )) {
+            assertEquals(OrigenProceso.OTRO, origenDeRazon(r))
+        }
     }
 }

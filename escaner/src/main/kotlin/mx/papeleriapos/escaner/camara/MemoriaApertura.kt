@@ -23,8 +23,12 @@ internal class MemoriaApertura(contexto: Context) {
 
     fun rangoFps(fijo30: Boolean): RangoEnCache = decodificarRango(prefs.getString(llaveFps(fijo30), null), huella())
 
-    fun guardarRangoFps(fijo30: Boolean, rango: Pair<Int, Int>?) {
-        val texto = codificarRango(huella(), rango)
+    fun guardarRangoFps(fijo30: Boolean, rango: Pair<Int, Int>?) = guardar(fijo30, codificarRango(huella(), rango))
+
+    /** La sesión rechazó el FPS fijo (STREAM_CONFIG): sin rango con este sistema, aunque la cámara lo anuncie. */
+    fun guardarAutoPorError(fijo30: Boolean) = guardar(fijo30, codificarRango(huella(), null, porError = true))
+
+    private fun guardar(fijo30: Boolean, texto: String) {
         if (prefs.getString(llaveFps(fijo30), null) == texto) return
         prefs.edit().putString(llaveFps(fijo30), texto).apply()
     }

@@ -149,7 +149,10 @@ interface ControladorEscaner {
     /** Enfoca en un punto de la región visible normalizada (al tocar el visor). */
     fun enfocar(x: Float, y: Float)
     fun permisoConcedido(concedido: Boolean)
-    /** Libera la cámara y los motores. */
+    /**
+     * Libera la cámara y los motores. Lo llama quien creó el controlador (el ViewModel en `onCleared`), no la pantalla:
+     * al salir de la composición basta con que su ciclo de vida se detenga.
+     */
     fun cerrar()
 }
 

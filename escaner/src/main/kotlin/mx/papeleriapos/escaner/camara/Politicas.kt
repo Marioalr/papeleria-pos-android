@@ -87,17 +87,27 @@ internal fun decidirEnlace(
 internal sealed interface RangoEnCache {
     /** No se ha guardado, o se guardó con otra versión del sistema: hay que calcularlo. */
     data object SinDato : RangoEnCache
-    /** Se enlaza sin rango fijo (que decida CameraX). */
+    /** Se enlaza sin rango fijo (que decida CameraX) porque ninguno de los que acepta la sesión sirvió. */
     data object Auto : RangoEnCache
+    /**
+     * Sin rango fijo porque la sesión lo rechazó (STREAM_CONFIG) aunque la cámara lo anunciaba. Es pegajoso: la
+     * validación no lo sobrescribe (volvería a anunciar el rango que falla y una apertura de cada dos repetiría el error
+     * y el reenlace); solo se olvida si cambia la huella del sistema.
+     */
+    data object AutoPorError : RangoEnCache
     data class Fijo(val minimo: Int, val maximo: Int) : RangoEnCache
 }
 
 /**
- * Lo que se guarda por preferencia de FPS: «<huella>|30-30» o «<huella>|auto». La huella es `Build.FINGERPRINT`: si el
- * sistema se actualiza, los rangos de la cámara pueden cambiar y se vuelve a calcular.
+ * Lo que se guarda por preferencia de FPS: «<huella>|30-30», «<huella>|auto» o «<huella>|auto-error». La huella es
+ * `Build.FINGERPRINT`: si el sistema se actualiza, los rangos de la cámara pueden cambiar y se vuelve a calcular.
  */
-internal fun codificarRango(huella: String, rango: Pair<Int, Int>?): String =
-    huella + SEPARADOR_HUELLA + if (rango == null) AUTO else "${rango.first}-${rango.second}"
+internal fun codificarRango(huella: String, rango: Pair<Int, Int>?, porError: Boolean = false): String =
+    huella + SEPARADOR_HUELLA + when {
+        rango != null -> "${rango.first}-${rango.second}"
+        porError -> AUTO_POR_ERROR
+        else -> AUTO
+    }
 
 internal fun decodificarRango(texto: String?, huella: String): RangoEnCache {
     if (texto == null) return RangoEnCache.SinDato
@@ -105,6 +115,7 @@ internal fun decodificarRango(texto: String?, huella: String): RangoEnCache {
     if (i < 0 || texto.substring(0, i) != huella) return RangoEnCache.SinDato
     val valor = texto.substring(i + 1)
     if (valor == AUTO) return RangoEnCache.Auto
+    if (valor == AUTO_POR_ERROR) return RangoEnCache.AutoPorError
     val guion = valor.indexOf('-')
     if (guion <= 0) return RangoEnCache.SinDato
     val minimo = valor.substring(0, guion).toIntOrNull() ?: return RangoEnCache.SinDato
@@ -114,11 +125,23 @@ internal fun decodificarRango(texto: String?, huella: String): RangoEnCache {
 
 private const val SEPARADOR_HUELLA = '|'
 private const val AUTO = "auto"
+private const val AUTO_POR_ERROR = "auto-error"
+
+/**
+ * Si vale la pena confirmar (fuera del camino de la apertura) que el rango guardado [guardado] sigue siendo el que se
+ * elegiría. No, si se calculó en este enlace, si la sesión ya rechazó el FPS fijo en este proceso ([sinFpsFijo]) o lo
+ * rechazó alguna vez con este sistema ([RangoEnCache.AutoPorError]), ni si ya se confirmó en este proceso
+ * ([yaValidado]): basta una vez por proceso, huella y preferencia.
+ */
+internal fun debeValidarRangoFps(guardado: RangoEnCache, sinFpsFijo: Boolean, yaValidado: Boolean): Boolean =
+    !sinFpsFijo && !yaValidado && (guardado is RangoEnCache.Fijo || guardado == RangoEnCache.Auto)
 
 /** Qué hace el controlador ante un cambio de `CameraState` (docs/escaner.md, «Cámara»). */
 internal enum class AccionEstado {
+    /** No es de este enlace, el ciclo está detenido o repite el anterior: ni siquiera se muestra en el diagnóstico. */
+    IGNORAR,
     NINGUNA,
-    /** Abrió: se limpia el error de cámara que hubiera y se reinician los reintentos. */
+    /** Abrió: se limpia el error de cámara que hubiera, se cancela el reenlace pendiente y se reinician los reintentos. */
     ABIERTA,
     /** Fase ERROR con el mensaje, pero CameraX reintenta solo y al abrir se limpia. */
     AVISO_RECUPERABLE,
@@ -134,12 +157,16 @@ internal enum class AccionEstado {
 internal data class ReaccionEstado(val accion: AccionEstado, val mensaje: String? = null, val esperaMs: Long = 0L)
 
 /**
- * La política ante el estado de la cámara. [abierta]: el tipo es OPEN; [codigoError]: `CameraState.ERROR_*` (0 = sin
- * error); [reintentosHechos]: cuántas veces se ha vuelto a enlazar por un error crítico desde que abrió bien;
+ * La política ante un estado de la cámara. [tipo]: el `CameraState.Type`; [codigoError]: `CameraState.ERROR_*` (0 =
+ * sin error); [reintentosHechos]: cuántas veces se ha vuelto a enlazar por un error crítico desde que abrió bien;
  * [fpsFijo]: el enlace actual lleva un rango de FPS fijo.
+ *
+ * Un error crítico con OPENING o PENDING_OPEN no se reintenta: CameraX lo está reintentando por su cuenta, y si se
+ * rinde pasa a CLOSING o CLOSED con el error. Un STREAM_CONFIG con FPS fijo sí se atiende ya: reintentar la misma
+ * configuración no lo arregla.
  */
-internal fun reaccionEstado(abierta: Boolean, codigoError: Int, reintentosHechos: Int, fpsFijo: Boolean): ReaccionEstado = when {
-    abierta -> ReaccionEstado(AccionEstado.ABIERTA)
+internal fun reaccionEstado(tipo: CameraState.Type, codigoError: Int, reintentosHechos: Int, fpsFijo: Boolean): ReaccionEstado = when {
+    tipo == CameraState.Type.OPEN -> ReaccionEstado(AccionEstado.ABIERTA)
     codigoError == 0 -> ReaccionEstado(AccionEstado.NINGUNA)
     codigoError == CameraState.ERROR_CAMERA_IN_USE || codigoError == CameraState.ERROR_MAX_CAMERAS_IN_USE ->
         ReaccionEstado(AccionEstado.AVISO_RECUPERABLE, MENSAJE_EN_USO)
@@ -148,6 +175,7 @@ internal fun reaccionEstado(abierta: Boolean, codigoError: Int, reintentosHechos
     codigoError == CameraState.ERROR_CAMERA_DISABLED -> ReaccionEstado(AccionEstado.AVISO, MENSAJE_DESACTIVADA)
     codigoError == CameraState.ERROR_DO_NOT_DISTURB_MODE_ENABLED -> ReaccionEstado(AccionEstado.AVISO, MENSAJE_NO_MOLESTAR)
     codigoError == CameraState.ERROR_STREAM_CONFIG && fpsFijo -> ReaccionEstado(AccionEstado.REENLAZAR_SIN_FPS)
+    tipo == CameraState.Type.OPENING || tipo == CameraState.Type.PENDING_OPEN -> ReaccionEstado(AccionEstado.NINGUNA)
     reintentosHechos < MAX_REINTENTOS_CRITICOS ->
         ReaccionEstado(AccionEstado.REENLAZAR, esperaMs = ESPERA_REINTENTO_MS * (reintentosHechos + 1))
     else -> ReaccionEstado(AccionEstado.ERROR_FINAL, MENSAJE_FALLO)
@@ -177,20 +205,22 @@ internal fun nombreError(codigo: Int): String = when (codigo) {
 }
 
 /**
- * El vigilante: con la pantalla al frente ([resumida]) y la cámara enlazada, si en [msSinCuadros] no salió ningún cuadro
- * del sensor, se vuelve a enlazar una vez por apertura. No aplica en pausa ni si CameraX ya está reintentando por su
- * cuenta (otra app tiene la cámara).
+ * El vigilante: con la pantalla al frente ([resumida]) y la cámara de este enlace abierta ([abierta], CameraState OPEN),
+ * si en [msDesdeAbierta] no salió ningún cuadro del sensor, se vuelve a enlazar una vez por apertura. El plazo cuenta
+ * desde que la cámara abrió, no desde el enlace ni desde ON_RESUME: en frío, en gama baja, abrir puede tardar más que
+ * el plazo y reenlazar justo antes del primer cuadro haría la apertura más lenta todavía. No aplica en pausa ni si
+ * CameraX ya está reintentando por su cuenta (otra app tiene la cámara).
  */
 internal fun vigilanteDebeReenlazar(
     resumida: Boolean,
-    enlazada: Boolean,
+    abierta: Boolean,
     cuadrosNuevos: Long,
-    msSinCuadros: Long,
+    msDesdeAbierta: Long,
     yaReenlazo: Boolean,
     enPausa: Boolean,
     errorRecuperable: Boolean,
     plazoMs: Long = PLAZO_VIGILANTE_MS,
-): Boolean = resumida && enlazada && cuadrosNuevos == 0L && msSinCuadros >= plazoMs && !yaReenlazo && !enPausa &&
+): Boolean = resumida && abierta && cuadrosNuevos <= 0L && msDesdeAbierta >= plazoMs && !yaReenlazo && !enPausa &&
     !errorRecuperable
 
 internal const val PLAZO_VIGILANTE_MS = 2_000L
