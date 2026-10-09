@@ -148,6 +148,11 @@ internal class Analizador(
     private var ultimoEvento: EventoLectura? = null
     /** Se puso una marca de la apertura en este cuadro: se publica con el estado. */
     private var aperturaCambio = false
+    /** Las aperturas en las que ya se intentó marcar el primer análisis y la primera lectura (una vez por apertura). */
+    private var analisisMarcadoEn = 0
+    private var lecturaMarcadaEn = 0
+    /** [SenalesCamara.producidos] al enlazar: el diagnóstico cuenta los producidos desde ahí. */
+    private var baseProducidos = 0L
 
     // Zoom propio.
     private var zoomInicial = 1f
@@ -357,7 +362,11 @@ internal class Analizador(
                 (if (resultado.via != Via.DIRECTA) " (${resultado.via})" else "") + (if (aceptada.repetida) ", repetido" else ""))
             leidoHasta = ahora + NANOS_LEIDO
             cajaLeida = aceptada.caja ?: caja
-            if (MarcasApertura.marcar(PasoApertura.PRIMERA_LECTURA)) aperturaCambio = true
+            val propia = senales.aperturaPropia
+            if (propia != 0 && propia != lecturaMarcadaEn) {
+                lecturaMarcadaEn = propia
+                if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMERA_LECTURA)) aperturaCambio = true
+            }
             // El siguiente código empieza su propio conteo de tiempo e indicaciones.
             hayCandidato = false
             inicioCandidato = 0L
@@ -376,9 +385,12 @@ internal class Analizador(
         promedioLocalizador.agregar(nanosLocalizar / 1e6f)
         promedioCuadro.agregar(nanosCuadro / 1e6f)
 
-        // El primer cuadro analizado de la apertura: ya escanea (TTFD, fin de «escaner.hastaPrimerCuadro»).
-        if (!MarcasApertura.tiene(PasoApertura.PRIMER_ANALISIS) && MarcasApertura.marcar(PasoApertura.PRIMER_ANALISIS)) {
-            aperturaCambio = true
+        // El primer cuadro analizado de la apertura: ya escanea (TTFD, fin de «escaner.hastaPrimerCuadro»). Solo en la
+        // apertura propia y con la pantalla al frente: los cuadros en vuelo de otro controlador no marcan la de otro.
+        val propia = senales.aperturaPropia
+        if (propia != 0 && propia != analisisMarcadoEn) {
+            analisisMarcadoEn = propia
+            if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMER_ANALISIS)) aperturaCambio = true
         }
         val apertura = if (aperturaCambio) MarcasApertura.apertura else null
         if (apertura != null) {
@@ -463,7 +475,7 @@ internal class Analizador(
             rangoFps = rangoFps,
             camaraFisica = senales.camaraFisica,
             estadoEnfoque = senales.textoAf(),
-            cuadrosProducidos = senales.producidos.get(),
+            cuadrosProducidos = senales.producidos.get() - baseProducidos,
             cuadrosAnalizados = cuadrosAnalizados,
             estadoCamara = textoEstadoCamara,
         )
@@ -597,6 +609,7 @@ internal class Analizador(
         cuadrosAnalizados = 0L
         promedioIntervalo.reiniciar()
         senales.reiniciar()
+        baseProducidos = senales.producidos.get()
         ajustarZoomBase(zoomInicial, zoomTope)
         ultimoEnfoque = SystemClock.elapsedRealtimeNanos()
         forzarDiagnostico = true

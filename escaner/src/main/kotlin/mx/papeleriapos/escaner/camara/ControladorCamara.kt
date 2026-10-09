@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
+import android.os.Build
 import android.os.SystemClock
 import android.os.Trace
 import android.util.Log
@@ -56,6 +57,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.Diagnostico
@@ -69,6 +71,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
 /**
@@ -84,12 +88,13 @@ import kotlin.math.min
  * [ESPERA_REENLACE_MS] y enlaza una sola vez con la última. La cámara se liga a un ciclo de vida propio ([CicloCamara]) que
  * copia el del dueño, así que pasar de la Activity a la pantalla tampoco vuelve a enlazar.
  *
- * Observa el `CameraState` tras cada enlace ([reaccionEstado]): otra app con la cámara, desactivada, configuración no
- * aceptada (sin FPS fijo) y errores críticos (hasta 2 reintentos); y un vigilante vuelve a enlazar una vez si con la
- * pantalla al frente no sale ningún cuadro en 2 s.
+ * Observa el `CameraState` de cada enlace con su propio oyente ([MaquinaEstadoCamara]): otra app con la cámara,
+ * desactivada, configuración no aceptada (sin FPS fijo, y queda guardado) y errores críticos (hasta 2 reintentos); y un
+ * vigilante vuelve a enlazar una vez si, con la pantalla al frente y la cámara ya abierta, no sale ningún cuadro en 2 s.
  *
- * [cerrar] suelta la cámara y el motor; un [abrir] posterior vuelve a empezar (la pantalla llama a cerrar al salir de la
- * composición, p. ej. al cambiar de pestaña o al recrearse la Activity).
+ * [cerrar] suelta la cámara y el motor; un [abrir] posterior vuelve a empezar. Lo llama quien creó el controlador (el
+ * ViewModel), no la pantalla: al salir de la composición (otra pestaña) basta con que el ciclo de vida de la pantalla
+ * ([CicloCamara] lo copia) se detenga, y al volver la cámara reabre sin volver a enlazar.
  *
  * Se usa desde el hilo principal. El análisis corre en un hilo propio ([Analizador]).
  */
@@ -161,16 +166,29 @@ class ControladorCamara(
     private var validacionFps: Job? = null
 
     // Estado de la cámara.
-    private var reintentosCriticos = 0
+    /** Qué hacer con cada `CameraState` (por enlace) y cuántos reintentos van. */
+    private val maquina = MaquinaEstadoCamara()
+    /** El oyente del `CameraState` del enlace vigente (uno por enlace, con su número) y dónde se registró. */
+    private var oyenteEstado: Consumer<CameraState>? = null
+    private var infoOyente: CameraInfo? = null
     /** La sesión no aceptó un rango de FPS fijo (STREAM_CONFIG): desde ahí, sin rango. */
     private var sinFpsFijo = false
-    private var fpsFijoEnlazado = false
     /** La fase ERROR la puso el estado de la cámara (y se quita sola al abrir). */
     private var errorDeCamara = false
     /** CameraX está reintentando por su cuenta (otra app tiene la cámara): el vigilante no se mete. */
     private var errorRecuperable = false
     private var vigilanteUsado = false
-    private var ultimoEstado = -1
+
+    /**
+     * El número de la apertura que es de este controlador (`MarcasApertura.numero`), para las marcas que se ponen en el
+     * hilo principal (enlace, cámara abierta). Se toma al enlazar en `onCreate` y en ON_START y ON_RESUME de su ciclo:
+     * la app empieza la apertura antes (en `onCreate` u `onStart`). Las de los cuadros usan [SenalesCamara.aperturaPropia].
+     */
+    private var aperturaPropia = 0
+    /** Cuánto se esperó a `ProcessCameraProvider` en el último enlace (−1 = ya estaba). */
+    private var msEsperaProveedor = -1L
+    /** Para saber si este es el último controlador cuyo ciclo empezó ([ultimoIniciado]). */
+    private val id = SIGUIENTE_ID.incrementAndGet()
 
     private val acciones = object : AccionesCamara {
         override fun aplicarZoom(zoom: Float) = enPrincipal {
@@ -218,8 +236,6 @@ class ControladorCamara(
         _estado.update { it.copy(linterna = encendida, sugerirLinterna = it.sugerirLinterna && !encendida) }
     }
 
-    private val observadorEstado = Consumer<CameraState> { alCambiarEstado(it) }
-
     /** Copia el estado del dueño al ciclo de la cámara. */
     private val observadorDueno = LifecycleEventObserver { fuente, _ ->
         if (fuente === dueno) ciclo?.seguir(fuente.lifecycle.currentState)
@@ -228,19 +244,39 @@ class ControladorCamara(
     private val observadorCiclo = LifecycleEventObserver { _, evento ->
         when (evento) {
             Lifecycle.Event.ON_START -> {
+                // CameraX le da la cámara al último ciclo que empezó: desde aquí sus estados son de este controlador.
+                ultimoIniciado = id
                 analizador.detenido = false
-                // La app ya empezó la apertura (MarcasApertura.nueva en onStart): la pantalla la ve desde ya.
+                // La app ya empezó la apertura (MarcasApertura.nueva en onStart): la pantalla la ve desde ya y este
+                // controlador marca en ella.
+                aperturaPropia = MarcasApertura.numero
                 publicarApertura()
                 if (volvioDeFondo) {
                     volvioDeFondo = false
                     alVolver()
                 }
             }
-            Lifecycle.Event.ON_RESUME -> iniciarVigilante()
+            Lifecycle.Event.ON_RESUME -> {
+                aperturaPropia = MarcasApertura.numero
+                // Los cuadros marcan solo con la pantalla al frente.
+                senales.aperturaPropia = aperturaPropia
+                // Si la cámara ya estaba abierta (p. ej. tras un diálogo encima); si no, empieza al abrir.
+                iniciarVigilante()
+            }
+            Lifecycle.Event.ON_PAUSE -> {
+                senales.aperturaPropia = 0
+                vigilante?.cancel()
+            }
             Lifecycle.Event.ON_STOP -> {
+                if (ultimoIniciado == id) ultimoIniciado = 0
                 volvioDeFondo = true
                 vigilante?.cancel()
                 vigilanteUsado = false
+                // Cada vuelta al frente es otra apertura: los reintentos empiezan de nuevo y el reenlace que estuviera
+                // esperando sobra (al volver, CameraX abre otra vez).
+                reintento?.cancel()
+                reintento = null
+                maquina.alDetenerse()
                 // CameraX suelta la cámara (y la linterna); al volver, el primer cuadro marca que ya escanea. Un cuadro
                 // que ya estaba en camino no debe publicar después de esto.
                 analizador.detenido = true
@@ -276,8 +312,10 @@ class ControladorCamara(
             _estado.update { it.copy(fase = Fase.SIN_PERMISO) }
             return
         }
-        // «Reintentar» tras un error vuelve a enlazar aunque nada haya cambiado.
-        pedir(p, rotacion, forzar = _estado.value.fase == Fase.ERROR)
+        // «Reintentar» tras un error vuelve a enlazar aunque nada haya cambiado, con los reintentos desde cero.
+        val forzar = _estado.value.fase == Fase.ERROR
+        if (forzar) maquina.reiniciarReintentos()
+        pedir(p, rotacion, forzar)
     }
 
     /**
@@ -296,6 +334,8 @@ class ControladorCamara(
     ) {
         revivirSiCerrado()
         this.pantalla = pantalla
+        // Se llama en el onCreate de la Activity, que ya empezó su apertura: las marcas del enlace van en ella.
+        aperturaPropia = MarcasApertura.numero
         val p = memoria.proporcion(pantalla) ?: estimar() ?: return
         if (!p.valida) return
         seguir(dueno)
@@ -368,6 +408,8 @@ class ControladorCamara(
         cerrado = true
         pedidoAbrir = false
         temprano = false
+        senales.aperturaPropia = 0
+        if (ultimoIniciado == id) ultimoIniciado = 0
         for (j in listOf(enlace, reenlaceDiferido, reintento, vigilante, confirmacion, validacionFps)) j?.cancel()
         alcance.cancel()
         camara?.let { cam -> if (cam.cameraInfo.torchState.value == TorchState.ON) cam.cameraControl.enableTorch(false) }
@@ -400,7 +442,7 @@ class ControladorCamara(
         if (!cerrado) return
         cerrado = false
         volvioDeFondo = false
-        reintentosCriticos = 0
+        maquina.reiniciarReintentos()
         vigilanteUsado = false
         errorDeCamara = false
         errorRecuperable = false
@@ -455,6 +497,9 @@ class ControladorCamara(
         enlace?.cancel()
         reenlaceDiferido?.cancel()
         reenlaceDiferido = null
+        // Un enlace nuevo deja sin sentido el reenlace por error que estuviera esperando.
+        reintento?.cancel()
+        reintento = null
         val rotacion = rotacionPedida
         enlazada = p
         rotacionEnlazada = rotacion
@@ -463,7 +508,7 @@ class ControladorCamara(
         _estado.update { it.copy(fase = Fase.ABRIENDO, mensajeError = null) }
         enlace = alcance.launch {
             try {
-                val prov = proveedor ?: ProcessCameraProvider.awaitInstance(app).also { proveedor = it }
+                val prov = proveedor ?: esperarProveedor().also { proveedor = it }
                 soltarSesion(conservarPedido = true)
                 if (!prov.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
                     _estado.update { it.copy(fase = Fase.ERROR, mensajeError = "Este celular no tiene cámara trasera.") }
@@ -475,14 +520,16 @@ class ControladorCamara(
                 val puerto = ViewPort.Builder(Rational(p.ancho, p.alto), rotacion).setScaleType(ViewPort.FILL_CENTER).build()
                 val fijo30 = _config.value.fpsFijo30
                 val e = enlazarCon(prov, dueno, puerto, fijo30)
-                MarcasApertura.marcar(PasoApertura.ENLACE_FIN)
+                MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_FIN)
                 enlazada = p
                 rotacionEnlazada = rotacion
                 camara = e.camara
                 apagadaPorInactividad = false
                 enlacesHechos++
-                alEnlazar(e.camara, e.rango, e.desdeMemoria, p)
-                if (e.desdeMemoria && !sinFpsFijo) validarRangoFps(puerto, fijo30, e.rango)
+                alEnlazar(e.camara, e.rango, e.guardado, p)
+                if (debeValidarRangoFps(e.guardado, sinFpsFijo, yaValidado = ValidacionFps.hecha(fijo30))) {
+                    validarRangoFps(p, rotacion, fijo30, e.rango)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -493,18 +540,35 @@ class ControladorCamara(
         }
     }
 
-    private class Enlace(val camara: Camera, val rango: Range<Int>?, val desdeMemoria: Boolean)
+    /**
+     * Espera a `ProcessCameraProvider` (en frío, la inicialización de CameraX que empezó la Application). Antes no caía
+     * en ninguna marca: queda en la sección asíncrona [SECCION_ESPERA_PROVEEDOR] (API 29+) y en el registro del enlace.
+     */
+    private suspend fun esperarProveedor(): ProcessCameraProvider {
+        val desde = SystemClock.elapsedRealtimeNanos()
+        val cookie = COOKIES_PROVEEDOR.incrementAndGet()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Trace.beginAsyncSection(SECCION_ESPERA_PROVEEDOR, cookie)
+        try {
+            return ProcessCameraProvider.awaitInstance(app)
+        } finally {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Trace.endAsyncSection(SECCION_ESPERA_PROVEEDOR, cookie)
+            msEsperaProveedor = (SystemClock.elapsedRealtimeNanos() - desde) / 1_000_000L
+        }
+    }
+
+    /** [guardado]: lo que había en la memoria y se usó ([RangoEnCache.SinDato] si se calculó en este enlace). */
+    private class Enlace(val camara: Camera, val rango: Range<Int>?, val guardado: RangoEnCache)
 
     /**
      * Enlaza con el rango de FPS guardado para este celular (sin preguntarle a la cámara, que en algunos equipos cuesta
      * en el camino de la apertura). Si no hay guardado o la sesión ya no lo acepta, lo calcula y lo guarda.
      */
     private fun enlazarCon(p: ProcessCameraProvider, dueno: LifecycleOwner, puerto: ViewPort, fijo30: Boolean): Enlace {
-        val guardado = if (sinFpsFijo) RangoEnCache.Auto else memoria.rangoFps(fijo30)
+        val guardado = if (sinFpsFijo) RangoEnCache.AutoPorError else memoria.rangoFps(fijo30)
         if (guardado != RangoEnCache.SinDato) {
             val rango = (guardado as? RangoEnCache.Fijo)?.let { Range(it.minimo, it.maximo) }
             try {
-                return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, desdeMemoria = true)
+                return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, guardado)
             } catch (e: IllegalArgumentException) {
                 Log.w(ETIQUETA, "La sesión ya no acepta el rango de FPS guardado ($rango); se vuelve a calcular", e)
                 memoria.olvidarRangoFps(fijo30)
@@ -512,20 +576,28 @@ class ControladorCamara(
         }
         val rango = calcularRangoFps(p, puerto, fijo30)
         memoria.guardarRangoFps(fijo30, rango?.let { it.lower to it.upper })
-        return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, desdeMemoria = false)
+        return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, RangoEnCache.SinDato)
     }
 
     private fun enlazarSesion(p: ProcessCameraProvider, dueno: LifecycleOwner, puerto: ViewPort, rango: Range<Int>?): Camera {
         val nueva = SessionConfig.Builder(vista, analisis).setViewPort(puerto)
             .apply { if (rango != null) setFrameRateRange(rango) }
             .build()
-        MarcasApertura.marcar(PasoApertura.ENLACE_INICIO)
+        MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_INICIO)
         Trace.beginSection("escaner.enlazar")
-        try {
-            return p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
+        val cam = try {
+            p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
         } finally {
             Trace.endSection()
         }
+        // El oyente de este enlace, en cuanto existe: lo que la cámara publique desde aquí es de este enlace. El valor
+        // actual de cameraState NO se procesa: todavía es el del enlace anterior.
+        val numero = maquina.nuevoEnlace(fpsFijo = rango != null)
+        val oyente = Consumer<CameraState> { e -> alCambiarEstado(numero, e) }
+        oyenteEstado = oyente
+        infoOyente = cam.cameraInfo
+        cam.cameraInfo.addCameraStateListener(principal, oyente)
+        return cam
     }
 
     /** El rango de FPS de entre los que acepta esta sesión ([elegirRangoFps]); null = que decida CameraX. */
@@ -541,37 +613,68 @@ class ControladorCamara(
     }
 
     /**
-     * Con la cámara ya escaneando, confirma que el rango guardado sigue siendo el que se elegiría; si no, guarda el nuevo
-     * para la próxima apertura (no vuelve a enlazar ahora).
+     * Confirma que el rango guardado sigue siendo el que se elegiría; si no, guarda el nuevo para la próxima apertura (no
+     * vuelve a enlazar ahora). Una sola vez por proceso y preferencia ([ValidacionFps]), [VALIDAR_FPS_TRAS_MS] después de
+     * enlazar y en `Dispatchers.Default` con casos de uso propios sin enlazar (no los de la cámara, que el hilo principal
+     * puede estar cambiando): ni la apertura ni el análisis esperan por él. Sección de trace «escaner.validarFps».
      */
-    private fun validarRangoFps(puerto: ViewPort, fijo30: Boolean, usado: Range<Int>?) {
+    private fun validarRangoFps(visor: Proporcion, rotacion: Int, fijo30: Boolean, usado: Range<Int>?) {
+        if (!ValidacionFps.empezar(fijo30)) return
         validacionFps?.cancel()
         validacionFps = alcance.launch {
-            delay(VALIDAR_FPS_TRAS_MS)
-            val p = proveedor ?: return@launch
-            val calculado = try {
-                calcularRangoFps(p, puerto, fijo30)
+            var terminada = false
+            try {
+                delay(VALIDAR_FPS_TRAS_MS)
+                val p = proveedor ?: return@launch
+                val calculado = withContext(Dispatchers.Default) { calcularRangoFpsAparte(p, visor, rotacion, fijo30) }
+                terminada = true
+                // Si mientras tanto la sesión rechazó el FPS fijo, lo pegajoso manda.
+                if (sinFpsFijo || memoria.rangoFps(fijo30) == RangoEnCache.AutoPorError) return@launch
+                val par = calculado?.let { it.lower to it.upper }
+                if (par != usado?.let { it.lower to it.upper }) {
+                    Log.i(ETIQUETA, "Rango de FPS guardado $usado; la cámara ahora da $calculado: queda para la próxima apertura")
+                    memoria.guardarRangoFps(fijo30, par)
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                // No se insiste en este proceso: lo guardado sigue sirviendo.
+                terminada = true
                 Log.w(ETIQUETA, "No se pudo validar el rango de FPS guardado", e)
-                return@launch
-            }
-            val par = calculado?.let { it.lower to it.upper }
-            if (par != usado?.let { it.lower to it.upper }) {
-                Log.i(ETIQUETA, "Rango de FPS guardado $usado; la cámara ahora da $calculado: queda para la próxima apertura")
-                memoria.guardarRangoFps(fijo30, par)
+            } finally {
+                // Cancelada antes de terminar (se volvió a enlazar o se soltó la cámara): el siguiente enlace la repite.
+                if (!terminada) ValidacionFps.olvidar(fijo30)
             }
         }
     }
 
+    /** [calcularRangoFps] con un `Preview` y un `ImageAnalysis` propios, iguales a los del enlace pero sin enlazar. */
+    private fun calcularRangoFpsAparte(p: ProcessCameraProvider, visor: Proporcion, rotacion: Int, fijo30: Boolean): Range<Int>? {
+        Trace.beginSection("escaner.validarFps")
+        try {
+            val vistaPrueba = Preview.Builder().setResolutionSelector(selectorResolucion).build()
+            val analisisPrueba = ImageAnalysis.Builder()
+                .setResolutionSelector(selectorResolucion)
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                .build()
+            val puerto = ViewPort.Builder(Rational(visor.ancho, visor.alto), rotacion).setScaleType(ViewPort.FILL_CENTER).build()
+            val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+            val base = SessionConfig.Builder(vistaPrueba, analisisPrueba).setViewPort(puerto).build()
+            return elegirRangoFps(info.getSupportedFrameRateRanges(base), fijo30)
+        } finally {
+            Trace.endSection()
+        }
+    }
+
     @OptIn(ExperimentalCamera2Interop::class)
-    private fun alEnlazar(cam: Camera, rango: Range<Int>?, desdeMemoria: Boolean, p: Proporcion) {
+    private fun alEnlazar(cam: Camera, rango: Range<Int>?, guardado: RangoEnCache, p: Proporcion) {
         val info = cam.cameraInfo
         val (inicial, tope) = zoomesPara(info, _config.value)
         senales.distanciaMinima = caracteristica(info, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: -1f
         val hayLinterna = info.hasFlashUnit()
         val c = ciclo
         if (c != null) info.torchState.observe(c, observadorLinterna)
-        fpsFijoEnlazado = rango != null
         val textoRango = rango?.toString() ?: ""
         _estado.update {
             it.copy(
@@ -581,39 +684,49 @@ class ControladorCamara(
                 apertura = MarcasApertura.apertura,
             )
         }
+        val origenFps = when (guardado) {
+            RangoEnCache.SinDato -> ""
+            RangoEnCache.AutoPorError -> " (sin FPS fijo: la sesión lo rechazó)"
+            else -> " (guardado)"
+        }
+        val espera = msEsperaProveedor
+        msEsperaProveedor = -1L
         Log.i(
             ETIQUETA,
-            "Cámara enlazada: FPS $textoRango${if (desdeMemoria) " (guardado)" else ""}, visor ${p.texto()}, " +
-                "zoom inicial $inicial (tope $tope), linterna $hayLinterna${if (temprano) ", antes de la interfaz" else ""}",
+            "Cámara enlazada: FPS $textoRango$origenFps, visor ${p.texto()}, zoom inicial $inicial (tope $tope), " +
+                "linterna $hayLinterna${if (espera >= 0) ", esperó $espera ms a CameraX" else ""}" +
+                if (temprano) ", antes de la interfaz" else "",
         )
         enAnalisis { analizador.alEnlazar(inicial, tope, hayLinterna, textoRango) }
-        // El estado de la cámara de este enlace (el primero que llegue se procesa aunque repita el anterior).
-        ultimoEstado = -1
-        info.addCameraStateListener(principal, observadorEstado)
-        info.cameraState.value?.let { alCambiarEstado(it) }
         if (temprano) vigilarConfirmacion()
-        if (c?.resumido == true) iniciarVigilante()
+        // El vigilante empieza cuando esta cámara llegue a OPEN (alCambiarEstado), no aquí.
     }
 
     // ---- Estado de la cámara ----
 
-    private fun alCambiarEstado(e: CameraState) {
+    /** Un `CameraState` del oyente del enlace [numero] (en el hilo principal): lo decide [maquina] y aquí se aplica. */
+    private fun alCambiarEstado(numero: Int, e: CameraState) {
         if (cerrado) return
         val codigo = e.error?.code ?: 0
-        val clave = e.type.ordinal * 100 + codigo
-        if (clave == ultimoEstado) return
-        ultimoEstado = clave
+        // El oyente es por cámara: con el ciclo detenido, o si después empezó el de otro controlador (el escaneo rápido
+        // sobre la app, que todavía no se detiene), lo que llegue es de la cámara de otro.
+        val activo = ciclo?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED) == true &&
+            (ultimoIniciado == id || ultimoIniciado == 0)
+        val r = maquina.alEstado(numero, e.type, codigo, activo)
+        if (r.accion == AccionEstado.IGNORAR) return
         val texto = textoEstadoCamara(e.type.name, codigo)
         analizador.textoEstadoCamara = texto
         _estado.update { it.copy(diagnostico = it.diagnostico.copy(estadoCamara = texto)) }
         if (codigo != 0) Log.w(ETIQUETA, "Cámara: $texto") else Log.i(ETIQUETA, "Cámara: $texto")
-        val abierta = e.type == CameraState.Type.OPEN
-        if (abierta && MarcasApertura.marcar(PasoApertura.CAMARA_ABIERTA)) publicarApertura()
-        val r = reaccionEstado(abierta, codigo, reintentosCriticos, fpsFijoEnlazado)
+        // Sin la cámara abierta no hay plazo que vigilar (empieza otra vez al abrir).
+        if (!maquina.abierta) vigilante?.cancel()
         when (r.accion) {
-            AccionEstado.NINGUNA -> Unit
+            AccionEstado.IGNORAR, AccionEstado.NINGUNA -> Unit
             AccionEstado.ABIERTA -> {
-                reintentosCriticos = 0
+                // Abrió bien: el reenlace por error que estuviera esperando sobra.
+                reintento?.cancel()
+                reintento = null
+                if (MarcasApertura.marcarSi(aperturaPropia, PasoApertura.CAMARA_ABIERTA)) publicarApertura()
                 errorRecuperable = false
                 if (errorDeCamara) {
                     errorDeCamara = false
@@ -622,6 +735,7 @@ class ControladorCamara(
                 }
                 // Enfoque y exposición al centro (donde está la franja) en cuanto abre: antes de abrir no se puede.
                 enfocarEnBuffer(0.5f, 0.5f)
+                iniciarVigilante()
             }
             AccionEstado.AVISO_RECUPERABLE -> {
                 errorRecuperable = true
@@ -629,17 +743,18 @@ class ControladorCamara(
             }
             AccionEstado.AVISO, AccionEstado.ERROR_FINAL -> mostrarError(r.mensaje)
             AccionEstado.REENLAZAR_SIN_FPS -> {
-                Log.w(ETIQUETA, "La sesión no aceptó el rango de FPS fijo: se enlaza sin él")
+                Log.w(ETIQUETA, "La sesión no aceptó el rango de FPS fijo: se enlaza sin él (y así queda para este sistema)")
                 sinFpsFijo = true
-                memoria.guardarRangoFps(_config.value.fpsFijo30, null)
+                memoria.guardarAutoPorError(_config.value.fpsFijo30)
                 enlazar()
             }
-            AccionEstado.REENLAZAR -> if (reintento?.isActive != true) {
-                reintentosCriticos++
-                Log.w(ETIQUETA, "Error crítico de la cámara: se vuelve a enlazar en ${r.esperaMs} ms (intento $reintentosCriticos)")
+            AccionEstado.REENLAZAR -> {
+                Log.w(ETIQUETA, "Error crítico de la cámara: se vuelve a enlazar en ${r.esperaMs} ms (intento ${maquina.reintentos})")
+                reintento?.cancel()
                 reintento = alcance.launch {
                     delay(r.esperaMs)
                     reintento = null
+                    maquina.sinReintentoPendiente()
                     enlazar()
                 }
             }
@@ -651,29 +766,31 @@ class ControladorCamara(
         _estado.update { it.copy(fase = Fase.ERROR, mensajeError = mensaje) }
     }
 
-    /** Con la pantalla al frente y sin cuadros del sensor en [PLAZO_VIGILANTE_MS], se vuelve a enlazar una vez. */
+    /**
+     * Con la pantalla al frente y la cámara de este enlace abierta (OPEN), si en [PLAZO_VIGILANTE_MS] desde ahí no sale
+     * ningún cuadro del sensor, se vuelve a enlazar una vez. Se llama al abrir la cámara y en ON_RESUME (si ya estaba
+     * abierta). El contador de cuadros nunca vuelve a cero: la base se lee aquí sin carrera con el hilo de análisis.
+     */
     private fun iniciarVigilante() {
         vigilante?.cancel()
-        if (vigilanteUsado || sesion == null || cerrado) return
+        if (vigilanteUsado || sesion == null || cerrado || !maquina.abierta || ciclo?.resumido != true) return
+        val enlaceVigilado = maquina.enlace
         val base = senales.producidos.get()
         val desde = SystemClock.elapsedRealtime()
         vigilante = alcance.launch {
             delay(PLAZO_VIGILANTE_MS)
-            val actual = senales.producidos.get()
-            // Si en medio se volvió a enlazar, el contador empezó de cero.
-            val nuevos = if (actual >= base) actual - base else actual
             val reenlazar = vigilanteDebeReenlazar(
                 resumida = ciclo?.resumido == true,
-                enlazada = sesion != null,
-                cuadrosNuevos = nuevos,
-                msSinCuadros = SystemClock.elapsedRealtime() - desde,
+                abierta = maquina.abierta && maquina.enlace == enlaceVigilado && sesion != null,
+                cuadrosNuevos = senales.producidos.get() - base,
+                msDesdeAbierta = SystemClock.elapsedRealtime() - desde,
                 yaReenlazo = vigilanteUsado,
                 enPausa = _estado.value.fase == Fase.PAUSADO,
                 errorRecuperable = errorRecuperable || errorDeCamara,
             )
             if (reenlazar) {
                 vigilanteUsado = true
-                Log.w(ETIQUETA, "Sin cuadros de la cámara en $PLAZO_VIGILANTE_MS ms con la pantalla al frente: se vuelve a enlazar")
+                Log.w(ETIQUETA, "Cámara abierta y sin cuadros en $PLAZO_VIGILANTE_MS ms con la pantalla al frente: se vuelve a enlazar")
                 enlazar()
             }
         }
@@ -710,12 +827,13 @@ class ControladorCamara(
         _estado.update { if (it.apertura === a) it else it.copy(apertura = a) }
     }
 
-    /** Desenlaza lo de este controlador y quita sus observadores. */
+    /** Desenlaza lo de este controlador y quita sus observadores (lo que llegue después de ese enlace ya no cuenta). */
     private fun soltarSesion(conservarPedido: Boolean = false) {
-        camara?.let { cam ->
-            cam.cameraInfo.torchState.removeObserver(observadorLinterna)
-            cam.cameraInfo.removeCameraStateListener(observadorEstado)
-        }
+        camara?.let { cam -> cam.cameraInfo.torchState.removeObserver(observadorLinterna) }
+        oyenteEstado?.let { o -> infoOyente?.removeCameraStateListener(o) }
+        oyenteEstado = null
+        infoOyente = null
+        maquina.soltar()
         sesion?.let { s -> proveedor?.unbind(s) }
         sesion = null
         camara = null
@@ -725,6 +843,9 @@ class ControladorCamara(
         }
         vigilante?.cancel()
         validacionFps?.cancel()
+        // Lo soltado ya no se reintenta (p. ej. un error que llegó justo antes de apagar por inactividad).
+        reintento?.cancel()
+        reintento = null
     }
 
     /** El zoom inicial (según la distancia mínima de enfoque) y el tope propio, dentro de lo que la cámara permite. */
@@ -827,9 +948,41 @@ class ControladorCamara(
         const val PLAZO_CONFIRMAR_MS = 3_000L
         /** Cuándo se valida el rango de FPS guardado (con la cámara ya escaneando, fuera del camino crítico). */
         const val VALIDAR_FPS_TRAS_MS = 3_000L
+        /** La sección asíncrona de trace de la espera a `ProcessCameraProvider` al enlazar (API 29+). */
+        const val SECCION_ESPERA_PROVEEDOR = "escaner.esperaProveedor"
 
         private const val ETIQUETA = "Escaner"
         /** Tamaño del punto de enfoque, como fracción del campo: lo que ocupa un código en la franja. */
         private const val TAMANO_PUNTO = 0.2f
+        /** Cookies de [SECCION_ESPERA_PROVEEDOR]: dos controladores pueden esperar a la vez. */
+        private val COOKIES_PROVEEDOR = AtomicInteger()
+        private val SIGUIENTE_ID = AtomicInteger()
+
+        /**
+         * El controlador cuyo ciclo empezó al último y sigue sin detenerse (0 = ninguno). Como CameraX (el último ciclo
+         * que empieza se queda con la cámara), así el de la app, en pausa debajo del escaneo rápido, no reacciona a los
+         * estados de la cámara del otro. Solo en el hilo principal.
+         */
+        private var ultimoIniciado = 0
     }
+}
+
+/**
+ * La validación del rango de FPS guardado se hace una sola vez por proceso y por preferencia (30 fijo o 15–30); la
+ * huella del sistema no cambia sin reiniciar el proceso. Es del proceso, no del controlador: la app y el escaneo rápido
+ * la comparten.
+ */
+internal object ValidacionFps {
+    private val fijo30 = AtomicBoolean()
+    private val de15a30 = AtomicBoolean()
+
+    private fun de(fijo: Boolean) = if (fijo) fijo30 else de15a30
+
+    fun hecha(fijo: Boolean): Boolean = de(fijo).get()
+
+    /** Devuelve false si ya se hizo o ya está en curso (la toma quien llega primero). */
+    fun empezar(fijo: Boolean): Boolean = de(fijo).compareAndSet(false, true)
+
+    /** No terminó (se canceló): el siguiente enlace la vuelve a intentar. */
+    fun olvidar(fijo: Boolean) = de(fijo).set(false)
 }

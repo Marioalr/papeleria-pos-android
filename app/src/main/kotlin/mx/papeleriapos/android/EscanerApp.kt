@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraXConfig
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.view.doOnAttach
@@ -19,10 +20,12 @@ import kotlinx.coroutines.launch
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.MarcasApertura
+import mx.papeleriapos.escaner.OrigenProceso
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.TipoArranque
 import mx.papeleriapos.escaner.camara.configuracionCameraX
 import mx.papeleriapos.escaner.camara.precargarMemoriaApertura
+import mx.papeleriapos.escaner.origenDeRazon
 import mx.papeleriapos.escaner.tipoDeArranque
 
 /**
@@ -46,12 +49,16 @@ class EscanerApp : Application(), CameraXConfig.Provider {
         precargarMemoriaApertura(this)
         // Solo calienta: el futuro lo recoge el controlador cuando enlaza la cámara.
         ProcessCameraProvider.getInstance(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) Arranque.consultarOrigenDelProceso(this)
     }
 
     override fun getCameraXConfig(): CameraXConfig = configuracionCameraX()
 }
 
 private const val NANOS_POR_MS = 1_000_000L
+
+/** Los registros de arranque que se piden: el del nacimiento del proceso es de los más recientes. */
+private const val REGISTROS_ARRANQUE = 4
 
 /**
  * Las marcas de la apertura que pone la app (docs/escaner.md, «Apertura»): el tipo de arranque y la Activity, el primer
@@ -61,12 +68,40 @@ private const val NANOS_POR_MS = 1_000_000L
 internal object Arranque {
     private var actividadesCreadas = 0
 
-    /** Al principio del `onCreate` de una Activity del escáner: frío, o tibio si el proceso ya vivía. */
+    /** Por qué nació el proceso según el sistema (API 35+); lo escribe [consultarOrigenDelProceso] en otro hilo. */
+    @Volatile private var origen = OrigenProceso.NO_SE
+
+    /**
+     * API 35+: pregunta al registro de arranques del sistema (`ApplicationStartInfo`) por qué nació este proceso, en un
+     * hilo aparte para no poner una llamada al sistema en el camino de la apertura. Se llama en `Application.onCreate`,
+     * cuando el único registro con este pid es el del nacimiento del proceso (los de Activities en un proceso que ya
+     * vivía llegan después, y su tipo solo está garantizado tras el primer cuadro). Si no responde antes de la Activity,
+     * [alCrearActividad] decide por el tiempo.
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun consultarOrigenDelProceso(contexto: Context) {
+        val am = contexto.getSystemService(ActivityManager::class.java) ?: return
+        val pid = Process.myPid()
+        Thread({
+            try {
+                val registro = am.getHistoricalProcessStartReasons(REGISTROS_ARRANQUE).firstOrNull { it.pid == pid }
+                if (registro != null) origen = origenDeRazon(registro.reason)
+            } catch (e: RuntimeException) {
+                Log.w("Escaner", "No se pudo leer el registro de arranques", e)
+            }
+        }, "escaner-arranque").start()
+    }
+
+    /**
+     * Al principio del `onCreate` de una Activity del escáner: frío si es la primera del proceso y el proceso nació para
+     * ella (API 35+: lo dice el sistema; antes: menos de 5 s desde `Application.onCreate`), si no tibio. El mosaico de
+     * Ajustes rápidos arranca el proceso al abrir el panel, antes del toque: eso es tibio.
+     */
     fun alCrearActividad(): TipoArranque {
         val ahora = SystemClock.elapsedRealtimeNanos()
         val primera = actividadesCreadas++ == 0
         val aplicacion = MarcasApertura.apertura.marcas[PasoApertura.APLICACION] ?: 0L
-        val tipo = tipoDeArranque(primera, aplicacion, ahora)
+        val tipo = tipoDeArranque(primera, origen, aplicacion, ahora)
         if (tipo == TipoArranque.FRIO) MarcasApertura.tipo(tipo) else MarcasApertura.nueva(tipo)
         MarcasApertura.marcar(PasoApertura.ACTIVIDAD, ahora)
         return tipo
@@ -103,13 +138,16 @@ internal object Arranque {
      * [PasoApertura.PRIMER_ANALISIS] (en el hilo principal). Antes, en API 35+, las marcas propias van al registro de
      * arranques del sistema (`ApplicationStartInfo`), que descarta las que llegan después de `reportFullyDrawn`.
      * `reportFullyDrawn` vale una vez por Activity y no reporta si la Activity se pausó (p. ej. el diálogo del permiso).
+     * Solo cuenta el primer análisis de la apertura de esta Activity (la que empezó [alCrearActividad] justo antes): si
+     * otra apertura la reemplazó (otra Activity, o volvió de segundo plano sin haber escaneado), no se reporta.
      */
     fun reportarAlPrimerAnalisis(actividad: ComponentActivity, controlador: ControladorEscaner) {
         val reportero = actividad.fullyDrawnReporter
+        val propia = MarcasApertura.numero
         reportero.addReporter()
         actividad.lifecycleScope.launch {
             // El estado se publica justo al poner la marca: sirve de aviso.
-            controlador.estado.first { MarcasApertura.tiene(PasoApertura.PRIMER_ANALISIS) }
+            controlador.estado.first { MarcasApertura.tieneEn(propia, PasoApertura.PRIMER_ANALISIS) }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) marcasAlSistema(actividad)
             reportero.removeReporter()
         }

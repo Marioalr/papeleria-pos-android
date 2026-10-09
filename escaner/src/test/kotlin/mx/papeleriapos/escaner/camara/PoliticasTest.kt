@@ -76,15 +76,20 @@ class PoliticasTest {
         assertEquals(RangoEnCache.Fijo(30, 30), decodificarRango(codificarRango(huella, 30 to 30), huella))
         assertEquals(RangoEnCache.Fijo(15, 30), decodificarRango(codificarRango(huella, 15 to 30), huella))
         assertEquals(RangoEnCache.Auto, decodificarRango(codificarRango(huella, null), huella))
-        // Otra versión del sistema: se vuelve a calcular.
+        assertEquals(RangoEnCache.AutoPorError, decodificarRango(codificarRango(huella, null, porError = true), huella))
+        assertEquals("$huella|auto-error", codificarRango(huella, null, porError = true))
+        // Con rango, porError no cuenta.
+        assertEquals(RangoEnCache.Fijo(30, 30), decodificarRango(codificarRango(huella, 30 to 30, porError = true), huella))
+        // Otra versión del sistema: se vuelve a calcular (también lo que se rechazó).
         assertEquals(RangoEnCache.SinDato, decodificarRango(codificarRango(huella, 30 to 30), "$huella-2"))
+        assertEquals(RangoEnCache.SinDato, decodificarRango(codificarRango(huella, null, porError = true), "$huella-2"))
         assertEquals(RangoEnCache.SinDato, decodificarRango(null, huella))
     }
 
     @Test
     fun unRangoGuardadoRaroNoSeUsa() {
         val h = "h"
-        for (texto in listOf("h|", "h|30", "h|-30", "h|a-30", "h|30-b", "h|31-30", "h|0-30", "30-30", "")) {
+        for (texto in listOf("h|", "h|30", "h|-30", "h|a-30", "h|30-b", "h|31-30", "h|0-30", "30-30", "", "h|auto-", "h|error")) {
             assertEquals(texto, RangoEnCache.SinDato, decodificarRango(texto, h))
         }
     }
@@ -98,56 +103,89 @@ class PoliticasTest {
         assertNull(elegirRangoFps(emptyList(), fijo30 = true))
     }
 
+    @Test
+    fun elAutoPorErrorEsPegajosoYLaValidacionNoLoSobrescribe() {
+        // El caso del hallazgo: la cámara anuncia 30-30 pero la sesión lo rechaza (STREAM_CONFIG). Se guarda
+        // «auto-error» y en el proceso siguiente no se valida: si se validara, volvería a guardar 30-30 y una apertura
+        // de cada dos repetiría el error y el reenlace.
+        assertFalse(debeValidarRangoFps(RangoEnCache.AutoPorError, sinFpsFijo = false, yaValidado = false))
+        // En el mismo proceso, tras el rechazo, tampoco.
+        assertFalse(debeValidarRangoFps(RangoEnCache.Fijo(30, 30), sinFpsFijo = true, yaValidado = false))
+        // Lo guardado de la manera normal sí, una vez por proceso.
+        assertTrue(debeValidarRangoFps(RangoEnCache.Fijo(30, 30), sinFpsFijo = false, yaValidado = false))
+        assertTrue(debeValidarRangoFps(RangoEnCache.Auto, sinFpsFijo = false, yaValidado = false))
+        assertFalse(debeValidarRangoFps(RangoEnCache.Fijo(30, 30), sinFpsFijo = false, yaValidado = true))
+        // Calculado en este mismo enlace: no hay nada que confirmar.
+        assertFalse(debeValidarRangoFps(RangoEnCache.SinDato, sinFpsFijo = false, yaValidado = false))
+    }
+
     // ---- Estado de la cámara ----
 
     @Test
     fun abiertaLimpiaElErrorSinImportarElCodigo() {
-        assertEquals(AccionEstado.ABIERTA, reaccionEstado(true, 0, 2, fpsFijo = true).accion)
-        assertEquals(AccionEstado.ABIERTA, reaccionEstado(true, CameraState.ERROR_CAMERA_IN_USE, 0, fpsFijo = true).accion)
-        assertEquals(AccionEstado.NINGUNA, reaccionEstado(false, 0, 0, fpsFijo = true).accion)
+        assertEquals(AccionEstado.ABIERTA, reaccionEstado(OPEN, 0, 2, fpsFijo = true).accion)
+        assertEquals(AccionEstado.ABIERTA, reaccionEstado(OPEN, CameraState.ERROR_CAMERA_IN_USE, 0, fpsFijo = true).accion)
+        for (tipo in listOf(CameraState.Type.PENDING_OPEN, OPENING, CLOSING, CLOSED)) {
+            assertEquals(AccionEstado.NINGUNA, reaccionEstado(tipo, 0, 0, fpsFijo = true).accion)
+        }
     }
 
     @Test
     fun otraAppConLaCamaraAvisaYCameraXReintenta() {
         for (codigo in listOf(CameraState.ERROR_CAMERA_IN_USE, CameraState.ERROR_MAX_CAMERAS_IN_USE)) {
-            val r = reaccionEstado(false, codigo, 0, fpsFijo = true)
-            assertEquals(AccionEstado.AVISO_RECUPERABLE, r.accion)
-            assertEquals("Otra app está usando la cámara", r.mensaje)
+            for (tipo in listOf(CameraState.Type.PENDING_OPEN, OPENING)) {
+                val r = reaccionEstado(tipo, codigo, 0, fpsFijo = true)
+                assertEquals(AccionEstado.AVISO_RECUPERABLE, r.accion)
+                assertEquals("Otra app está usando la cámara", r.mensaje)
+            }
         }
         // Un tropiezo recuperable no se avisa.
-        assertEquals(AccionEstado.NINGUNA, reaccionEstado(false, CameraState.ERROR_OTHER_RECOVERABLE_ERROR, 0, true).accion)
+        assertEquals(AccionEstado.NINGUNA, reaccionEstado(OPENING, CameraState.ERROR_OTHER_RECOVERABLE_ERROR, 0, true).accion)
     }
 
     @Test
     fun desactivadaONoMolestarSoloAvisan() {
-        val d = reaccionEstado(false, CameraState.ERROR_CAMERA_DISABLED, 0, fpsFijo = true)
+        val d = reaccionEstado(CLOSING, CameraState.ERROR_CAMERA_DISABLED, 0, fpsFijo = true)
         assertEquals(AccionEstado.AVISO, d.accion)
         assertTrue(d.mensaje!!.contains("desactivada"))
-        val n = reaccionEstado(false, CameraState.ERROR_DO_NOT_DISTURB_MODE_ENABLED, 0, fpsFijo = true)
+        val n = reaccionEstado(CLOSED, CameraState.ERROR_DO_NOT_DISTURB_MODE_ENABLED, 0, fpsFijo = true)
         assertEquals(AccionEstado.AVISO, n.accion)
         assertTrue(n.mensaje!!.contains("No molestar"))
     }
 
     @Test
     fun configuracionNoAceptadaVuelveSinFpsFijoUnaSolaVez() {
-        assertEquals(AccionEstado.REENLAZAR_SIN_FPS, reaccionEstado(false, CameraState.ERROR_STREAM_CONFIG, 0, fpsFijo = true).accion)
+        // Con FPS fijo se atiende ya, aunque CameraX lo esté reintentando (la misma configuración volvería a fallar).
+        assertEquals(AccionEstado.REENLAZAR_SIN_FPS, reaccionEstado(CLOSING, CameraState.ERROR_STREAM_CONFIG, 0, fpsFijo = true).accion)
+        assertEquals(AccionEstado.REENLAZAR_SIN_FPS, reaccionEstado(OPENING, CameraState.ERROR_STREAM_CONFIG, 0, fpsFijo = true).accion)
         // Ya sin FPS fijo: se trata como error crítico (reintentos y luego error).
-        assertEquals(AccionEstado.REENLAZAR, reaccionEstado(false, CameraState.ERROR_STREAM_CONFIG, 0, fpsFijo = false).accion)
-        assertEquals(AccionEstado.ERROR_FINAL, reaccionEstado(false, CameraState.ERROR_STREAM_CONFIG, 2, fpsFijo = false).accion)
+        assertEquals(AccionEstado.REENLAZAR, reaccionEstado(CLOSED, CameraState.ERROR_STREAM_CONFIG, 0, fpsFijo = false).accion)
+        assertEquals(AccionEstado.ERROR_FINAL, reaccionEstado(CLOSED, CameraState.ERROR_STREAM_CONFIG, 2, fpsFijo = false).accion)
     }
 
     @Test
     fun errorCriticoReintentaDosVecesConEsperaCrecienteYLuegoFalla() {
         for (codigo in listOf(CameraState.ERROR_CAMERA_FATAL_ERROR, CameraState.ERROR_CAMERA_REMOVED)) {
-            val r0 = reaccionEstado(false, codigo, 0, fpsFijo = false)
-            val r1 = reaccionEstado(false, codigo, 1, fpsFijo = false)
-            val r2 = reaccionEstado(false, codigo, 2, fpsFijo = false)
+            val r0 = reaccionEstado(CLOSING, codigo, 0, fpsFijo = false)
+            val r1 = reaccionEstado(CLOSED, codigo, 1, fpsFijo = false)
+            val r2 = reaccionEstado(CLOSING, codigo, 2, fpsFijo = false)
             assertEquals(AccionEstado.REENLAZAR, r0.accion)
             assertEquals(500L, r0.esperaMs)
             assertEquals(AccionEstado.REENLAZAR, r1.accion)
             assertEquals(1_000L, r1.esperaMs)
             assertEquals(AccionEstado.ERROR_FINAL, r2.accion)
             assertEquals("La cámara falló. Si sigue, reinicia el celular.", r2.mensaje)
+        }
+    }
+
+    @Test
+    fun conOpeningOPendingOpenUnErrorCriticoNoSeReintentaPorqueCameraXYaLoHace() {
+        for (tipo in listOf(OPENING, CameraState.Type.PENDING_OPEN)) {
+            for (codigo in listOf(CameraState.ERROR_CAMERA_FATAL_ERROR, CameraState.ERROR_STREAM_CONFIG)) {
+                assertEquals(AccionEstado.NINGUNA, reaccionEstado(tipo, codigo, 0, fpsFijo = false).accion)
+                // Ni siquiera con los reintentos gastados: todavía no se rindió.
+                assertEquals(AccionEstado.NINGUNA, reaccionEstado(tipo, codigo, 2, fpsFijo = false).accion)
+            }
         }
     }
 
@@ -162,15 +200,25 @@ class PoliticasTest {
     // ---- Vigilante ----
 
     @Test
-    fun elVigilanteReenlazaUnaVezSiConLaPantallaAlFrenteNoSaleNingunCuadro() {
+    fun elVigilanteReenlazaUnaVezSiConLaCamaraAbiertaYLaPantallaAlFrenteNoSaleNingunCuadro() {
         assertTrue(vigilanteDebeReenlazar(true, true, 0, 2_000, yaReenlazo = false, enPausa = false, errorRecuperable = false))
-        // Salió algún cuadro, falta tiempo, ya lo hizo, en pausa, en segundo plano, sin enlace u otra app con la cámara: no.
+        // Salió algún cuadro, falta tiempo desde que abrió, ya lo hizo, en pausa, en segundo plano u otra app con la
+        // cámara: no.
         assertFalse(vigilanteDebeReenlazar(true, true, 1, 2_000, false, false, false))
         assertFalse(vigilanteDebeReenlazar(true, true, 0, 1_999, false, false, false))
         assertFalse(vigilanteDebeReenlazar(true, true, 0, 5_000, yaReenlazo = true, enPausa = false, errorRecuperable = false))
         assertFalse(vigilanteDebeReenlazar(true, true, 0, 5_000, yaReenlazo = false, enPausa = true, errorRecuperable = false))
         assertFalse(vigilanteDebeReenlazar(false, true, 0, 5_000, false, false, false))
-        assertFalse(vigilanteDebeReenlazar(true, false, 0, 5_000, false, false, false))
         assertFalse(vigilanteDebeReenlazar(true, true, 0, 5_000, yaReenlazo = false, enPausa = false, errorRecuperable = true))
+        // La cámara todavía no abre (en frío, en gama baja, abrir puede tardar más que el plazo): no se reenlaza
+        // aunque desde el enlace o desde ON_RESUME ya hayan pasado más de 2 s; el plazo cuenta desde OPEN.
+        assertFalse(vigilanteDebeReenlazar(true, abierta = false, cuadrosNuevos = 0, msDesdeAbierta = 5_000, false, false, false))
+    }
+
+    private companion object {
+        val OPEN = CameraState.Type.OPEN
+        val OPENING = CameraState.Type.OPENING
+        val CLOSING = CameraState.Type.CLOSING
+        val CLOSED = CameraState.Type.CLOSED
     }
 }
