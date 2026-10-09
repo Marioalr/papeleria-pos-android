@@ -35,10 +35,19 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    // Para pedir el permiso de la cámara desde la pantalla (rememberLauncherForActivityResult).
+    implementation(libs.androidx.activity.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.core)
+    // Pruebas de la interfaz del escáner con el controlador de muestra.
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.compose.ui.test.manifest)
+    // ui-test trae Espresso 3.5.0, que busca InputManager.getInstance por reflexión y en API 37 ya no existe;
+    // la 3.7.0 usa getSystemService.
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }
