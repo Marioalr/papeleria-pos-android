@@ -1,5 +1,6 @@
-# Compila la app, corre las pruebas de la JVM y deja el APK de prueba como artefacto de la corrida. Con una etiqueta
-# v* (p. ej. v0.1.0) además crea la versión en GitHub con el APK adjunto (docs/plan.md, «Versiones»).
+# Compila la app, corre las pruebas de la JVM y deja los APK como artefacto de la corrida: el de depuración y, si están
+# los secretos de la firma (FIRMA_*), el de release firmado, que es el que sirve para medir. Con una etiqueta v* (p. ej.
+# v0.1.0) además crea la versión en GitHub con el APK adjunto (docs/plan.md, «Versiones»).
 name: Android
 
 on:
@@ -15,7 +16,9 @@ permissions:
 jobs:
   compilar:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
+    env:
+      FIRMA_ALMACEN_BASE64: ${{ secrets.FIRMA_ALMACEN_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,21 +32,37 @@ jobs:
       - name: Pruebas de la JVM
         run: ./gradlew --no-daemon test
 
-      - name: APK de prueba
-        run: ./gradlew --no-daemon assembleDebug
+      - name: APK de depuración
+        run: ./gradlew --no-daemon :app:assembleDebug
 
-      - name: Nombre del APK
+      - name: APK de release firmado
+        if: env.FIRMA_ALMACEN_BASE64 != ''
+        env:
+          FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
+          FIRMA_ALIAS: ${{ secrets.FIRMA_ALIAS }}
+        run: |
+          export FIRMA_ALMACEN="$RUNNER_TEMP/firma.p12"
+          echo "$FIRMA_ALMACEN_BASE64" | base64 -d > "$FIRMA_ALMACEN"
+          ./gradlew --no-daemon :app:assembleRelease
+          rm -f "$FIRMA_ALMACEN"
+
+      - name: Nombres de los APK
         id: apk
         run: |
-          version=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
-          nombre="escaner-${version}-${GITHUB_SHA::7}.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$nombre"
-          echo "nombre=$nombre" >> "$GITHUB_OUTPUT"
+          version=$(grep -oP 'val versionApp = "\K[^"]+' app/build.gradle.kts)
+          base="escaner-${version}-${GITHUB_SHA::7}"
+          cp app/build/outputs/apk/debug/app-debug.apk "$base-depuracion.apk"
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk "$base.apk"
+            echo "publicar=$base.apk" >> "$GITHUB_OUTPUT"
+          else
+            echo "publicar=$base-depuracion.apk" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
           name: escaner-apk
-          path: ${{ steps.apk.outputs.nombre }}
+          path: escaner-*.apk
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
@@ -60,4 +79,4 @@ jobs:
         run: |
           # Las notas son la sección de esta versión en CAMBIOS.md («## 0.1.0 …» hasta la siguiente «## »).
           awk -v v="## ${GITHUB_REF_NAME#v}" 'index($0, v) == 1 { f = 1; next } /^## / { if (f) exit } f' CAMBIOS.md > notas.md
-          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.nombre }}" --title "$GITHUB_REF_NAME" --notes-file notas.md --verify-tag
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.publicar }}" --title "$GITHUB_REF_NAME" --notes-file notas.md --verify-tag

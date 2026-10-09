@@ -128,7 +128,9 @@ class ControladorCamara(
     ) { Thread(it, "escaner-analisis") }
     private val senales = SenalesCamara()
 
-    @Volatile private var camara: Camera? = null
+    /** La cámara enlazada ahora (null si no hay): las pruebas de estrés la usan para el zoom y la linterna directos. */
+    @Volatile var camara: Camera? = null
+        private set
     private var proveedor: ProcessCameraProvider? = null
     private var sesion: SessionConfig? = null
     private var ciclo: CicloCamara? = null

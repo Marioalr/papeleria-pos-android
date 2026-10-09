@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -8,6 +10,24 @@ plugins {
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
 val versionApp = "0.1.0"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
+
+// La llave de los APK de prueba (docs/plan.md, «Versiones»): en GitHub Actions llega por variables de entorno (de los
+// secretos FIRMA_*); en la PC, de ~/.config/papeleria-pos-android/firma.properties. Sin ella el release sale sin firmar.
+// La llave y su clave nunca van al repositorio.
+val firma: Map<String, String>? = run {
+    val almacen = providers.environmentVariable("FIRMA_ALMACEN").orNull
+    if (almacen != null) {
+        mapOf(
+            "almacen" to almacen,
+            "clave" to providers.environmentVariable("FIRMA_CLAVE").get(),
+            "alias" to providers.environmentVariable("FIRMA_ALIAS").get(),
+        )
+    } else {
+        val archivo = File(System.getProperty("user.home"), ".config/papeleria-pos-android/firma.properties")
+        if (!archivo.isFile) null else Properties().apply { archivo.inputStream().use(::load) }
+            .let { p -> listOf("almacen", "clave", "alias").associateWith { p.getProperty(it) ?: error("Falta «$it» en $archivo") } }
+    }
+}
 
 // -PconX86: agrega x86_64 a benchmarkRelease (el release solo trae ARM; el emulador x86_64 corre ARM traducido, más lento).
 val conX86 = providers.gradleProperty("conX86").isPresent
@@ -25,9 +45,20 @@ android {
         // El commit con que se armó, para la sesión de prueba (docs/pruebas-en-tienda.md).
         buildConfigField("String", "COMMIT", "\"${commitActual()}\"")
     }
+    signingConfigs {
+        if (firma != null) {
+            create("prueba") {
+                storeFile = file(firma.getValue("almacen"))
+                storePassword = firma.getValue("clave")
+                keyAlias = firma.getValue("alias")
+                keyPassword = firma.getValue("clave")
+            }
+        }
+    }
     buildTypes {
         release {
             optimization { enable = true }
+            if (firma != null) signingConfig = signingConfigs.getByName("prueba")
             // La fábrica busca el controlador de la cámara por nombre (fabrica/Fabrica.kt).
             proguardFiles("proguard-rules.pro")
             ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
