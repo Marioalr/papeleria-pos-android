@@ -36,6 +36,10 @@ class Observacion {
     var dy = 0f
     /** Largo del código / ancho de la franja. */
     var largoRelativo = 0f
+    /**
+     * Las barras llegan al borde de la región visible. Si toca un solo lado ([bordeX]/[bordeY]) se pide moverse hacia
+     * ese lado; si no (toca ambos), alejarse.
+     */
     var cortado = false
     /** Toca el borde de la región visible por un solo lado (−1 izquierda/arriba, +1 derecha/abajo, 0 ninguno). */
     var bordeX = 0
@@ -44,7 +48,7 @@ class Observacion {
     var moduloPx = 0f
     /** 0 a 1; −1 = desconocido. */
     var nitidez = -1f
-    /** Luminancia media del centro de la imagen (0 a 255); −1 = desconocida. */
+    /** Luminancia media del centro de la imagen (0 a 255); −1 = desconocida. Cuenta aunque no haya candidato. */
     var brillo = -1f
     var saturados = 0f
     /** `LENS_FOCUS_DISTANCE / LENS_INFO_MINIMUM_FOCUS_DISTANCE`; −1 = desconocido. */
@@ -67,16 +71,219 @@ class Observacion {
  * Decide la indicación con histéresis, suavizado y tiempo mínimo en pantalla para que no parpadee
  * (docs/escaner.md, «Umbrales»).
  *
- * CONTRATO (implementación pendiente, se porta del prototipo de la investigación).
+ * Prioridad (gana la primera que aplica): REFLEJO, MAS_LUZ, ALEJATE, dirección (IZQUIERDA/DERECHA/ARRIBA/ABAJO),
+ * ACERCATE, ENFOCANDO/QUIETO, LEYENDO; sin candidato, APUNTA. LEIDO entra de inmediato.
+ *
+ * - Una condición nueva se muestra cuando dura [UmbralesGuia.cuadrosParaMostrar] cuadros seguidos Y
+ *   [UmbralesGuia.msParaMostrar]: lo primero filtra el ruido a pocos cuadros por segundo y lo segundo a muchos.
+ * - Lo que se muestra se queda [UmbralesGuia.msEnPantalla], salvo que entre una de mayor prioridad.
+ * - Sin pistas de dirección en los primeros [UmbralesGuia.msGraciaCandidatoNuevo] de un candidato: el enfoque y el
+ *   zoom todavía se acomodan. La condición sí se va confirmando, así aparece justo al terminar la gracia.
+ * - MAS_LUZ no depende del candidato (a oscuras el localizador no ve nada) y su confirmación es la propia espera de
+ *   [UmbralesGuia.msOscuroParaPedirLuz].
+ *
+ * Sin asignaciones por cuadro.
  */
 class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
     /** La indicación que se muestra ahora. */
     var actual: Indicacion = Indicacion.APUNTA
         private set
 
-    fun actualizar(o: Observacion): Indicacion = TODO("Se porta del prototipo")
+    // Suavizado exponencial.
+    private var iniciado = false
+    private var eLargo = 0f
+    private var eDx = 0f
+    private var eDy = 0f
+    private var eNitidez = -1f
+    private var eModulo = 0f
 
-    fun reiniciar(): Unit = TODO("Se porta del prototipo")
+    // Banderas con histéresis.
+    private var chico = false
+    private var grande = false
+    private var fueraX = 0
+    private var fueraY = 0
+    private var borroso = false
+    private var reflejo = false
+    private var oscuro = false
+    private var moviendo = false
+    private var oscuroDesde = 0L
+
+    private var hayCandidato = false
+    private var candidatoDesde = 0L
+    private var perdidos = 0
+
+    private var mostradaDesde = 0L
+    private var pendiente = Indicacion.APUNTA
+    private var cuadrosPendiente = 0
+    private var pendienteDesde = 0L
+
+    fun actualizar(o: Observacion): Indicacion {
+        val u = umbrales
+        val t = o.nanos
+        if (o.leido) {
+            perdidos = 0
+            return mostrar(Indicacion.LEIDO, t)
+        }
+
+        val estabaOscuro = oscuro
+        oscuro = o.brillo >= 0f && bajo(oscuro, o.brillo, u.oscuroEntra, u.oscuroSale)
+        if (oscuro && !estabaOscuro) oscuroDesde = t
+        val pideLuz = oscuro && t - oscuroDesde >= u.msOscuroParaPedirLuz * MS
+
+        if (!o.candidato) {
+            perdidos++
+            // Tolera pérdidas breves: el motor o el localizador fallan un cuadro aunque el código siga ahí.
+            if (hayCandidato && perdidos < u.cuadrosPerdidosParaReiniciar) return actual
+            olvidarCandidato()
+            return if (pideLuz) mostrarSiPuede(Indicacion.MAS_LUZ, t) else proponer(Indicacion.APUNTA, t, false)
+        }
+        perdidos = 0
+        if (!hayCandidato) {
+            hayCandidato = true; candidatoDesde = t
+        }
+        suavizar(o)
+
+        reflejo = alto(reflejo, o.saturados, u.reflejoEntra, u.reflejoSale)
+        grande = alto(grande, eLargo, u.grandeEntra, u.grandeSale)
+        val cortadoAmbos = o.cortado && o.bordeX == 0 && o.bordeY == 0
+        chico = when {
+            // Con buena nitidez el módulo manda; borroso, las corridas no son confiables y se usa el largo.
+            eNitidez >= u.nitidezConfiable && eModulo > 0f -> bajo(chico, eModulo, u.moduloEntra, u.moduloSale)
+            eLargo > 0f -> bajo(chico, eLargo, u.chicoEntra, u.chicoSale)
+            else -> false
+        }
+        fueraX = tres(fueraX, eDx, u.descentradoEntra, u.descentradoSale)
+        fueraY = tres(fueraY, eDy, u.descentradoEntra, u.descentradoSale)
+        // Tocar un solo borde ya dice hacia dónde: el código sigue del otro lado.
+        if (o.bordeX != 0) fueraX = o.bordeX
+        if (o.bordeY != 0) fueraY = o.bordeY
+        borroso = eNitidez >= 0f && bajo(borroso, eNitidez, u.borrosoEntra, u.borrosoSale)
+        moviendo = alto(moviendo, o.movimiento, u.movimientoEntra, u.movimientoSale)
+        // Borroso y demasiado cerca: la lente ya no alcanza a enfocar; acercarse más no sirve.
+        val muyCerca = borroso && (
+            (o.proporcionEnfoque >= 0f && o.proporcionEnfoque >= u.enfoqueCercano) ||
+                (o.desenfocado && eLargo > LARGO_DESENFOCADO_CERCA) || eLargo > LARGO_BORROSO_CERCA ||
+                eModulo > MODULO_BORROSO_CERCA
+            )
+
+        val h = when {
+            reflejo -> Indicacion.REFLEJO
+            pideLuz -> Indicacion.MAS_LUZ
+            grande || cortadoAmbos || muyCerca -> Indicacion.ALEJATE
+            fueraX != 0 || fueraY != 0 ->
+                if (fueraX != 0 && (fueraY == 0 || abs(eDx) >= abs(eDy))) {
+                    if (fueraX > 0) Indicacion.DERECHA else Indicacion.IZQUIERDA
+                } else {
+                    if (fueraY > 0) Indicacion.ABAJO else Indicacion.ARRIBA
+                }
+            chico && o.zoomAlTope -> Indicacion.ACERCATE
+            borroso && o.enfocando -> Indicacion.ENFOCANDO
+            borroso || moviendo -> Indicacion.QUIETO
+            else -> Indicacion.LEYENDO
+        }
+        if (h == Indicacion.MAS_LUZ) return mostrarSiPuede(h, t)
+        val enGracia = t - candidatoDesde < u.msGraciaCandidatoNuevo * MS
+        return proponer(h, t, enGracia && esDireccion(h))
+    }
+
+    fun reiniciar() {
+        olvidarCandidato()
+        oscuro = false; oscuroDesde = 0L; perdidos = 0
+        actual = Indicacion.APUNTA; mostradaDesde = 0L
+        pendiente = Indicacion.APUNTA; cuadrosPendiente = 0; pendienteDesde = 0L
+    }
+
+    /** Lo que depende del código a la vista; la luz y lo que se muestra se conservan. */
+    private fun olvidarCandidato() {
+        hayCandidato = false; iniciado = false
+        eLargo = 0f; eDx = 0f; eDy = 0f; eNitidez = -1f; eModulo = 0f
+        chico = false; grande = false; fueraX = 0; fueraY = 0; borroso = false; reflejo = false; moviendo = false
+    }
+
+    private fun suavizar(o: Observacion) {
+        if (!iniciado) {
+            eLargo = o.largoRelativo; eDx = o.dx; eDy = o.dy; eNitidez = o.nitidez; eModulo = o.moduloPx
+            iniciado = true
+            return
+        }
+        val a = umbrales.alfa
+        eLargo += a * (o.largoRelativo - eLargo)
+        eDx += a * (o.dx - eDx)
+        eDy += a * (o.dy - eDy)
+        // −1 y 0 son «desconocido»: no deben arrastrar el promedio.
+        if (o.nitidez >= 0f) eNitidez = if (eNitidez < 0f) o.nitidez else eNitidez + a * (o.nitidez - eNitidez)
+        if (o.moduloPx > 0f) eModulo = if (eModulo <= 0f) o.moduloPx else eModulo + a * (o.moduloPx - eModulo)
+    }
+
+    /** Confirma [h] por cuadros y por tiempo; [bloqueada] la sigue confirmando pero no la deja salir todavía. */
+    private fun proponer(h: Indicacion, t: Long, bloqueada: Boolean): Indicacion {
+        if (h == actual) {
+            cuadrosPendiente = 0
+            return actual
+        }
+        if (h == pendiente && cuadrosPendiente > 0) {
+            cuadrosPendiente++
+        } else {
+            pendiente = h; cuadrosPendiente = 1; pendienteDesde = t
+        }
+        val u = umbrales
+        val confirmada = cuadrosPendiente >= u.cuadrosParaMostrar && t - pendienteDesde >= u.msParaMostrar * MS
+        if (!confirmada || bloqueada) return actual
+        return mostrarSiPuede(h, t)
+    }
+
+    private fun mostrarSiPuede(h: Indicacion, t: Long): Indicacion {
+        if (h == actual) return actual
+        if (prioridad(h) > prioridad(actual) || t - mostradaDesde >= umbrales.msEnPantalla * MS) return mostrar(h, t)
+        return actual
+    }
+
+    private fun mostrar(h: Indicacion, t: Long): Indicacion {
+        // LEIDO reinicia su tiempo en pantalla con cada lectura.
+        if (h != actual || h == Indicacion.LEIDO) {
+            actual = h; mostradaDesde = t
+        }
+        cuadrosPendiente = 0
+        return actual
+    }
+
+    private companion object {
+        const val MS = 1_000_000L
+        // Señales de «demasiado cerca para enfocar» cuando no hay distancia de enfoque (equipos LIMITED/LEGACY).
+        const val LARGO_DESENFOCADO_CERCA = 0.6f
+        const val LARGO_BORROSO_CERCA = 0.75f
+        const val MODULO_BORROSO_CERCA = 7f
+
+        fun prioridad(i: Indicacion): Int = when (i) {
+            Indicacion.LEIDO -> 9
+            Indicacion.REFLEJO -> 8
+            Indicacion.MAS_LUZ -> 7
+            Indicacion.ALEJATE -> 6
+            Indicacion.IZQUIERDA, Indicacion.DERECHA, Indicacion.ARRIBA, Indicacion.ABAJO -> 5
+            Indicacion.ACERCATE -> 4
+            Indicacion.ENFOCANDO, Indicacion.QUIETO -> 3
+            Indicacion.LEYENDO -> 2
+            Indicacion.APUNTA -> 1
+        }
+
+        fun esDireccion(i: Indicacion) = i == Indicacion.IZQUIERDA || i == Indicacion.DERECHA ||
+            i == Indicacion.ARRIBA || i == Indicacion.ABAJO
+
+        fun abs(v: Float) = if (v < 0f) -v else v
+
+        /** Se enciende cuando [v] pasa de [entra]; se apaga solo cuando baja de [sale] (entra > sale). */
+        fun alto(activo: Boolean, v: Float, entra: Float, sale: Float) = if (activo) v > sale else v > entra
+
+        /** Se enciende cuando [v] baja de [entra]; se apaga solo cuando sube de [sale] (entra < sale). */
+        fun bajo(activo: Boolean, v: Float, entra: Float, sale: Float) = if (activo) v < sale else v < entra
+
+        /** −1/0/+1 con banda muerta: entra con |v| > [entra], sale con |v| < [sale]. */
+        fun tres(estado: Int, v: Float, entra: Float, sale: Float): Int = when {
+            estado > 0 -> if (v < sale) (if (v < -entra) -1 else 0) else 1
+            estado < 0 -> if (v > -sale) (if (v > entra) 1 else 0) else -1
+            else -> if (v > entra) 1 else if (v < -entra) -1 else 0
+        }
+    }
 }
 
 /** Umbrales de la guía: puntos de partida que se calibran con los celulares de la tienda. */
