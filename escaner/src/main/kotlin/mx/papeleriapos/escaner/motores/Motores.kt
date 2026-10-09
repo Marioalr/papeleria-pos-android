@@ -14,6 +14,7 @@ import java.nio.ByteBuffer
  * @throws IllegalArgumentException si ninguna de las simbologías la sabe leer el motor.
  */
 fun crearMotor(motor: Motor, simbologias: Set<Simbologia>): MotorDeLectura = when (motor) {
+    Motor.AUTOMATICO -> MotorAutomatico(simbologias)
     Motor.ML_KIT -> MotorMlKit(simbologias)
     Motor.ZXING_CPP -> MotorZxingCpp(simbologias)
 }

@@ -69,11 +69,14 @@ internal class Analizador(
     /** Lo escribe el observador de la linterna (hilo principal). */
     @Volatile var linternaEncendida = false
 
+    /** La pantalla dejó de verse (hilo principal): los cuadros que sigan llegando se sueltan sin analizar. */
+    @Volatile var detenido = false
+
     private var cerrado = false
 
     // Piezas.
     private var motor: MotorDeLectura? = null
-    private var motorActual = Motor.ML_KIT
+    private var motorActual = Motor.AUTOMATICO
     private var simbologiasActuales: Set<Simbologia> = emptySet()
     private var localizador: Localizador? = null
     private var ladoLocalizador = 0
@@ -154,7 +157,7 @@ internal class Analizador(
 
     override fun analyze(imagen: ImageProxy) {
         try {
-            if (!cerrado) procesar(imagen)
+            if (!cerrado && !detenido) procesar(imagen)
         } catch (e: Throwable) {
             // Un error de análisis (o una biblioteca nativa que no cargó) no debe tumbar el POS: se avisa y se sigue.
             if (e is VirtualMachineError) throw e
@@ -202,16 +205,8 @@ internal class Analizador(
         val ancho = imagen.width
         val alto = imagen.height
 
-        // 1) El motor lee la franja (o lo visible, para comparar).
-        Trace.beginSection("escaner.leer")
-        val resultado = try {
-            lector.leer(CuadroY(y, pasoFila, ancho, alto, t.rotacion, if (cfg.recortarFranja) regionFranja else regionVisible, imagen))
-        } finally {
-            Trace.endSection()
-        }
-        observadorMotor?.invoke(resultado, t)
-
-        // 2) El localizador mira el cuadro COMPLETO: tiene que poder guiar hacia la franja.
+        // 1) El localizador mira el cuadro COMPLETO (~0.2 ms): tiene que poder guiar hacia la franja, y le dice al motor
+        // automático si vale la pena su respaldo.
         Trace.beginSection("escaner.localizar")
         val inicioLocalizar = SystemClock.elapsedRealtimeNanos()
         val loc = try {
@@ -221,6 +216,21 @@ internal class Analizador(
         }
         val nanosLocalizar = SystemClock.elapsedRealtimeNanos() - inicioLocalizar
         medirLuz(y, pasoFila)
+        val pareceCodigo = pareceCodigo(loc)
+
+        // 2) El motor lee la franja (o lo visible, para comparar).
+        Trace.beginSection("escaner.leer")
+        val resultado = try {
+            lector.leer(
+                CuadroY(
+                    y, pasoFila, ancho, alto, t.rotacion, if (cfg.recortarFranja) regionFranja else regionVisible, imagen,
+                    regionVisible = regionVisible, codigoProbable = pareceCodigo || hayCandidato,
+                ),
+            )
+        } finally {
+            Trace.endSection()
+        }
+        observadorMotor?.invoke(resultado, t)
 
         // 3) Todo a la región visible.
         val leidas: List<Pair<Lectura, Caja?>> =
@@ -234,7 +244,8 @@ internal class Analizador(
         val es1D = loc.encontrado && loc.tipo == 1
         verificadosSeguidos = if (es1D && loc.verificado) verificadosSeguidos + 1 else 0
         var caja: Caja? = masCercana(leidas)
-        if (caja == null) caja = masCercanaCaja(potenciales)
+        // ML Kit también ve «potenciales» en hojas rayadas y en texto: solo cuentan si el localizador ve barras ahí.
+        if (caja == null && pareceCodigo) caja = masCercanaCaja(potenciales)?.takeIf { cercaDe(it, loc, t) }
         var delLocalizador = false
         if (caja == null && verificadosSeguidos >= CUADROS_LOCALIZADOR) {
             caja = cajaLocalizador(loc, t)
@@ -295,7 +306,9 @@ internal class Analizador(
                 inicioReanudar > 0L -> (ahora - inicioReanudar) / NANOS_POR_MS
                 else -> -1L
             }
-            evento = EventoLectura(aceptada, ms, ArrayList(indicaciones), motorActual, o.moduloPx, zoomActual, linternaEncendida)
+            evento = EventoLectura(
+                aceptada, ms, ArrayList(indicaciones), motorActual, resultado.deRespaldo, o.moduloPx, zoomActual, linternaEncendida,
+            )
             ultimoEvento = evento
             eventos.tryEmit(evento)
             leidoHasta = ahora + NANOS_LEIDO
@@ -558,6 +571,10 @@ internal class Analizador(
         if (!pausado) primerCuadro = false
         reiniciarSeguimiento()
         if (zoomActual != zoomInicial) zoomActual = zoomInicial
+        // Corre después del último cuadro en camino: lo que ese cuadro haya publicado se corrige aquí.
+        estado.update {
+            it.copy(fase = if (pausado) Fase.PAUSADO else Fase.ABRIENDO, indicacion = Indicacion.APUNTA, cajaCodigo = null, linterna = false)
+        }
     }
 
     fun liberar() {
@@ -707,6 +724,13 @@ internal class Analizador(
             punto[1] >= caja.arriba - hy && punto[1] <= caja.abajo + hy
     }
 
+    /**
+     * El localizador ve barras con la proporción de oscuro y claro de un código, aunque esté borroso (con desenfoque se
+     * pierden transiciones y la verificación completa falla). Las hojas rayadas y el texto no la cumplen.
+     */
+    private fun pareceCodigo(loc: Localizacion) =
+        loc.encontrado && loc.tipo == 1 && (loc.verificado || loc.oscuroClaro in OSCURO_CLARO_MIN..OSCURO_CLARO_MAX)
+
     private fun esPista(i: Indicacion) = i != Indicacion.APUNTA && i != Indicacion.LEYENDO && i != Indicacion.LEIDO
 
     /** Tras volver a abrir o reanudar, un error se vuelve a avisar. */
@@ -747,6 +771,8 @@ internal class Analizador(
         const val MUESTRAS_LUZ = 2000f
         const val BORDE_PX = 4f
         const val CUADROS_LOCALIZADOR = 2
+        const val OSCURO_CLARO_MIN = 0.35f
+        const val OSCURO_CLARO_MAX = 2.8f
         const val MAX_INDICACIONES = 32
     }
 }

@@ -23,6 +23,8 @@ data class ResultadoMotor(
     val potencialesBuffer: List<FloatArray>,
     /** Lo que tardó el motor en este cuadro, en nanosegundos (sin contar el recorte). */
     val nanos: Long,
+    /** Lo leyó el motor de respaldo (ML Kit dentro del automático). */
+    val deRespaldo: Boolean = false,
 ) {
     companion object {
         val VACIO = ResultadoMotor(emptyList(), emptyList(), 0L)

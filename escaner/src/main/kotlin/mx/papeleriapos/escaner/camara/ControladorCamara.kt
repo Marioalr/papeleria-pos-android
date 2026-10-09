@@ -148,8 +148,11 @@ class ControladorCamara(
 
     private val observadorCiclo = LifecycleEventObserver { _, evento ->
         when (evento) {
+            Lifecycle.Event.ON_START -> analizador.detenido = false
             Lifecycle.Event.ON_STOP -> {
-                // CameraX suelta la cámara (y la linterna); al volver, el primer cuadro marca que ya escanea.
+                // CameraX suelta la cámara (y la linterna); al volver, el primer cuadro marca que ya escanea. Un cuadro
+                // que ya estaba en camino no debe publicar después de esto.
+                analizador.detenido = true
                 enAnalisis { analizador.alDetenerse() }
                 _estado.update {
                     it.copy(linterna = false, fase = if (it.fase == Fase.PAUSADO) Fase.PAUSADO else Fase.ABRIENDO, cajaCodigo = null)

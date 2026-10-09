@@ -49,6 +49,10 @@ fun commitActual(): String =
     }.standardOutput.asText.get().trim().ifEmpty { "desconocido" }
 
 dependencies {
+    constraints {
+        // CameraX pide 1.1.0 y androidx.test 1.2.0: con la resolución consistente, las pruebas no compilan si no se sube.
+        implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
+    }
     implementation(project(":escaner"))
     // Para la configuración de CameraX desde la Application y calentar el proveedor.
     implementation(libs.androidx.camera.camera2)

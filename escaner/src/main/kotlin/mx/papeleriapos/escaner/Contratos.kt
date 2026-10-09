@@ -14,6 +14,8 @@ import java.nio.ByteBuffer
 
 /** Los motores que pueden leer (docs/escaner.md, «Motores»). */
 enum class Motor(val nombre: String) {
+    /** zxing-cpp en cada cuadro y ML Kit de respaldo para los códigos difíciles. */
+    AUTOMATICO("Automático"),
     ML_KIT("ML Kit"),
     ZXING_CPP("zxing-cpp"),
 }
@@ -37,7 +39,7 @@ enum class Fase {
 
 /** Lo que hay que saber para depurar y para la sesión de prueba. */
 data class Diagnostico(
-    val motor: Motor = Motor.ML_KIT,
+    val motor: Motor = Motor.AUTOMATICO,
     val resolucion: String = "",
     val franjaPx: String = "",
     val cuadrosPorSegundo: Float = 0f,
@@ -61,6 +63,8 @@ data class EventoLectura(
     /** Indicaciones que se mostraron antes de leer, en orden. */
     val indicaciones: List<Indicacion>,
     val motor: Motor,
+    /** En el motor automático, lo leyó ML Kit (el respaldo) y no zxing-cpp. */
+    val porRespaldo: Boolean = false,
     val moduloPx: Float,
     val zoom: Float,
     val linterna: Boolean,
@@ -88,7 +92,7 @@ data class EstadoEscaner(
 
 /** Configuración del escáner; se puede cambiar en caliente con [ControladorEscaner.configurar]. */
 data class ConfigEscaner(
-    val motor: Motor = Motor.ML_KIT,
+    val motor: Motor = Motor.AUTOMATICO,
     val modo: Modo = Modo.VENTA,
     val simbologias: Set<Simbologia> = setOf(
         Simbologia.EAN_13, Simbologia.EAN_8, Simbologia.UPC_A, Simbologia.UPC_E, Simbologia.ITF,
@@ -154,6 +158,10 @@ class CuadroY(
     val rotacion: Int,
     val region: mx.papeleriapos.escaner.nucleo.Rectangulo,
     val proxy: androidx.camera.core.ImageProxy? = null,
+    /** Todo lo que se ve; el motor automático le da esto a ML Kit (ver [mx.papeleriapos.escaner.motores.MotorAutomatico]). */
+    val regionVisible: mx.papeleriapos.escaner.nucleo.Rectangulo = region,
+    /** El localizador (o los cuadros anteriores) dicen que hay un código: vale la pena el respaldo. */
+    val codigoProbable: Boolean = true,
 )
 
 /** Un decodificador. Se usa desde un solo hilo (el de análisis) y se cierra al terminar. */
