@@ -1,8 +1,12 @@
 package mx.papeleriapos.android
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.view.WindowInsets
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +36,26 @@ import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.camara.ControladorCamara
+import mx.papeleriapos.escaner.camara.Proporcion
+import mx.papeleriapos.escaner.camara.proporcionInicial
 import mx.papeleriapos.escaner.nucleo.Modo
+import kotlin.math.roundToInt
+
+/**
+ * Las listas de venta y conteo. Las de la app viven en el proceso ([delProceso]), no en la Activity: los atajos
+ * («Escanear venta», «Escanear conteo») recrean la tarea y el escaneo rápido es otra Activity, y lo leído no se pierde.
+ */
+class ListasCompartidas {
+    val venta = MutableStateFlow(ListaLecturas())
+    val conteo = MutableStateFlow(ListaLecturas())
+
+    fun de(modo: Modo): MutableStateFlow<ListaLecturas> = if (modo == Modo.VENTA) venta else conteo
+
+    companion object {
+        val delProceso = ListasCompartidas()
+    }
+}
 
 /**
  * El estado de la app de prueba: el controlador del escáner (uno por proceso de pantalla), los ajustes, las listas de
@@ -42,9 +65,10 @@ import mx.papeleriapos.escaner.nucleo.Modo
 class EscanerViewModel(
     app: Application,
     fabrica: (Context, ConfigEscaner) -> ControladorEscaner,
+    private val listas: ListasCompartidas = ListasCompartidas(),
 ) : AndroidViewModel(app) {
-    /** El que usa la app; las pruebas pasan un controlador de muestra. */
-    constructor(app: Application) : this(app, ::crearControlador)
+    /** El que usa la app (con las listas del proceso); las pruebas pasan un controlador de muestra. */
+    constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso)
 
     private val preferencias = PreferenciasEscaner(app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE))
     private val _config = MutableStateFlow(preferencias.leer())
@@ -52,9 +76,9 @@ class EscanerViewModel(
 
     val controlador: ControladorEscaner = fabrica(app, _config.value)
 
-    private val _venta = MutableStateFlow(ListaLecturas())
+    private val _venta = listas.venta
     val venta: StateFlow<ListaLecturas> = _venta.asStateFlow()
-    private val _conteo = MutableStateFlow(ListaLecturas())
+    private val _conteo = listas.conteo
     val conteo: StateFlow<ListaLecturas> = _conteo.asStateFlow()
 
     private val _sesion = MutableStateFlow<SesionPrueba?>(null)
@@ -114,6 +138,16 @@ class EscanerViewModel(
 
     fun cambiarModo(modo: Modo) = cambiarConfig(_config.value.copy(modo = modo))
 
+    /**
+     * Enlaza la cámara desde el `onCreate` de [actividad], antes de que haya interfaz (ver
+     * [ControladorCamara.enlazarTemprano]). [descuentoAbajoDp]: lo que la pantalla pone debajo del visor (la barra de
+     * pestañas), para estimar la proporción la primera vez; después se usa la que midió Compose.
+     */
+    fun enlazarTemprano(actividad: ComponentActivity, pantalla: String, descuentoAbajoDp: Int, pantallaCompleta: Boolean = false) {
+        val c = controlador as? ControladorCamara ?: return
+        c.enlazarTemprano(actividad, pantalla) { estimarVisor(actividad, descuentoAbajoDp, pantallaCompleta) }
+    }
+
     fun restablecerAjustes() = cambiarConfig(ConfigEscaner().copy(modo = _config.value.modo))
 
     // Lista de venta o conteo (la del modo actual)
@@ -154,4 +188,36 @@ class EscanerViewModel(
     override fun onCleared() {
         controlador.cerrar()
     }
+}
+
+/**
+ * La proporción del visor antes del primer layout: la ventana menos las barras del sistema y [descuentoAbajoDp]; con
+ * [pantallaCompleta], la ventana entera (el visor va detrás de las barras).
+ */
+internal fun estimarVisor(actividad: Activity, descuentoAbajoDp: Int, pantallaCompleta: Boolean): Proporcion? {
+    val densidad = actividad.resources.displayMetrics.density
+    val descuento = (descuentoAbajoDp * densidad).roundToInt()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val m = actividad.windowManager.currentWindowMetrics
+        val ancho = m.bounds.width()
+        val alto = m.bounds.height()
+        if (pantallaCompleta) return proporcionInicial(null, ancho, alto, 0, 0)
+        val barras = m.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+        return proporcionInicial(null, ancho, alto, barras.top, barras.bottom, descuento)
+    }
+    // API 24–29: el tamaño real de la pantalla y las barras de los recursos del sistema.
+    val tamano = android.graphics.Point()
+    @Suppress("DEPRECATION")
+    actividad.windowManager.defaultDisplay.getRealSize(tamano)
+    if (pantallaCompleta) return proporcionInicial(null, tamano.x, tamano.y, 0, 0)
+    return proporcionInicial(
+        null, tamano.x, tamano.y, dimensionDelSistema(actividad, "status_bar_height"),
+        dimensionDelSistema(actividad, "navigation_bar_height"), descuento,
+    )
+}
+
+@android.annotation.SuppressLint("DiscouragedApi", "InternalInsetResource")
+private fun dimensionDelSistema(actividad: Activity, nombre: String): Int {
+    val id = actividad.resources.getIdentifier(nombre, "dimen", "android")
+    return if (id > 0) actividad.resources.getDimensionPixelSize(id) else 0
 }

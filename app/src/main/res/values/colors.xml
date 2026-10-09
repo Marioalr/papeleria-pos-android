@@ -2,4 +2,6 @@
 <resources>
     <color name="fondo">#FFF7F9FB</color>
     <color name="primario">#FF1D5C7A</color>
+    <!-- La ventana antes del primer cuadro y la pantalla de inicio: negro como el visor, sin destello claro. -->
+    <color name="arranque">#FF000000</color>
 </resources>

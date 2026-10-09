@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La apertura rápida: el mosaico de Ajustes rápidos, el escaneo rápido y los atajos del ícono. -->
+<resources>
+    <!-- 18 caracteres o menos: es la etiqueta del mosaico. -->
+    <string name="mosaico_etiqueta">Escanear</string>
+    <string name="rapido_nombre">Escaneo rápido</string>
+    <string name="atajo_venta_corto">Venta</string>
+    <string name="atajo_venta_largo">Escanear venta</string>
+    <string name="atajo_conteo_corto">Conteo</string>
+    <string name="atajo_conteo_largo">Escanear conteo</string>
+</resources>
