@@ -44,6 +44,7 @@ import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.tema.LocalColoresEstado
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
 import mx.papeleriapos.android.ui.FilaInterruptor
+import mx.papeleriapos.android.ui.Opciones
 import mx.papeleriapos.android.ui.TituloSeccion
 import mx.papeleriapos.escaner.Motor
 
@@ -60,6 +61,7 @@ fun PantallaBanco(vm: BancoViewModel) {
         alCorrer = vm::correr,
         alCancelar = vm::cancelar,
         alExportar = { alcance.launch { vm.csv()?.let { Compartir.enviar(contexto, it, "Banco de pruebas ${e.clave}") } } },
+        alCambiarModo = vm::cambiarModo,
     )
 }
 
@@ -71,6 +73,7 @@ fun ContenidoBanco(
     alCorrer: () -> Unit,
     alCancelar: () -> Unit,
     alExportar: () -> Unit,
+    alCambiarModo: (ModoBanco) -> Unit = {},
 ) {
     LazyColumn(
         Modifier.fillMaxSize().testTag("pantalla-banco"),
@@ -78,6 +81,23 @@ fun ContenidoBanco(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
+            Opciones(
+                opciones = ModoBanco.entries,
+                elegida = e.modo,
+                etiqueta = { it.etiqueta },
+                alElegir = alCambiarModo,
+                habilitado = !e.corriendo,
+                modifier = Modifier.testTag("modo-banco"),
+            )
+        }
+        if (e.modo == ModoBanco.LIMITES) item {
+            Text(
+                "Para cada motor y cada condición (desenfoque, movido, reflejo, poca luz con ruido, tamaño, giro y " +
+                    "perspectiva) sube la dificultad en pasos y busca el último grado que lee en al menos 4 de 5 " +
+                    "variantes. Un EAN-13 de 3 px por módulo en 1280×720 girado 90°, como en vivo. Tarda varios minutos.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else item {
             Text(
                 "Dibuja ${e.escenas} escenas (EAN-13, internos, UPC-A, EAN-8, ITF-14 y Code 128 de 1.5 a 5 px por módulo, " +
                     "girados, borrosos, con ruido, poca luz, reflejo, y sin código) y las pasa por cada motor como si " +
@@ -125,11 +145,32 @@ fun ContenidoBanco(
                     enabled = e.motores.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).testTag("correr-banco"),
                 ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Correr banco")
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null); Spacer(Modifier.width(8.dp))
+                    Text(if (e.modo == ModoBanco.LIMITES) "Buscar límites" else "Correr banco")
                 }
             }
         }
-        if (e.resumenes.isNotEmpty()) {
+        if (e.modoResultado == ModoBanco.LIMITES && e.limites.isNotEmpty()) {
+            item {
+                TituloSeccion(if (e.cancelado) "Límites (cancelado a la mitad)" else "Límites")
+                Text(
+                    "El último grado que leyó en ≥ 80 % de las variantes; «≥» = leyó hasta el más difícil, «—» = ni el más " +
+                        "fácil. Región: ${e.regionUsada}.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TablaLimites(e.limites)
+            }
+            item {
+                Button(
+                    onClick = alExportar,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).padding(top = 8.dp).testTag("exportar-limites"),
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Exportar CSV")
+                }
+            }
+        }
+        if (e.modoResultado == ModoBanco.CATALOGO && e.resumenes.isNotEmpty()) {
             item {
                 TituloSeccion(if (e.cancelado) "Resultados (cancelado a la mitad)" else "Resultados")
                 Text(
@@ -202,6 +243,32 @@ private fun TablaResumen(resumenes: List<ResumenMotor>) {
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TablaLimites(limites: List<LimiteMotor>) {
+    val motores = limites.map { it.motor }.distinct()
+    val porCondicion = limites.groupBy { it.condicion }
+    Card(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Column(Modifier.padding(12.dp).testTag("tabla-limites")) {
+            Fila("", motores.map { it.nombre }, encabezado = true)
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            for ((condicion, filas) in porCondicion) {
+                Fila(
+                    "${condicion.etiqueta} (${condicion.unidad})",
+                    motores.map { m -> filas.firstOrNull { it.motor == m }?.let { CsvLimites.textoLimite(it) } ?: "—" },
+                )
+            }
+            for (l in limites.filter { it.error != null }.distinctBy { it.motor }) {
+                Text(
+                    "${l.motor.nombre}: ${l.error}",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
         }
     }

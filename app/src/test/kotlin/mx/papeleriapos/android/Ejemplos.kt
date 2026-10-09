@@ -7,6 +7,7 @@ import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.CodigoLeido
 import mx.papeleriapos.escaner.nucleo.Indicacion
 import mx.papeleriapos.escaner.nucleo.Simbologia
+import mx.papeleriapos.escaner.nucleo.Via
 
 /** Lecturas de ejemplo para las pruebas, como las entregaría el controlador. */
 object Ejemplos {
@@ -21,11 +22,13 @@ object Ejemplos {
         moduloPx: Float = 2.5f,
         zoom: Float = 1.5f,
         linterna: Boolean = false,
+        via: Via = Via.DIRECTA,
     ) = EventoLectura(
         aceptada = Aceptada(CodigoLeido(original, normalizado, simbologia, claves), Caja(0.2f, 0.4f, 0.8f, 0.6f), 0L, false),
         msDesdeCandidato = ms,
         indicaciones = indicaciones,
         motor = motor,
+        via = via,
         moduloPx = moduloPx,
         zoom = zoom,
         linterna = linterna,
