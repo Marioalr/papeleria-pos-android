@@ -1,0 +1,60 @@
+# Compila la app, corre las pruebas de la JVM y deja el APK de prueba como artefacto de la corrida. Con una etiqueta
+# v* (p. ej. v0.1.0) además crea la versión en GitHub con el APK adjunto (docs/plan.md, «Versiones»).
+name: Android
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Pruebas de la JVM
+        run: ./gradlew --no-daemon test
+
+      - name: APK de prueba
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Nombre del APK
+        id: apk
+        run: |
+          version=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          nombre="escaner-${version}-${GITHUB_SHA::7}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$nombre"
+          echo "nombre=$nombre" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: escaner-apk
+          path: ${{ steps.apk.outputs.nombre }}
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-pruebas
+          path: '**/build/reports/tests/'
+          retention-days: 14
+
+      - name: Versión en GitHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.nombre }}" --title "$GITHUB_REF_NAME" --notes-file CAMBIOS.md --verify-tag
