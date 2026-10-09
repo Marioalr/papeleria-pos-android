@@ -32,8 +32,10 @@ puede usar desde la app nativa o como biblioteca desde otra app ([plan](plan.md#
 La cámara entrega hasta 30 cuadros por segundo; el análisis toma siempre el más reciente y descarta los que llegan
 mientras trabaja (`STRATEGY_KEEP_ONLY_LATEST`), así nunca se atrasa.
 
-1. **Localizar** en el cuadro completo (~0.2 ms): dónde hay barras, su tamaño en px por módulo, nitidez, luz y reflejo.
-2. **Leer** solo la franja de la retícula con el motor (el recorte casi divide entre dos el tiempo de ML Kit).
+1. **Localizar** en el cuadro completo (~0.2 ms): dónde hay barras, su tamaño en px por módulo, nitidez, luz, reflejo y
+   el nivel que separa barras de espacios.
+2. **Leer** la franja de la retícula con el motor automático: zxing-cpp tal cual, zxing-cpp con el umbral del
+   localizador y, solo si el localizador ve un código que no sale, ML Kit ([motores](#motores)).
 3. **Validar y confirmar:** dígito verificador, consenso entre cuadros y el filtro de repetidos.
 4. **Guiar:** de lo localizado, lo que vio el motor y el enfoque sale una sola indicación, sin parpadeos.
 5. **Avisar:** el estado nuevo va a la pantalla; una lectura aceptada dispara el bip, la vibración y el verde.
@@ -61,14 +63,30 @@ Dibujar es multiplicar por el tamaño del visor.
 
 ## Motores
 
-- **ML Kit** (`com.google.mlkit:barcode-scanning` 17.3.0, incluido en la app): por defecto. Funciona sin internet desde
-  que se instala, lee todas las simbologías del POS y avisa de los códigos que ve pero no puede leer («potenciales»),
-  que sirven para guiar.
-- **zxing-cpp** (`io.github.zxing-cpp:android` 3.1.1): para comparar. Más chico y sin Google Play Services; exige dos
-  líneas de barras iguales (`minLineCount = 2`).
-- Se cambia en ajustes sin cerrar la cámara. Uno solo por cuadro: correr los dos duplicaría el consumo.
-- Solo se piden las simbologías que se usan; nunca «todas», para no aceptar lecturas de verificación débil.
-- El motor se calienta al abrir (la primera lectura de ML Kit tarda ~50 % más).
+Medido en el emulador con códigos dibujados (prueba `MotoresTest`), por cuadro:
+
+| | zxing-cpp | ML Kit |
+|---|---|---|
+| Franja (vertical, 462×530) | 0.35 ms | 101 ms |
+| Lo visible (576×1280) | 0.86 ms | 55 ms |
+| ITF-14 | Lo lee | No lo lee: da ceros o 40 dígitos de basura (los rechaza la validación) |
+| Etiqueta blanca sobre fondo gris | Su binarizador local no la lee | La lee |
+
+Por eso el motor por defecto es el **automático**, con hasta tres pasadas por cuadro, de la más barata a la más cara:
+
+1. **zxing-cpp sobre la franja**, tal cual (`minLineCount = 2`, sin `tryHarder`: el siguiente cuadro es el reintento).
+2. Si no leyó y el localizador midió el nivel entre barras y espacios: **zxing-cpp sobre la franja binarizada con ese
+   umbral** (~1 ms). Rescata la etiqueta blanca sobre cartón o empaque de color, el caso común en la tienda; con un cuadro
+   real del emulador, sin esta pasada no se leía y con ella sí.
+3. Si tampoco y hay un código probable (el localizador lo ve, o hubo uno hace menos de 1 s): **ML Kit** (incluido en la
+   app, 17.3.0) sobre **todo lo visible**, a lo más uno de cada dos cuadros para que la guía siga fluida. Con el celular
+   vertical a ML Kit le cuesta menos lo visible que la franja, y le da contexto a un código difícil (borroso, girado).
+
+En la prueba de punta a punta del emulador, 8 de 10 lecturas salieron por la segunda pasada (150–500 ms desde que
+apareció el código) y 2 por ML Kit (el código girado y el pegado abajo, 270–600 ms). En ajustes se puede fijar un
+solo motor (ML Kit o zxing-cpp) para compararlos; el de la tienda se decide con las mediciones ([pruebas en
+tienda](pruebas-en-tienda.md)). Solo se piden las simbologías que se usan, nunca «todas». Cada lectura dice por cuál
+vía salió (directa, umbral o respaldo) en el registro y en la sesión de prueba.
 
 ## Localizador
 
@@ -78,6 +96,13 @@ región; tres líneas de escaneo a través de las barras dan el ancho del módul
 transiciones hay y si las barras siguen de una línea a otra. Solo cuenta como código si pasa esas pruebas
 («verificado») y se repite en dos cuadros seguidos: el texto y las hojas rayadas no engañan a la guía.
 
+Con desenfoque o reflejo se pierden transiciones y la verificación falla, pero las barras siguen siendo coherentes,
+continuas de una línea a otra y con la proporción de oscuro y claro de un código. Ese **indicio fuerte** (coherencia ≥
+0.95, continuidad ≥ 0.9 y proporción entre 0.35 y 2.8, o un reflejo) también cuenta como código si dura tres cuadros: así
+un código borroso pide «Mantén firme» en vez de «Apunta». La hoja rayada (proporción ~0.17) y el texto (continuidad <
+0.3) no lo cumplen. Lo que ML Kit marca como «potencial» solo cuenta si el localizador lo respalda: ML Kit también ve
+potenciales en hojas rayadas y en texto.
+
 ## Guía
 
 Una sola indicación a la vez, en este orden de prioridad:
@@ -86,10 +111,11 @@ Una sola indicación a la vez, en este orden de prioridad:
 |---|---|---|
 | Reflejo | > 6 % de la región saturada (sale < 3 %) | «Hay reflejo: inclina un poco el celular» |
 | Más luz | Brillo medio < 45 durante ≥ 500 ms (sale > 60) | «Poca luz: enciende la linterna» |
-| Aléjate | El código ocupa > 90 % de la franja (sale < 80 %), está cortado por los dos lados, o está borroso y el lente ya está en su enfoque más cercano | «Aléjate un poco» |
+| Aléjate | El código ocupa > 90 % de la franja (sale < 80 %), está cortado por los dos lados, o está borroso y el lente ya está en su enfoque más cercano o el código ocupa > 75 % | «Aléjate un poco» |
 | Muévete | El centro del código se desvía > 20 % de la franja (sale < 12 %), o toca un solo borde | «Mueve el celular a la izquierda» (hacia donde se ve el código) |
 | Acércate | < 2 px por módulo (sale > 2.5), o < 30 % de la franja si no se puede medir; solo si el zoom propio ya está al tope | «Acércate» |
 | Mantén firme | Borroso (nitidez < 0.15, sale > 0.22) o movido; si el lente está enfocando, «Enfocando…» | «Mantén firme» |
+| Ya leído | El código a la vista ya se contó y no se ha retirado | «Ya leído: retíralo para leerlo otra vez» |
 | Leyendo | Bien colocado | «Leyendo…» |
 | Apunta | Nada a la vista | «Apunta al código de barras» |
 
@@ -98,8 +124,13 @@ una indicación nueva tiene que sostenerse 3 cuadros y 300 ms, y la que está se
 una de mayor prioridad. Al aparecer un código nuevo hay 500 ms sin pistas de dirección para que enfoque. «Leído» es
 inmediato.
 
-Dónde está el código, en este orden: lo leído, lo que ML Kit vio sin leer, y lo verificado por el localizador. Si no hay
-nada de eso, no se dan direcciones.
+Dónde está el código, en este orden: lo leído, lo que ML Kit vio sin leer (si el localizador lo respalda), y lo que el
+localizador verificó o ve con indicio fuerte. Si no hay nada de eso, no se dan direcciones.
+
+Las condiciones de un solo cuadro (reflejo, movimiento, tocar un borde, cortado) cuentan solo si duran tres cuadros
+seguidos: si una va y viene, no debe impedir que se confirme lo demás. La proporción de enfoque (`LENS_FOCUS_DISTANCE` /
+`LENS_INFO_MINIMUM_FOCUS_DISTANCE`) no puede pasar de 1 en un equipo calibrado; si pasa de 1.2 (el emulador da 10–20) se
+toma como desconocida. El ancho del módulo no decide «aléjate» con el código borroso: el desenfoque lo infla.
 
 ## Validación y consenso
 
@@ -117,7 +148,8 @@ Con varios códigos a la vista se toma el que tiene el centro de la franja, o el
 
 **Repetidos.** Un código distinto entra de inmediato. El mismo código vuelve a contar solo si **desapareció al menos
 500 ms** (ni leído ni visto en el mismo lugar): un parpadeo del motor no duplica, y para sumar otra pieza basta con
-retirarla y volver a pasarla.
+retirarla y volver a pasarla. Mientras siga a la vista, la indicación dice «Ya leído», y el respaldo de ML Kit sigue
+corriendo hasta 1 s después del último indicio: si dejara de verlo, el filtro lo daría por retirado y contaría doble.
 
 - **Modo venta:** lista de lo leído; el mismo código suma uno a su renglón. Botones +1, −1 y deshacer.
 - **Modo conteo:** contador grande del código actual que crece con cada suma; −1 y deshacer siempre a la vista.

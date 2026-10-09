@@ -29,21 +29,41 @@ de pruebas del celular y los carteles del emulador.
 ## En el emulador
 
 El emulador puede usar una imagen como cámara trasera (`-camera-back imagefile:<png>`). Los carteles con códigos en
-distintas situaciones se generan con:
+distintas situaciones (centrado, chico, grande, a la izquierda, abajo, girado, borroso, oscuro, con reflejo, y cada
+simbología centrada) se generan con:
 
 ```
 ./gradlew :nucleo:carteles      # PNG en nucleo/build/carteles
 ```
 
-Para abrir la app con uno de ellos (arranca el emulador sin ventana en su propio puerto, instala el APK, da el permiso
-de la cámara y abre el escáner):
+El emulador (36.6) no muestra la imagen completa: la ancla a la izquierda y la escala por alto. Con un cartel de
+1280×960 y la app en vertical se ve x de 0 a ~490 y toda la altura (calibrado con una cuadrícula el 2026-10-09), así
+que cada escena se dibuja en esa franja izquierda (`Carteles.kt`).
+
+Para abrir la app con uno de ellos (arranca el emulador sin ventana y de solo lectura en su propio puerto, instala el
+APK, da el permiso de la cámara y abre el escáner):
 
 ```
 herramientas/emulador.sh nucleo/build/carteles/ean13-centro.png
 ```
 
-Lo que pasa se ve en el registro (`adb -s emulator-5570 logcat -s Escaner`) y en capturas
-(`adb -s emulator-5570 exec-out screencap -p > captura.png`).
+**De punta a punta con todos los carteles** (unos 40 s por cartel): por cada uno arranca el emulador, abre la app,
+espera y guarda la captura y lo que dijo el escáner (lecturas con su vía e indicaciones con los valores que las
+provocaron), y al final un resumen:
+
+```
+herramientas/e2e.sh salidas/e2e
+```
+
+Resultado del 2026-10-09: se leen los 10 carteles legibles una sola vez cada uno (150–600 ms desde que aparece el
+código), el chico pide «Acércate», el grande «Aléjate», el de la izquierda «Mueve el celular a la izquierda» y el
+borroso «Mantén firme». El reflejo no se puede probar en el emulador: su cámara nunca pasa de 218 de brillo y el reflejo
+se detecta por saturación (≥ 250); se prueba con escenas sintéticas en la JVM y en la tienda. Tampoco sirven ahí la
+distancia de enfoque (reporta 10–20 veces la mínima) ni el zoom.
+
+Lo que pasa también se ve en el registro (`adb -s emulator-5570 logcat -s Escaner`): una línea por cada indicación
+(con dx, dy, largo, módulo, nitidez, brillo, saturados y enfoque), por cada lectura (con su vía y los ms desde que
+apareció el código) y por la geometría de la cámara.
 
 **Pruebas instrumentadas** (en el emulador o en un celular conectado):
 
