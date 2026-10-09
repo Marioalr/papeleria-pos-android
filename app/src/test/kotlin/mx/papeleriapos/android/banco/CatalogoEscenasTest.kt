@@ -49,13 +49,16 @@ class CatalogoEscenasTest {
     fun `lo que no cabe completo se queda fuera y lo demas si esta`() {
         val ids = escenas.map { it.id }.toSet()
         // Un ITF-14 a 5 px/módulo mide 775 px: no cabe en 720.
-        assertFalse(ids.any { it.startsWith("itf-5px") })
-        assertFalse(ids.any { it.startsWith("code128-5px") })
+        assertFalse(ids.filter { it.startsWith("itf-5px") }.toString(), ids.any { it.startsWith("itf-5px") })
+        // Un Code 128 a 5 px/módulo (715 px) solo cabe girado: a 45° su ancho proyectado baja a ~680 px.
+        assertFalse("code128-5px-0g" in ids)
+        assertTrue("code128-5px-45g" in ids)
         // Un EAN-13 a 5 px/módulo mide 565 px y cabe aun girado 45°.
-        assertTrue("ean13-5px-45g" in ids)
-        assertTrue("itf-3px-20g" in ids)
+        assertTrue(ids.filter { it.startsWith("ean13-5px") }.toString(), "ean13-5px-45g" in ids)
+        assertTrue(ids.filter { it.startsWith("itf-3px") }.toString(), "itf-3px-20g" in ids)
         for (e in escenas) assertTrue(e.id, CatalogoEscenas.cabe(e, 720, 1280))
-        assertEquals(6 * (12 + 4 + 3) - 6 + 12, escenas.size)
+        // Fuera: el ITF a 5 px en sus 3 giros y el Code 128 a 5 px derecho y a 20°.
+        assertEquals(6 * (12 + 4 + 3) - 5 + 12, escenas.size)
     }
 
     @Test

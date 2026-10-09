@@ -46,12 +46,15 @@ class GuiaTest {
     }
 
     /**
-     * Parpadeo: una indicación que se quita antes de los 700 ms en pantalla (sin contar el primer tramo, que es lo que
-     * había antes, ni el último, que corta la secuencia).
+     * Parpadeo: una indicación que se quita antes de los 700 ms en pantalla por otra que no es de mayor prioridad (sin
+     * contar el primer tramo, que es lo que había antes, ni el último, que corta la secuencia). Que una de mayor
+     * prioridad reemplace antes de tiempo es lo que pide el diseño (p. ej. «Leyendo…» y luego «Mueve…»).
      */
     private fun parpadeos(c: List<Cuadro>): Int {
         val inicios = c.indices.filter { it == 0 || c[it - 1].i != c[it].i }
-        return (1 until inicios.size - 1).count { c[inicios[it + 1]].ms - c[inicios[it]].ms < 700 }
+        return (1 until inicios.size - 1).count {
+            c[inicios[it + 1]].ms - c[inicios[it]].ms < 700 && prioridadDe(c[inicios[it + 1]].i) <= prioridadDe(c[inicios[it]].i)
+        }
     }
 
     @Test
@@ -238,7 +241,8 @@ class GuiaTest {
         val reflejo = correr(g2, 20) { largoRelativo = 0.2f; moduloPx = 0f; saturados = 0.1f }
         val ms = reflejo.first { it.i == Indicacion.REFLEJO }.ms
         assertTrue("REFLEJO a los ${ms - acercate} ms de ACERCATE", ms - acercate < 700)
-        assertTrue("REFLEJO a los ${ms - reflejo.first().ms} ms de empezar", ms - reflejo.first().ms in 300..340)
+        // El reflejo es de un solo cuadro: se sostiene 3 cuadros (~67 ms) y luego se confirma (300 ms).
+        assertTrue("REFLEJO a los ${ms - reflejo.first().ms} ms de empezar", ms - reflejo.first().ms in 300..420)
     }
 
     @Test

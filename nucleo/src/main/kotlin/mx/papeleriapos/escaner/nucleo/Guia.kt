@@ -81,6 +81,9 @@ class Observacion {
  *   zoom todavía se acomodan. La condición sí se va confirmando, así aparece justo al terminar la gracia.
  * - MAS_LUZ no depende del candidato (a oscuras el localizador no ve nada) y su confirmación es la propia espera de
  *   [UmbralesGuia.msOscuroParaPedirLuz].
+ * - Las condiciones que salen de un solo cuadro sin suavizar (reflejo, movimiento, tocar un borde, cortado) cuentan
+ *   solo si se sostienen [UmbralesGuia.cuadrosParaMostrar] cuadros seguidos: si una va y viene, no debe impedir que se
+ *   confirme lo demás.
  *
  * Sin asignaciones por cuadro.
  */
@@ -107,6 +110,14 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
     private var oscuro = false
     private var moviendo = false
     private var oscuroDesde = 0L
+    // Cuadros seguidos de cada condición cruda.
+    private var cuadrosReflejo = 0
+    private var cuadrosMoviendo = 0
+    private var cuadrosCortado = 0
+    private var cuadrosBordeX = 0
+    private var cuadrosBordeY = 0
+    private var bordeXPrevio = 0
+    private var bordeYPrevio = 0
 
     private var hayCandidato = false
     private var candidatoDesde = 0L
@@ -143,9 +154,12 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         }
         suavizar(o)
 
+        val n = u.cuadrosParaMostrar
         reflejo = alto(reflejo, o.saturados, u.reflejoEntra, u.reflejoSale)
+        cuadrosReflejo = if (reflejo) cuadrosReflejo + 1 else 0
         grande = alto(grande, eLargo, u.grandeEntra, u.grandeSale)
-        val cortadoAmbos = o.cortado && o.bordeX == 0 && o.bordeY == 0
+        cuadrosCortado = if (o.cortado && o.bordeX == 0 && o.bordeY == 0) cuadrosCortado + 1 else 0
+        val cortadoAmbos = cuadrosCortado >= n
         chico = when {
             // Con buena nitidez el módulo manda; borroso, las corridas no son confiables y se usa el largo.
             eNitidez >= u.nitidezConfiable && eModulo > 0f -> bajo(chico, eModulo, u.moduloEntra, u.moduloSale)
@@ -155,10 +169,15 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         fueraX = tres(fueraX, eDx, u.descentradoEntra, u.descentradoSale)
         fueraY = tres(fueraY, eDy, u.descentradoEntra, u.descentradoSale)
         // Tocar un solo borde ya dice hacia dónde: el código sigue del otro lado.
-        if (o.bordeX != 0) fueraX = o.bordeX
-        if (o.bordeY != 0) fueraY = o.bordeY
+        cuadrosBordeX = if (o.bordeX != 0 && o.bordeX == bordeXPrevio) cuadrosBordeX + 1 else if (o.bordeX != 0) 1 else 0
+        cuadrosBordeY = if (o.bordeY != 0 && o.bordeY == bordeYPrevio) cuadrosBordeY + 1 else if (o.bordeY != 0) 1 else 0
+        bordeXPrevio = o.bordeX
+        bordeYPrevio = o.bordeY
+        if (cuadrosBordeX >= n) fueraX = o.bordeX
+        if (cuadrosBordeY >= n) fueraY = o.bordeY
         borroso = eNitidez >= 0f && bajo(borroso, eNitidez, u.borrosoEntra, u.borrosoSale)
         moviendo = alto(moviendo, o.movimiento, u.movimientoEntra, u.movimientoSale)
+        cuadrosMoviendo = if (moviendo) cuadrosMoviendo + 1 else 0
         // Borroso y demasiado cerca: la lente ya no alcanza a enfocar; acercarse más no sirve.
         val muyCerca = borroso && (
             (o.proporcionEnfoque >= 0f && o.proporcionEnfoque >= u.enfoqueCercano) ||
@@ -167,7 +186,7 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
             )
 
         val h = when {
-            reflejo -> Indicacion.REFLEJO
+            cuadrosReflejo >= n -> Indicacion.REFLEJO
             pideLuz -> Indicacion.MAS_LUZ
             grande || cortadoAmbos || muyCerca -> Indicacion.ALEJATE
             fueraX != 0 || fueraY != 0 ->
@@ -178,7 +197,7 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
                 }
             chico && o.zoomAlTope -> Indicacion.ACERCATE
             borroso && o.enfocando -> Indicacion.ENFOCANDO
-            borroso || moviendo -> Indicacion.QUIETO
+            borroso || cuadrosMoviendo >= n -> Indicacion.QUIETO
             else -> Indicacion.LEYENDO
         }
         if (h == Indicacion.MAS_LUZ) return mostrarSiPuede(h, t)
@@ -198,6 +217,8 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         hayCandidato = false; iniciado = false
         eLargo = 0f; eDx = 0f; eDy = 0f; eNitidez = -1f; eModulo = 0f
         chico = false; grande = false; fueraX = 0; fueraY = 0; borroso = false; reflejo = false; moviendo = false
+        cuadrosReflejo = 0; cuadrosMoviendo = 0; cuadrosCortado = 0; cuadrosBordeX = 0; cuadrosBordeY = 0
+        bordeXPrevio = 0; bordeYPrevio = 0
     }
 
     private fun suavizar(o: Observacion) {
@@ -234,7 +255,7 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
 
     private fun mostrarSiPuede(h: Indicacion, t: Long): Indicacion {
         if (h == actual) return actual
-        if (prioridad(h) > prioridad(actual) || t - mostradaDesde >= umbrales.msEnPantalla * MS) return mostrar(h, t)
+        if (prioridadDe(h) > prioridadDe(actual) || t - mostradaDesde >= umbrales.msEnPantalla * MS) return mostrar(h, t)
         return actual
     }
 
@@ -253,18 +274,6 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
         const val LARGO_DESENFOCADO_CERCA = 0.6f
         const val LARGO_BORROSO_CERCA = 0.75f
         const val MODULO_BORROSO_CERCA = 7f
-
-        fun prioridad(i: Indicacion): Int = when (i) {
-            Indicacion.LEIDO -> 9
-            Indicacion.REFLEJO -> 8
-            Indicacion.MAS_LUZ -> 7
-            Indicacion.ALEJATE -> 6
-            Indicacion.IZQUIERDA, Indicacion.DERECHA, Indicacion.ARRIBA, Indicacion.ABAJO -> 5
-            Indicacion.ACERCATE -> 4
-            Indicacion.ENFOCANDO, Indicacion.QUIETO -> 3
-            Indicacion.LEYENDO -> 2
-            Indicacion.APUNTA -> 1
-        }
 
         fun esDireccion(i: Indicacion) = i == Indicacion.IZQUIERDA || i == Indicacion.DERECHA ||
             i == Indicacion.ARRIBA || i == Indicacion.ABAJO
@@ -319,3 +328,16 @@ data class UmbralesGuia(
     val cuadrosPerdidosParaReiniciar: Int = 6,
     val alfa: Float = 0.4f,
 )
+
+/** Qué indicación gana cuando hay varias (docs/escaner.md, «Guía»): una de mayor prioridad reemplaza a la que está. */
+internal fun prioridadDe(i: Indicacion): Int = when (i) {
+    Indicacion.LEIDO -> 9
+    Indicacion.REFLEJO -> 8
+    Indicacion.MAS_LUZ -> 7
+    Indicacion.ALEJATE -> 6
+    Indicacion.IZQUIERDA, Indicacion.DERECHA, Indicacion.ARRIBA, Indicacion.ABAJO -> 5
+    Indicacion.ACERCATE -> 4
+    Indicacion.ENFOCANDO, Indicacion.QUIETO -> 3
+    Indicacion.LEYENDO -> 2
+    Indicacion.APUNTA -> 1
+}
