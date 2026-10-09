@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
@@ -41,6 +42,8 @@ import mx.papeleriapos.android.estres.EstresViewModel
 import mx.papeleriapos.android.estres.PantallaEstres
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.sesion.PantallaSesion
+import mx.papeleriapos.escaner.Fase
+import java.util.Locale
 
 enum class Pestana(val corta: String, val titulo: String, val icono: ImageVector) {
     ESCANEAR("Escanear", "Escanear", Icons.Filled.QrCodeScanner),
@@ -48,9 +51,19 @@ enum class Pestana(val corta: String, val titulo: String, val icono: ImageVector
     BANCO("Banco", "Banco de pruebas", Icons.Filled.Science),
     ESTRES("Estrés", "Pruebas de estrés", Icons.Filled.Speed),
     AJUSTES("Ajustes", "Ajustes", Icons.Filled.Settings),
+    ;
+
+    /** Para la columna fase de recursos.csv (una vez, no en cada muestra). */
+    val fase: String = name.lowercase(Locale.ROOT)
 }
 
-/** La app de prueba del escáner: cinco pestañas con la barra de abajo, sin librería de navegación. */
+/** El nombre de cada fase del escáner en minúsculas, calculado una vez (el monitor lo pide cada segundo). */
+private val FASES = Fase.entries.map { it.name.lowercase(Locale.ROOT) }
+
+/**
+ * La app de prueba del escáner: cinco pestañas con la barra de abajo, sin librería de navegación. [alCambiarPestana]
+ * avisa a la Activity cuál se ve (para enlazar la cámara temprano al restaurar si era la del escáner).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppEscaner(
@@ -58,8 +71,10 @@ fun AppEscaner(
     vm: EscanerViewModel = viewModel(),
     banco: BancoViewModel = viewModel(),
     estres: EstresViewModel = viewModel(),
+    alCambiarPestana: (Pestana) -> Unit = {},
 ) {
     var pestana by rememberSaveable { mutableStateOf(inicial) }
+    SideEffect { alCambiarPestana(pestana) }
     // Atrás desde otra pestaña regresa al escáner; desde el escáner sale de la app.
     BackHandler(enabled = pestana != Pestana.ESCANEAR) { pestana = Pestana.ESCANEAR }
     MonitorDeLaSesion(vm, pestana)
@@ -96,7 +111,8 @@ fun AppEscaner(
 
 /**
  * Mientras hay sesión de prueba, el monitor de recursos escribe recursos.csv cada segundo. La fase dice qué se veía:
- * la fase del escáner en la pestaña Escanear, otra pestaña o la app en segundo plano.
+ * la fase del escáner en la pestaña Escanear, otra pestaña o la app en segundo plano. Al salir solo lo detiene si esta
+ * composición sigue siendo su dueña (una pantalla nueva pudo tomarlo antes de que esta se fuera).
  */
 @Composable
 private fun MonitorDeLaSesion(vm: EscanerViewModel, pestana: Pestana) {
@@ -106,20 +122,18 @@ private fun MonitorDeLaSesion(vm: EscanerViewModel, pestana: Pestana) {
     val dueno = LocalLifecycleOwner.current
     val pestanaActual by rememberUpdatedState(pestana)
     DisposableEffect(inicio) {
-        if (inicio != null) {
-            MonitorDeSesion.iniciar(
-                contexto,
-                inicio,
-                fuente = { vm.controlador.estado.value.diagnostico },
-                fase = {
-                    when {
-                        !dueno.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) -> "segundo_plano"
-                        pestanaActual != Pestana.ESCANEAR -> pestanaActual.name.lowercase()
-                        else -> vm.controlador.estado.value.fase.name.lowercase()
-                    }
-                },
-            )
-        }
-        onDispose { if (inicio != null) MonitorDeSesion.detener() }
+        val token = if (inicio == null) 0L else MonitorDeSesion.iniciar(
+            contexto,
+            inicio,
+            fuente = { vm.controlador.estado.value.diagnostico },
+            fase = {
+                when {
+                    !dueno.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) -> "segundo_plano"
+                    pestanaActual != Pestana.ESCANEAR -> pestanaActual.fase
+                    else -> FASES[vm.controlador.estado.value.fase.ordinal]
+                }
+            },
+        )
+        onDispose { if (token != 0L) MonitorDeSesion.detener(token) }
     }
 }

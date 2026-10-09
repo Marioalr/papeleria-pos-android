@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mx.papeleriapos.android.Arranque
 import mx.papeleriapos.android.ContenidoEnDosCuadros
@@ -29,7 +30,9 @@ import mx.papeleriapos.android.tema.TemaEscaner
  * «Abrir la app» pide desbloquear y abre la app completa.
  *
  * Si queda arriba al apagar la pantalla, al encenderla aparece directo sobre el bloqueo y escaneando (el camino más
- * corto). Por eso se cierra sola tras [minutosParaCerrar] sin escanear: si no, abriría la cámara en cada encendido.
+ * corto). Por eso se cierra sola: tras [minutosParaCerrar] sin escanear (un minuto con el celular bloqueado, ver
+ * [msParaCerrar]) o en cuanto la cámara se apaga por inactividad. Si no, abriría la cámara en cada encendido y dejaría
+ * la pantalla encendida con lo leído a la vista sobre el bloqueo. Lo que muestra es lo mínimo: lo leído en esta apertura.
  */
 class EscaneoRapidoActivity : ComponentActivity() {
     private val vm: EscaneoRapidoViewModel by viewModels()
@@ -57,12 +60,13 @@ class EscaneoRapidoActivity : ComponentActivity() {
             }
         }
         cerrarAlCaducar()
+        cerrarAlApagarseLaCamara()
     }
 
     override fun onRestart() {
         super.onRestart()
         // Volvió a verse (p. ej. al encender la pantalla) después de mucho sin escanear: se cierra sin abrir la cámara.
-        if (vm.msParaCerrar() <= 0L) {
+        if (vm.msParaCerrar(bloqueado()) <= 0L) {
             vm.controlador.cerrar()
             finish()
         }
@@ -79,22 +83,48 @@ class EscaneoRapidoActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         detenida = true
+        vm.alDetenerse()
     }
 
-    /** Mientras se ve, se cierra sola al cumplirse el plazo sin escanear. */
+    private fun bloqueado(): Boolean = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+
+    /**
+     * Mientras se ve, se cierra sola al cumplirse el plazo sin escanear. Se vuelve a revisar al menos cada
+     * [REVISAR_BLOQUEO_MS]: si bloquean o desbloquean el celular, el plazo cambia.
+     */
     private fun cerrarAlCaducar() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
-                    val restante = vm.msParaCerrar()
+                    val restante = vm.msParaCerrar(bloqueado())
                     if (restante <= 0L) {
                         finish()
                         break
                     }
-                    delay(restante)
+                    delay(restante.coerceAtMost(REVISAR_BLOQUEO_MS))
                 }
             }
         }
+    }
+
+    /**
+     * La cámara se apagó por inactividad (en pausa y sin superficie): no queda nada que hacer aquí. Se revisa solo cuando
+     * cambia la superficie (al enlazar y al soltar), no en cada cuadro.
+     */
+    private fun cerrarAlApagarseLaCamara() {
+        val c = vm.controlador
+        lifecycleScope.launch {
+            var hubo = false
+            c.superficie.first { s ->
+                if (s != null) hubo = true
+                camaraApagadaPorInactividad(c.estado.value.fase, s != null, hubo)
+            }
+            if (!isFinishing) finish()
+        }
+    }
+
+    private companion object {
+        const val REVISAR_BLOQUEO_MS = 10_000L
     }
 
     /** Pide desbloquear (si hace falta) y abre la app completa; esta pantalla se cierra. */

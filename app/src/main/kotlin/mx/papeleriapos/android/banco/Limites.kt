@@ -106,7 +106,10 @@ data class TasaGrado(
     val tasa: Double get() = if (variantes == 0) 0.0 else leidas.toDouble() / variantes
 }
 
-/** El límite de un motor en una condición: el último grado que leyó en ≥ 80 % de las variantes. */
+/**
+ * El límite de un motor en una condición: el último grado que leyó en ≥ 80 % de las variantes ANTES del primer grado que
+ * falló. Un grado que pasa por suerte después de uno que falló queda en [grados] (y en el CSV), pero no sube el límite.
+ */
 data class LimiteMotor(
     val motor: Motor,
     val condicion: CondicionLimite,
@@ -120,8 +123,9 @@ data class LimiteMotor(
 
 /**
  * El modo «Límites» del banco de pruebas: para cada motor y cada condición sube la dificultad en pasos y encuentra el
- * último grado que se lee en al menos [umbral] de las [variantes]. Un motor deja de subir en una condición después de
- * [fallosParaParar] grados seguidos sin pasar (así un grado con mala suerte no corta la escalera). Cada escena se dibuja
+ * último grado que se lee en al menos [umbral] de las [variantes] antes del primero que no ([limiteAntesDelPrimerFallo]).
+ * Un motor sigue probando hasta [fallosParaParar] grados seguidos sin pasar, para que el CSV muestre si fue mala suerte,
+ * pero eso ya no mueve el límite: con pocas variantes un grado puede pasar por suerte. Cada escena se dibuja
  * una vez y la leen todos los motores que siguen subiendo, como en el banco normal: el plano Y de 1280×720 girado 90°
  * en un buffer directo.
  */
@@ -178,7 +182,6 @@ class BancoLimites(
             for (condicion in condiciones) {
                 if (cancelado()) break
                 val subiendo = activos.keys.filterTo(LinkedHashSet()) { it !in errores }
-                val ultimo = HashMap<Motor, Float?>()
                 val fallos = HashMap<Motor, Int>()
                 val tasas = HashMap<Motor, MutableList<TasaGrado>>()
                 for (m in subiendo) tasas[m] = ArrayList()
@@ -221,7 +224,6 @@ class BancoLimites(
                         val tasa = TasaGrado(condicion.grados[g], variantes, leidas[m] ?: 0, incorrectas[m] ?: 0, ms)
                         tasas.getValue(m) += tasa
                         if (tasa.tasa >= umbral) {
-                            ultimo[m] = tasa.grado
                             fallos[m] = 0
                         } else {
                             val f = (fallos[m] ?: 0) + 1
@@ -232,7 +234,7 @@ class BancoLimites(
                 }
                 for (m in motores) {
                     val propias = tasas[m] ?: emptyList()
-                    val ultimoGrado = ultimo[m]
+                    val ultimoGrado = limiteAntesDelPrimerFallo(propias, umbral)
                     salida += LimiteMotor(
                         motor = m,
                         condicion = condicion,
@@ -259,6 +261,19 @@ class BancoLimites(
     }
 
     private fun descripcion(t: Throwable) = t::class.java.simpleName + (t.message?.let { ": $it" } ?: "")
+}
+
+/**
+ * El límite de una escalera: el último grado que pasó ([umbral]) antes del primero que falló; null si falló el primero
+ * (o no hay). Los grados van del más fácil al más difícil.
+ */
+fun limiteAntesDelPrimerFallo(grados: List<TasaGrado>, umbral: Double = 0.8): Float? {
+    var limite: Float? = null
+    for (g in grados) {
+        if (g.tasa < umbral) break
+        limite = g.grado
+    }
+    return limite
 }
 
 /** El CSV del modo «Límites»: un renglón por motor, condición y grado probado. */

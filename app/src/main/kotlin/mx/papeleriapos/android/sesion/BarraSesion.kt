@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.TimerOff
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -42,9 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import mx.papeleriapos.android.ui.ALTO_TOCABLE
 
 /** Los resultados con que el operador corrige el último intento leído. */
 val MARCAS_DE_LECTURA = listOf(
@@ -52,9 +53,17 @@ val MARCAS_DE_LECTURA = listOf(
 )
 
 /**
- * La sesión de prueba sobre el visor: el último intento con su resultado (se corrige con un toque), la condición del
- * bloque, una nota para el último intento y el botón grande para registrar el que no leyó, sin salir del escáner. No
- * pasa de ~150 dp de alto para no tapar la franja (del 32 % al 68 % del alto).
+ * Lo que mide la barra completa: el renglón del título (40 dp de botón de texto), el de las acciones (48 dp, lo mínimo
+ * para el pulgar), el espacio entre ellos y el relleno. Si arriba de la franja no cabe, va en una sola fila.
+ */
+val ALTO_BARRA_COMPLETA: Dp = 108.dp
+
+/**
+ * La sesión de prueba sobre el visor, sin salir del escáner: el último intento con su resultado (se corrige con un
+ * toque), el botón grande para registrar el que no leyó y deshacerlo, la condición del bloque y una nota para el último
+ * intento. Mide [ALTO_BARRA_COMPLETA] (dos filas, ~104 dp) o, [compacta], una sola fila de ~60 dp con lo que se toca:
+ * así no tapa la franja (que empieza en el 32 % del alto con la franja por omisión). Las acciones van en una fila que se
+ * desliza para no partirse en dos.
  */
 @Composable
 fun BarraSesion(
@@ -63,6 +72,8 @@ fun BarraSesion(
     registrarFallo: (ResultadoIntento) -> Unit,
     cambiarEsperado: (String) -> Unit,
     modifier: Modifier = Modifier,
+    deshacerFallo: () -> Unit = {},
+    compacta: Boolean = false,
 ) {
     val anotaciones by AnotacionesSesion.estado.collectAsStateWithLifecycle()
     val notas = anotaciones.de(sesion)
@@ -75,27 +86,45 @@ fun BarraSesion(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
         tonalElevation = 2.dp,
     ) {
-        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val u = sesion.ultimo
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Prueba · ${sesion.intentos.size} intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = { editando = true }) {
+            if (!compacta) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (sesion.esperado.isEmpty()) "Esperado…" else "Esp.: ${sesion.esperado}",
+                        "Prueba · ${sesion.intentos.size} intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
+                        style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
+                    TextButton(onClick = { editando = true }) {
+                        Text(
+                            if (sesion.esperado.isEmpty()) "Esperado…" else "Esp.: ${sesion.esperado}",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
             val ultimoLeido = u != null && u.simbologia.isNotEmpty()
             // En una sola línea que se desliza: si se partiera en dos taparía la franja.
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (compacta) {
+                    Text("#${sesion.intentos.size}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.testTag("intentos-compacta"))
+                }
+                BotonNoLeyo(alPulsar = { registrarFallo(ResultadoIntento.TIMEOUT) })
+                AssistChip(
+                    onClick = deshacerFallo,
+                    enabled = sesion.puedeDeshacerFallo,
+                    label = { Text("Deshacer") },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null) },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("deshacer-fallo"),
+                )
+                SelectorCondicion(notas.condicionActual, alElegir = { editor.condicion(sesion, it) })
                 for (r in MARCAS_DE_LECTURA) {
                     FilterChip(
                         selected = ultimoLeido && u?.resultado == r,
@@ -117,11 +146,9 @@ fun BarraSesion(
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null) },
                     modifier = Modifier.testTag("nota-ultimo"),
                 )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                SelectorCondicion(notas.condicionActual, alElegir = { editor.condicion(sesion, it) })
-                Spacer(Modifier.width(8.dp))
-                BotonNoLeyo(alPulsar = { registrarFallo(ResultadoIntento.TIMEOUT) }, modifier = Modifier.weight(1f))
+                if (compacta) {
+                    TextButton(onClick = { editando = true }) { Text(if (sesion.esperado.isEmpty()) "Esperado…" else "Esp.") }
+                }
             }
         }
     }
@@ -134,7 +161,10 @@ fun BarraSesion(
     }
 }
 
-/** «No leyó»: el resultado que más se registra a mano, en grande y en el color de error para no fallarle con el pulgar. */
+/**
+ * «No leyó»: el resultado que más se registra a mano, en el color de error y de 48 dp o más para no fallarle con el
+ * pulgar. Un segundo toque a menos de 1 s no cuenta (lo ignora el ViewModel) y el último se puede deshacer.
+ */
 @Composable
 fun BotonNoLeyo(alPulsar: () -> Unit, modifier: Modifier = Modifier) {
     Button(
@@ -143,7 +173,7 @@ fun BotonNoLeyo(alPulsar: () -> Unit, modifier: Modifier = Modifier) {
             containerColor = MaterialTheme.colorScheme.error,
             contentColor = MaterialTheme.colorScheme.onError,
         ),
-        modifier = modifier.heightIn(min = ALTO_TOCABLE).testTag("fallo-TIMEOUT"),
+        modifier = modifier.heightIn(min = 48.dp).testTag("fallo-TIMEOUT"),
     ) {
         Icon(Icons.Filled.TimerOff, contentDescription = null)
         Spacer(Modifier.width(8.dp))

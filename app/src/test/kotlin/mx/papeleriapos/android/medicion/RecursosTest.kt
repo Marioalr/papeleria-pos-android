@@ -6,6 +6,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.math.abs
 
 class RecursosTest {
     private val status = """
@@ -31,6 +36,20 @@ class RecursosTest {
         assertEquals(EstadoProceso(287654, -1, 57), EstadoProceso.leer(viejo))
         assertEquals(EstadoProceso(), EstadoProceso.leer(""))
         assertEquals(EstadoProceso(), EstadoProceso.leer("VmRSS: mucho kB\nThreads: x"))
+    }
+
+    @Test
+    fun `de los bytes de proc self status sale lo mismo que del texto`() {
+        val buffer = ByteArray(4096)
+        for (texto in listOf(status, status.lines().filterNot { it.startsWith("RssAnon") }.joinToString("\n"), "", "VmRSS: mucho kB\nThreads: x")) {
+            val b = texto.toByteArray(Charsets.US_ASCII)
+            b.copyInto(buffer)
+            assertEquals(texto, EstadoProceso.leer(texto), EstadoProceso.leer(buffer, b.size))
+        }
+        // Lo que sobra del buffer de una lectura anterior no se lee.
+        val corto = "Threads:\t9\n".toByteArray(Charsets.US_ASCII)
+        corto.copyInto(buffer)
+        assertEquals(EstadoProceso(-1, -1, 9), EstadoProceso.leer(buffer, corto.size))
     }
 
     private fun calibrado(crudo: Int, n: Int = 15, enchufado: Boolean = false) =
@@ -130,16 +149,101 @@ class RecursosTest {
     }
 
     @Test
-    fun `un contador de cuadros que baja (otro controlador) no da un delta`() {
+    fun `un contador que vuelve a cero (se volvio a enlazar) cuenta lo de despues, no se pierde el segundo`() {
         val calc = CalculadoraRecursos()
         calc.calcular(lectura(0, 0, prod = 500, ana = 480), "")
         val m = calc.calcular(lectura(1_000, 100, prod = 20, ana = 18), "")
-        assertTrue(m.fpsCamara.isNaN())
-        assertTrue(m.fpsAnalisis.isNaN())
-        assertTrue(m.cpuMsPorCuadro.isNaN())
-        // Y sin escáner (−1) tampoco.
+        assertEquals(20.0, m.fpsCamara, 1e-9)
+        assertEquals(18.0, m.fpsAnalisis, 1e-9)
+        assertEquals(18L, m.analizadosDelta)
+        assertEquals(100.0 / 18, m.cpuMsPorCuadro, 1e-9)
+        // Sin escáner (−1) no hay dato; un 0 con escáner sí es dato (todavía no llega nada).
         val sin = calc.calcular(lectura(2_000, 200), "")
         assertTrue(sin.fpsAnalisis.isNaN())
+        val cero = calc.calcular(lectura(3_000, 300, prod = 0, ana = 0), "")
+        assertTrue("El primero tras no haber escáner no tiene con qué comparar", cero.fpsAnalisis.isNaN())
+        val uno = calc.calcular(lectura(4_000, 400, prod = 30, ana = 25), "")
+        assertEquals(25.0, uno.fpsAnalisis, 1e-9)
+    }
+
+    @Test
+    fun `con el diagnostico cada 500 ms los cuadros por segundo no saltan 50 por ciento y los promedios salen exactos`() {
+        // El escáner analiza 30 cuadros/s pero publica sus contadores cada 500 ms; el monitor los ve cada segundo con un
+        // desfase que cambia (el hilo no es exacto): lo que ve es el último publicado.
+        val tasa = TasaCuadros()
+        val vistos = ArrayList<Double>()
+        var t = 0L
+        var anterior = -1L
+        for (s in 0 until 120) {
+            t = s * 1_000L + (s * 137L) % 600
+            val publicado = (t / 500) * 500
+            val contador = publicado * 30 / 1_000
+            val fps = tasa.observar(contador, t)
+            if (s >= 4) vistos += fps
+            if (anterior >= 0) assertTrue(tasa.delta >= 0)
+            anterior = contador
+        }
+        // Sin ventana, un segundo daría 15 o 45 (±50 %); con ella, cerca de 30.
+        assertTrue(vistos.toString(), vistos.all { abs(it - 30.0) <= 30.0 * 0.2 })
+        assertEquals(30.0, vistos.average(), 1.5)
+    }
+
+    @Test
+    fun `al volver a enlazar a media ventana la tasa sigue con sentido`() {
+        val tasa = TasaCuadros()
+        for (s in 0..5) tasa.observar(s * 30L, s * 1_000L)
+        // Se volvió a enlazar: el contador empezó de cero y lleva 12 desde entonces.
+        val fps = tasa.observar(12, 6_000)
+        assertEquals(12L, tasa.delta)
+        assertFalse(fps.isNaN())
+        assertTrue("fps $fps", fps in 15.0..30.0)
+        assertEquals(30L, tasa.delta.let { tasa.observar(42, 7_000); tasa.delta })
+        // Sin escáner, sin dato, y se empieza de nuevo.
+        assertTrue(tasa.observar(-1, 8_000).isNaN())
+        assertTrue(tasa.observar(5, 9_000).isNaN())
+        assertEquals(30.0, tasa.observar(35, 10_000), 1e-9)
+    }
+
+    @Test
+    fun `el headroom se pregunta una vez cada 10 s y los dos muestreadores reciben el dato`() {
+        val cache = CacheHeadroom(intervaloMs = 10_000)
+        var preguntas = 0
+        val fuente = FuenteHeadroom { preguntas++; 0.42f }
+        // La sesión y la prueba de estrés, cada una a 1 Hz y desfasadas 300 ms.
+        for (s in 0 until 30) {
+            assertEquals(0.42f, cache.leer(s * 1_000L, fuente), 0f)
+            assertEquals(0.42f, cache.leer(s * 1_000L + 300, fuente), 0f)
+        }
+        assertEquals(3, preguntas)
+        // Un error del sistema es NaN (sin dato), no 0.
+        val falla = CacheHeadroom()
+        assertTrue(falla.leer(0, FuenteHeadroom { throw IllegalStateException() }).isNaN())
+    }
+
+    @Test
+    fun `la hora se escribe igual que con SimpleDateFormat`() {
+        for (zona in listOf("UTC", "America/Mexico_City", "Asia/Kolkata", "America/St_Johns")) {
+            val z = TimeZone.getTimeZone(zona)
+            val formato = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT).apply { timeZone = z }
+            val hora = HoraIso(z)
+            for (ms in listOf(0L, 1_760_000_000_123L, 1_711_900_800_007L, 1_730_617_199_999L)) {
+                val sb = StringBuilder()
+                hora.agregar(sb, ms)
+                assertEquals("$zona $ms", formato.format(Date(ms)), sb.toString())
+            }
+        }
+    }
+
+    @Test
+    fun `los decimales salen con punto y redondeados como el CSV`() {
+        fun d(v: Double, n: Int) = StringBuilder().also { CsvRecursos.agregarDecimal(it, v, n) }.toString()
+        assertEquals("12.0", d(12.0, 1))
+        assertEquals("0.420", d(0.42, 3))
+        assertEquals("30", d(29.6, 0))
+        assertEquals("1.06", d(1.0555, 2))
+        assertEquals("-3.5", d(-3.5, 1))
+        assertEquals("0.0", d(-0.01, 1))
+        for (v in listOf(0.0, 3.14159, 25.25, 99.99, 1234.5678)) assertEquals(Csv.decimal(v, 2), d(v, 2))
     }
 
     @Test

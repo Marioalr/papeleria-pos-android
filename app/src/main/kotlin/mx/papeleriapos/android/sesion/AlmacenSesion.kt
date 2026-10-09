@@ -2,7 +2,6 @@ package mx.papeleriapos.android.sesion
 
 import android.content.Context
 import android.util.Log
-import mx.papeleriapos.android.medicion.MonitorDeSesion
 import java.io.File
 import java.io.IOException
 
@@ -13,18 +12,19 @@ import java.io.IOException
  */
 class AlmacenSesion(context: Context) {
     private val app = context.applicationContext
-    private val carpeta = File(context.filesDir, "sesion")
-    private val intentos = File(carpeta, "intentos.csv")
-    private val datos = File(carpeta, "sesion.txt")
-    private val notas = File(carpeta, "anotaciones.csv")
+    // Perezosos: se crea en el hilo principal (con el ViewModel) y filesDir revisa el disco; se usa en otro hilo.
+    private val carpeta by lazy { File(app.filesDir, "sesion") }
+    private val intentos by lazy { File(carpeta, "intentos.csv") }
+    private val datos by lazy { File(carpeta, "sesion.txt") }
+    private val notas by lazy { File(carpeta, "anotaciones.csv") }
 
     fun guardar(sesion: SesionPrueba?, equipo: DatosEquipo) {
         try {
             if (sesion == null) {
                 intentos.delete(); datos.delete(); notas.delete()
                 AnotacionesSesion.reemplazar(Anotaciones())
-                // El recursos.csv de la sesión se va con ella (ya se exportó o se descartó).
-                MonitorDeSesion.borrar(app)
+                // recursos.csv y aperturas.csv los borra quien terminó la sesión (EscanerViewModel.terminarSesion): sabe
+                // cuál terminó y no se lleva los de una sesión nueva que ya empezó.
                 return
             }
             carpeta.mkdirs()
@@ -45,7 +45,10 @@ class AlmacenSesion(context: Context) {
         }
     }
 
-    /** La sesión guardada y, como efecto, sus anotaciones en [AnotacionesSesion]. */
+    /**
+     * La sesión guardada y, como efecto, sus anotaciones en [AnotacionesSesion]. Si anotaciones.csv falta (o es de otra
+     * sesión), se reconstruyen de las columnas condicion y nota de intentos.csv, que se escriben con cada intento.
+     */
     fun recuperar(): SesionPrueba? = try {
         if (!datos.exists()) {
             null
@@ -54,13 +57,22 @@ class AlmacenSesion(context: Context) {
             val inicio = lineas[0].toLong()
             val esperado = lineas.getOrElse(1) { "" }
             val nombre = lineas.getOrElse(2) { "" }
-            val lista = if (intentos.exists()) CsvSesion.leerIntentos(intentos.readText()) else emptyList()
+            val textoIntentos = if (intentos.exists()) intentos.readText() else ""
+            val lista = if (textoIntentos.isNotEmpty()) CsvSesion.leerIntentos(textoIntentos) else emptyList()
             val sesion = SesionPrueba(nombre, inicio, lista, esperado)
-            if (notas.exists()) AnotacionesSesion.reemplazar(Anotaciones.deTexto(notas.readText()).de(sesion))
+            val guardadas = if (notas.exists()) Anotaciones.deTexto(notas.readText()).takeIf { it.inicioSesion == inicio } else null
+            AnotacionesSesion.reemplazar(guardadas ?: CsvSesion.leerAnotaciones(textoIntentos, inicio))
             sesion
         }
     } catch (e: Exception) {
         Log.e(ETIQUETA, "No se pudo recuperar la sesión de prueba", e)
+        null
+    }
+
+    /** El inicio de la sesión activa (la que está guardada); null si no hay. Fuera del hilo principal. */
+    fun inicioActivo(): Long? = try {
+        if (datos.exists()) datos.readText().substringBefore('\n').trim().toLongOrNull() else null
+    } catch (e: IOException) {
         null
     }
 

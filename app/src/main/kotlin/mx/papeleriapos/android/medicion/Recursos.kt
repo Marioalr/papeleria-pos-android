@@ -1,6 +1,9 @@
 package mx.papeleriapos.android.medicion
 
 import mx.papeleriapos.android.csv.Csv
+import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.TimeZone
 import kotlin.math.abs
 
 /**
@@ -27,6 +30,182 @@ data class EstadoProceso(val rssKb: Long = -1, val rssAnonKb: Long = -1, val hil
                 }
             }
             return EstadoProceso(rss, anon, hilos)
+        }
+
+        /**
+         * Lo mismo que [leer] pero de los bytes tal cual (el monitor relee `/proc/self/status` cada segundo en un buffer
+         * propio): sin pasar a texto ni partir en líneas, que es basura en cada muestra.
+         */
+        fun leer(b: ByteArray, largo: Int): EstadoProceso {
+            var rss = -1L
+            var anon = -1L
+            var hilos = -1
+            var i = 0
+            val fin = largo.coerceAtMost(b.size)
+            while (i < fin) {
+                var finLinea = i
+                while (finLinea < fin && b[finLinea] != '\n'.code.toByte()) finLinea++
+                when {
+                    empiezaCon(b, i, finLinea, VMRSS) -> rss = numero(b, i + VMRSS.size, finLinea)
+                    empiezaCon(b, i, finLinea, RSS_ANON) -> anon = numero(b, i + RSS_ANON.size, finLinea)
+                    empiezaCon(b, i, finLinea, THREADS) -> hilos = numero(b, i + THREADS.size, finLinea).toInt()
+                }
+                i = finLinea + 1
+            }
+            return EstadoProceso(rss, anon, hilos)
+        }
+
+        private val VMRSS = "VmRSS:".toByteArray(Charsets.US_ASCII)
+        private val RSS_ANON = "RssAnon:".toByteArray(Charsets.US_ASCII)
+        private val THREADS = "Threads:".toByteArray(Charsets.US_ASCII)
+
+        private fun empiezaCon(b: ByteArray, desde: Int, hasta: Int, prefijo: ByteArray): Boolean {
+            if (hasta - desde < prefijo.size) return false
+            for (k in prefijo.indices) if (b[desde + k] != prefijo[k]) return false
+            return true
+        }
+
+        /** El primer número después de espacios o tabuladores; −1 si no hay. */
+        private fun numero(b: ByteArray, desde: Int, hasta: Int): Long {
+            var i = desde
+            while (i < hasta && (b[i] == ' '.code.toByte() || b[i] == '\t'.code.toByte())) i++
+            var v = 0L
+            var digitos = 0
+            while (i < hasta && b[i] in '0'.code.toByte()..'9'.code.toByte()) {
+                v = v * 10 + (b[i] - '0'.code.toByte())
+                digitos++
+                i++
+            }
+            return if (digitos == 0) -1 else v
+        }
+    }
+}
+
+/**
+ * Cuadros por segundo con un contador del diagnóstico del escáner (cuadros producidos o analizados). Tolera lo que hace
+ * el escáner con ellos:
+ * - vuelven a 0 en cada enlace: lo contado desde ahí es el delta (no se pierde el segundo ni queda sin dato);
+ * - el diagnóstico se publica cada ~500 ms, así que lo que se ve cada segundo es de hace 0 a 500 ms y el delta de un
+ *   segundo salta ±50 %: la tasa se saca sobre los últimos [ventanaMs] (±15 % en el peor caso por fila). Los deltas no se
+ *   pierden, así que los promedios largos (por minuto) salen exactos.
+ *
+ * Sin asignaciones por muestra: un anillo de primitivos. Se usa desde un solo hilo (el del monitor).
+ */
+class TasaCuadros(private val ventanaMs: Long = 3_000) {
+    private val tiempos = LongArray(CAPACIDAD)
+    private val acumulados = LongArray(CAPACIDAD)
+    private var cuantos = 0
+    private var cabeza = 0
+    private var previo = -1L
+    private var acumulado = 0L
+
+    /** Cuadros contados desde la observación anterior; −1 = sin dato (la primera, o sin escáner). */
+    var delta = -1L
+        private set
+
+    /** Toma [contador] (−1 = no hay escáner) visto en [tMs]; devuelve los cuadros por segundo de la ventana (NaN = sin dato). */
+    fun observar(contador: Long, tMs: Long): Double {
+        if (contador < 0) {
+            previo = -1L
+            cuantos = 0
+            delta = -1L
+            return Double.NaN
+        }
+        delta = when {
+            previo < 0 -> -1L
+            contador >= previo -> contador - previo
+            // Se volvió a enlazar: empezó de cero dentro del intervalo y lo que lleva es lo de este intervalo.
+            else -> contador
+        }
+        previo = contador
+        if (delta > 0) acumulado += delta
+        // El punto más viejo dentro de la ventana (al menos el anterior), antes de agregar este.
+        var tViejo = Long.MIN_VALUE
+        var aViejo = 0L
+        for (k in 1..cuantos) {
+            val i = (cabeza - k + CAPACIDAD) % CAPACIDAD
+            if (tiempos[i] >= tMs) continue
+            if (tViejo != Long.MIN_VALUE && tiempos[i] < tMs - ventanaMs) break
+            tViejo = tiempos[i]
+            aViejo = acumulados[i]
+        }
+        tiempos[cabeza] = tMs
+        acumulados[cabeza] = acumulado
+        cabeza = (cabeza + 1) % CAPACIDAD
+        if (cuantos < CAPACIDAD) cuantos++
+        if (tViejo == Long.MIN_VALUE) return Double.NaN
+        return (acumulado - aViejo) * 1000.0 / (tMs - tViejo)
+    }
+
+    private companion object {
+        const val CAPACIDAD = 16
+    }
+}
+
+/** Pregunta el headroom térmico (`PowerManager.getThermalHeadroom(0)`); NaN = sin dato. */
+fun interface FuenteHeadroom {
+    fun consultar(): Float
+}
+
+/**
+ * El headroom térmico compartido por el proceso: el sistema devuelve NaN si se le pregunta otra vez muy seguido (y la
+ * guía de ADPF pide no más de una vez cada 10 s), así que dos muestreadores que preguntaran por su cuenta (la sesión y una
+ * prueba de estrés) se quitarían el dato uno a otro. Se pregunta a lo más una vez cada [intervaloMs] y los demás reciben
+ * el último valor.
+ */
+class CacheHeadroom(private val intervaloMs: Long = 10_000) {
+    private var ultimaConsulta = Long.MIN_VALUE
+    private var valor = Float.NaN
+
+    @Synchronized
+    fun leer(ahoraMs: Long, fuente: FuenteHeadroom): Float {
+        if (ultimaConsulta == Long.MIN_VALUE || ahoraMs < ultimaConsulta || ahoraMs - ultimaConsulta >= intervaloMs) {
+            valor = try { fuente.consultar() } catch (e: RuntimeException) { Float.NaN }
+            ultimaConsulta = ahoraMs
+        }
+        return valor
+    }
+
+    companion object {
+        val delProceso = CacheHeadroom()
+    }
+}
+
+/**
+ * La hora como `yyyy-MM-dd'T'HH:mm:ss.SSSZ` (la de los demás CSV) escrita directo en un StringBuilder con un calendario
+ * reutilizado: `SimpleDateFormat` arma objetos en cada llamada y el monitor la escribe cada segundo. Un solo hilo.
+ */
+class HoraIso(zona: TimeZone = TimeZone.getDefault()) {
+    private val calendario = GregorianCalendar(zona)
+
+    fun agregar(sb: StringBuilder, ms: Long) {
+        val c = calendario
+        c.timeInMillis = ms
+        digitos(sb, c.get(Calendar.YEAR), 4); sb.append('-')
+        digitos(sb, c.get(Calendar.MONTH) + 1, 2); sb.append('-')
+        digitos(sb, c.get(Calendar.DAY_OF_MONTH), 2); sb.append('T')
+        digitos(sb, c.get(Calendar.HOUR_OF_DAY), 2); sb.append(':')
+        digitos(sb, c.get(Calendar.MINUTE), 2); sb.append(':')
+        digitos(sb, c.get(Calendar.SECOND), 2); sb.append('.')
+        digitos(sb, c.get(Calendar.MILLISECOND), 3)
+        val minutos = (c.get(Calendar.ZONE_OFFSET) + c.get(Calendar.DST_OFFSET)) / 60_000
+        sb.append(if (minutos < 0) '-' else '+')
+        digitos(sb, abs(minutos) / 60, 2)
+        digitos(sb, abs(minutos) % 60, 2)
+    }
+
+    private fun digitos(sb: StringBuilder, v: Int, ancho: Int) {
+        var divisor = 1
+        repeat(ancho - 1) { divisor *= 10 }
+        var resto = v
+        if (resto >= divisor * 10) {
+            sb.append(resto)
+            return
+        }
+        while (divisor > 0) {
+            sb.append(('0'.code + resto / divisor).toChar())
+            resto %= divisor
+            divisor /= 10
         }
     }
 }
@@ -196,6 +375,8 @@ class CalculadoraRecursos(
 ) {
     private var inicio = -1L
     private var previa: LecturaCruda? = null
+    private val producidos = TasaCuadros()
+    private val analizados = TasaCuadros()
 
     // Ventana de comprobación con CHARGE_COUNTER: desconectado y calibrado.
     private var ventanaInicioMs = -1L
@@ -203,14 +384,18 @@ class CalculadoraRecursos(
     private var sumaDescargaUa = 0.0
     private var muestrasVentana = 0
 
-    fun calcular(l: LecturaCruda, fase: String): MuestraRecursos {
+    /**
+     * La muestra de [l]. [origenHoraMs] > 0: `t_ms` cuenta desde esa hora (la del inicio de la sesión) y no desde la
+     * primera lectura; [costoUs]: lo que costó leer, para su columna.
+     */
+    fun calcular(l: LecturaCruda, fase: String, origenHoraMs: Long = 0, costoUs: Long = 0): MuestraRecursos {
         if (inicio < 0) inicio = l.paredMs
         val p = previa
         val dt = if (p == null) 0L else (l.paredMs - p.paredMs).coerceAtLeast(0)
         val dCpu = if (p == null || l.cpuMs < 0 || p.cpuMs < 0) -1L else (l.cpuMs - p.cpuMs).coerceAtLeast(0)
         val pct = if (dCpu < 0 || dt <= 0) Double.NaN else 100.0 * dCpu / dt
-        val dProd = delta(l.cuadrosProducidos, p?.cuadrosProducidos)
-        val dAna = delta(l.cuadrosAnalizados, p?.cuadrosAnalizados)
+        val fpsCamara = producidos.observar(l.cuadrosProducidos, l.paredMs)
+        val fpsAnalisis = analizados.observar(l.cuadrosAnalizados, l.paredMs)
 
         corriente.observar(l.corrienteCruda, l.enchufado)
         val ua = corriente.microamperes(l.corrienteCruda)
@@ -219,7 +404,7 @@ class CalculadoraRecursos(
         comprobarConCarga(l, ua)
         previa = l
         return MuestraRecursos(
-            tMs = l.paredMs - inicio,
+            tMs = if (origenHoraMs > 0) l.horaMs - origenHoraMs else l.paredMs - inicio,
             fase = fase,
             cpuMs = dCpu,
             cpuPctNucleo = pct,
@@ -239,21 +424,18 @@ class CalculadoraRecursos(
             enchufado = l.enchufado,
             termico = l.termico,
             headroom = l.headroom,
-            fpsCamara = if (dProd < 0 || dt <= 0) Double.NaN else dProd * 1000.0 / dt,
-            fpsAnalisis = if (dAna < 0 || dt <= 0) Double.NaN else dAna * 1000.0 / dt,
+            fpsCamara = fpsCamara,
+            fpsAnalisis = fpsAnalisis,
             estadoCamara = l.estadoCamara,
+            costoMuestraUs = costoUs,
             factorCorriente = corriente.factor,
             signoCorriente = corriente.signo,
             razonCarga = corriente.razonCarga,
             horaMs = l.horaMs,
             paredDeltaMs = dt,
-            analizadosDelta = dAna,
+            analizadosDelta = analizados.delta,
         )
     }
-
-    /** Un contador que bajó (otro controlador, la cámara se volvió a abrir) no da un delta: queda sin dato. */
-    private fun delta(actual: Long, previo: Long?): Long =
-        if (previo == null || actual < 0 || previo < 0 || actual < previo) -1 else actual - previo
 
     private fun comprobarConCarga(l: LecturaCruda, ua: Long?) {
         val cargaValida = l.cargaUah != Int.MIN_VALUE && l.cargaUah > 0
@@ -290,41 +472,51 @@ object CsvRecursos {
 
     fun encabezado(): String = StringBuilder(Csv.BOM).also { Csv.renglon(COLUMNAS, it) }.toString()
 
+    /**
+     * Agrega la fila de [m] a [sb] campo por campo, sin listas ni `String.format` (el monitor escribe una por segundo
+     * con el mismo StringBuilder). [hora] escribe la hora del celular.
+     */
+    fun agregar(m: MuestraRecursos, sb: StringBuilder, hora: (StringBuilder, Long) -> Unit) {
+        sb.append(m.tMs).append(',')
+        sb.append(Csv.campo(Csv.textoSeguro(m.fase))).append(',')
+        entero(sb, m.cpuMs); sb.append(',')
+        real(sb, m.cpuPctNucleo, 1); sb.append(',')
+        entero(sb, m.heapJavaKb); sb.append(',')
+        entero(sb, m.heapNativoKb); sb.append(',')
+        entero(sb, m.rssKb); sb.append(',')
+        entero(sb, m.rssAnonKb); sb.append(',')
+        entero(sb, m.hilos.toLong()); sb.append(',')
+        entero(sb, m.fds.toLong()); sb.append(',')
+        if (m.corrienteCruda != Int.MIN_VALUE) sb.append(m.corrienteCruda)
+        sb.append(',')
+        m.corrienteUa?.let { sb.append(it) }
+        sb.append(',')
+        if (m.voltajeMv > 0) sb.append(m.voltajeMv)
+        sb.append(',')
+        real(sb, m.potenciaMw, 1); sb.append(',')
+        if (m.cargaUah != Int.MIN_VALUE && m.cargaUah > 0) sb.append(m.cargaUah)
+        sb.append(',')
+        if (m.bateriaPct in 0..100) sb.append(m.bateriaPct)
+        sb.append(',')
+        if (m.tempBatDc != Int.MIN_VALUE) sb.append(m.tempBatDc)
+        sb.append(',')
+        sb.append(if (m.enchufado) "si" else "no").append(',')
+        entero(sb, m.termico.toLong()); sb.append(',')
+        real(sb, m.headroom.toDouble(), 3); sb.append(',')
+        real(sb, m.fpsCamara, 1); sb.append(',')
+        real(sb, m.fpsAnalisis, 1); sb.append(',')
+        sb.append(Csv.campo(Csv.textoSeguro(m.estadoCamara))).append(',')
+        sb.append(m.costoMuestraUs).append(',')
+        sb.append(m.factorCorriente).append(',')
+        sb.append(m.signoCorriente).append(',')
+        real(sb, m.razonCarga, 3); sb.append(',')
+        if (m.horaMs > 0) hora(sb, m.horaMs)
+        sb.append(Csv.FIN_DE_LINEA)
+    }
+
     fun renglon(m: MuestraRecursos, hora: (Long) -> String = { it.toString() }): String {
         val sb = StringBuilder(256)
-        Csv.renglon(
-            listOf(
-                m.tMs.toString(),
-                Csv.textoSeguro(m.fase),
-                entero(m.cpuMs),
-                real(m.cpuPctNucleo, 1),
-                entero(m.heapJavaKb),
-                entero(m.heapNativoKb),
-                entero(m.rssKb),
-                entero(m.rssAnonKb),
-                entero(m.hilos.toLong()),
-                entero(m.fds.toLong()),
-                if (m.corrienteCruda == Int.MIN_VALUE) "" else m.corrienteCruda.toString(),
-                m.corrienteUa?.toString() ?: "",
-                if (m.voltajeMv > 0) m.voltajeMv.toString() else "",
-                real(m.potenciaMw, 1),
-                if (m.cargaUah == Int.MIN_VALUE || m.cargaUah <= 0) "" else m.cargaUah.toString(),
-                if (m.bateriaPct in 0..100) m.bateriaPct.toString() else "",
-                if (m.tempBatDc == Int.MIN_VALUE) "" else m.tempBatDc.toString(),
-                if (m.enchufado) "si" else "no",
-                entero(m.termico.toLong()),
-                real(m.headroom.toDouble(), 3),
-                real(m.fpsCamara, 1),
-                real(m.fpsAnalisis, 1),
-                Csv.textoSeguro(m.estadoCamara),
-                m.costoMuestraUs.toString(),
-                m.factorCorriente.toString(),
-                m.signoCorriente.toString(),
-                real(m.razonCarga, 3),
-                if (m.horaMs > 0) hora(m.horaMs) else "",
-            ),
-            sb,
-        )
+        agregar(m, sb) { s, ms -> s.append(hora(ms)) }
         return sb.toString()
     }
 
@@ -334,6 +526,28 @@ object CsvRecursos {
         return sb.toString()
     }
 
-    private fun entero(v: Long) = if (v >= 0) v.toString() else ""
-    private fun real(v: Double, decimales: Int) = if (v.isNaN() || v.isInfinite()) "" else Csv.decimal(v, decimales)
+    private fun entero(sb: StringBuilder, v: Long) {
+        if (v >= 0) sb.append(v)
+    }
+
+    private fun real(sb: StringBuilder, v: Double, decimales: Int) {
+        if (!v.isNaN() && !v.isInfinite()) agregarDecimal(sb, v, decimales)
+    }
+
+    /** [v] con [decimales] (redondeo a la mitad hacia arriba) y punto decimal, sin `String.format`. */
+    fun agregarDecimal(sb: StringBuilder, v: Double, decimales: Int) {
+        var escala = 1L
+        repeat(decimales) { escala *= 10 }
+        val redondeado = Math.round(abs(v) * escala)
+        if (v < 0 && redondeado != 0L) sb.append('-')
+        sb.append(redondeado / escala)
+        if (decimales == 0) return
+        sb.append('.')
+        val fraccion = redondeado % escala
+        var divisor = escala / 10
+        while (divisor > 0) {
+            sb.append(('0'.code + ((fraccion / divisor) % 10).toInt()).toChar())
+            divisor /= 10
+        }
+    }
 }

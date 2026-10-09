@@ -137,6 +137,32 @@ object CsvSesion {
         }
     }
 
+    /**
+     * Las anotaciones (condición de cada bloque y notas) que quedaron en las columnas condicion y nota de un CSV escrito
+     * por [escribir]: para reconstruirlas si se perdió anotaciones.csv. Un bloque empieza donde cambia la condición.
+     */
+    fun leerAnotaciones(texto: String, inicioSesion: Long): Anotaciones {
+        val renglones = Csv.leer(texto)
+        if (renglones.isEmpty()) return Anotaciones(inicioSesion)
+        val indice = renglones[0].withIndex().associate { (i, nombre) -> nombre to i }
+        val iN = indice["n"] ?: return Anotaciones(inicioSesion)
+        val iCondicion = indice["condicion"]
+        val iNota = indice["nota"]
+        var a = Anotaciones(inicioSesion)
+        var previa = Condicion.NORMAL
+        for (r in renglones.drop(1).sortedBy { it.getOrNull(iN)?.toIntOrNull() ?: Int.MAX_VALUE }) {
+            val n = r.getOrNull(iN)?.toIntOrNull() ?: continue
+            val condicion = iCondicion?.let { r.getOrNull(it) }?.let { c -> Condicion.entries.firstOrNull { it.name == c } }
+            if (condicion != null && condicion != previa) {
+                a = a.copy(bloques = a.bloques + Bloque(n, condicion))
+                previa = condicion
+            }
+            val nota = iNota?.let { r.getOrNull(it) }.orEmpty()
+            if (nota.isNotEmpty()) a = a.conNota(n, Csv.textoOriginal(nota))
+        }
+        return a
+    }
+
     /** Un nombre de archivo sin espacios, acentos ni signos que estorben al compartirlo. */
     fun nombreArchivo(prefijo: String, clave: String): String =
         prefijo + "-" + clave.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').take(80) + ".csv"

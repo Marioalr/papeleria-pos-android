@@ -3,6 +3,7 @@ package mx.papeleriapos.android.estres
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.android.medicion.MuestraRecursos
 import mx.papeleriapos.android.sesion.DatosEquipo
+import mx.papeleriapos.escaner.Motor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,30 +25,101 @@ class CriteriosTest {
         assertTrue(Cuentas.pendiente(listOf(2.0, 2.0), listOf(1.0, 3.0)).isNaN())
     }
 
+    private val p95 = "p95 al primer cuadro (inicio → final, ms)"
+
     @Test
-    fun `un error es recuperado si despues hubo un ciclo bueno`() {
-        val ciclos = listOf(ciclo(1), ciclo(2, error = "no abrió"), ciclo(3), ciclo(4, error = "sin cuadros"), ciclo(5, error = "sin cuadros"))
-        assertEquals(2, CriteriosCiclos.erroresSinRecuperar(ciclos))
-        assertEquals(0, CriteriosCiclos.erroresSinRecuperar(ciclos.take(3)))
-        assertEquals(1, CriteriosCiclos.erroresSinRecuperar(listOf(ciclo(1, error = "x"))))
+    fun `con el mismo controlador un error se recupera solo si el ciclo siguiente sale bien`() {
+        val ciclos = listOf(ciclo(1), ciclo(2, error = "no abrió"), ciclo(3), ciclo(4, error = "sin cuadros"), ciclo(5, error = "sin cuadros"), ciclo(6))
+        // El 2 se recuperó (el 3 salió bien); el 4 no (el 5 también falló); el 5 sí (el 6 salió bien).
+        assertEquals(1, CriteriosCiclos.erroresSinRecuperar(ciclos, nuevoPorCiclo = false))
+        assertEquals(0, CriteriosCiclos.erroresSinRecuperar(ciclos.take(3), nuevoPorCiclo = false))
+        // El último no tiene siguiente: no se recuperó.
+        assertEquals(1, CriteriosCiclos.erroresSinRecuperar(listOf(ciclo(1, error = "x")), nuevoPorCiclo = false))
+        // Un salto en la numeración (ciclo cancelado) no cuenta como recuperado.
+        assertEquals(1, CriteriosCiclos.erroresSinRecuperar(listOf(ciclo(1, error = "x"), ciclo(3)), nuevoPorCiclo = false))
+    }
+
+    @Test
+    fun `con un controlador nuevo en cada ciclo todo error cuenta como sin recuperar`() {
+        val ciclos = listOf(ciclo(1), ciclo(2, error = "no abrió"), ciclo(3), ciclo(4, error = "sin cuadros"), ciclo(5))
+        assertEquals(2, CriteriosCiclos.erroresSinRecuperar(ciclos, nuevoPorCiclo = true))
+        assertEquals(0, CriteriosCiclos.erroresSinRecuperar(ciclos, nuevoPorCiclo = false))
+        val d = CriteriosCiclos.evaluar((1..200).map { if (it == 50) ciclo(it, error = "x") else ciclo(it) }, memoriaEstable, nuevoPorCiclo = true)
+        assertEquals(listOf("Errores sin recuperar (controlador nuevo: todos cuentan)"), d.fallidos.map { it.nombre })
+    }
+
+    @Test
+    fun `199 ciclos sin cuadros y el ultimo bien no pasa en ningun modo`() {
+        val ciclos = (1..199).map { ciclo(it, error = "sin cuadros").copy(primerCuadroMs = Double.NaN) } + ciclo(200)
+        for (nuevo in listOf(true, false)) {
+            val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = nuevo)
+            assertFalse(d.pasa)
+            val fallidos = d.fallidos.map { it.nombre }
+            assertTrue(fallidos.toString(), "Ciclos con error" in fallidos)
+            assertTrue(fallidos.toString(), p95 in fallidos)
+            assertTrue(fallidos.toString(), fallidos.any { it.startsWith("Errores sin recuperar") })
+        }
+    }
+
+    @Test
+    fun `una falla intermitente del 50 por ciento no pasa aunque cada error se recupere`() {
+        val ciclos = (1..200).map { if (it % 2 == 0) ciclo(it, error = "sin cuadros") else ciclo(it) }
+        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = false)
+        assertFalse(d.pasa)
+        // Con el mismo controlador cada error se recupera en el ciclo siguiente (menos el 200), pero son 100 de 200.
+        assertTrue(d.fallidos.map { it.nombre }.contains("Ciclos con error"))
+    }
+
+    @Test
+    fun `hasta el 1 por ciento de ciclos con error (o 2) pasa si se recuperan`() {
+        assertEquals(2, CriteriosCiclos.maximoConError(50))
+        assertEquals(2, CriteriosCiclos.maximoConError(200))
+        assertEquals(5, CriteriosCiclos.maximoConError(500))
+        val dos = (1..200).map { if (it == 40 || it == 90) ciclo(it, error = "x") else ciclo(it) }
+        assertTrue(CriteriosCiclos.evaluar(dos, memoriaEstable, nuevoPorCiclo = false).pasa)
+        val tres = (1..200).map { if (it == 40 || it == 90 || it == 140) ciclo(it, error = "x") else ciclo(it) }
+        assertEquals(listOf("Ciclos con error"), CriteriosCiclos.evaluar(tres, memoriaEstable, nuevoPorCiclo = false).fallidos.map { it.nombre })
+    }
+
+    @Test
+    fun `con menos de 10 ciclos buenos el p95 falla en lugar de omitirse`() {
+        val pocos = (1..10).map { ciclo(it) }
+        // Sin el ciclo 1 (frío) quedan 9.
+        val d = CriteriosCiclos.evaluar(pocos, memoriaEstable, nuevoPorCiclo = false)
+        val c = d.criterios.single { it.nombre == p95 }
+        assertFalse(c.pasa)
+        assertEquals("solo 9 ciclos buenos", c.valor)
+        assertTrue(CriteriosCiclos.evaluar((1..11).map { ciclo(it) }, memoriaEstable, nuevoPorCiclo = false).criterios.single { it.nombre == p95 }.pasa)
+    }
+
+    @Test
+    fun `la ventana de inicio no incluye el ciclo 1 frio`() {
+        // El 1 tarda 3 s (CameraX, bibliotecas, ML Kit). Si contara, el p95 inicial sería enorme y el ×1.2 no diría nada.
+        val ciclos = (1..200).map { ciclo(it, primer = if (it == 1) 3_000.0 else if (it > 180) 520.0 else 400.0) }
+        val (inicio, fin) = CriteriosCiclos.extremos(ciclos)
+        assertEquals((2..21).toList(), inicio.map { it.n })
+        assertEquals((181..200).toList(), fin.map { it.n })
+        assertEquals(listOf(p95), CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = false).fallidos.map { it.nombre })
     }
 
     @Test
     fun `200 ciclos estables pasan`() {
         val ciclos = (1..200).map { ciclo(it, primer = 380.0 + (it % 7) * 5) } + emptyList()
-        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable)
-        assertTrue(d.fallidos.toString(), d.pasa)
+        for (nuevo in listOf(true, false)) {
+            val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = nuevo)
+            assertTrue(d.fallidos.toString(), d.pasa)
+        }
         val (inicio, fin) = CriteriosCiclos.extremos(ciclos)
-        assertEquals((1..20).toList(), inicio.map { it.n })
+        assertEquals((2..21).toList(), inicio.map { it.n })
         assertEquals((181..200).toList(), fin.map { it.n })
     }
 
     @Test
     fun `si el primer cuadro se vuelve 30 por ciento mas lento al final no pasa`() {
         val ciclos = (1..200).map { ciclo(it, primer = if (it > 180) 520.0 else 400.0) }
-        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable)
+        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = false)
         assertFalse(d.pasa)
-        assertEquals(listOf("p95 al primer cuadro (inicio → final, ms)"), d.fallidos.map { it.nombre })
+        assertEquals(listOf(p95), d.fallidos.map { it.nombre })
     }
 
     @Test
@@ -55,31 +127,33 @@ class CriteriosTest {
         val ciclos = (1..200).map { ciclo(it) }
         // 3 MB por cada 100 ciclos en el heap nativo.
         val fuga = memoriaEstable.map { it.copy(heapNativoKb = 30_000 + it.en * 30L) }
-        assertEquals(listOf("Heap nativo (KB por 100 ciclos)"), CriteriosCiclos.evaluar(ciclos, fuga).fallidos.map { it.nombre })
+        val mismo = { m: List<PuntoMemoria> -> CriteriosCiclos.evaluar(ciclos, m, nuevoPorCiclo = false) }
+        assertEquals(listOf("Heap nativo (KB por 100 ciclos)"), mismo(fuga).fallidos.map { it.nombre })
         val hilos = memoriaEstable.mapIndexed { i, p -> p.copy(hilos = 40 + i) }
-        assertEquals(listOf("Hilos (base → final)"), CriteriosCiclos.evaluar(ciclos, hilos).fallidos.map { it.nombre })
+        assertEquals(listOf("Hilos (base → final)"), mismo(hilos).fallidos.map { it.nombre })
         val fds = memoriaEstable.map { it.copy(fds = 110 + it.en / 20) }
-        assertEquals(listOf("Descriptores (base → final)"), CriteriosCiclos.evaluar(ciclos, fds).fallidos.map { it.nombre })
+        assertEquals(listOf("Descriptores (base → final)"), mismo(fds).fallidos.map { it.nombre })
         // Bajar no es fuga.
         val baja = memoriaEstable.mapIndexed { i, p -> p.copy(hilos = 40 - i, fds = 110 - i) }
-        assertTrue(CriteriosCiclos.evaluar(ciclos, baja).pasa)
+        assertTrue(mismo(baja).pasa)
         // Un kernel sin RSS no hace fallar.
-        assertTrue(CriteriosCiclos.evaluar(ciclos, memoriaEstable.map { it.copy(rssKb = -1) }).pasa)
+        assertTrue(mismo(memoriaEstable.map { it.copy(rssKb = -1) }).pasa)
     }
 
     @Test
     fun `un error al final sin recuperar no pasa`() {
         val ciclos = (1..199).map { ciclo(it) } + ciclo(200, error = "no cerró")
-        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable)
+        val d = CriteriosCiclos.evaluar(ciclos, memoriaEstable, nuevoPorCiclo = false)
         assertEquals(listOf("Errores sin recuperar"), d.fallidos.map { it.nombre })
     }
+
+    private val bien = FinalRafaga(1.5f, 1.5f, true, false, false, "ESCANEANDO", null, zoomsDistintos = 2, zoomCancelados = 900)
 
     @Test
     fun `la rafaga cuenta los huecos sin cuadros y compara la interfaz con la camara`() {
         val segundos = listOf(10L, 20, 30, 30, 30, 31, 40).mapIndexed { i, c -> SegundoRafaga(i + 1, 33 * (i + 1), 5 * (i + 1), c, "ESCANEANDO") }
         assertEquals(2, CriteriosRafaga.huecoMaximo(segundos))
-        val bien = FinalRafaga(1.5f, 1.5f, true, false, false, "ESCANEANDO", null)
-        assertTrue(CriteriosRafaga.evaluar(segundos, bien).pasa)
+        assertTrue(CriteriosRafaga.evaluar(segundos, bien).fallidos.toString(), CriteriosRafaga.evaluar(segundos, bien).pasa)
         val linterna = bien.copy(linternaUi = true)
         assertEquals(listOf("Linterna de la interfaz = la de la cámara"), CriteriosRafaga.evaluar(segundos, linterna).fallidos.map { it.nombre })
         val zoom = bien.copy(zoomReal = 1f)
@@ -91,6 +165,21 @@ class CriteriosTest {
         val atorado = segundos + listOf(40L, 40, 40).mapIndexed { i, c -> SegundoRafaga(8 + i, 300, 50, c, "ESCANEANDO") }
         assertEquals(listOf("Segundos seguidos sin cuadros nuevos"), CriteriosRafaga.evaluar(atorado, bien).fallidos.map { it.nombre })
         assertFalse("Cancelada: sin final", CriteriosRafaga.evaluar(segundos, null).pasa)
+    }
+
+    @Test
+    fun `una rafaga que no movio el zoom o termino con la linterna encendida no pasa`() {
+        val segundos = (1..5).map { SegundoRafaga(it, 33 * it, 5 * it, 30L * it, "ESCANEANDO") }
+        // La cámara siempre reportó lo mismo (p. ej. las dos órdenes daban 1×): no estresó nada.
+        val quieto = bien.copy(zoomsDistintos = 1)
+        assertEquals(listOf("Zooms distintos que reportó la cámara"), CriteriosRafaga.evaluar(segundos, quieto).fallidos.map { it.nombre })
+        // Las canceladas por la siguiente son lo esperado; otras fallas no.
+        assertTrue(CriteriosRafaga.evaluar(segundos, bien.copy(zoomCancelados = 1_999)).pasa)
+        assertEquals(listOf("Órdenes de zoom con error"), CriteriosRafaga.evaluar(segundos, bien.copy(zoomFallidos = 3)).fallidos.map { it.nombre })
+        // La última orden apaga la linterna: encendida al final no pasa, aunque la interfaz diga lo mismo.
+        val prendida = bien.copy(linternaUi = true, linternaReal = true)
+        assertEquals(listOf("Linterna al final (la última orden la apaga)"), CriteriosRafaga.evaluar(segundos, prendida).fallidos.map { it.nombre })
+        assertEquals(listOf("Órdenes de linterna con error"), CriteriosRafaga.evaluar(segundos, bien.copy(linternaFallidas = 1)).fallidos.map { it.nombre })
     }
 
     @Test
@@ -151,18 +240,25 @@ class CriteriosTest {
     @Test
     fun `los CSV de estres traen sus columnas y el resumen sus criterios`() {
         val ciclos = listOf(ciclo(1), ciclo(2, error = "no abrió").copy(abrirMs = Double.NaN))
-        val texto = CsvEstres.ciclos(ciclos, listOf(memoria(1)))
+        val config = ConfigEstres(Motor.ML_KIT, fpsFijo30 = false)
+        val texto = CsvEstres.ciclos(ciclos, listOf(memoria(1)), config)
         val f = Csv.leer(texto)
         assertEquals(CsvEstres.COLUMNAS_CICLOS, f[0])
+        assertTrue(f.all { it.size == CsvEstres.COLUMNAS_CICLOS.size })
         assertEquals("150.0", f[1][1])
         assertEquals("20000", f[1][5])
         assertEquals("", f[2][1])
         assertEquals("no abrió", f[2][4])
         assertEquals("", f[2][5])
+        assertEquals(listOf("ML_KIT", "15-30"), f[1].takeLast(2))
         val d = Dictamen(listOf(Criterio("Errores sin recuperar", "0", "0", true), Criterio("x", "=1", "y", false)))
-        val r = Csv.leer(CsvEstres.resumen("CICLOS", d, DatosEquipo("Pixel", 36, "0.1.0", "abc")))
+        val r = Csv.leer(CsvEstres.resumen("CICLOS", d, DatosEquipo("Pixel", 36, "0.1.0", "abc"), config))
         assertEquals(CsvEstres.COLUMNAS_RESUMEN, r[0])
-        assertEquals(listOf("CICLOS", "x", "'=1", "y", "no", "Pixel", "36", "0.1.0", "abc"), r[2])
+        assertEquals(listOf("CICLOS", "x", "'=1", "y", "no", "Pixel", "36", "0.1.0", "abc", "ML_KIT", "15-30"), r[2])
+        // El motor y los FPS van en todos los CSV de datos.
+        assertEquals(listOf("motor", "rango_fps"), CsvEstres.COLUMNAS_RAFAGA.takeLast(2))
+        assertEquals(listOf("motor", "rango_fps"), CsvEstres.COLUMNAS_MINUTOS.takeLast(2))
+        assertEquals("rango_fps", CsvEstres.COLUMNAS_MOTOR.last())
         assertFalse(d.pasa)
         assertFalse(Dictamen(emptyList()).pasa)
     }

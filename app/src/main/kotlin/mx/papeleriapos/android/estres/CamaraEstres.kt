@@ -9,11 +9,14 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import androidx.annotation.MainThread
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraControl
 import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraState
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.TorchState
+import androidx.camera.core.ZoomState
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
 import androidx.core.content.ContextCompat
@@ -21,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.Observer
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import mx.papeleriapos.android.fabrica.crearControlador
@@ -37,6 +42,11 @@ import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.Diagnostico
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.camara.ControladorCamara
+import java.util.concurrent.ExecutionException
+import kotlin.coroutines.resume
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** Un ciclo de vida propio para la prueba: la cámara se abre y se cierra moviéndolo, sin depender de la pantalla. */
 class DuenoEstres : LifecycleOwner {
@@ -56,9 +66,11 @@ class DuenoEstres : LifecycleOwner {
 /**
  * Lo delgado de las pruebas de estrés: un controlador propio ([crearControlador]) con su propio [DuenoEstres] y un
  * `ImageReader` como visor (sin pantalla: CameraX no arranca la sesión si nadie consume la vista previa). El estado de
- * la cámara (OPEN, CLOSED, errores), el zoom y la linterna reales se leen del `CameraInfo` de CameraX.
+ * la cámara (OPEN, CLOSED, errores), el zoom y la linterna reales se leen del `CameraInfo` de CameraX. La ráfaga maneja
+ * el zoom y la linterna directo con el `CameraControl` de la cámara enlazada ([ControladorCamara.camara]): así sí es una
+ * orden cada 30 ms y cuenta las que la siguiente cancela.
  *
- * Se usa desde el hilo principal.
+ * Se usa desde el hilo principal. Es dueña de su controlador: [liberar] lo cierra.
  *
  * @param nuevoPorCiclo true = cada ciclo crea y cierra un controlador (prueba fugas de hilos, motores y descriptores);
  *   false = un solo controlador y el ciclo de vida va de CREATED a RESUMED (como ir y volver de segundo plano).
@@ -67,13 +79,14 @@ class CamaraEstres(
     contexto: Context,
     private val alcance: CoroutineScope,
     private val nuevoPorCiclo: Boolean = true,
-    motorInicial: Motor = Motor.AUTOMATICO,
+    configuracion: ConfigEstres = ConfigEstres(),
 ) : CamaraBajoPrueba, ControlesBajoPrueba, MotorBajoPrueba {
     private val app = contexto.applicationContext
     private val dueno = DuenoEstres()
     private var controlador: ControladorEscaner? = null
     private var config = ConfigEscaner(
-        motor = motorInicial,
+        motor = configuracion.motor,
+        fpsFijo30 = configuracion.fpsFijo30,
         // Que no se pause ni se apague sola a media prueba, y sin bip ni vibración.
         segundosParaPausar = 0,
         segundosParaApagar = 0,
@@ -86,7 +99,6 @@ class CamaraEstres(
     private val estadoCamara = MutableStateFlow<CameraState?>(null)
     private val observador = Observer<CameraState> { estadoCamara.value = it }
     @Volatile private var actualizaciones = 0L
-    private val zoomBase = ConfigEscaner().zoomMaximo
     private val ancho = app.resources.displayMetrics.widthPixels.coerceAtLeast(720)
     private val alto = app.resources.displayMetrics.heightPixels.coerceAtLeast(1280)
 
@@ -165,17 +177,63 @@ class CamaraEstres(
 
     // ---- Ráfaga de zoom y linterna ----
 
-    override fun zoom(alto: Boolean) {
-        // El controlador no tiene una orden de zoom: cambiar el tope pide el zoom inicial (con tope 1 queda en 1×) por el
-        // mismo camino que usa la guía (hilo de análisis → hilo principal → CameraControl).
-        val c = controlador ?: return
-        config = config.copy(zoomMaximo = if (alto) zoomBase else 1f)
-        c.configurar(config)
+    private var zoomMinimo = 1f
+    private var zoomAlto = 1f
+    /** Los `zoomRatio` que reportó la cámara durante la ráfaga, en centésimas. */
+    private val zoomsVistos = HashSet<Int>()
+    private var zoomCancelados = 0
+    private var zoomFallidos = 0
+    private var linternaFallidas = 0
+    private var observandoZoom: CameraInfo? = null
+    private val observadorZoom = Observer<ZoomState> { zoomsVistos += (it.zoomRatio * 100).roundToInt() }
+
+    private fun camara(): Camera? = (controlador as? ControladorCamara)?.camara
+
+    /** Antes de la ráfaga, ya abierta: el zoom mínimo y el alto (2× o el máximo) y empieza a ver qué reporta la cámara. */
+    fun prepararRafaga(): Boolean {
+        val i = camara()?.cameraInfo ?: return false
+        val zs = i.zoomState.value
+        zoomMinimo = zs?.minZoomRatio ?: 1f
+        zoomAlto = min(2f, zs?.maxZoomRatio ?: 1f)
+        zoomCancelados = 0
+        zoomFallidos = 0
+        linternaFallidas = 0
+        i.zoomState.observeForever(observadorZoom)
+        observandoZoom = i
+        // Al registrarse llega el zoom de antes de la ráfaga: solo cuentan los que reporte durante ella.
+        zoomsVistos.clear()
+        return true
     }
 
-    override fun alternarLinterna() {
-        controlador?.alternarLinterna()
+    override fun zoom(alto: Boolean) {
+        val cam = camara() ?: return
+        val f = cam.cameraControl.setZoomRatio(if (alto) zoomAlto else zoomMinimo)
+        f.addListener({ contar(f, zoom = true) }, principal)
     }
+
+    override fun linterna(encender: Boolean) {
+        val cam = camara() ?: return
+        if (!cam.cameraInfo.hasFlashUnit()) return
+        val f = cam.cameraControl.enableTorch(encender)
+        f.addListener({ contar(f, zoom = false) }, principal)
+    }
+
+    /** Cuenta cómo terminó una orden: la siguiente la canceló (lo esperado a 30 ms) o falló por otra cosa. */
+    private fun contar(f: ListenableFuture<Void>, zoom: Boolean) {
+        try {
+            f.get()
+        } catch (e: ExecutionException) {
+            if (e.cause is CameraControl.OperationCanceledException) {
+                if (zoom) zoomCancelados++
+            } else if (zoom) zoomFallidos++ else linternaFallidas++
+        } catch (e: java.util.concurrent.CancellationException) {
+            if (zoom) zoomCancelados++
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+    }
+
+    private val principal = ContextCompat.getMainExecutor(app)
 
     override fun cuadros(): Long {
         val d = diagnostico
@@ -186,7 +244,20 @@ class CamaraEstres(
 
     override fun fase(): String = controlador?.estado?.value?.fase?.name ?: ""
 
+    /**
+     * Al terminar: se le devuelve a la cámara el zoom que dice el escáner (la ráfaga lo manejó por fuera) y, ya asentado,
+     * se compara la interfaz con la cámara. La última orden de linterna la apagó.
+     */
     override suspend fun final(): FinalRafaga {
+        observandoZoom?.zoomState?.removeObserver(observadorZoom)
+        observandoZoom = null
+        val distintos = zoomsVistos.size
+        val cam = camara()
+        val zoomEscaner = controlador?.estado?.value?.zoom
+        if (cam != null && zoomEscaner != null) {
+            val f = cam.cameraControl.setZoomRatio(zoomEscaner.coerceIn(zoomMinimo, cam.cameraInfo.zoomState.value?.maxZoomRatio ?: zoomEscaner))
+            withTimeoutOrNull(2_000) { esperar(f) }
+        }
         delay(1_500)
         val e = controlador?.estado?.value
         val i = info
@@ -198,7 +269,15 @@ class CamaraEstres(
             linternaReal = i?.torchState?.value?.let { it == TorchState.ON },
             fase = e?.fase?.name ?: "",
             error = error(),
+            zoomsDistintos = distintos,
+            zoomCancelados = zoomCancelados,
+            zoomFallidos = zoomFallidos,
+            linternaFallidas = linternaFallidas,
         )
+    }
+
+    private suspend fun esperar(f: ListenableFuture<Void>) = suspendCancellableCoroutine { c ->
+        f.addListener({ if (c.isActive) c.resume(Unit) }, principal)
     }
 
     // ---- Cambio de motor ----
@@ -217,10 +296,12 @@ class CamaraEstres(
         return e != null && e.fase != Fase.ERROR
     }
 
-    /** Suelta todo: el controlador, el ciclo de vida, el visor y el observador. */
+    /** Suelta todo: el controlador, el ciclo de vida, el visor y los observadores. Se puede llamar más de una vez. */
     fun liberar() {
         for (t in trabajos) t.cancel()
         trabajos.clear()
+        observandoZoom?.zoomState?.removeObserver(observadorZoom)
+        observandoZoom = null
         controlador?.cerrar()
         controlador = null
         info?.cameraState?.removeObserver(observador)

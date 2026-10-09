@@ -41,18 +41,19 @@ import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.ui.PantallaEscaner
 
-/** El escáner a pantalla completa con lo leído abajo y la salida a la app completa. */
+/** El escáner a pantalla completa con lo leído en esta apertura abajo y la salida a la app completa. */
 @Composable
 internal fun PantallaRapida(vm: EscaneoRapidoViewModel, alAbrirApp: () -> Unit, alCerrar: () -> Unit) {
-    val lista by vm.lista.collectAsStateWithLifecycle()
+    val aqui by vm.aqui.collectAsStateWithLifecycle()
     PantallaEscaner(vm.controlador, Modifier.fillMaxSize()) {
-        PanelRapido(vm.modo, lista, alAbrirApp, alCerrar)
+        PanelRapido(vm.modo, aqui, alAbrirApp, alCerrar)
     }
 }
 
 /**
- * Lo leído en el modo actual (solo para ver: corregir, vaciar o exportar se hace en la app) y los botones. No pasa del
- * 31 % del alto para no tapar la franja de lectura (del 32 % al 68 %).
+ * Lo mínimo sobre el bloqueo: cuántas piezas se leyeron en esta apertura y la última (para confirmar lo que se escaneó).
+ * La venta o el conteo completos (que pueden traer lecturas de antes) solo se ven en la app, ya desbloqueada; ahí
+ * también se corrige, se vacía o se exporta. No pasa del 31 % del alto para no tapar la franja (del 32 % al 68 %).
  */
 @Composable
 private fun BoxScope.PanelRapido(modo: Modo, lista: ListaLecturas, alAbrirApp: () -> Unit, alCerrar: () -> Unit) {
@@ -70,7 +71,7 @@ private fun BoxScope.PanelRapido(modo: Modo, lista: ListaLecturas, alAbrirApp: (
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    "${if (modo == Modo.VENTA) "Venta" else "Conteo"} · ${lista.total} pzs",
+                    "${if (modo == Modo.VENTA) "Venta" else "Conteo"} · ${lista.total} pzs leídas ahora",
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.testTag("rapido-total"),
                 )

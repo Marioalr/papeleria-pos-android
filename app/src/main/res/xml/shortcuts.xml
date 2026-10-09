@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Atajos del ícono (mantener presionado). Existen desde API 25; en API 24 el archivo se ignora.
-     El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído vive en el proceso
-     (ListasCompartidas) y MainActivity solo aplica el modo. -->
+     El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído está guardado
+     (ListasCompartidas, en disco) y MainActivity solo aplica el modo. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:targetApi="25">

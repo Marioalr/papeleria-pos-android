@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.android.ui.AppEscaner
+import mx.papeleriapos.android.ui.Pestana
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.PasoApertura
@@ -40,11 +41,19 @@ import mx.papeleriapos.escaner.nucleo.Modo
  * destello) y la interfaz completa llega en el siguiente, y el TTFD es el primer cuadro analizado.
  *
  * Los atajos «Escanear venta» y «Escanear conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea
- * con ellos, pero lo leído vive en el proceso ([ListasCompartidas]) y no se pierde.
+ * con ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde.
+ *
+ * Al restaurar con estado guardado (Android mató el proceso en segundo plano y el empleado toca el ícono: el frío más
+ * común al sacar el celular del bolsillo) también enlaza en `onCreate` si la pestaña a la vista era la del escáner.
  */
 class MainActivity : ComponentActivity() {
     private val vm: EscanerViewModel by viewModels()
     private var detenida = false
+    /**
+     * Si la pestaña a la vista es la del escáner, para guardarlo en el estado de la Activity. La interfaz completa llega
+     * en el segundo cuadro: hasta entonces vale lo restaurado.
+     */
+    private var escanerVisible = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Arranque.alCrearActividad()
@@ -52,15 +61,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val controlador = vm.controlador
         Arranque.reportarAlPrimerAnalisis(this, controlador)
-        if (savedInstanceState == null) {
-            aplicarModo(intent)
-            // Solo en un arranque nuevo: al restaurar, la pestaña a la vista puede no ser la del escáner.
+        if (savedInstanceState == null) aplicarModo(intent)
+        val guardado = savedInstanceState?.takeIf { it.containsKey(CLAVE_ESCANER_VISIBLE) }?.getBoolean(CLAVE_ESCANER_VISIBLE)
+        escanerVisible = guardado ?: (savedInstanceState == null)
+        if (enlazarAlCrear(restaurando = savedInstanceState != null, escanerVisible = guardado)) {
             vm.enlazarTemprano(this, ControladorCamara.PANTALLA_PRINCIPAL, descuentoAbajoDp = ALTO_PESTANAS_DP)
         }
         Arranque.marcarPrimerCuadroUi(window.decorView)
         setContent {
-            ContenidoEnDosCuadros(controlador) { TemaEscaner { AppEscaner(vm = vm) } }
+            ContenidoEnDosCuadros(controlador) {
+                TemaEscaner { AppEscaner(vm = vm, alCambiarPestana = { escanerVisible = it == Pestana.ESCANEAR }) }
+            }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(CLAVE_ESCANER_VISIBLE, escanerVisible)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -81,6 +98,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         detenida = true
+        vm.alDetenerse()
     }
 
     private fun aplicarModo(intent: Intent?) {
@@ -100,8 +118,17 @@ class MainActivity : ComponentActivity() {
 
         /** La barra de pestañas de abajo (`NavigationBar` de Material 3): para estimar el visor la primera vez. */
         private const val ALTO_PESTANAS_DP = 80
+
+        private const val CLAVE_ESCANER_VISIBLE = "escaner_visible"
     }
 }
+
+/**
+ * Si se enlaza la cámara en `onCreate`: en un arranque nuevo siempre (abre en Escanear); al restaurar, solo si la pestaña
+ * guardada era la del escáner ([escanerVisible]; null = no se guardó, p. ej. de una versión anterior). Si nadie confirma
+ * lo enlazado, el controlador lo suelta solo.
+ */
+internal fun enlazarAlCrear(restaurando: Boolean, escanerVisible: Boolean?): Boolean = !restaurando || escanerVisible == true
 
 /** El testTag que aparece con el primer cuadro analizado (lo esperan el Baseline Profile y Macrobenchmark). */
 const val ETIQUETA_ESCANEANDO = "escaneando"

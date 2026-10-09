@@ -213,6 +213,15 @@ data class SesionPrueba(
         return copy(intentos = intentos.dropLast(1) + u.copy(resultado = resultado))
     }
 
+    /** El último intento se registró a mano (no leyó o se canceló): se puede deshacer. */
+    val puedeDeshacerFallo: Boolean get() = ultimo?.let { !it.resultado.deLectura && it.simbologia.isEmpty() } == true
+
+    /**
+     * Quita el último intento si fue un fallo registrado a mano (un doble toque en «No leyó»). Las lecturas no se quitan:
+     * quedaron registradas por el escáner y se corrigen con su resultado (falso positivo, duplicado…).
+     */
+    fun quitarUltimoFallo(): SesionPrueba = if (puedeDeshacerFallo) copy(intentos = intentos.dropLast(1)) else this
+
     fun contadores(): Map<ResultadoIntento, Int> {
         val cuenta = ResultadoIntento.entries.associateWithTo(LinkedHashMap()) { 0 }
         for (i in intentos) cuenta[i.resultado] = cuenta.getValue(i.resultado) + 1

@@ -123,25 +123,44 @@ class AperturaCamaraTest {
         assertEquals(Proporcion(1080, 2400), MemoriaApertura(ctx).proporcion(PANTALLA))
     }
 
+    /**
+     * Que el segundo controlador de verdad se salte el cálculo del rango: se deja guardado un valor que el cálculo nunca
+     * daría (sin rango fijo, «que decida CameraX») cuando la cámara sí acepta uno. Si enlaza con lo guardado, su rango
+     * queda vacío; si lo hubiera calculado, saldría el fijo. Y como enlazó con lo guardado, al rato lo valida y guarda
+     * el que la cámara da ahora (eso solo pasa en el camino de lo guardado).
+     */
     @Test
     fun conElRangoGuardadoEnlazaSinCalcularloYEscanea() {
-        // Primero uno que calcula y guarda; luego otro que usa lo guardado.
+        // Primero uno que calcula y guarda.
         val dueno = crearDueno(Lifecycle.State.RESUMED)
         val primero = nuevo()
         inst.runOnMainSync { primero.abrir(dueno, 1080, 2400, Surface.ROTATION_0) }
-        atenderHasta(primero) { primero.enlacesHechos >= 1 }
+        atenderHasta(primero) { primero.enlacesHechos >= 1 && primero.estado.value.diagnostico.cuadrosAnalizados >= 3 }
+        val calculado = primero.estado.value.diagnostico.rangoFps
         inst.runOnMainSync { primero.cerrar() }
-        assertNotEquals(RangoEnCache.SinDato, MemoriaApertura(ctx).rangoFps(true))
+        val memoria = MemoriaApertura(ctx)
+        val guardado = memoria.rangoFps(true)
+        assertNotEquals(RangoEnCache.SinDato, guardado)
+        assumeTrue("La cámara no acepta un rango fijo de 30: no se distingue lo guardado de lo calculado", guardado is RangoEnCache.Fijo)
+        assertTrue(calculado.isNotEmpty())
+
+        // Lo guardado ahora dice «sin rango fijo»: el cálculo daría el fijo de arriba.
+        memoria.guardarRangoFps(true, null)
+        assertEquals(RangoEnCache.Auto, memoria.rangoFps(true))
 
         val c = nuevo()
         val otro = crearDueno(Lifecycle.State.RESUMED)
         inst.runOnMainSync { c.abrir(otro, 1080, 2400, Surface.ROTATION_0) }
         atenderHasta(c) { c.estado.value.diagnostico.cuadrosAnalizados >= 10 }
         val d = c.estado.value.diagnostico
-        Log.i(ETIQUETA, "Diagnóstico: producidos ${d.cuadrosProducidos}, analizados ${d.cuadrosAnalizados}, estado ${d.estadoCamara}, FPS ${d.rangoFps}")
+        Log.i(ETIQUETA, "Diagnóstico: producidos ${d.cuadrosProducidos}, analizados ${d.cuadrosAnalizados}, estado ${d.estadoCamara}, FPS «${d.rangoFps}»")
         assertEquals("OPEN", d.estadoCamara)
         assertTrue("Analizó más cuadros de los que dio la cámara", d.cuadrosProducidos >= d.cuadrosAnalizados)
-        assertTrue(d.rangoFps.isNotEmpty())
+        assertEquals("Calculó el rango en lugar de usar el guardado", "", d.rangoFps)
+        assertEquals(1, c.enlacesHechos)
+        // La validación (solo tras enlazar con lo guardado) corrige lo guardado para la próxima, sin volver a enlazar.
+        atenderHasta(c, ControladorCamara.VALIDAR_FPS_TRAS_MS + 5_000) { memoria.rangoFps(true) == guardado }
+        assertEquals(1, c.enlacesHechos)
     }
 
     @Test
