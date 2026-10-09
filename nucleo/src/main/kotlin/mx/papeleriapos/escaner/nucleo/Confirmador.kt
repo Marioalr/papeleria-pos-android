@@ -70,6 +70,13 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
     private val recRearmado = BooleanArray(RECIENTES)
     private var ultima: CodigoLeido? = null
 
+    /**
+     * En el último cuadro procesado, el código a la vista es uno ya aceptado que todavía no se retira: la guía dice «ya
+     * leído» en vez de «leyendo» (no va a contar otra vez hasta que desaparezca).
+     */
+    var yaLeidoEnCuadro = false
+        private set
+
     // Caché de normalización: el mismo texto llega cuadro tras cuadro y no hay que volver a crear cadenas.
     private val cacheTexto = arrayOfNulls<String>(CACHE)
     private val cacheSimbologia = arrayOfNulls<Simbologia>(CACHE)
@@ -103,13 +110,21 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
         cuentaHistoria[cuadro] = n
 
         actualizarPresencia(base, n, potenciales, nanos)
+        yaLeidoEnCuadro = false
 
         val elegido = elegir(n, franja)
-        if (elegido < 0) return null
+        if (elegido < 0) {
+            // Sin lectura en este cuadro: si sigue a la vista (por un potencial) uno ya contado, se avisa igual.
+            yaLeidoEnCuadro = hayPresenteSinRearmar(nanos)
+            return null
+        }
         val codigo = historia[base + elegido]!!
-        if (cuadrosCon(codigo) < necesarias[codigo.simbologia.ordinal]) return null
         val r = reciente(codigo)
-        if (r >= 0 && !recRearmado[r]) return null
+        if (r >= 0 && !recRearmado[r]) {
+            yaLeidoEnCuadro = true
+            return null
+        }
+        if (cuadrosCon(codigo) < necesarias[codigo.simbologia.ordinal]) return null
         val repetida = ultima?.let { mismo(it, codigo) } ?: false
         val caja = cajas[elegido]
         recordar(r, codigo, caja, nanos)
@@ -118,11 +133,19 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
     }
 
     fun reiniciar() {
+        yaLeidoEnCuadro = false
         historia.fill(null); cuentaHistoria.fill(0); cuadro = -1
         cajas.fill(null); cajasInvalidas.fill(null); invalidas = 0
         recCodigo.fill(null); recCaja.fill(null); recAusenteDesde.fill(-1L); recVisto.fill(0L); recRearmado.fill(false)
         ultima = null
         cacheTexto.fill(null); cacheSimbologia.fill(null); cacheCodigo.fill(null); cacheSiguiente = 0
+    }
+
+    private fun hayPresenteSinRearmar(nanos: Long): Boolean {
+        for (r in 0 until RECIENTES) {
+            if (recCodigo[r] != null && !recRearmado[r] && recAusenteDesde[r] < 0 && recVisto[r] == nanos) return true
+        }
+        return false
     }
 
     private fun normalizarConCache(lectura: Lectura): CodigoLeido? {

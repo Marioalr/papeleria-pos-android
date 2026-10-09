@@ -29,6 +29,8 @@ class MotorZxingCpp(simbologias: Set<Simbologia>, probarGiros: Boolean = false) 
     override val motor = Motor.ZXING_CPP
 
     private val lector: BarcodeReader
+    /** Para la pasada con umbral: la imagen ya viene en blanco y negro. */
+    private val lectorBinario: BarcodeReader
 
     init {
         val formatos = simbologias.mapNotNullTo(LinkedHashSet(), ::aFormatoZxing)
@@ -48,6 +50,7 @@ class MotorZxingCpp(simbologias: Set<Simbologia>, probarGiros: Boolean = false) 
                 returnErrors = false,
             ),
         )
+        lectorBinario = BarcodeReader(lector.options.copy(binarizer = BarcodeReader.Binarizer.FIXED_THRESHOLD))
     }
 
     private val recorte = Rect()
@@ -58,6 +61,26 @@ class MotorZxingCpp(simbologias: Set<Simbologia>, probarGiros: Boolean = false) 
     private var mapa: Bitmap? = null
     private var bytesMapa = ByteArray(0)
     private var envoltura: ByteBuffer = ByteBuffer.wrap(bytesMapa)
+
+    /**
+     * Una segunda pasada sobre la región binarizada con [umbral] (el nivel entre barras y espacios que midió el
+     * localizador). El binarizador local de zxing-cpp falla con una etiqueta blanca sobre un fondo gris medio (cartón,
+     * empaques de color): toma el fondo por oscuro y se queda sin zona en blanco. Medido con un cuadro real del emulador:
+     * sin esto no lee; con un umbral fijo, sí. Cuesta una copia de la región y una lectura (~1 ms).
+     */
+    fun leerConUmbral(cuadro: CuadroY, umbral: Int): ResultadoMotor {
+        val r = cuadro.region
+        if (r.ancho < MINIMO || r.alto < MINIMO || umbral !in 1..254) return ResultadoMotor.VACIO
+        val bitmap = prepararMapa(r.ancho, r.alto)
+        copiarPlanoY(cuadro.y, cuadro.pasoFila, r.izquierda, r.arriba, r.ancho, r.alto, bytesMapa, bitmap.rowBytes)
+        val b = bytesMapa
+        for (i in b.indices) b[i] = if ((b[i].toInt() and 0xFF) < umbral) 0 else -1
+        envoltura.rewind()
+        bitmap.copyPixelsFromBuffer(envoltura)
+        val inicio = SystemClock.elapsedRealtimeNanos()
+        val resultados = lectorBinario.read(bitmap, completo, cuadro.rotacion)
+        return armar(resultados, cuadro, SystemClock.elapsedRealtimeNanos() - inicio)
+    }
 
     override fun leer(cuadro: CuadroY): ResultadoMotor {
         val r = cuadro.region
@@ -83,7 +106,11 @@ class MotorZxingCpp(simbologias: Set<Simbologia>, probarGiros: Boolean = false) 
             inicio = SystemClock.elapsedRealtimeNanos()
             resultados = lector.read(bitmap, completo, cuadro.rotacion)
         }
-        val nanos = SystemClock.elapsedRealtimeNanos() - inicio
+        return armar(resultados, cuadro, SystemClock.elapsedRealtimeNanos() - inicio)
+    }
+
+    private fun armar(resultados: List<BarcodeReader.Result>, cuadro: CuadroY, nanos: Long): ResultadoMotor {
+        val r = cuadro.region
         if (resultados.isEmpty()) return resultadoVacio(nanos)
 
         var lecturas: ArrayList<Lectura>? = null

@@ -31,5 +31,6 @@ fi
 
 $adb install -r -g "$apk" >/dev/null
 $adb shell pm grant "$paquete" android.permission.CAMERA
-$adb shell am start -W -n "$paquete/.MainActivity" >/dev/null
+# SIN_ABRIR=1: solo instala (herramientas/e2e.sh abre la app después de limpiar el registro).
+[[ -n "${SIN_ABRIR:-}" ]] || $adb shell am start -W -n "$paquete/.MainActivity" >/dev/null
 echo "Listo. Registro: $adb logcat -s Escaner   Captura: $adb exec-out screencap -p > captura.png"

@@ -77,6 +77,7 @@ class PantallaEscanerTest {
     private val textos = mapOf(
         Indicacion.APUNTA to "Apunta al código de barras",
         Indicacion.LEYENDO to "Leyendo…",
+        Indicacion.YA_LEIDO to "Ya leído: retíralo para leerlo otra vez",
         Indicacion.ACERCATE to "Acércate",
         Indicacion.ALEJATE to "Aléjate un poco",
         Indicacion.IZQUIERDA to "Mueve el celular a la izquierda",

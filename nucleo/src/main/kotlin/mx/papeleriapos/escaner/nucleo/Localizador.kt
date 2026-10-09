@@ -50,6 +50,8 @@ class Localizacion {
     var verificado = false
     var continuidad = 0f
     var oscuroClaro = 0f
+    /** El nivel que separa barras de espacios en la línea central (0 a 255); −1 = desconocido. */
+    var umbral = -1
     /** Diferencia media de luminancia por celda contra el cuadro anterior (movimiento); −1 = sin cuadro previo. */
     var diferenciaCuadro = -1f
     /**
@@ -63,7 +65,7 @@ class Localizacion {
         encontrado = false; tipo = 0; centroX = 0f; centroY = 0f; largo = 0f; grosor = 0f; anguloRad = 0f
         izquierda = 0; arriba = 0; derecha = 0; abajo = 0; tocaBorde = false; cortado = false; celdas = 0
         coherencia = 0f; brillo = 0f; saturados = 0f; oscuros = 0f; moduloPx = 0f; nitidez = 0f; transiciones = 0
-        verificado = false; continuidad = 0f; oscuroClaro = 0f; diferenciaCuadro = -1f; brilloCentral = -1f
+        verificado = false; continuidad = 0f; oscuroClaro = 0f; umbral = -1; diferenciaCuadro = -1f; brilloCentral = -1f
     }
 
     /**
@@ -170,6 +172,7 @@ class Localizador(
     private var ultimoModulo = 0f
     private var ultimaNitidez = 0f
     private var ultimoOscuroClaro = 0f
+    private var ultimoUmbral = -1
 
     // Geometría del cuadro actual.
     private var anchoRejilla = 0
@@ -511,7 +514,7 @@ class Localizador(
             if (analizarLinea(n)) {
                 modulos3[validas] = ultimoModulo; nitideces3[validas] = ultimaNitidez; validas++
                 if (k == 1) {
-                    r.oscuroClaro = ultimoOscuroClaro; origenX = ox; origenY = oy; centralOk = true
+                    r.oscuroClaro = ultimoOscuroClaro; r.umbral = ultimoUmbral; origenX = ox; origenY = oy; centralOk = true
                 }
             }
         }
@@ -636,6 +639,7 @@ class Localizador(
         ultimoModulo = p25.toFloat()
         ultimaNitidez = (sumaSaltos.toFloat() / transiciones) / rango
         ultimoOscuroClaro = if (largoClaro > 0) largoOscuro.toFloat() / largoClaro else 99f
+        ultimoUmbral = umbral
         return true
     }
 

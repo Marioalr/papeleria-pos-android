@@ -244,4 +244,21 @@ class ConfirmadorTest {
         println("confirmador: bytes asignados por cuadro: $porCuadro")
         assertTrue("asigna $porCuadro bytes por cuadro", porCuadro < 64)
     }
+
+    @Test
+    fun `avisa que el codigo a la vista ya se leyo hasta que se retira`() {
+        val c = Confirmador()
+        val l = lectura("7501234567893") to centro
+        c.cuadro(l); assertFalse(c.yaLeidoEnCuadro)
+        assertNotNull(c.cuadro(l)); assertFalse(c.yaLeidoEnCuadro)
+        // Sigue a la vista: ya leído (también si el motor solo lo ve sin leerlo).
+        c.cuadro(l); assertTrue(c.yaLeidoEnCuadro)
+        c.cuadro(potenciales = listOf(centro)); assertTrue(c.yaLeidoEnCuadro)
+        // Se retira: ya no.
+        c.cuadro(); assertFalse(c.yaLeidoEnCuadro)
+        c.vacios(600)
+        // Vuelve tras la ausencia: cuenta otra vez, no es «ya leído».
+        c.cuadro(l); assertFalse(c.yaLeidoEnCuadro)
+        assertNotNull(c.cuadro(l))
+    }
 }

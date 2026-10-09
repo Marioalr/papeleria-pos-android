@@ -31,6 +31,7 @@ import mx.papeleriapos.escaner.nucleo.ReglasConfirmacion
 import mx.papeleriapos.escaner.nucleo.ResultadoMotor
 import mx.papeleriapos.escaner.nucleo.Simbologia
 import mx.papeleriapos.escaner.nucleo.Transformacion
+import mx.papeleriapos.escaner.nucleo.Via
 import java.nio.ByteBuffer
 import kotlin.math.hypot
 import kotlin.math.max
@@ -65,6 +66,9 @@ internal class Analizador(
 
     /** Para las pruebas: ve cada resultado del motor con su transformación, en el hilo de análisis. */
     @Volatile var observadorMotor: ((ResultadoMotor, Transformacion) -> Unit)? = null
+
+    /** Para el diagnóstico: ve cada cuadro (antes del motor) con su transformación y la franja en el buffer. */
+    @Volatile var observadorCuadro: ((ImageProxy, Transformacion, Rectangulo) -> Unit)? = null
 
     /** Lo escribe el observador de la linterna (hilo principal). */
     @Volatile var linternaEncendida = false
@@ -120,11 +124,14 @@ internal class Analizador(
     private var hayCandidato = false
     private var inicioCandidato = 0L
     private var ultimoCandidato = 0L
+    /** La última vez que hubo un código a la vista o una lectura. */
+    private var ultimoIndicio = 0L
     private var verificadosSeguidos = 0
     private var previoX = Float.NaN
     private var previoY = Float.NaN
     private val indicaciones = ArrayList<Indicacion>(MAX_INDICACIONES)
     private var ultimaRegistrada: Indicacion? = null
+    private var indicacionRegistrada: Indicacion? = null
     private var ultimoEnfoque = 0L
     private var lecturas = 0L
     private var ultimoEvento: EventoLectura? = null
@@ -217,6 +224,7 @@ internal class Analizador(
         val nanosLocalizar = SystemClock.elapsedRealtimeNanos() - inicioLocalizar
         medirLuz(y, pasoFila)
         val pareceCodigo = pareceCodigo(loc)
+        observadorCuadro?.invoke(imagen, t, regionFranja)
 
         // 2) El motor lee la franja (o lo visible, para comparar).
         Trace.beginSection("escaner.leer")
@@ -224,7 +232,11 @@ internal class Analizador(
             lector.leer(
                 CuadroY(
                     y, pasoFila, ancho, alto, t.rotacion, if (cfg.recortarFranja) regionFranja else regionVisible, imagen,
-                    regionVisible = regionVisible, codigoProbable = pareceCodigo || hayCandidato,
+                    regionVisible = regionVisible,
+                    // Mientras haya un código cerca (también uno ya leído que sigue a la vista) el respaldo sigue
+                    // corriendo: si dejara de verlo, el filtro de repetidos lo daría por retirado y contaría doble.
+                    codigoProbable = pareceCodigo || hayCandidato || ahora - ultimoIndicio < NANOS_INDICIO,
+                    umbralSugerido = if (pareceCodigo) loc.umbral else -1,
                 ),
             )
         } finally {
@@ -279,8 +291,14 @@ internal class Analizador(
         // 5) Confirmar y guiar.
         val aceptada = confirmador.procesar(leidas, potenciales, franja, ahora)
         o.leido = aceptada != null
+        o.yaLeido = candidato && confirmador.yaLeidoEnCuadro
         val indicacion = guia.actualizar(o)
+        if (indicacion != indicacionRegistrada) {
+            indicacionRegistrada = indicacion
+            Log.i(ETIQUETA, "Indicación: $indicacion")
+        }
 
+        if (candidato || aceptada != null) ultimoIndicio = ahora
         if (candidato) {
             if (!hayCandidato) {
                 hayCandidato = true
@@ -307,10 +325,15 @@ internal class Analizador(
                 else -> -1L
             }
             evento = EventoLectura(
-                aceptada, ms, ArrayList(indicaciones), motorActual, resultado.deRespaldo, o.moduloPx, zoomActual, linternaEncendida,
+                aceptada, ms, ArrayList(indicaciones), motorActual, resultado.via, o.moduloPx, zoomActual, linternaEncendida,
             )
             ultimoEvento = evento
             eventos.tryEmit(evento)
+            val c = aceptada.codigo
+            // Del QR (tickets) no se registra el contenido.
+            val valor = if (c.simbologia == Simbologia.QR) "(${c.normalizado.length} caracteres)" else c.normalizado
+            Log.i(ETIQUETA, "Leído ${c.simbologia.nombre} $valor en $ms ms con ${motorActual.nombre}" +
+                (if (resultado.via != Via.DIRECTA) " (${resultado.via})" else "") + (if (aceptada.repetida) ", repetido" else ""))
             leidoHasta = ahora + NANOS_LEIDO
             cajaLeida = aceptada.caja ?: caja
             // El siguiente código empieza su propio conteo de tiempo e indicaciones.
@@ -482,6 +505,7 @@ internal class Analizador(
 
     private fun reiniciarSeguimiento() {
         hayCandidato = false
+        ultimoIndicio = 0L
         inicioCandidato = 0L
         verificadosSeguidos = 0
         previoX = Float.NaN
@@ -731,7 +755,8 @@ internal class Analizador(
     private fun pareceCodigo(loc: Localizacion) =
         loc.encontrado && loc.tipo == 1 && (loc.verificado || loc.oscuroClaro in OSCURO_CLARO_MIN..OSCURO_CLARO_MAX)
 
-    private fun esPista(i: Indicacion) = i != Indicacion.APUNTA && i != Indicacion.LEYENDO && i != Indicacion.LEIDO
+    private fun esPista(i: Indicacion) =
+        i != Indicacion.APUNTA && i != Indicacion.LEYENDO && i != Indicacion.LEIDO && i != Indicacion.YA_LEIDO
 
     /** Tras volver a abrir o reanudar, un error se vuelve a avisar. */
     private fun olvidarError() {
@@ -756,6 +781,7 @@ internal class Analizador(
         const val NANOS_LEIDO = 500 * NANOS_POR_MS
         /** Un hueco corto (un cuadro sin ver el código) no cuenta como candidato nuevo. */
         const val NANOS_GRACIA_CANDIDATO = 300 * NANOS_POR_MS
+        const val NANOS_INDICIO = 1_000 * NANOS_POR_MS
         const val NANOS_ENFOQUE_CANDIDATO = 700 * NANOS_POR_MS
         const val NANOS_ENTRE_ENFOQUES = 2_000 * NANOS_POR_MS
         const val NANOS_ZOOM_REGRESA = 2_000 * NANOS_POR_MS

@@ -63,8 +63,8 @@ data class EventoLectura(
     /** Indicaciones que se mostraron antes de leer, en orden. */
     val indicaciones: List<Indicacion>,
     val motor: Motor,
-    /** En el motor automático, lo leyó ML Kit (el respaldo) y no zxing-cpp. */
-    val porRespaldo: Boolean = false,
+    /** Por dónde se leyó: zxing-cpp directo, con el umbral del localizador, o ML Kit de respaldo. */
+    val via: mx.papeleriapos.escaner.nucleo.Via = mx.papeleriapos.escaner.nucleo.Via.DIRECTA,
     val moduloPx: Float,
     val zoom: Float,
     val linterna: Boolean,
@@ -162,6 +162,8 @@ class CuadroY(
     val regionVisible: mx.papeleriapos.escaner.nucleo.Rectangulo = region,
     /** El localizador (o los cuadros anteriores) dicen que hay un código: vale la pena el respaldo. */
     val codigoProbable: Boolean = true,
+    /** El nivel entre barras y espacios que midió el localizador (0 a 255); −1 si no lo midió. */
+    val umbralSugerido: Int = -1,
 )
 
 /** Un decodificador. Se usa desde un solo hilo (el de análisis) y se cierra al terminar. */

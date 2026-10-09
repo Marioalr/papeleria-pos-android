@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.rounded.CenterFocusStrong
 import androidx.compose.material.icons.rounded.CenterFocusWeak
+import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.East
 import androidx.compose.material.icons.rounded.Flare
 import androidx.compose.material.icons.rounded.FlashlightOn
@@ -62,6 +63,7 @@ internal object Tonos {
 internal fun textoDe(indicacion: Indicacion): Int = when (indicacion) {
     Indicacion.APUNTA -> R.string.escaner_apunta
     Indicacion.LEYENDO -> R.string.escaner_leyendo
+    Indicacion.YA_LEIDO -> R.string.escaner_ya_leido
     Indicacion.ACERCATE -> R.string.escaner_acercate
     Indicacion.ALEJATE -> R.string.escaner_alejate
     Indicacion.IZQUIERDA -> R.string.escaner_izquierda
@@ -79,6 +81,7 @@ internal fun textoDe(indicacion: Indicacion): Int = when (indicacion) {
 internal fun iconoDe(indicacion: Indicacion): ImageVector = when (indicacion) {
     Indicacion.APUNTA -> Icons.Rounded.ViewWeek
     Indicacion.LEYENDO -> Icons.Rounded.CenterFocusWeak
+    Indicacion.YA_LEIDO -> Icons.Rounded.DoneAll
     Indicacion.ACERCATE -> Icons.Rounded.ZoomIn
     Indicacion.ALEJATE -> Icons.Rounded.ZoomOut
     Indicacion.IZQUIERDA -> Icons.Rounded.West

@@ -16,6 +16,12 @@ data class Lectura(
     override fun hashCode() = 31 * texto.hashCode() + simbologia.hashCode()
 }
 
+/**
+ * Por dónde leyó el motor automático (docs/escaner.md, «Motores»): zxing-cpp tal cual, zxing-cpp sobre la franja
+ * binarizada con el umbral del localizador (etiqueta blanca sobre fondo gris), o ML Kit de respaldo.
+ */
+enum class Via { DIRECTA, UMBRAL, RESPALDO }
+
 /** El resultado de un motor en un cuadro: lo leído y los códigos que vio pero no pudo leer (potenciales). */
 data class ResultadoMotor(
     val lecturas: List<Lectura>,
@@ -23,8 +29,8 @@ data class ResultadoMotor(
     val potencialesBuffer: List<FloatArray>,
     /** Lo que tardó el motor en este cuadro, en nanosegundos (sin contar el recorte). */
     val nanos: Long,
-    /** Lo leyó el motor de respaldo (ML Kit dentro del automático). */
-    val deRespaldo: Boolean = false,
+    /** Por dónde se leyó (en el motor automático puede ser cualquiera de las tres). */
+    val via: Via = Via.DIRECTA,
 ) {
     companion object {
         val VACIO = ResultadoMotor(emptyList(), emptyList(), 0L)

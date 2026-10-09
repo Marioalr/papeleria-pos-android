@@ -6,6 +6,8 @@ enum class Indicacion {
     APUNTA,
     /** Hay un código, bien colocado: se está leyendo. */
     LEYENDO,
+    /** El código a la vista ya se leyó: para que cuente otra vez hay que retirarlo (docs/escaner.md, «Repetidos»). */
+    YA_LEIDO,
     ACERCATE,
     ALEJATE,
     /** Mover el celular hacia donde está el código (si el código se ve a la izquierda, mover a la izquierda). */
@@ -28,6 +30,8 @@ class Observacion {
     var nanos = 0L
     /** Hubo una lectura aceptada en este cuadro. */
     var leido = false
+    /** El código a la vista es uno ya aceptado que no se ha retirado (no vuelve a contar). */
+    var yaLeido = false
     /** Hay un código a la vista: potencial del motor o localizador verificado en varios cuadros. */
     var candidato = false
     /** (centro del código − centro de la franja) / ancho de la franja; positivo = el código está a la derecha. */
@@ -61,7 +65,7 @@ class Observacion {
     var zoomAlTope = true
 
     fun reiniciar() {
-        nanos = 0L; leido = false; candidato = false; dx = 0f; dy = 0f; largoRelativo = 0f; cortado = false
+        nanos = 0L; leido = false; yaLeido = false; candidato = false; dx = 0f; dy = 0f; largoRelativo = 0f; cortado = false
         bordeX = 0; bordeY = 0; moduloPx = 0f; nitidez = -1f; brillo = -1f; saturados = 0f; proporcionEnfoque = -1f
         enfocando = false; desenfocado = false; movimiento = 0f; zoomAlTope = true
     }
@@ -71,7 +75,7 @@ class Observacion {
  * Decide la indicación con histéresis, suavizado y tiempo mínimo en pantalla para que no parpadee
  * (docs/escaner.md, «Umbrales»).
  *
- * Prioridad (gana la primera que aplica): REFLEJO, MAS_LUZ, ALEJATE, dirección (IZQUIERDA/DERECHA/ARRIBA/ABAJO),
+ * Prioridad (gana la primera que aplica): YA_LEIDO, REFLEJO, MAS_LUZ, ALEJATE, dirección (IZQUIERDA/DERECHA/ARRIBA/ABAJO),
  * ACERCATE, ENFOCANDO/QUIETO, LEYENDO; sin candidato, APUNTA. LEIDO entra de inmediato.
  *
  * - Una condición nueva se muestra cuando dura [UmbralesGuia.cuadrosParaMostrar] cuadros seguidos Y
@@ -186,6 +190,8 @@ class Guia(val umbrales: UmbralesGuia = UmbralesGuia()) {
             )
 
         val h = when {
+            // Ya contado: moverse, acercarse o la luz ya no importan; lo único que sirve es retirarlo.
+            o.yaLeido -> Indicacion.YA_LEIDO
             cuadrosReflejo >= n -> Indicacion.REFLEJO
             pideLuz -> Indicacion.MAS_LUZ
             grande || cortadoAmbos || muyCerca -> Indicacion.ALEJATE
@@ -331,7 +337,8 @@ data class UmbralesGuia(
 
 /** Qué indicación gana cuando hay varias (docs/escaner.md, «Guía»): una de mayor prioridad reemplaza a la que está. */
 internal fun prioridadDe(i: Indicacion): Int = when (i) {
-    Indicacion.LEIDO -> 9
+    Indicacion.LEIDO -> 10
+    Indicacion.YA_LEIDO -> 9
     Indicacion.REFLEJO -> 8
     Indicacion.MAS_LUZ -> 7
     Indicacion.ALEJATE -> 6

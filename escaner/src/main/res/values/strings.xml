@@ -4,6 +4,7 @@
     <string name="escaner_abriendo">Abriendo cámara…</string>
     <string name="escaner_apunta">Apunta al código de barras</string>
     <string name="escaner_leyendo">Leyendo…</string>
+    <string name="escaner_ya_leido">Ya leído: retíralo para leerlo otra vez</string>
     <string name="escaner_acercate">Acércate</string>
     <string name="escaner_alejate">Aléjate un poco</string>
     <string name="escaner_izquierda">Mueve el celular a la izquierda</string>

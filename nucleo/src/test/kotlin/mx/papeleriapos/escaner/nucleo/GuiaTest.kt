@@ -287,4 +287,18 @@ class GuiaTest {
         println("guía: bytes asignados por cuadro: $porCuadro")
         assertTrue("asigna $porCuadro bytes por cuadro", porCuadro < 1.0)
     }
+
+    @Test
+    fun `ya leido despues de la confirmacion verde y por encima de las pistas`() {
+        val g = Guia()
+        correr(g, 30)
+        val lectura = correr(g, 1) { leido = true }
+        assertEquals(Indicacion.LEIDO, lectura.single().i)
+        // El código sigue a la vista, aunque descentrado: lo que importa es que ya se leyó.
+        val despues = correr(g, 40) { yaLeido = true; dx = 0.4f }
+        val sale = despues.first { it.i != Indicacion.LEIDO }
+        assertEquals(Indicacion.YA_LEIDO, sale.i)
+        assertTrue("LEIDO duró ${sale.ms - lectura.single().ms} ms", sale.ms - lectura.single().ms >= 700)
+        assertFalse(despues.any { it.i == Indicacion.DERECHA })
+    }
 }
