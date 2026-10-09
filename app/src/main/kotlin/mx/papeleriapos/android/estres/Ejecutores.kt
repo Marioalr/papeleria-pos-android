@@ -27,8 +27,8 @@ interface CamaraBajoPrueba {
 
 /**
  * (a) N ciclos abrir → cámara abierta → primer cuadro analizado → cerrar → cámara cerrada, con la memoria tras GC cada
- * [cadaMemoria] ciclos (y en el primero y el último). Un ciclo que falla se cierra y se sigue: si los siguientes salen
- * bien, el error se recuperó.
+ * [cadaMemoria] ciclos (y en el primero y el último). Un ciclo que falla se cierra y se sigue; si el siguiente sale bien
+ * con el mismo controlador, el error se recuperó ([CriteriosCiclos.erroresSinRecuperar]).
  */
 class CiclosCamara(
     private val camara: CamaraBajoPrueba,
@@ -74,12 +74,13 @@ class CiclosCamara(
     private fun ms(desde: Long, hasta: Long) = (hasta - desde) / 1e6
 }
 
-/** Lo que la ráfaga de zoom y linterna le pide al escáner. */
+/** Lo que la ráfaga de zoom y linterna le pide a la cámara (directo a su `CameraControl`, sin pasar por el escáner). */
 interface ControlesBajoPrueba {
-    /** Pide el zoom de base ([alto] = true) o 1× ([alto] = false). */
+    /** El zoom alto (2× o el máximo, lo que sea menor) o el mínimo de la cámara. */
     fun zoom(alto: Boolean)
 
-    fun alternarLinterna()
+    /** La linterna explícita: alternarla según el estado leído fallaría con un estado atrasado. */
+    fun linterna(encender: Boolean)
 
     /** Un contador que sube mientras se analizan cuadros (para ver que no se detuvo). */
     fun cuadros(): Long
@@ -91,8 +92,9 @@ interface ControlesBajoPrueba {
 }
 
 /**
- * (b) Zoom cada [cadaZoomMs] durante [duracionMs] y linterna cada [cadaLinternaMs] [vecesLinterna] veces (número par:
- * termina como empezó), registrando cada segundo cuántos cuadros se analizaron.
+ * (b) Zoom cada [cadaZoomMs] durante [duracionMs], alternando el mínimo y el alto, y linterna cada [cadaLinternaMs]
+ * [vecesLinterna] veces, encendida en las pares y apagada en las nones (con un número par termina apagada),
+ * registrando cada segundo cuántos cuadros se analizaron.
  */
 class RafagaControles(
     private val controles: ControlesBajoPrueba,
@@ -125,7 +127,7 @@ class RafagaControles(
                 proxZoom = max(proxZoom + cadaZoomMs, ahora + 1)
             }
             if (linternas < vecesLinterna && ahora >= proxLinterna) {
-                controles.alternarLinterna()
+                controles.linterna(linternas % 2 == 0)
                 linternas++
                 proxLinterna = max(proxLinterna + cadaLinternaMs, ahora + 1)
             }

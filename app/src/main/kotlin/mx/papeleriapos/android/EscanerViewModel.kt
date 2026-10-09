@@ -5,20 +5,17 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.view.WindowInsets
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,16 +23,27 @@ import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
+import mx.papeleriapos.android.lista.ListasCompartidas
+import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.sesion.AlmacenSesion
+import mx.papeleriapos.android.sesion.AnotacionesSesion
+import mx.papeleriapos.android.sesion.Antirrebote
+import mx.papeleriapos.android.sesion.AperturaPorIntento
 import mx.papeleriapos.android.sesion.Contexto
+import mx.papeleriapos.android.sesion.CsvAperturas
 import mx.papeleriapos.android.sesion.CsvSesion
+import mx.papeleriapos.android.sesion.EditorAnotaciones
 import mx.papeleriapos.android.sesion.MedidorAndroid
+import mx.papeleriapos.android.sesion.RegistroAperturas
 import mx.papeleriapos.android.sesion.ResultadoIntento
 import mx.papeleriapos.android.sesion.SesionPrueba
+import mx.papeleriapos.android.sesion.aperturaMasReciente
+import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.EventoLectura
-import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.MarcasApertura
+import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.camara.ControladorCamara
 import mx.papeleriapos.escaner.camara.Proporcion
 import mx.papeleriapos.escaner.camara.proporcionInicial
@@ -43,24 +51,9 @@ import mx.papeleriapos.escaner.nucleo.Modo
 import kotlin.math.roundToInt
 
 /**
- * Las listas de venta y conteo. Las de la app viven en el proceso ([delProceso]), no en la Activity: los atajos
- * («Escanear venta», «Escanear conteo») recrean la tarea y el escaneo rápido es otra Activity, y lo leído no se pierde.
- */
-class ListasCompartidas {
-    val venta = MutableStateFlow(ListaLecturas())
-    val conteo = MutableStateFlow(ListaLecturas())
-
-    fun de(modo: Modo): MutableStateFlow<ListaLecturas> = if (modo == Modo.VENTA) venta else conteo
-
-    companion object {
-        val delProceso = ListasCompartidas()
-    }
-}
-
-/**
- * El estado de la app de prueba: el controlador del escáner (uno por proceso de pantalla), los ajustes, las listas de
- * venta y conteo, y la sesión de prueba. Cada lectura aceptada suma en la lista del modo actual y, si hay sesión, queda
- * como intento.
+ * El estado de la app de prueba: el controlador del escáner (este ViewModel es su dueño: lo cierra en [onCleared]), los
+ * ajustes, las listas de venta y conteo (guardadas en disco, ver [ListasCompartidas]) y la sesión de prueba. Cada lectura
+ * aceptada suma en la lista del modo actual y, si hay sesión, queda como intento.
  */
 class EscanerViewModel(
     app: Application,
@@ -68,7 +61,7 @@ class EscanerViewModel(
     private val listas: ListasCompartidas = ListasCompartidas(),
 ) : AndroidViewModel(app) {
     /** El que usa la app (con las listas del proceso); las pruebas pasan un controlador de muestra. */
-    constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso)
+    constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso(app))
 
     private val preferencias = PreferenciasEscaner(app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE))
     private val _config = MutableStateFlow(preferencias.leer())
@@ -87,16 +80,15 @@ class EscanerViewModel(
     val equipo = MedidorAndroid.equipo()
     private val medidor = MedidorAndroid(app)
     private val almacen = AlmacenSesion(app)
-
-    /** La pantalla se queda encendida mientras se escanea (sin tocarla se apagaría a los 30 s), pero no en pausa. */
-    val mantenerPantalla: StateFlow<Boolean> = controlador.estado
-        .map { it.fase == Fase.ABRIENDO || it.fase == Fase.ESCANEANDO || it.fase == Fase.VIENDO || it.fase == Fase.LEIDO }
-        .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    private val aperturas = AperturaPorIntento()
+    private val antirreboteFallo = Antirrebote()
 
     init {
         viewModelScope.launch {
-            _sesion.value = withContext(Dispatchers.IO) { almacen.recuperar() }
+            val recuperada = withContext(Dispatchers.IO) { almacen.recuperar() }
+            // Una sesión que sigue tras cerrar la app: su CPU cuenta desde aquí, no desde que se creó la pantalla.
+            if (recuperada != null && _sesion.value == null) medidor.reiniciarVentana()
+            _sesion.update { it ?: recuperada }
             // Desde aquí cada cambio se respalda; si llegan varios juntos basta con el último.
             _sesion.drop(1).conflate().collect { s -> withContext(Dispatchers.IO) { almacen.guardar(s, equipo) } }
         }
@@ -107,12 +99,25 @@ class EscanerViewModel(
         val hora = System.currentTimeMillis()
         val codigo = e.aceptada.codigo
         listaActual().update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
-        _sesion.update { it?.registrarLectura(e, contexto(hora)) }
+        val apertura = aperturaActual()
+        _sesion.update { it?.registrarLectura(e, contexto(hora, apertura)) }
+        // La apertura ya está completa (sacar del bolsillo → primera lectura): a aperturas.csv si hay sesión.
+        if (apertura.marcas.containsKey(PasoApertura.PRIMERA_LECTURA)) {
+            RegistroAperturas.registrar(getApplication(), CsvAperturas.ORIGEN_APP, apertura)
+        }
+    }
+
+    /** La apertura de este escáner, con las marcas más recientes (la primera lectura llega justo después del evento). */
+    private fun aperturaActual(): Apertura = aperturaMasReciente(controlador.estado.value.apertura, MarcasApertura.apertura)
+
+    /** La app pasó a segundo plano: la apertura en curso se registra aunque no haya leído nada. */
+    fun alDetenerse() {
+        RegistroAperturas.registrar(getApplication(), CsvAperturas.ORIGEN_APP, aperturaActual())
     }
 
     private fun listaActual() = if (_config.value.modo == Modo.VENTA) _venta else _conteo
 
-    private fun contexto(hora: Long): Contexto {
+    private fun contexto(hora: Long, apertura: Apertura = aperturaActual()): Contexto {
         val estado = controlador.estado.value
         val c = _config.value
         return Contexto(
@@ -121,7 +126,8 @@ class EscanerViewModel(
             motor = c.motor,
             // El rango que de verdad eligió la cámara; si todavía no lo dice, el que se pidió.
             rangoFps = estado.diagnostico.rangoFps.ifEmpty { if (c.fpsFijo30) "30-30" else "15-30" },
-            medicion = medidor.medir(),
+            // Las columnas de la apertura solo en el primer intento de cada apertura.
+            medicion = medidor.medir(aperturas.medidas(apertura)),
             zoom = estado.zoom,
             linterna = estado.linterna,
         )
@@ -155,26 +161,54 @@ class EscanerViewModel(
     fun masUno() = listaActual().update { it.masUno(System.currentTimeMillis()) }
     fun menosUno() = listaActual().update { it.menosUno() }
     fun deshacer() = listaActual().update { it.deshacer() }
+
+    /** «Nueva venta» (o «Nuevo conteo»): vacía la lista del modo; se puede deshacer. */
     fun vaciar() = listaActual().update { it.vaciar() }
 
     // Sesión de prueba
 
     fun iniciarSesion(nombre: String) {
         if (_sesion.value != null) return
+        val app = getApplication<Application>()
+        // La CPU del primer intento cuenta desde aquí; su apertura va en él; aperturas.csv empieza vacío.
+        medidor.reiniciarVentana()
+        aperturas.olvidar()
+        RegistroAperturas.borrar(app)
         _sesion.value = SesionPrueba(nombre.trim().ifEmpty { equipo.dispositivo }, System.currentTimeMillis())
     }
 
+    /** Termina la sesión: sus archivos (intentos, recursos y aperturas) se borran; ya se exportaron o se descartaron. */
     fun terminarSesion() {
+        val s = _sesion.value ?: return
+        val app = getApplication<Application>()
         _sesion.value = null
+        MonitorDeSesion.terminar(s.inicio)
+        RegistroAperturas.borrar(app)
+        viewModelScope.launch(Dispatchers.IO) { MonitorDeSesion.borrar(app, s.inicio) }
     }
 
     fun cambiarEsperado(codigo: String) = _sesion.update { it?.conEsperado(codigo) }
 
     fun marcarUltimo(resultado: ResultadoIntento) = _sesion.update { it?.marcarUltimo(resultado) }
 
+    /** Un intento que no leyó o se canceló; un segundo toque a menos de 1 s del anterior se ignora (doble toque). */
     fun registrarFallo(resultado: ResultadoIntento) {
+        if (_sesion.value == null || !antirreboteFallo.permite(SystemClock.elapsedRealtime())) return
         val hora = System.currentTimeMillis()
         _sesion.update { it?.registrarFallo(resultado, contexto(hora)) }
+    }
+
+    /** Deshace el último intento si fue un fallo registrado a mano (con su nota, si tenía). */
+    fun deshacerFallo() {
+        val s = _sesion.value ?: return
+        val u = s.ultimo ?: return
+        if (!s.puedeDeshacerFallo) return
+        _sesion.value = s.quitarUltimoFallo()
+        // Si llevaba las columnas de la apertura, las lleva el siguiente; su nota no pasa al que tome su número.
+        if (u.medicion.apertura.tipo.isNotEmpty()) aperturas.olvidar()
+        AnotacionesSesion.cambiar(s) { it.conNota(u.n, "") }
+        EditorAnotaciones.guardar(getApplication())
+        antirreboteFallo.olvidar()
     }
 
     /** Escribe el CSV de la sesión en la caché y devuelve su URI para compartirlo. */

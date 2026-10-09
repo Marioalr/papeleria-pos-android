@@ -2,6 +2,7 @@ package mx.papeleriapos.android
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,8 +18,10 @@ import org.junit.runner.RunWith
 
 /**
  * Humo de la app completa con UiAutomator (sin Espresso, que en API 37 no arranca con la versión que trae ui-test):
- * abre la app, pasa por cada pestaña y regresa, y revisa que siga viva y en primer plano. No corre las pruebas de
- * estrés ni el banco (tardan minutos); solo que sus pantallas abren.
+ * abre la app, pasa por cada pestaña y regresa, y revisa que siga viva y en primer plano. Al salir de Escanear la
+ * cámara se apaga (la marca [ETIQUETA_ESCANEANDO] se va) y al volver vuelve a escanear: se espera la marca, no basta con
+ * que la barra de abajo siga ahí. No corre las pruebas de estrés ni el banco (tardan minutos); solo que sus pantallas
+ * abren.
  */
 @RunWith(AndroidJUnit4::class)
 class NavegacionTest {
@@ -26,6 +29,7 @@ class NavegacionTest {
     private val dispositivo = UiDevice.getInstance(instrumentacion)
     private val contexto = instrumentacion.targetContext
     private val paquete = contexto.packageName
+    private val hayCamara = contexto.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
 
     @Before
     fun abrir() {
@@ -62,10 +66,18 @@ class NavegacionTest {
             boton.click()
             if (senal != null) {
                 assertTrue("No se vio «$senal» en «$pestana»", dispositivo.wait(Until.hasObject(By.textContains(senal)), ESPERA_MS))
+                // Fuera del escáner la cámara se apaga (no le roba batería ni CPU a las otras pantallas).
+                if (hayCamara) {
+                    assertTrue("La cámara siguió escaneando en «$pestana»", dispositivo.wait(Until.gone(By.res(ETIQUETA_ESCANEANDO)), ESPERA_MS))
+                }
             } else {
-                // El escáner: la barra de abajo sigue ahí y la app no se cayó al abrir la cámara.
-                dispositivo.waitForIdle(2_000)
                 assertTrue(dispositivo.wait(Until.hasObject(By.text("Ajustes")), ESPERA_MS))
+                // De vuelta en el escáner: tiene que volver a escanear (llega un cuadro analizado), no solo verse.
+                if (hayCamara) {
+                    assertTrue("Al volver a «$pestana» no volvió a escanear", dispositivo.wait(Until.hasObject(By.res(ETIQUETA_ESCANEANDO)), ESPERA_ESCANEO_MS))
+                } else {
+                    dispositivo.waitForIdle(2_000)
+                }
             }
             assertEquals("La app dejó el primer plano en «$pestana»", paquete, dispositivo.currentPackageName)
         }
@@ -79,5 +91,7 @@ class NavegacionTest {
 
     private companion object {
         const val ESPERA_MS = 10_000L
+        /** Abrir la cámara del emulador y analizar el primer cuadro puede tardar más que dibujar una pantalla. */
+        const val ESPERA_ESCANEO_MS = 20_000L
     }
 }

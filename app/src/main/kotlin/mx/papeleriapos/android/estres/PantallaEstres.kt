@@ -50,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.papeleriapos.android.ajustes.etiqueta
 import mx.papeleriapos.android.tema.LocalColoresEstado
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
 import mx.papeleriapos.android.ui.CicloPropio
@@ -57,6 +58,7 @@ import mx.papeleriapos.android.ui.FilaDato
 import mx.papeleriapos.android.ui.FilaInterruptor
 import mx.papeleriapos.android.ui.Opciones
 import mx.papeleriapos.android.ui.TituloSeccion
+import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.ui.PantallaEscaner
 
 /**
@@ -109,6 +111,8 @@ fun PantallaEstres(vm: EstresViewModel) {
         alCambiarCiclos = vm::cambiarCiclos,
         alCambiarControladorNuevo = vm::cambiarControladorNuevo,
         alCambiarMinutos = vm::cambiarMinutos,
+        alCambiarMotor = vm::cambiarMotor,
+        alCambiarFpsFijo30 = vm::cambiarFpsFijo30,
     )
 }
 
@@ -121,6 +125,8 @@ fun ContenidoEstres(
     alCambiarCiclos: (Int) -> Unit,
     alCambiarControladorNuevo: (Boolean) -> Unit,
     alCambiarMinutos: (Int) -> Unit,
+    alCambiarMotor: (Motor) -> Unit = {},
+    alCambiarFpsFijo30: (Boolean) -> Unit = {},
 ) {
     val libre = e.corriendo == null
     LazyColumn(
@@ -139,11 +145,35 @@ fun ContenidoEstres(
         if (!libre) item { Progreso(e, alCancelar) }
 
         item {
+            // Para comparar consumo, calor y CPU entre motores (en orden ABBA) y entre 30 fijos y 15 a 30.
+            Card(Modifier.fillMaxWidth().testTag("camara-estres")) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Cámara de las pruebas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Motor y cuadros por segundo de los ciclos, la ráfaga y el escaneo continuo; van en sus CSV.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Opciones(Motor.entries, e.camara.motor, { it.etiqueta }, alCambiarMotor, habilitado = libre)
+                    FilaInterruptor(
+                        titulo = "30 cuadros por segundo fijos",
+                        descripcion = if (e.camara.fpsFijo30) "30-30" else "15-30",
+                        valor = e.camara.fpsFijo30,
+                        alCambiar = alCambiarFpsFijo30,
+                        habilitado = libre,
+                    )
+                }
+            }
+        }
+
+        item {
             Prueba(
                 titulo = PruebaEstres.CICLOS.titulo,
                 descripcion = "${e.ciclosPedidos} veces: abrir → cámara abierta → primer cuadro → cerrar. Cada 25 ciclos, " +
-                    "memoria tras GC, hilos y descriptores. Pasa con 0 errores sin recuperar, el p95 del final ≤ 1.2× el del " +
-                    "inicio y sin crecimiento sostenido.",
+                    "memoria tras GC, hilos y descriptores. Pasa con ≤ 1 % de ciclos con error (o ≤ 2), 0 errores sin " +
+                    "recuperar (con controlador nuevo todos cuentan; si no, el siguiente ciclo tiene que salir bien), el p95 " +
+                    "del final ≤ 1.2× el del inicio (sin el ciclo 1, que es frío; con 10 ciclos buenos o más) y sin " +
+                    "crecimiento sostenido.",
                 dictamen = e.dictamenCiclos,
                 resumen = if (e.ciclos.isEmpty()) null else CriteriosCiclos.resumen(e.ciclos),
                 habilitado = libre,
@@ -165,8 +195,10 @@ fun ContenidoEstres(
         item {
             Prueba(
                 titulo = PruebaEstres.RAFAGA.titulo,
-                descripcion = "Zoom cada 30 ms durante 60 s y la linterna 100 veces (cada 200 ms). Pasa si no hay error, no " +
-                    "se detienen los cuadros más de 2 s y al final la interfaz dice lo mismo que la cámara.",
+                descripcion = "Zoom directo a la cámara cada 30 ms durante 60 s (mínimo y 2×) y la linterna 100 veces (cada " +
+                    "200 ms, encender y apagar). Pasa si no hay error, la cámara reportó al menos 2 zooms distintos, no se " +
+                    "detienen los cuadros más de 2 s, la linterna termina apagada y al final la interfaz dice lo mismo que la " +
+                    "cámara.",
                 dictamen = e.dictamenRafaga,
                 resumen = e.finalRafaga?.let { f ->
                     "zoom ${Cuentas.texto(f.zoomUi.toDouble(), 2)} / ${Cuentas.texto(f.zoomReal.toDouble(), 2)} · " +

@@ -165,6 +165,23 @@ class CsvSesionTest {
     }
 
     @Test
+    fun `si se pierden las anotaciones se reconstruyen de las columnas del CSV de intentos`() {
+        val s = sesion()
+        val notas = Anotaciones()
+            .de(s)
+            .conCondicion(Condicion.POCA_LUZ, siguiente = 3)
+            .conCondicion(Condicion.REFLEJO, siguiente = 5)
+            .conNota(4, "=etiqueta arrugada, \"doblada\"")
+            .conNota(1, "primera")
+        val r = CsvSesion.leerAnotaciones(CsvSesion.escribir(s, equipo, utc, notas), s.inicio)
+        assertEquals(notas, r)
+        // Sin anotaciones, todo normal y sin notas; un texto ajeno no truena.
+        assertEquals(Anotaciones(s.inicio), CsvSesion.leerAnotaciones(CsvSesion.escribir(s, equipo, utc), s.inicio))
+        assertEquals(Anotaciones(7), CsvSesion.leerAnotaciones("hola\r\nmundo", 7))
+        assertEquals(Anotaciones(7), CsvSesion.leerAnotaciones("", 7))
+    }
+
+    @Test
     fun `un CSV de la version anterior se recupera sin la CPU acumulada`() {
         val viejo = Csv.BOM +
             "sesion,n,hora,motor,modo,rango_fps,ms_desde_candidato,indicaciones,simbologia,valor,normalizado,esperado," +

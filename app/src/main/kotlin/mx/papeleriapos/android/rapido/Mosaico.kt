@@ -97,6 +97,19 @@ fun pedirMosaico(context: Context, alTerminar: (Int) -> Unit = {}): Boolean {
     }
 }
 
+/** Cómo agregarlo a mano (Android 7 a 12, o si el sistema no dejó pedirlo). */
+const val COMO_AGREGAR_MOSAICO_A_MANO =
+    "Para agregarlo a mano: desliza dos veces desde arriba, toca el lápiz (editar) y arrastra «Escanear» a los primeros lugares."
+
+/** Qué decirle al usuario según lo que contestó el sistema al pedir el mosaico (`TILE_ADD_REQUEST_*`). */
+@SuppressLint("InlinedApi") // Constantes: se copian al compilar; solo se usan con lo que devolvió [pedirMosaico] (API 33+).
+fun mensajeMosaico(resultado: Int): String = when (resultado) {
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "Listo: «Escanear» ya está en Ajustes rápidos."
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "«Escanear» ya estaba en Ajustes rápidos."
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> "No se agregó. Puedes volver a pedirlo. $COMO_AGREGAR_MOSAICO_A_MANO"
+    else -> "El sistema no dejó agregarlo (código $resultado). $COMO_AGREGAR_MOSAICO_A_MANO"
+}
+
 /** El resultado de [pedirMosaico] dice que el mosaico ya está en el panel. */
 fun mosaicoAgregado(resultado: Int): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && (

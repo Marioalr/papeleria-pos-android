@@ -7,8 +7,6 @@ import android.os.PowerManager
 import android.os.Process
 import android.os.SystemClock
 import mx.papeleriapos.android.BuildConfig
-import mx.papeleriapos.escaner.Apertura
-import mx.papeleriapos.escaner.MarcasApertura
 
 /**
  * Mide batería, CPU y temperatura en cada intento (una vez por lectura, no por cuadro). La CPU va en delta desde la
@@ -20,17 +18,26 @@ class MedidorAndroid(context: Context) {
     private val delta = DeltaCpu().also { it.siguiente(Process.getElapsedCpuTime(), SystemClock.elapsedRealtime()) }
 
     /**
-     * [apertura] es la del escáner (`EstadoEscaner.apertura`); por omisión, las marcas compartidas de donde sale.
+     * [apertura]: las medidas de la apertura del escáner (`EstadoEscaner.apertura`), solo en el primer intento de cada
+     * apertura ([AperturaPorIntento]); en los demás, vacías.
      */
-    fun medir(apertura: Apertura = MarcasApertura.apertura): Medicion {
+    fun medir(apertura: MedidasApertura = MedidasApertura()): Medicion {
         val (cpu, pared) = delta.siguiente(Process.getElapsedCpuTime(), SystemClock.elapsedRealtime())
         return Medicion(
             bateriaPct = bateria?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)?.takeIf { it in 0..100 } ?: -1,
             cpuMs = cpu,
             estadoTermico = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) energia?.currentThermalStatus ?: -1 else -1,
             paredMs = pared,
-            apertura = MedidasApertura.de(apertura),
+            apertura = apertura,
         )
+    }
+
+    /**
+     * La ventana de CPU empieza de nuevo ahora (al iniciar o recuperar una sesión): así el primer intento mide desde ahí
+     * y no desde que se creó la pantalla o desde el último intento de la sesión anterior.
+     */
+    fun reiniciarVentana() {
+        delta.reiniciar(Process.getElapsedCpuTime(), SystemClock.elapsedRealtime())
     }
 
     companion object {
@@ -47,6 +54,13 @@ class MedidorAndroid(context: Context) {
 class DeltaCpu {
     private var cpuPrevio = -1L
     private var paredPrevia = -1L
+
+    /** La siguiente ventana empieza en ([cpuMs], [paredMs]). */
+    @Synchronized
+    fun reiniciar(cpuMs: Long, paredMs: Long) {
+        cpuPrevio = cpuMs
+        paredPrevia = paredMs
+    }
 
     /** Devuelve (ms de CPU, ms de reloj) desde la llamada anterior; (−1, −1) la primera vez. */
     @Synchronized

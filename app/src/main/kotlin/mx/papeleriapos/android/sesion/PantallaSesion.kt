@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -99,9 +100,11 @@ fun PantallaSesion(vm: EscanerViewModel) {
             recursos = recursos,
             alExportarRecursos = {
                 alcance.launch {
-                    ExportarSesion.recursos(contexto, s)?.let { Compartir.enviar(contexto, it, "Recursos de la sesión ${s.nombre}") }
+                    val uris = ExportarSesion.medicion(contexto, s)
+                    if (uris.isNotEmpty()) Compartir.enviarVarios(contexto, uris, "Recursos y aperturas de la sesión ${s.nombre}")
                 }
             },
+            alDeshacerFallo = vm::deshacerFallo,
         )
     }
 }
@@ -113,7 +116,8 @@ fun SinSesion(alIniciar: (String) -> Unit) {
         Text(
             "Cada lectura del escáner queda como un intento. Antes de cada bloque elige la condición (poca luz, " +
                 "reflejo…); marca los que salgan mal y registra los que no lean. Mientras dure la sesión se miden CPU, " +
-                "memoria, batería y temperatura cada segundo. Al final exporta los dos CSV y mándalos.",
+                "memoria, batería y temperatura cada segundo, y cada apertura del escáner (también la del escaneo " +
+                "rápido). Al final exporta los intentos y la medición, y mándalos.",
             style = MaterialTheme.typography.bodyLarge,
         )
         OutlinedTextField(
@@ -150,6 +154,7 @@ fun ConSesion(
     alAnotar: (Int, String) -> Unit = { _, _ -> },
     recursos: MuestraRecursos? = null,
     alExportarRecursos: () -> Unit = {},
+    alDeshacerFallo: () -> Unit = {},
 ) {
     var confirmarFin by remember { mutableStateOf(false) }
     var anotando by remember { mutableStateOf<Intento?>(null) }
@@ -236,11 +241,21 @@ fun ConSesion(
                 alPulsar = { alFallar(ResultadoIntento.TIMEOUT) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("registrar-timeout"),
             )
-            OutlinedButton(
-                onClick = { alFallar(ResultadoIntento.CANCELADO) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).padding(top = 8.dp),
-            ) {
-                Icon(Icons.Filled.Cancel, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Cancelado")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                OutlinedButton(
+                    onClick = { alFallar(ResultadoIntento.CANCELADO) },
+                    modifier = Modifier.weight(1f).heightIn(min = ALTO_TOCABLE),
+                ) {
+                    Icon(Icons.Filled.Cancel, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Cancelado")
+                }
+                // Un toque de más en «No leyó» se quita aquí; las lecturas se corrigen con su resultado.
+                OutlinedButton(
+                    onClick = alDeshacerFallo,
+                    enabled = sesion.puedeDeshacerFallo,
+                    modifier = Modifier.weight(1f).heightIn(min = ALTO_TOCABLE).testTag("deshacer-fallo-sesion"),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Deshacer")
+                }
             }
         }
         item { TarjetaRecursos(recursos) }
@@ -264,7 +279,7 @@ fun ConSesion(
                     onClick = alExportarRecursos,
                     modifier = Modifier.weight(1f).heightIn(min = ALTO_TOCABLE).testTag("exportar-recursos"),
                 ) {
-                    Icon(Icons.Filled.Share, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Recursos")
+                    Icon(Icons.Filled.Share, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Medición")
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {

@@ -94,7 +94,7 @@ class LimitesTest {
     }
 
     @Test
-    fun `un grado con mala suerte no corta la escalera y el 80 por ciento es 4 de 5`() {
+    fun `un grado que falla fija el limite aunque los siguientes pasen por suerte`() {
         val c = CondicionLimite.MOVIDO
         val b = banco(
             listOf(c),
@@ -102,15 +102,26 @@ class LimitesTest {
                 Motor.ML_KIT to { f ->
                     MotorFalso(
                         Motor.ML_KIT, f, mapOf(c to 5),
-                        // En el grado 2 solo lee 3 de 5 (60 %): no pasa, pero el 3 sí y sigue subiendo.
+                        // En el grado 2 solo lee 3 de 5 (60 %): no pasa. El 3 al 5 sí, pero ya no suben el límite.
                         fallaVariantes = mapOf((c to 2) to setOf(0, 1), (c to 4) to setOf(3)),
                     )
                 },
             ),
         )
         val l = b.correr().single()
-        assertEquals(c.grados[5], l.ultimoGrado)
+        assertEquals(c.grados[1], l.ultimoGrado)
+        assertFalse(l.alcanzoElMaximo)
+        // La escalera sigue (hasta dos fallos seguidos) y el CSV muestra todo lo que se probó; el 80 % es 4 de 5.
         assertEquals(listOf(1.0, 1.0, 0.6, 1.0, 0.8, 1.0, 0.0, 0.0), l.grados.map { it.tasa })
+    }
+
+    @Test
+    fun `el limite es el ultimo grado que paso antes del primero que fallo`() {
+        fun t(vararg tasas: Double) = tasas.mapIndexed { i, x -> TasaGrado(i.toFloat(), 5, (x * 5).toInt(), 0, 1.0) }
+        assertEquals(2f, limiteAntesDelPrimerFallo(t(1.0, 1.0, 0.8, 0.6, 1.0, 1.0)))
+        assertEquals(5f, limiteAntesDelPrimerFallo(t(1.0, 1.0, 0.8, 1.0, 1.0, 1.0)))
+        assertNull(limiteAntesDelPrimerFallo(t(0.6, 1.0, 1.0)))
+        assertNull(limiteAntesDelPrimerFallo(emptyList()))
     }
 
     @Test
@@ -145,8 +156,9 @@ class LimitesTest {
         val g3 = l.grados[3]
         assertEquals(0, g3.leidas)
         assertEquals(5, g3.incorrectas)
-        // Falló el 3 pero leyó el 4 y siguió.
-        assertEquals(c.grados[8], l.ultimoGrado)
+        // Falló el 3: el límite es el 2, aunque leyó el 4 y siguió probando.
+        assertEquals(c.grados[2], l.ultimoGrado)
+        assertTrue(l.grados.size > 4)
     }
 
     @Test

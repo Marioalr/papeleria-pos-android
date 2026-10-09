@@ -94,7 +94,7 @@ fun ContenidoBanco(
             Text(
                 "Para cada motor y cada condición (desenfoque, movido, reflejo, poca luz con ruido, tamaño, giro y " +
                     "perspectiva) sube la dificultad en pasos y busca el último grado que lee en al menos 4 de 5 " +
-                    "variantes. Un EAN-13 de 3 px por módulo en 1280×720 girado 90°, como en vivo. Tarda varios minutos.",
+                    "variantes antes del primero que falla. Un EAN-13 de 3 px por módulo en 1280×720 girado 90°, como en vivo. Tarda varios minutos.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         } else item {
@@ -154,8 +154,8 @@ fun ContenidoBanco(
             item {
                 TituloSeccion(if (e.cancelado) "Límites (cancelado a la mitad)" else "Límites")
                 Text(
-                    "El último grado que leyó en ≥ 80 % de las variantes; «≥» = leyó hasta el más difícil, «—» = ni el más " +
-                        "fácil. Región: ${e.regionUsada}.",
+                    "El último grado que leyó en ≥ 80 % de las variantes antes del primero que falló; «≥» = leyó hasta el más " +
+                        "difícil, «—» = ni el más fácil. Región: ${e.regionUsada}.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

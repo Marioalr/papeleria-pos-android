@@ -78,7 +78,9 @@ class EjecutoresTest {
         assertTrue(malo.abrirMs.isNaN())
         assertTrue(malo.primerCuadroMs.isNaN())
         assertEquals(listOf(1, 25, 50, 60), memoria.map { it.en })
-        assertEquals(0, CriteriosCiclos.erroresSinRecuperar(ciclos))
+        // Con el mismo controlador el 30 se recuperó (el 31 salió bien); con uno nuevo por ciclo cuenta.
+        assertEquals(0, CriteriosCiclos.erroresSinRecuperar(ciclos, nuevoPorCiclo = false))
+        assertEquals(1, CriteriosCiclos.erroresSinRecuperar(ciclos, nuevoPorCiclo = true))
     }
 
     @Test
@@ -102,14 +104,14 @@ class EjecutoresTest {
 
     private class ControlesFalsos(private val reloj: () -> Long) : ControlesBajoPrueba {
         val zooms = ArrayList<Boolean>()
-        var linternas = 0
+        val linternas = ArrayList<Boolean>()
 
         override fun zoom(alto: Boolean) {
             zooms += alto
         }
 
-        override fun alternarLinterna() {
-            linternas++
+        override fun linterna(encender: Boolean) {
+            linternas += encender
         }
 
         override fun cuadros(): Long = reloj() / 33
@@ -118,7 +120,9 @@ class EjecutoresTest {
 
         override suspend fun final(): FinalRafaga {
             delay(1_500)
-            return FinalRafaga(if (zooms.last()) 1.5f else 1f, if (zooms.last()) 1.5f else 1f, true, linternas % 2 == 1, linternas % 2 == 1, "ESCANEANDO", null)
+            val z = if (zooms.last()) 2f else 1f
+            val l = linternas.last()
+            return FinalRafaga(z, z, true, l, l, "ESCANEANDO", null, zoomsDistintos = zooms.toSet().size)
         }
     }
 
@@ -127,9 +131,12 @@ class EjecutoresTest {
         val controles = ControlesFalsos { testScheduler.currentTime }
         val (segundos, final) = RafagaControles(controles, { testScheduler.currentTime }, { delay(it) }).correr()
         assertEquals(2000, controles.zooms.size)
-        assertEquals(100, controles.linternas)
-        // Alterna: alto, 1×, alto…
+        assertEquals(100, controles.linternas.size)
+        // Alterna: alto, mínimo, alto…
         assertEquals(listOf(true, false, true, false), controles.zooms.take(4))
+        // La linterna explícita: encender, apagar… y la última la apaga (100 es par).
+        assertEquals(listOf(true, false, true, false), controles.linternas.take(4))
+        assertEquals(false, controles.linternas.last())
         // 59 segundos completos y el registro al terminar.
         assertEquals(60, segundos.size)
         assertEquals(2000, segundos.last().ordenesZoom)

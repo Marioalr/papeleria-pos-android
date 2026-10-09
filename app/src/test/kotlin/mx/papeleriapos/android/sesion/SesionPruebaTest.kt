@@ -139,6 +139,40 @@ class SesionPruebaTest {
     }
 
     @Test
+    fun `la ventana del primer intento empieza al iniciar la sesion`() {
+        val d = DeltaCpu()
+        d.siguiente(1_000, 10_000) // Al crearse la pantalla.
+        d.siguiente(4_000, 50_000) // El último intento de la sesión anterior.
+        // Se inicia la sesión: lo de antes no cuenta.
+        d.reiniciar(4_500, 60_000)
+        assertEquals(200L to 1_000L, d.siguiente(4_700, 61_000))
+    }
+
+    @Test
+    fun `un doble toque en No leyo se ignora y el ultimo fallo se puede deshacer`() {
+        val a = Antirrebote(msMinimo = 1_000)
+        assertTrue(a.permite(10_000))
+        assertFalse("Doble toque", a.permite(10_150))
+        assertFalse(a.permite(10_999))
+        assertTrue(a.permite(11_000))
+        a.olvidar()
+        assertTrue("Después de deshacer cuenta de inmediato", a.permite(11_100))
+
+        val s = vacia
+            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
+            .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
+        assertTrue(s.puedeDeshacerFallo)
+        val sin = s.quitarUltimoFallo()
+        assertEquals(listOf(1), sin.intentos.map { it.n })
+        // Una lectura no se quita (se corrige con su resultado).
+        assertFalse(sin.puedeDeshacerFallo)
+        assertSame(sin, sin.quitarUltimoFallo())
+        assertSame(vacia, vacia.quitarUltimoFallo())
+        // El siguiente fallo vuelve a tomar el número 2.
+        assertEquals(2, sin.registrarFallo(ResultadoIntento.CANCELADO, contexto).ultimo!!.n)
+    }
+
+    @Test
     fun `las medidas de la apertura salen de sus marcas`() {
         val ms = 1_000_000L
         val a = Apertura(

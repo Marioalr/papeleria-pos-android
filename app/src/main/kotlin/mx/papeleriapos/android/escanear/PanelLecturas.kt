@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -57,7 +57,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** El panel de abajo: selector de modo y la lista de venta o el contador de conteo. */
+/**
+ * El panel de abajo: selector de modo, la lista de venta o el contador de conteo y «Nueva» (nueva venta o nuevo conteo).
+ * Lo leído está guardado: sobrevive a cerrar la app hasta que se empieza otra.
+ */
 @Composable
 fun PanelLecturas(modo: Modo, lista: ListaLecturas, acciones: AccionesEscaner, modifier: Modifier = Modifier) {
     Surface(
@@ -81,8 +84,18 @@ fun PanelLecturas(modo: Modo, lista: ListaLecturas, acciones: AccionesEscaner, m
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.testTag("total"),
                 )
-                IconButton(onClick = acciones.vaciar, enabled = lista.renglones.isNotEmpty()) {
-                    Icon(Icons.Filled.DeleteSweep, contentDescription = "Vaciar la lista")
+                // Lo leído se queda (guardado) hasta aquí: empezar otra venta u otro conteo. Se puede deshacer.
+                TextButton(
+                    onClick = acciones.vaciar,
+                    enabled = lista.renglones.isNotEmpty(),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .semantics { contentDescription = if (modo == Modo.VENTA) "Nueva venta" else "Nuevo conteo" }
+                        .testTag("nueva-lista"),
+                ) {
+                    Icon(Icons.Filled.DeleteSweep, contentDescription = null)
+                    Text("Nueva", Modifier.padding(start = 4.dp))
                 }
             }
             when (modo) {
