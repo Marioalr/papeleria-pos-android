@@ -18,6 +18,12 @@
   terminar.
 - **La laptop** con el cable, el repositorio y Android Studio por si hay que ver el registro (`adb logcat`) de un
   celular que falle.
+- **El APK de release firmado** (el que adjunta la versión de GitHub), no el de depuración: el de depuración es más
+  lento y falsea los tiempos. Fuera de Google Play el perfil de arranque se compila hasta la noche con el celular
+  cargando; para medir desde el primer día, con el cable: `adb shell cmd package compile -f -m speed-profile
+  mx.papeleriapos.android` ([pruebas](pruebas.md#arranque-y-perfil)).
+- **Un cronómetro o la cámara lenta de otro celular** (240 cuadros por segundo) para la parte humana de la apertura:
+  del bolsillo al bip.
 
 ## En la tienda
 
@@ -55,9 +61,28 @@
 - **Preguntar a quien escaneó** (y anotarlo en la sesión): si supo de inmediato que ya estaba escaneando, si entendió
   las indicaciones (¿alguna confundió?), si el bip y la vibración se notaban con el ruido de la tienda, y qué cambiaría.
 
-**Batería y calor (15 min por celular):** con la batería anotada al inicio, escanear de corrido 10 a 15 minutos y
-anotar la batería y si el celular se calentó. La sesión guarda la batería, el CPU usado y el estado térmico en cada
-intento.
+**Apertura (15 min por celular), con el bloqueo con PIN o huella que use cada quien:**
+
+1. Agregar el mosaico «Escanear» a Ajustes rápidos (botón en Ajustes de la app, o a mano en Android 12 o anterior) y
+   dejarlo entre los primeros para que se vea con un solo deslizamiento.
+2. Si la marca lo permite, configurar el gesto que abre una app: Samsung (doble pulsación del botón lateral → Apps →
+   Escáner), Motorola (Quick Launch), Pixel (Toque rápido → Abrir app). Anotar si abre sin desbloquear.
+3. Con el celular bloqueado en la bolsa, 10 veces cada camino: (a) mosaico, (b) gesto, (c) desbloquear y tocar el
+   ícono, (d) dejar el escáner abierto, apagar la pantalla y volver a encenderla. Cronometrar del bolsillo al bip; la
+   sesión guarda además las marcas internas de cada apertura (tipo de arranque y ms de cada paso, en aperturas.csv).
+4. Anotar si el mosaico pidió el PIN (en algunas versiones de Android 14 lo pide) y si el escáner apareció sobre el
+   bloqueo.
+
+**Batería y calor (20 min por celular), con el monitor de recursos de la sesión:** sin cable, brillo fijo (el mismo en
+todos), Wi-Fi y datos como los traiga cada quien, y la batería entre 80 % y 60 %. Primero 3 minutos sin escanear (en la
+pestaña Sesión: es la línea base), luego 10 a 15 minutos escaneando de corrido. El costo de escanear es la potencia
+escaneando menos la de la línea base. Si da tiempo, repetir con cada motor en orden ABBA. La sesión exporta
+recursos.csv (una fila por segundo: CPU, memoria, corriente, potencia, temperatura, estado térmico, cuadros por
+segundo) además de los intentos.
+
+**Estrés (si sobra tiempo, en un solo celular):** la pestaña Estrés: 200 ciclos de abrir y cerrar la cámara, la
+ráfaga de zoom y linterna, 50 cambios de motor y 15 minutos de escaneo continuo. Cada prueba dice si pasa y exporta su
+CSV.
 
 **Al terminar:** exportar los CSV de la sesión y del banco (Compartir → a la laptop o al correo), desinstalar la app de
 los celulares del personal y quitar el permiso de apps desconocidas.
@@ -70,6 +95,7 @@ los celulares del personal y quitar el permiso de apps desconocidas.
 | Intentos leídos en ≤ 2 s | ≥ 98 % |
 | Del código a la vista a la lectura | p50 < 300 ms y p90 < 800 ms en el celular más barato |
 | Abrir la cámara (en frío) hasta que escanea | < 1.5 s |
+| Del bolsillo (bloqueado) al bip, con el mosaico o el gesto | Lo más bajo posible: es lo que se compara entre caminos y celulares |
 | CPU de la app escaneando | < 35 % de un núcleo |
 | Indicaciones | Que el personal las entienda sin explicación |
 
