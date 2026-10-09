@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,13 +39,26 @@ import kotlin.math.roundToInt
 @Composable
 fun PantallaAjustes(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
-    ContenidoAjustes(config, alCambiar = vm::cambiarConfig, alRestablecer = vm::restablecerAjustes)
+    val contexto = LocalContext.current
+    val mosaico = remember { AccesoMosaico.buscar() }
+    ContenidoAjustes(
+        config,
+        alCambiar = vm::cambiarConfig,
+        alRestablecer = vm::restablecerAjustes,
+        alAgregarMosaico = mosaico?.let { m -> { m.pedir(contexto) } },
+    )
 }
 
 /** Los ajustes del escáner; cada cambio se guarda y se aplica en caliente. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContenidoAjustes(config: ConfigEscaner, alCambiar: (ConfigEscaner) -> Unit, alRestablecer: () -> Unit) {
+fun ContenidoAjustes(
+    config: ConfigEscaner,
+    alCambiar: (ConfigEscaner) -> Unit,
+    alRestablecer: () -> Unit,
+    /** null = esta versión no trae el mosaico de Ajustes rápidos. */
+    alAgregarMosaico: (() -> Unit)? = null,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -116,6 +130,18 @@ fun ContenidoAjustes(config: ConfigEscaner, alCambiar: (ConfigEscaner) -> Unit, 
             texto = { if (it < 1f) "Nunca" else "Después de ${it.roundToInt()} s" },
             alTerminar = { alCambiar(config.copy(segundosParaPausar = it.roundToInt())) },
         )
+
+        TituloSeccion("Abrir rápido")
+        Nota(
+            "Un mosaico en Ajustes rápidos abre el escáner con un toque, aun con el celular bloqueado: desliza desde " +
+                "arriba y tócalo.",
+        )
+        OutlinedButton(
+            onClick = { alAgregarMosaico?.invoke() },
+            enabled = alAgregarMosaico != null,
+            modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).testTag("agregar-mosaico"),
+        ) { Text("Agregar a Ajustes rápidos") }
+        if (alAgregarMosaico == null) Nota("Esta versión todavía no trae el mosaico.")
 
         TituloSeccion("Pruebas")
         FilaInterruptor(

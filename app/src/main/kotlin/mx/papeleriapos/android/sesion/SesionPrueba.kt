@@ -1,6 +1,8 @@
 package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.escaner.Apertura
+import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.nucleo.CodigoLeido
@@ -23,8 +25,61 @@ enum class ResultadoIntento(val etiqueta: String, val deLectura: Boolean) {
     CANCELADO("Cancelado", false),
 }
 
-/** Lo que se mide del celular en cada intento; −1 = no se pudo medir. */
-data class Medicion(val bateriaPct: Int = -1, val cpuMsProceso: Long = -1, val estadoTermico: Int = -1)
+/** En qué condición se escanea un bloque de intentos; el operador la elige antes de empezar el bloque. */
+enum class Condicion(val etiqueta: String) {
+    NORMAL("Normal"),
+    POCA_LUZ("Poca luz"),
+    REFLEJO("Reflejo"),
+    CURVO("Curvo"),
+    CHICO_LEJOS("Chico o lejos"),
+    VARIOS_CODIGOS("Varios códigos"),
+    MOVIDO("Movido"),
+    OTRA("Otra"),
+}
+
+/**
+ * La apertura del escáner con la que se hizo el intento (`EstadoEscaner.apertura`): cómo arrancó y los ms desde el
+ * inicio de la apertura hasta cada paso; −1 = no ocurrió o no se marcó.
+ */
+data class MedidasApertura(
+    val tipo: String = "",
+    val msActividad: Long = -1,
+    /** Hasta que terminó de enlazar la cámara (`ENLACE_FIN`). */
+    val msEnlace: Long = -1,
+    val msCamara: Long = -1,
+    val msPrimerCuadro: Long = -1,
+    val msPrimerAnalisis: Long = -1,
+    val msPrimeraLectura: Long = -1,
+) {
+    companion object {
+        fun de(a: Apertura): MedidasApertura = if (a.marcas.isEmpty()) MedidasApertura() else MedidasApertura(
+            tipo = a.tipo.name,
+            msActividad = a.ms(PasoApertura.ACTIVIDAD),
+            msEnlace = a.ms(PasoApertura.ENLACE_FIN),
+            msCamara = a.ms(PasoApertura.CAMARA_ABIERTA),
+            msPrimerCuadro = a.ms(PasoApertura.PRIMER_CUADRO_SENSOR),
+            msPrimerAnalisis = a.ms(PasoApertura.PRIMER_ANALISIS),
+            msPrimeraLectura = a.ms(PasoApertura.PRIMERA_LECTURA),
+        )
+    }
+}
+
+/**
+ * Lo que se mide del celular en cada intento; −1 = no se pudo medir. La CPU va en delta desde el intento anterior (no el
+ * acumulado del proceso), con su ventana de reloj para sacar el % de un núcleo.
+ */
+data class Medicion(
+    val bateriaPct: Int = -1,
+    /** ms de CPU del proceso (todos sus hilos) desde la medición anterior. */
+    val cpuMs: Long = -1,
+    val estadoTermico: Int = -1,
+    /** ms de reloj desde la medición anterior. */
+    val paredMs: Long = -1,
+    val apertura: MedidasApertura = MedidasApertura(),
+) {
+    /** % de un núcleo en la ventana; NaN si no se sabe. No incluye cameraserver ni el HAL (otros procesos). */
+    val cpuPctNucleo: Double get() = if (cpuMs < 0 || paredMs <= 0) Double.NaN else 100.0 * cpuMs / paredMs
+}
 
 /** Lo que es igual en todos los renglones de un equipo. */
 data class DatosEquipo(val dispositivo: String, val sdk: Int, val versionApp: String, val commit: String)
@@ -49,6 +104,8 @@ data class Intento(
     val n: Int,
     val hora: Long,
     val motor: String,
+    /** Por dónde leyó: DIRECTA (zxing-cpp), UMBRAL (con el umbral del localizador) o RESPALDO (ML Kit); vacío si no leyó. */
+    val via: String = "",
     val modo: String,
     val rangoFps: String,
     /** −1 = no se sabe. */
@@ -100,6 +157,7 @@ data class SesionPrueba(
             n = intentos.size + 1,
             hora = c.hora,
             motor = evento.motor.name,
+            via = evento.via.name,
             modo = c.modo.name,
             rangoFps = c.rangoFps,
             msDesdeCandidato = evento.msDesdeCandidato,
