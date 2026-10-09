@@ -23,6 +23,8 @@ android {
     buildTypes {
         release {
             optimization { enable = true }
+            // La fábrica busca el controlador de la cámara por nombre (fabrica/Fabrica.kt).
+            proguardFiles("proguard-rules.pro")
             ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
     }
@@ -34,6 +36,10 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        // Robolectric necesita los recursos para las pruebas de Compose.
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 fun commitActual(): String =
@@ -44,6 +50,9 @@ fun commitActual(): String =
 
 dependencies {
     implementation(project(":escaner"))
+    // Para la configuración de CameraX desde la Application y calentar el proveedor.
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -60,6 +69,11 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
