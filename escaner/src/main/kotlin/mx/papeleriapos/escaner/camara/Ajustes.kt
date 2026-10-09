@@ -1,0 +1,156 @@
+package mx.papeleriapos.escaner.camara
+
+import android.util.Log
+import android.util.Range
+import android.view.Surface
+import androidx.camera.camera2.Camera2Config
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraXConfig
+import mx.papeleriapos.escaner.nucleo.Caja
+import mx.papeleriapos.escaner.nucleo.Rotacion
+import mx.papeleriapos.escaner.nucleo.Transformacion
+import kotlin.math.atan
+import kotlin.math.tan
+
+/**
+ * La configuración de CameraX para la `Application` (`CameraXConfig.Provider`): solo la cámara trasera (no enumera ni
+ * abre las demás al arrancar) y sin el ruido de los registros de CameraX.
+ */
+fun configuracionCameraX(): CameraXConfig =
+    CameraXConfig.Builder.fromConfig(Camera2Config.defaultConfig())
+        .setAvailableCamerasLimiter(CameraSelector.DEFAULT_BACK_CAMERA)
+        .setMinimumLoggingLevel(Log.ERROR)
+        .build()
+
+/** La franja de lectura en la región visible: casi todo el ancho y [alto] del alto, centrada. */
+internal fun franjaPara(alto: Float): Caja {
+    val a = alto.coerceIn(0.1f, 1f)
+    return Caja(0.04f, 0.5f - a / 2f, 0.96f, 0.5f + a / 2f)
+}
+
+/** `rotacionPantalla` puede llegar como `Surface.ROTATION_*` (0 a 3) o en grados; el `ViewPort` pide lo primero. */
+internal fun rotacionSurface(rotacion: Int): Int = when (rotacion) {
+    Surface.ROTATION_0, Surface.ROTATION_90, Surface.ROTATION_180, Surface.ROTATION_270 -> rotacion
+    90 -> Surface.ROTATION_90
+    180 -> Surface.ROTATION_180
+    270 -> Surface.ROTATION_270
+    else -> Surface.ROTATION_0
+}
+
+/**
+ * El rango de cuadros por segundo, de entre los que la cámara acepta con esta sesión (si no sale de ahí, el enlace
+ * lanza IAE). [fijo30]: tope 30 con el mínimo más alto ([30, 30] ideal: exposición corta, menos movido); si no,
+ * [15, 30] (más luz y más movido). Nunca más de 30. Null = que decida CameraX.
+ */
+internal fun elegirRangoFps(rangos: List<Pair<Int, Int>>, fijo30: Boolean): Pair<Int, Int>? {
+    val validos = rangos.filter { it.first in 1..it.second && it.second <= 30 }
+    val con30 = validos.filter { it.second == 30 }
+    val elegido = if (fijo30) {
+        con30.maxByOrNull { it.first }
+    } else {
+        con30.firstOrNull { it.first == 15 }
+            ?: con30.filter { it.first >= 15 }.minByOrNull { it.first }
+            ?: con30.minByOrNull { it.first }
+    }
+    // Sin tope de 30: el más rápido que no pase de 30, con el mínimo más alto.
+    return elegido ?: validos.maxWithOrNull(compareBy<Pair<Int, Int>> { it.second }.thenBy { it.first })
+}
+
+internal fun elegirRangoFps(rangos: Set<Range<Int>>, fijo30: Boolean): Range<Int>? {
+    val par = elegirRangoFps(rangos.map { it.lower to it.upper }, fijo30) ?: return null
+    return rangos.first { it.lower == par.first && it.upper == par.second }
+}
+
+/**
+ * El zoom inicial a partir de la distancia mínima de enfoque (idea de AVCamBarcode, WWDC21): si para que un código de
+ * [anchoCodigoMm] llene [llenado] del ancho visible habría que acercarse más de lo que el lente enfoca, se pone zoom para
+ * que el empleado se aleje hasta donde sí enfoca. Sin datos confiables (lente sin calibrar, nulos o ceros) da 1.5x.
+ *
+ * @param dioptriasMinimas `LENS_INFO_MINIMUM_FOCUS_DISTANCE` (1/m); 0 = foco fijo.
+ * @param anchoSensorMm el lado largo de `SENSOR_INFO_PHYSICAL_SIZE`.
+ * @param focalMm la primera de `LENS_INFO_AVAILABLE_FOCAL_LENGTHS`.
+ * @param tope el zoom máximo propio (más de 2x puede cambiar al teleobjetivo, que enfoca más lejos).
+ */
+internal fun zoomSugerido(
+    dioptriasMinimas: Float?,
+    anchoSensorMm: Float?,
+    focalMm: Float?,
+    calibrado: Boolean,
+    tope: Float,
+    anchoCodigoMm: Float = 30f,
+    llenado: Float = 0.6f,
+): Float {
+    val maximo = tope.coerceAtLeast(1f)
+    if (dioptriasMinimas == null || dioptriasMinimas <= 0f || anchoSensorMm == null || anchoSensorMm <= 0f ||
+        focalMm == null || focalMm <= 0f || !calibrado
+    ) return ZOOM_SIN_DATOS.coerceIn(1f, maximo)
+    val enfoqueMinimoMm = 1000f / dioptriasMinimas
+    // En vertical con el recorte 16:9, el ancho visible usa ~9/16 del lado largo del sensor.
+    val anchoVisibleMm = anchoSensorMm * 9f / 16f
+    val medioCampo = atan(anchoVisibleMm / (2f * focalMm))
+    val distanciaNecesariaMm = (anchoCodigoMm / llenado) / (2f * tan(medioCampo))
+    val zoom = if (distanciaNecesariaMm < enfoqueMinimoMm) enfoqueMinimoMm / distanciaNecesariaMm else 1f
+    return zoom.coerceIn(1f, maximo)
+}
+
+internal const val ZOOM_SIN_DATOS = 1.5f
+
+/** Promedio móvil exponencial para el diagnóstico (fps, ms del motor…). */
+internal class PromedioMovil(private val alfa: Float = 0.1f) {
+    var valor = 0f
+        private set
+    private var vacio = true
+
+    fun agregar(x: Float) {
+        if (vacio) {
+            valor = x
+            vacio = false
+        } else {
+            valor += alfa * (x - valor)
+        }
+    }
+
+    fun reiniciar() {
+        valor = 0f
+        vacio = true
+    }
+}
+
+/*
+ * Las mismas cuentas que Transformacion.aVisible/aBuffer, sin el Pair que esas asignan en cada llamada: se usan en cada
+ * cuadro.
+ */
+
+/** Un punto del buffer a la región visible normalizada. */
+internal fun aVisible(t: Transformacion, xBuffer: Float, yBuffer: Float, salida: FloatArray) {
+    val v = t.visible
+    Rotacion.aDerecho(xBuffer - v.izquierda, yBuffer - v.arriba, v.ancho, v.alto, t.rotacion, salida)
+    salida[0] /= t.anchoDerecho
+    salida[1] /= t.altoDerecho
+}
+
+/** Un punto de la región visible normalizada al buffer. */
+internal fun aBuffer(t: Transformacion, xVisible: Float, yVisible: Float, salida: FloatArray) {
+    val v = t.visible
+    Rotacion.aBuffer(xVisible * t.anchoDerecho, yVisible * t.altoDerecho, v.ancho, v.alto, t.rotacion, salida)
+    salida[0] += v.izquierda
+    salida[1] += v.arriba
+}
+
+/** La caja visible que encierra [n] esquinas del buffer (x0, y0, x1, y1, …); solo asigna la caja. */
+internal fun cajaVisible(t: Transformacion, xy: FloatArray, punto: FloatArray, n: Int = xy.size / 2): Caja {
+    var izquierda = Float.MAX_VALUE
+    var arriba = Float.MAX_VALUE
+    var derecha = -Float.MAX_VALUE
+    var abajo = -Float.MAX_VALUE
+    var i = 0
+    while (i < n) {
+        aVisible(t, xy[2 * i], xy[2 * i + 1], punto)
+        if (punto[0] < izquierda) izquierda = punto[0]
+        if (punto[0] > derecha) derecha = punto[0]
+        if (punto[1] < arriba) arriba = punto[1]
+        if (punto[1] > abajo) abajo = punto[1]
+        i++
+    }
+    return Caja(izquierda, arriba, derecha, abajo)
+}
