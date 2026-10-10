@@ -338,7 +338,12 @@ private fun Prueba(
 /** Sobre el escáner durante el escaneo continuo: cuánto lleva, lo último que midió el monitor y el botón para parar. */
 @Composable
 private fun AvisoContinuo(e: EstadoEstres, alDetener: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)) {
+    Surface(
+        modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
         Column(Modifier.padding(10.dp)) {
             Text(
                 "Escaneo continuo · ${e.hechos / 60}:${(e.hechos % 60).toString().padStart(2, '0')} de ${e.total / 60}:00",

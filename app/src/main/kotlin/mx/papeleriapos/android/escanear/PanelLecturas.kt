@@ -67,6 +67,8 @@ fun PanelLecturas(modo: Modo, lista: ListaLecturas, acciones: AccionesEscaner, m
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        // Con el alfa ya no es un color del tema: sin esto el texto sale con el negro por defecto.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 2.dp,
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {

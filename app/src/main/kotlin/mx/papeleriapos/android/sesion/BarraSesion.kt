@@ -84,6 +84,8 @@ fun BarraSesion(
         modifier = modifier.testTag("barra-sesion"),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        // Con el alfa ya no es un color del tema: sin esto el texto sale con el negro por defecto.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 2.dp,
     ) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
