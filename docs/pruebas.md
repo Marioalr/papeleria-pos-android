@@ -146,6 +146,13 @@ cámara abierta, sesión, primer cuadro analizado y cuánto espera la cámara a 
 Usa el trace_processor de Macrobenchmark, que es un binario de Android: corre en el emulador (o en un celular
 conectado) y no toca la app.
 
+**El calor arruina la medición.** Después de una hora de Macrobenchmark el Pixel llegó al estado térmico 2 (piel a
+43 °C), y una corrida salió con todo más lento, hasta lo del sistema: `bindApplication` 83 ms en vez de 47. Antes de
+cada corrida: estado térmico 0 y piel debajo de 36 °C
+(`adb shell dumpsys thermalservice | grep -E "Thermal Status|VIRTUAL-SKIN,"`), con el celular en la pantalla de
+inicio hasta que baje. Para comparar dos versiones se miden una tras otra en la misma sesión (A/B), no contra una
+corrida de otro día. La corrida que se hizo con calor se guarda marcada como inválida y no se usa.
+
 **La línea base en el Pixel 8 Pro** (2026-10-09, Android 17, 15 iteraciones, medianas; el TTFD es el primer cuadro
 analizado):
 
