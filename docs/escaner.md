@@ -31,7 +31,7 @@ puede usar desde la app nativa o como biblioteca desde otra app ([plan](plan.md#
 
 ## Cada cuadro
 
-La cámara entrega hasta 60 cuadros por segundo (30 si no da más); el análisis toma siempre el más reciente y descarta los que llegan
+La cámara entrega hasta 30 cuadros por segundo (60 en ajustes); el análisis toma siempre el más reciente y descarta los que llegan
 mientras trabaja (`STRATEGY_KEEP_ONLY_LATEST`), así nunca se atrasa.
 
 1. **Localizar** en el cuadro completo (~0.2 ms): dónde hay barras, su tamaño en px por módulo, nitidez, luz, reflejo y
@@ -56,7 +56,7 @@ Dibujar es multiplicar por el tamaño del visor.
 |---|---|---|
 | Resolución | 1280×720 (16:9) para la vista y el análisis | Bastan ≥ 2 px por módulo; 1080p cuesta ~30 % más y no ayuda en vivo |
 | Formato | YUV_420_888, sin rotar la salida | Se usa solo el plano Y; rotar cuesta 10–15 ms por cuadro |
-| Cuadros por segundo | 60 fijos si la cámara los da (el Pixel 8 Pro sí), si no 30 fijos: exposición corta, menos movido. En ajustes: hasta 30, o variable desde 15 (más luz) | Experimento 4 del [plan](plan.md#entrega-7-lo-máximo-en-el-pixel-8-pro) |
+| Cuadros por segundo | 30 fijos (exposición corta, menos movido). En ajustes: variable desde 15 (más luz) o hasta 60 donde la cámara los da | 60 en el Pixel 8 Pro: abre casi igual y cada cuadro cuesta más (experimento 4 del [plan](plan.md#entrega-7-lo-máximo-en-el-pixel-8-pro)); falta ver si lee mejor códigos en movimiento |
 | Enfoque | Continuo; al abrir, al tocar y con un código que no se lee en 700 ms, enfoque al punto (se suelta solo a los 2 s) | Bloquear el enfoque falla al cambiar de distancia |
 | Zoom inicial | Calculado con la distancia mínima de enfoque del lente (1.5× si no la reporta), tope 2× | Muchos celulares no enfocan a menos de 10–15 cm: con zoom se lee desde más lejos |
 | Zoom propio | Si el código se ve chico (< 2 px por módulo), ×1.4 hasta el tope; regresa al leer | Antes de pedir «acércate» |
