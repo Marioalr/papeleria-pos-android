@@ -127,6 +127,10 @@ En el emulador solo como prueba de humo (las cifras no valen): agregar `-PconX86
 -Pandroid.testInstrumentationRunnerArguments.iteraciones=2`. Los resultados (JSON y trazas de Perfetto) quedan en
 `benchmark/build/outputs/connected_android_test_additional_output/`.
 
+La prueba de humo también es la que revisa el APK con R8 (`benchmarkRelease` es el release instalable): falla si la app
+no llega a escanear. Así se encontró que ML Kit no arrancaba con R8 en modo completo (`app/proguard-rules.pro`). Se
+corre antes de cada versión.
+
 **El mosaico sobre el bloqueo** en el emulador:
 
 ```
