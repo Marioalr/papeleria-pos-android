@@ -1,11 +1,13 @@
 # Papelería POS para Android
 
-La app Android de [Papelería POS](https://github.com/Marioalr/papeleria-pos): los celulares de la tienda escanean con
-la cámara lo que hoy pasa por el lector de la caja.
+La app Android de [Papelería POS](https://github.com/Marioalr/papeleria-pos): con la cámara del celular se escanea lo
+que hoy pasa por el lector de la caja.
 
-> **Estado: fase 1, el escáner.** Lee EAN-13, UPC-A, UPC-E, EAN-8, ITF-14, Code 128 y QR con la cámara, guía al
-> personal para que el código se lea (muévete, acércate, aléjate, mantén firme, luz, reflejo) y confirma cada lectura
-> con bip, vibración y verde. Todavía no se conecta al POS. Las decisiones están en el [plan](docs/plan.md).
+> **Alcance: lo máximo en un Pixel 8 Pro.** El escáner lee EAN-13, UPC-A, UPC-E, EAN-8, ITF-14, Code 128 y QR, guía
+> para que el código se lea (muévete, acércate, aléjate, mantén firme, luz, reflejo) y confirma cada lectura con bip,
+> vibración y verde. Aquí se exprime y se mide en un solo celular, el equipo de referencia; con eso se decide cómo se
+> une al POS cuando el POS llegue a su fase de Android. Todavía no se conecta al POS. El [plan](docs/plan.md) tiene las
+> decisiones y la línea base.
 
 ## Desarrollo
 
@@ -50,7 +52,7 @@ código de barras: [pruebas](docs/pruebas.md).
 
 | Documento | Contenido |
 |---|---|
-| [Plan](docs/plan.md) | Decisiones, forma de trabajar (pruebas en la tienda solo sábado y domingo), versiones y entregas |
+| [Plan](docs/plan.md) | Alcance (el Pixel 8 Pro), decisiones, forma de trabajar (en la tienda solo sábado y domingo), versiones, entregas y la línea base con sus experimentos |
 | [El escáner](docs/escaner.md) | Cómo lee, cómo guía y cómo confirma: cámara, motores, localizador, umbrales y estados |
 | [Investigación](docs/investigacion-escaner.md) | Motores, APIs, UX y pruebas, con fuentes verificadas el 2026-10-09 |
 | [Pruebas](docs/pruebas.md) | Pruebas automáticas, emulador, banco de pruebas y pruebas con cualquier código |
