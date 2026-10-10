@@ -124,7 +124,9 @@ analizado) y las secciones de trace. En el Pixel 8 Pro, 15 iteraciones:
 
 Ojo: la tarea de Gradle **desinstala la app al terminar, con sus datos** (listas, sesiones, ajustes), y corre en todos
 los equipos conectados (`ANDROID_SERIAL=<serie>` para elegir uno). En el Pixel (o en cualquier celular con datos que
-importen) se instala y se corre a mano, y después se reinstala el APK que tenía (misma firma: los datos se quedan). Con la pantalla bloqueada no corre: el
+importen) se instala y se corre a mano. Al terminar, en el Pixel se deja instalada **la versión más rápida medida**, con
+su perfil compilado (regla del dueño, 2026-10-09). Se instala encima sin borrar los datos porque usa la misma firma.
+El APK de cada versión medida se guarda junto con su medición, para poder volver a ella. Con la pantalla bloqueada no corre: el
 celular cargando con «Permanecer activo» (Opciones de desarrollador).
 
 ```
@@ -134,6 +136,9 @@ adb install -r -t benchmark/build/outputs/apk/benchmarkRelease/benchmark-benchma
 adb shell am instrument -w -r -e iteraciones 15 mx.papeleriapos.benchmark/androidx.test.runner.AndroidJUnitRunner
 adb pull /sdcard/Android/media/mx.papeleriapos.benchmark/ resultados/    # JSON y trazas de Perfetto
 adb uninstall mx.papeleriapos.benchmark
+adb shell rm -r /sdcard/Android/media/mx.papeleriapos.benchmark
+adb install -r <el benchmarkRelease más rápido>.apk                      # si no es el que quedó
+adb shell cmd package compile -f -m speed-profile mx.papeleriapos.android
 ```
 
 **Las trazas:** `herramientas/trazas.sh <carpeta-con-las-trazas>` saca de cada traza los hitos de la apertura:

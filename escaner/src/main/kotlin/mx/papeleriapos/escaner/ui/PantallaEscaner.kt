@@ -39,6 +39,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -95,18 +97,38 @@ fun PantallaEscaner(
     PantallaEscanerInterna(controlador, modifier, visor = { VisorCamara(controlador) }, encima = encima)
 }
 
+/**
+ * true mientras se compone solo el visor, sin lo de encima: el primer cuadro de la app (`ContenidoEnDosCuadros` en
+ * :app). La sesión de la cámara espera la superficie del visor; si el visor saliera junto con toda la interfaz, la
+ * cámara ya abierta esperaría a que se mida y se dibuje todo (160 ms en frío en el Pixel 8 Pro, docs/plan.md,
+ * experimento 1). Lo de encima llega cuando el visor avisa con [LocalAlVisorListo].
+ */
+val LocalSoloVisor = staticCompositionLocalOf { false }
+
+/** Se llama cuando el visor ya entregó su superficie, o cuando no va a haber visor (sin permiso, otra pestaña). */
+val LocalAlVisorListo = staticCompositionLocalOf<() -> Unit> { {} }
+
 /** El visor de CameraX: SurfaceView (menos consumo) recortado igual que el ViewPort (FILL_CENTER). */
 @Composable
 private fun VisorCamara(controlador: ControladorEscaner) {
     val solicitud by controlador.superficie.collectAsStateWithLifecycle()
     DisposableEffect(controlador) { onDispose { controlador.visorRetirado() } }
-    solicitud?.let {
-        CameraXViewfinder(
-            surfaceRequest = it,
-            modifier = Modifier.fillMaxSize(),
-            implementationMode = ImplementationMode.EXTERNAL,
-            contentScale = ContentScale.Crop,
-        )
+    val s = solicitud ?: return
+    CameraXViewfinder(
+        surfaceRequest = s,
+        modifier = Modifier.fillMaxSize(),
+        implementationMode = ImplementationMode.EXTERNAL,
+        contentScale = ContentScale.Crop,
+    )
+    if (LocalSoloVisor.current) {
+        val listo = LocalAlVisorListo.current
+        // El SurfaceView crea su superficie en el recorrido del cuadro en que se acomoda y el visor la entrega enseguida:
+        // dos cuadros después CameraX ya la tiene y puede crear la sesión.
+        LaunchedEffect(s) {
+            withFrameNanos {}
+            withFrameNanos {}
+            listo()
+        }
     }
 }
 
@@ -245,6 +267,8 @@ internal fun PantallaEscanerInterna(
         }
     }
 
+    val soloVisor = LocalSoloVisor.current
+    val alVisorListo = LocalAlVisorListo.current
     Box(
         modifier
             .fillMaxSize()
@@ -252,6 +276,7 @@ internal fun PantallaEscanerInterna(
             .onSizeChanged { tamano = it },
     ) {
         if ((!permiso && negado) || fase == Fase.SIN_PERMISO) {
+            if (soloVisor) LaunchedEffect(Unit) { alVisorListo() }
             VistaSinPermiso(
                 alPedir = { lanzador.launch(Manifest.permission.CAMERA) },
                 alAbrirAjustes = { abrirAjustes(contexto) },
@@ -259,9 +284,14 @@ internal fun PantallaEscanerInterna(
             return@Box
         }
         // Sin permiso todavía: la ventana del sistema está encima, no hay nada que mostrar.
-        if (!permiso) return@Box
+        if (!permiso) {
+            if (soloVisor) LaunchedEffect(Unit) { alVisorListo() }
+            return@Box
+        }
 
         visor()
+        // Primero el visor solo, para que la cámara no espere a que se dibuje lo demás.
+        if (soloVisor) return@Box
         CapaEscaner(estado, leido, destello = { destello.value }, alTocar = alTocar)
 
         if (fase == Fase.PAUSADO) CapaPausa({ franja.value }, controlador::reanudar, minimoArriba)
