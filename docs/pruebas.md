@@ -122,6 +122,36 @@ analizado) y las secciones de trace. En celulares de verdad (al menos uno de gam
 ./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest
 ```
 
+Ojo: la tarea de Gradle **desinstala la app al terminar, con sus datos** (listas, sesiones, ajustes), y corre en todos
+los equipos conectados (`ANDROID_SERIAL=<serie>` para elegir uno). En el celular de alguien de la tienda se instala y se
+corre a mano, y después se reinstala su APK (misma firma: los datos se quedan). Con la pantalla bloqueada no corre: el
+celular cargando con «Permanecer activo» (Opciones de desarrollador).
+
+```
+./gradlew :app:assembleBenchmarkRelease :benchmark:assembleBenchmarkRelease
+adb install -r app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk
+adb install -r -t benchmark/build/outputs/apk/benchmarkRelease/benchmark-benchmarkRelease.apk
+adb shell am instrument -w -r -e iteraciones 15 mx.papeleriapos.benchmark/androidx.test.runner.AndroidJUnitRunner
+adb pull /sdcard/Android/media/mx.papeleriapos.benchmark/ resultados/    # JSON y trazas de Perfetto
+adb uninstall mx.papeleriapos.benchmark
+```
+
+**Primera medición en un celular** (2026-10-09, Pixel 8 Pro, Android 17, gama alta, 15 iteraciones, medianas; el
+TTFD es el primer cuadro analizado):
+
+| Arranque | Sin perfil | Con perfil |
+|---|---|---|
+| Frío: primer cuadro en pantalla (TTID) | 380 ms | 225 ms |
+| Frío: ya escaneando (TTFD) | 913 ms | 629 ms |
+| Frío: espera a CameraX | 107 ms | 32 ms |
+| Tibio: TTID / TTFD | 130 / 431 ms | 137 / 386 ms |
+| Caliente: TTID / ya escaneando | 99 / 407 ms | 75 / 278 ms |
+| Por cuadro: total / localizador / lectura | 3.3 / 1.0 / 2.1 ms | 2.4 / 0.6 / 1.8 ms |
+
+El perfil quita ~30 % del arranque frío y hace más parejas las mediciones (TTFD en frío de 583 a 700 ms con perfil, de
+855 a 1162 sin él). En caliente, ~200 ms van de la interfaz al primer cuadro analizado: la cámara vuelve a abrir. Falta un celular de gama
+baja.
+
 En el emulador solo como prueba de humo (las cifras no valen): agregar `-PconX86
 -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
 -Pandroid.testInstrumentationRunnerArguments.iteraciones=2`. Los resultados (JSON y trazas de Perfetto) quedan en
