@@ -12,10 +12,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * El recorrido del Baseline Profile: abrir la app con la cámara ya permitida, esperar a que escanee (el testTag
- * «escaneando» aparece con el primer cuadro analizado) y seguir analizando unos segundos, para que entren al perfil el
- * arranque, CameraX, el localizador, el motor y la guía. `includeInStartupProfile`: también ordena el DEX (Startup
- * Profile), así lo del arranque queda junto en classes.dex.
+ * Los recorridos del perfil, con la cámara ya permitida:
+ *
+ * - [aperturaHastaEscanear]: abrir la app hasta que escanea (el testTag «escaneando» aparece con el primer cuadro
+ *   analizado). Va también al Startup Profile, que ordena el DEX: lo del arranque queda junto en classes.dex.
+ * - [escaneoYPestanas]: seguir analizando unos segundos e ir a otra pestaña y volver, para que entren CameraX, el
+ *   localizador, el motor, la guía y la vuelta al escáner. Solo al Baseline Profile: con todo en el de arranque, el DEX
+ *   se ordenaría como si el escaneo continuo fuera parte de abrir.
  *
  * Con la cámara del emulador apuntando a un cartel (`-camera-back imagefile:…`, docs/pruebas.md) entran también la
  * lectura y la confirmación.
@@ -31,13 +34,31 @@ class GeneradorPerfil {
         packageName = PAQUETE,
         includeInStartupProfile = true,
     ) {
+        abrirHastaEscanear()
+    }
+
+    @Test
+    fun escaneoYPestanas() = regla.collect(
+        packageName = PAQUETE,
+        includeInStartupProfile = false,
+    ) {
+        abrirHastaEscanear()
+        // Más cuadros analizados: el camino caliente del análisis también se compila.
+        Thread.sleep(MS_ESCANEANDO)
+        // A otra pestaña (la cámara se apaga) y de vuelta al escáner (vuelve a abrir).
+        device.wait(Until.findObject(By.text("Sesión")), MS_ESPERA)?.click()
+        device.wait(Until.hasObject(By.textContains("Sesión de prueba")), MS_ESPERA)
+        device.wait(Until.findObject(By.text("Escanear")), MS_ESPERA)?.click()
+        if (!esperarEscaneando()) Log.w(ETIQUETA, "Al volver no apareció «$ESCANEANDO»")
+        Thread.sleep(MS_ESCANEANDO)
+    }
+
+    private fun MacrobenchmarkScope.abrirHastaEscanear() {
         // Sin el diálogo del permiso: el recorrido de todos los días.
         device.executeShellCommand("pm grant $PAQUETE android.permission.CAMERA")
         pressHome()
         startActivityAndWait()
         if (!esperarEscaneando()) Log.w(ETIQUETA, "No apareció «$ESCANEANDO»: el perfil cubre solo el arranque")
-        // Más cuadros analizados: el camino caliente del análisis también se compila.
-        Thread.sleep(MS_ESCANEANDO)
     }
 
     private fun MacrobenchmarkScope.esperarEscaneando(): Boolean =
