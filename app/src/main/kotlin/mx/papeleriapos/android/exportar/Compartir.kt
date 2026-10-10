@@ -31,4 +31,20 @@ object Compartir {
         if (context !is android.app.Activity) selector.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(selector)
     }
+
+    /** Manda varios archivos juntos (los datos de una prueba y su resumen). */
+    fun enviarVarios(context: Context, uris: List<Uri>, asunto: String) {
+        if (uris.size == 1) return enviar(context, uris.single(), asunto)
+        if (uris.isEmpty()) return
+        val envio = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "text/csv"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+            putExtra(Intent.EXTRA_SUBJECT, asunto)
+            clipData = ClipData.newRawUri(asunto, uris.first()).also { c -> uris.drop(1).forEach { c.addItem(ClipData.Item(it)) } }
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val selector = Intent.createChooser(envio, "Compartir CSV")
+        if (context !is android.app.Activity) selector.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(selector)
+    }
 }

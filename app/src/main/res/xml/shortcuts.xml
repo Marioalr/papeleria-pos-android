@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atajos del ícono (mantener presionado). Existen desde API 25; en API 24 el archivo se ignora.
+     El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído está guardado
+     (ListasCompartidas, en disco) y MainActivity solo aplica el modo. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="25">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_escaner"
+        android:shortcutId="escanear_venta"
+        android:shortcutLongLabel="@string/atajo_venta_largo"
+        android:shortcutShortLabel="@string/atajo_venta_corto">
+        <intent
+            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:targetClass="mx.papeleriapos.android.MainActivity"
+            android:targetPackage="mx.papeleriapos.android">
+            <extra
+                android:name="modo"
+                android:value="venta" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_escaner"
+        android:shortcutId="escanear_conteo"
+        android:shortcutLongLabel="@string/atajo_conteo_largo"
+        android:shortcutShortLabel="@string/atajo_conteo_corto">
+        <intent
+            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:targetClass="mx.papeleriapos.android.MainActivity"
+            android:targetPackage="mx.papeleriapos.android">
+            <extra
+                android:name="modo"
+                android:value="conteo" />
+        </intent>
+    </shortcut>
+</shortcuts>

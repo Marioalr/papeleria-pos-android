@@ -77,9 +77,14 @@ private const val MS_ENTRE_DESTELLOS = 334L
  * pausa (docs/escaner.md, «Experiencia»). Pide el permiso de la cámara si hace falta. [encima] se dibuja sobre el visor
  * (p. ej. el último producto en modo venta o el contador en modo conteo).
  *
- * Abre la cámara con el tamaño del visor y la rotación de la pantalla (`Surface.ROTATION_*`) en cuanto los tiene, la
- * vuelve a abrir si cambian, y llama [ControladorEscaner.cerrar] al salir de la composición para no dejarla prendida.
- * Mientras se ve, la pantalla no se apaga.
+ * Abre la cámara con el tamaño del visor y la rotación de la pantalla (`Surface.ROTATION_*`) en cuanto los tiene y la
+ * vuelve a abrir si cambian. NO cierra el controlador al salir de la composición: lo cierra quien lo creó (el
+ * ViewModel); la cámara se apaga sola cuando el ciclo de vida de la pantalla se detiene (p. ej. `CicloPropio` al
+ * cambiar de pestaña) y al volver reabre sin volver a enlazar. Si se cerrara aquí, al volver a esta pantalla el
+ * controlador del ViewModel ya no abriría y el visor quedaría negro.
+ *
+ * La pantalla no se apaga sola mientras se abre la cámara, se escanea o se confirma una lectura; en pausa, con error o
+ * sin permiso sí (no se queda prendida sobre el bloqueo ni gasta batería).
  */
 @Composable
 fun PantallaEscaner(
@@ -94,6 +99,7 @@ fun PantallaEscaner(
 @Composable
 private fun VisorCamara(controlador: ControladorEscaner) {
     val solicitud by controlador.superficie.collectAsStateWithLifecycle()
+    DisposableEffect(controlador) { onDispose { controlador.visorRetirado() } }
     solicitud?.let {
         CameraXViewfinder(
             surfaceRequest = it,
@@ -144,7 +150,7 @@ internal fun PantallaEscanerInterna(
         }
     }
 
-    // --- Abrir y cerrar la cámara ---
+    // --- Abrir la cámara (la cierra quien creó el controlador, no esta pantalla) ---
     var tamano by remember { mutableStateOf(IntSize.Zero) }
     val configuracion = LocalConfiguration.current
     val rotacion = remember(configuracion, vista) { vista.display?.rotation ?: Surface.ROTATION_0 }
@@ -153,13 +159,13 @@ internal fun PantallaEscanerInterna(
             controlador.abrir(dueno, tamano.width, tamano.height, rotacion)
         }
     }
-    DisposableEffect(controlador) { onDispose { controlador.cerrar() } }
 
-    // Con la pantalla apagada no se escanea: se queda prendida mientras se ve el escáner.
-    DisposableEffect(vista) {
-        val antes = vista.keepScreenOn
+    // Con la pantalla apagada no se escanea: se queda prendida solo mientras abre, escanea o confirma.
+    val mantenerEncendida = permiso && mantenerPantallaEncendida(fase)
+    DisposableEffect(vista, mantenerEncendida) {
+        if (!mantenerEncendida) return@DisposableEffect onDispose {}
         vista.keepScreenOn = true
-        onDispose { vista.keepScreenOn = antes }
+        onDispose { vista.keepScreenOn = false }
     }
 
     // --- Bip, vibración y aviso de volumen ---
@@ -333,6 +339,10 @@ private fun ControlesCamara(estado: State<EstadoEscaner>, alternarLinterna: () -
         if (zoom > 1.05f) EtiquetaZoom(zoom)
     }
 }
+
+/** Las fases en que la pantalla no se apaga sola: abrir, escanear, ver un código y confirmar la lectura. */
+internal fun mantenerPantallaEncendida(fase: Fase): Boolean =
+    fase == Fase.ABRIENDO || fase == Fase.ESCANEANDO || fase == Fase.VIENDO || fase == Fase.LEIDO
 
 internal fun tienePermisoDeCamara(contexto: Context): Boolean =
     ContextCompat.checkSelfPermission(contexto, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED

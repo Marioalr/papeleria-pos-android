@@ -5,6 +5,9 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.os.Build
+import mx.papeleriapos.escaner.MarcasApertura
+import mx.papeleriapos.escaner.PasoApertura
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Lo que dice el enfoque automático en cada captura (`Camera2Interop`, aislado aquí porque está marcado como
@@ -12,6 +15,10 @@ import android.os.Build
  * FULL y en LIMITED o LEGACY puede no venir; entonces la guía se apoya en el módulo y el largo del código.
  *
  * Se escribe en el hilo de la cámara y se lee en el de análisis: campos volátiles, sin asignar.
+ *
+ * Además cuenta los cuadros que salen del sensor ([producidos]): con los analizados da los que se descartaron, el
+ * vigilante ve si salió alguno desde que la cámara abrió, y el primero de cada apertura es
+ * [PasoApertura.PRIMER_CUADRO_SENSOR] (solo en la apertura propia, [aperturaPropia]).
  */
 internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
     @Volatile var estadoAf = SIN_DATO
@@ -28,7 +35,30 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
     @Volatile var camaraFisica = ""
         private set
 
+    /**
+     * Cuadros que entregó la cámara desde que se creó el controlador (cada captura completa de la sesión es un cuadro
+     * del sensor). Nunca vuelve a cero: quien lo usa guarda la base (el vigilante al abrir la cámara, el diagnóstico al
+     * enlazar), así no hay carrera entre el hilo que lo reinicia y el que lo lee.
+     */
+    val producidos = AtomicLong()
+
+    /**
+     * El número de la apertura en la que este controlador puede marcar (`MarcasApertura.numero`), solo mientras su ciclo
+     * está en RESUMED (0 = no marca). Lo escribe el controlador en el hilo principal; lo leen la cámara y el análisis.
+     */
+    @Volatile var aperturaPropia = 0
+
+    /** La apertura en la que ya se intentó marcar el primer cuadro del sensor (solo el hilo de la cámara). */
+    @Volatile private var sensorMarcadoEn = 0
+
     override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
+        producidos.incrementAndGet()
+        // Dos lecturas volátiles por cuadro; la marca (con candado) se intenta una sola vez por apertura.
+        val propia = aperturaPropia
+        if (propia != 0 && propia != sensorMarcadoEn) {
+            sensorMarcadoEn = propia
+            MarcasApertura.marcarSi(propia, PasoApertura.PRIMER_CUADRO_SENSOR)
+        }
         try {
             estadoAf = result.get(CaptureResult.CONTROL_AF_STATE) ?: SIN_DATO
             distanciaEnfoque = result.get(CaptureResult.LENS_FOCUS_DISTANCE) ?: -1f
@@ -72,6 +102,7 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
         else -> "sin datos"
     }
 
+    /** Tras enlazar: el enfoque vuelve a «sin datos» ([producidos] no se toca). */
     fun reiniciar() {
         estadoAf = SIN_DATO
         distanciaEnfoque = -1f

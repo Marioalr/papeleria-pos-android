@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Tema.Escaner" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/fondo</item>
+        <item name="android:windowBackground">@color/arranque</item>
         <item name="android:colorPrimary">@color/primario</item>
     </style>
 </resources>

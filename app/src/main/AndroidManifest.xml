@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -16,9 +17,17 @@
         android:supportsRtl="true"
         android:theme="@style/Tema.Escaner">
 
-        <!-- En vertical: el escáner, la franja y la guía están pensados para el celular en una mano. -->
+        <!-- Para medir la apertura en un APK de release (Macrobenchmark, Perfetto, generar el Baseline Profile). -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
+
+        <!-- En vertical: el escáner, la franja y la guía están pensados para el celular en una mano.
+             configChanges: la interfaz es solo Compose y se adapta sola; recrear la Activity cerraría y volvería a abrir
+             la cámara (p. ej. al cambiar el modo oscuro o el tamaño de letra). -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale"
             android:exported="true"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
@@ -26,7 +35,51 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Atajos «Escanear venta» y «Escanear conteo» al mantener presionado el ícono. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- El escaneo rápido. showWhenLocked EN EL MANIFIESTO: SystemUI lo lee de ActivityInfo para decidir si abre sin
+             pedir el PIN (en tiempo de ejecución no basta). exported=false: solo la abren nuestros PendingIntent. Tarea
+             propia y fuera de recientes; singleTask: tocar el mosaico otra vez la trae, no apila otra. -->
+        <activity
+            android:name=".rapido.EscaneoRapidoActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/rapido_nombre"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:taskAffinity="mx.papeleriapos.android.rapido"
+            android:turnScreenOn="true"
+            tools:targetApi="27" />
+
+        <!-- El mosaico «Escanear» de Ajustes rápidos. Sin ACTIVE_TILE a propósito: en modo no activo el sistema enlaza el
+             servicio al abrir el panel y precalienta el proceso. -->
+        <service
+            android:name=".rapido.MosaicoEscanerService"
+            android:exported="true"
+            android:icon="@drawable/ic_mosaico"
+            android:label="@string/mosaico_etiqueta"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- La app no muestra emojis: sin EmojiCompat, que carga su fuente justo cuando se abre la cámara. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
 
         <!-- Para compartir los CSV de la sesión de prueba y del banco (cache/exports). -->
         <provider

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: la pantalla de inicio del sistema (en frío y tibio) también negra. Sin la biblioteca core-splashscreen. -->
+    <style name="Tema.Escaner" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/arranque</item>
+        <item name="android:windowSplashScreenBackground">@color/arranque</item>
+        <item name="android:colorPrimary">@color/primario</item>
+    </style>
+</resources>

@@ -1,5 +1,6 @@
 package mx.papeleriapos.android.lista
 
+import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.nucleo.Simbologia
 
 /** Un código de la lista con cuántas veces se ha sumado. */
@@ -30,14 +31,14 @@ class ListaLecturas private constructor(
     val total: Int get() = renglones.sumOf { it.cantidad }
     val puedeDeshacer: Boolean get() = anteriores.isNotEmpty()
 
-    /** Suma una lectura del escáner. */
-    fun sumar(codigo: String, simbologia: Simbologia, hora: Long): ListaLecturas {
+    /** Suma una lectura del escáner ([cantidad] > 1: al juntar con lo guardado). */
+    fun sumar(codigo: String, simbologia: Simbologia, hora: Long, cantidad: Int = 1): ListaLecturas {
         val i = renglones.indexOfFirst { it.codigo == codigo }
         if (i < 0) {
-            val nuevo = Renglon(siguienteId, codigo, simbologia, 1, hora)
+            val nuevo = Renglon(siguienteId, codigo, simbologia, cantidad, hora)
             return cambiar(listOf(nuevo) + renglones, siguienteId + 1)
         }
-        val sumado = renglones[i].copy(cantidad = renglones[i].cantidad + 1, hora = hora)
+        val sumado = renglones[i].copy(cantidad = renglones[i].cantidad + cantidad, hora = hora)
         return cambiar(listOf(sumado) + renglones.filterIndexed { k, _ -> k != i }, siguienteId)
     }
 
@@ -63,8 +64,45 @@ class ListaLecturas private constructor(
     private fun cambiar(nuevos: List<Renglon>, id: Long) =
         ListaLecturas(nuevos, (anteriores + listOf(renglones)).takeLast(PASOS_PARA_DESHACER), id)
 
+    /** Para guardarla en disco: un CSV con un renglón por código (sin lo de deshacer, que no sobrevive al proceso). */
+    fun aTexto(): String {
+        val sb = StringBuilder()
+        Csv.renglon(COLUMNAS, sb)
+        for (r in renglones) {
+            Csv.renglon(listOf(r.id.toString(), r.codigo, r.simbologia.name, r.cantidad.toString(), r.hora.toString()), sb)
+        }
+        return sb.toString()
+    }
+
     companion object {
         /** Suficiente para corregir una racha de lecturas de más sin guardar la historia entera. */
         const val PASOS_PARA_DESHACER = 50
+
+        private val COLUMNAS = listOf("id", "codigo", "simbologia", "cantidad", "hora")
+
+        /** Lo contrario de [aTexto]; un renglón que no se entiende se salta. Sin pasos para deshacer. */
+        fun deTexto(texto: String): ListaLecturas {
+            val filas = Csv.leer(texto)
+            if (filas.isEmpty() || filas[0] != COLUMNAS) return ListaLecturas()
+            val renglones = filas.drop(1).mapNotNull { f ->
+                if (f.size < COLUMNAS.size) return@mapNotNull null
+                val id = f[0].toLongOrNull() ?: return@mapNotNull null
+                val simbologia = Simbologia.entries.firstOrNull { it.name == f[2] } ?: return@mapNotNull null
+                val cantidad = f[3].toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
+                Renglon(id, f[1], simbologia, cantidad, f[4].toLongOrNull() ?: 0L)
+            }.distinctBy { it.codigo }
+            return ListaLecturas(renglones, emptyList(), (renglones.maxOfOrNull { it.id } ?: 0L) + 1)
+        }
+
+        /**
+         * [guardada] (la que se leyó del disco) con lo que se sumó en [nueva] mientras se leía: lo nuevo queda arriba, como
+         * si se hubiera escaneado después. Si no se sumó nada, [guardada] tal cual.
+         */
+        fun unir(guardada: ListaLecturas, nueva: ListaLecturas): ListaLecturas {
+            if (nueva.renglones.isEmpty() && !nueva.puedeDeshacer) return guardada
+            var r = guardada
+            for (n in nueva.renglones.asReversed()) r = r.sumar(n.codigo, n.simbologia, n.hora, n.cantidad)
+            return r
+        }
     }
 }

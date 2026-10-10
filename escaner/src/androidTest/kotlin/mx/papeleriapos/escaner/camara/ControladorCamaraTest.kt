@@ -9,18 +9,19 @@ import android.os.HandlerThread
 import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
+import androidx.camera.core.CameraState
 import androidx.camera.core.SurfaceRequest
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.Observer
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.nucleo.Rotacion
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -35,9 +36,8 @@ import java.util.concurrent.atomic.AtomicReference
  * recibe cuadros con el recorte del ViewPort, el motor lee la franja, aguanta ir a segundo plano y volver, y cierra
  * sin caerse.
  *
- * En esta rama el Localizador, la Guía y el Confirmador todavía son TODO(): el análisis de cada cuadro falla después
- * del motor y el estado queda en ERROR. Por eso aquí solo se revisan el arranque, los cuadros, lo que lee el motor y
- * el cierre (con [Analizador.observadorMotor]), no las fases de la guía.
+ * Aquí se revisan el arranque, los cuadros, lo que lee el motor (con [Analizador.observadorMotor]) y el cierre; las
+ * indicaciones de la guía las cubren las pruebas del núcleo y la de punta a punta (`herramientas/e2e.sh`).
  */
 @RunWith(AndroidJUnit4::class)
 class ControladorCamaraTest {
@@ -96,8 +96,11 @@ class ControladorCamaraTest {
         Log.i(ETIQUETA, "Diagnóstico: ${estado.diagnostico}, zoom ${estado.zoom}, linterna ${estado.hayLinterna}")
         Log.i(ETIQUETA, "Lecturas del motor: ${leidos.distinct()}")
         assertTrue("No llegaron cuadros al analizador (${cuadros.get()})", cuadros.get() >= 30)
-        // Con el primer cuadro sale de ABRIENDO (a ESCANEANDO; aquí enseguida a ERROR por los TODO del núcleo).
-        assertNotEquals("Se quedó en ABRIENDO", Fase.ABRIENDO, estado.fase)
+        // Con el primer cuadro sale de ABRIENDO y escanea (con un código a la vista, VIENDO o LEIDO).
+        assertTrue(
+            "No quedó escaneando: ${estado.fase} «${estado.mensajeError}»",
+            estado.fase == Fase.ESCANEANDO || estado.fase == Fase.VIENDO || estado.fase == Fase.LEIDO,
+        )
 
         // Segundo plano y de vuelta: CameraX suelta la cámara y la vuelve a abrir.
         instrumentacion.runOnMainSync { dueno.registro.currentState = Lifecycle.State.CREATED }
@@ -134,6 +137,83 @@ class ControladorCamaraTest {
             dueno.registro.currentState = Lifecycle.State.DESTROYED
         }
         lectores.forEach { it.close() }
+        hiloVista.quitSafely()
+    }
+
+    /**
+     * Cambiar de pestaña y volver: el visor sale (su superficie muere con él) y el ciclo de la pestaña se destruye; al
+     * volver, otro dueño y otro visor. La cámara debe abrir una sola vez: si abre con la solicitud vieja, CameraX rearma
+     * la sesión al llegar la nueva (abre, cierra y vuelve a abrir) y lo primero que se apunta se pierde.
+     */
+    @Test
+    fun alVolverALaPestanaLaCamaraAbreUnaSolaVez() {
+        val instrumentacion = InstrumentationRegistry.getInstrumentation()
+        val contexto = instrumentacion.targetContext
+        assumeTrue(
+            "El equipo no tiene cámara",
+            contexto.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
+        )
+        instrumentacion.uiAutomation.grantRuntimePermission(contexto.packageName, Manifest.permission.CAMERA)
+
+        val hiloVista = HandlerThread("vista-de-prueba").also { it.start() }
+        val cuadros = AtomicInteger()
+        val estados = CopyOnWriteArrayList<CameraState.Type>()
+        val observador = Observer<CameraState> { if (estados.lastOrNull() != it.type) estados += it.type }
+        lateinit var pestana: DuenoDePrueba
+        lateinit var controlador: ControladorCamara
+        instrumentacion.runOnMainSync {
+            pestana = DuenoDePrueba()
+            pestana.registro.currentState = Lifecycle.State.RESUMED
+            controlador = ControladorCamara(contexto, ConfigEscaner(segundosParaPausar = 0))
+            controlador.analizador.observadorMotor = { _, _ -> cuadros.incrementAndGet() }
+            controlador.abrir(pestana, 1080, 2400, Surface.ROTATION_0)
+        }
+        val atendidas = HashSet<SurfaceRequest>()
+        var visor: ImageReader? = null
+        fun esperarCuadros(cuantos: Int, ms: Long) {
+            val hasta = SystemClock.elapsedRealtime() + ms
+            while (cuadros.get() < cuantos && SystemClock.elapsedRealtime() < hasta) {
+                val solicitud = controlador.superficie.value
+                if (solicitud != null && atendidas.add(solicitud)) visor = atender(solicitud, hiloVista, contexto)
+                SystemClock.sleep(10)
+            }
+        }
+        esperarCuadros(20, 30_000)
+        assertTrue("No llegaron cuadros al abrir (${cuadros.get()})", cuadros.get() >= 20)
+
+        // A otra pestaña: primero sale el visor (Compose desecha a los hijos antes) y luego se destruye el ciclo.
+        instrumentacion.runOnMainSync {
+            controlador.visorRetirado()
+            pestana.registro.currentState = Lifecycle.State.DESTROYED
+            visor?.close()
+        }
+        SystemClock.sleep(1_000)
+        val vieja = atendidas.toSet()
+        instrumentacion.runOnMainSync { controlador.camara?.cameraInfo?.cameraState?.observeForever(observador) }
+        SystemClock.sleep(200)
+        estados.clear()
+
+        // De vuelta: otro dueño, otro visor.
+        val antes = cuadros.get()
+        instrumentacion.runOnMainSync {
+            pestana = DuenoDePrueba()
+            pestana.registro.currentState = Lifecycle.State.RESUMED
+            controlador.abrir(pestana, 1080, 2400, Surface.ROTATION_0)
+        }
+        esperarCuadros(antes + 20, 20_000)
+        SystemClock.sleep(500)
+        Log.i(ETIQUETA, "Al volver: estados de la cámara $estados, ${cuadros.get() - antes} cuadros")
+        assertTrue("No volvieron los cuadros", cuadros.get() >= antes + 20)
+        assertTrue("Se reusó la solicitud del visor que salió", (atendidas - vieja).isNotEmpty())
+        assertEquals("La cámara abrió más de una vez: $estados", 1, estados.count { it == CameraState.Type.OPENING })
+        assertEquals("La cámara se cerró al volver: $estados", 0, estados.count { it == CameraState.Type.CLOSING })
+
+        instrumentacion.runOnMainSync {
+            controlador.camara?.cameraInfo?.cameraState?.removeObserver(observador)
+            controlador.cerrar()
+            pestana.registro.currentState = Lifecycle.State.DESTROYED
+        }
+        visor?.close()
         hiloVista.quitSafely()
     }
 
