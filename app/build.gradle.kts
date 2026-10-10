@@ -59,8 +59,8 @@ android {
         release {
             optimization { enable = true }
             if (firma != null) signingConfig = signingConfigs.getByName("prueba")
-            // La fábrica busca el controlador de la cámara por nombre (fabrica/Fabrica.kt).
-            proguardFiles("proguard-rules.pro")
+            // Las reglas de Android más las que les faltan a las bibliotecas con R8 en modo completo (ML Kit).
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
         // Los dos tipos que usa el plugin androidx.baselineprofile, declarados aquí por AGP 9: si el plugin los copia del
