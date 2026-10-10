@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Indicaciones: una sola a la vez, cortas para leerlas de un vistazo con el celular en la mano. -->
+    <string name="escaner_abriendo">Abriendo cámara…</string>
+    <string name="escaner_apunta">Apunta al código de barras</string>
+    <string name="escaner_leyendo">Leyendo…</string>
+    <string name="escaner_ya_leido">Ya leído: retíralo para leerlo otra vez</string>
+    <string name="escaner_acercate">Acércate</string>
+    <string name="escaner_alejate">Aléjate un poco</string>
+    <string name="escaner_izquierda">Mueve el celular a la izquierda</string>
+    <string name="escaner_derecha">Mueve el celular a la derecha</string>
+    <string name="escaner_arriba">Mueve el celular hacia arriba</string>
+    <string name="escaner_abajo">Mueve el celular hacia abajo</string>
+    <string name="escaner_quieto">Mantén firme</string>
+    <string name="escaner_enfocando">Enfocando…</string>
+    <string name="escaner_mas_luz">Poca luz: enciende la linterna</string>
+    <string name="escaner_reflejo">Hay reflejo: inclina un poco el celular</string>
+    <string name="escaner_leido">Leído</string>
+
+    <!-- Lo que TalkBack dice de cada fase (el visor). -->
+    <string name="escaner_visor">Visor de la cámara</string>
+    <string name="escaner_fase_sin_permiso">Sin permiso de cámara</string>
+    <string name="escaner_fase_abriendo">Abriendo cámara</string>
+    <string name="escaner_fase_escaneando">Escaneando</string>
+    <string name="escaner_fase_viendo">Código a la vista</string>
+    <string name="escaner_fase_leido">Código leído</string>
+    <string name="escaner_fase_pausado">En pausa</string>
+    <string name="escaner_fase_error">Error de la cámara</string>
+    <string name="escaner_tocar_para_enfocar">Enfocar aquí</string>
+
+    <!-- Lectura aceptada. -->
+    <string name="escaner_leido_descripcion">Leído: %1$s, %2$s</string>
+
+    <!-- Pausa por inactividad. -->
+    <string name="escaner_pausado">Toca para seguir escaneando</string>
+    <string name="escaner_pausado_detalle">En pausa para ahorrar batería</string>
+    <string name="escaner_seguir">Seguir escaneando</string>
+
+    <!-- Error. -->
+    <string name="escaner_error_generico">No se pudo usar la cámara</string>
+    <string name="escaner_reintentar">Reintentar</string>
+
+    <!-- Permiso. -->
+    <string name="escaner_sin_permiso_titulo">Falta el permiso de la cámara</string>
+    <string name="escaner_sin_permiso_texto">Para leer códigos de barras, la app necesita la cámara. Solo se usa mientras esta pantalla está abierta y no guarda fotos.</string>
+    <string name="escaner_sin_permiso_ajustes">Si ya no aparece la ventana para dar permiso, ábrelo en Ajustes → Permisos → Cámara.</string>
+    <string name="escaner_dar_permiso">Dar permiso</string>
+    <string name="escaner_abrir_ajustes">Abrir ajustes</string>
+
+    <!-- Controles. -->
+    <string name="escaner_linterna">Linterna</string>
+    <string name="escaner_linterna_encendida">Encendida</string>
+    <string name="escaner_linterna_apagada">Apagada</string>
+    <string name="escaner_zoom">%1$s×</string>
+    <string name="escaner_zoom_descripcion">Zoom de %1$s aumentos</string>
+    <string name="escaner_sin_sonido">Sin sonido: sube el volumen</string>
+
+    <!-- Panel de diagnóstico (solo para pruebas). -->
+    <string name="escaner_diagnostico">Diagnóstico</string>
+    <string name="escaner_diag_motor">%1$s · %2$.0f fps</string>
+    <string name="escaner_diag_tiempos">cuadro %1$.1f ms · motor %2$.1f · loc. %3$.2f</string>
+    <string name="escaner_diag_imagen">módulo %1$.1f px · nitidez %2$.2f · brillo %3$.0f</string>
+    <string name="escaner_diag_camara">zoom %1$.2f× · %2$s · %3$s fps</string>
+    <string name="escaner_diag_franja">franja %1$s · cámara %2$s</string>
+    <string name="escaner_diag_enfoque">enfoque: %1$s</string>
+</resources>
