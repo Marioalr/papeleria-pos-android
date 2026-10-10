@@ -1,0 +1,35 @@
+# Corre las pruebas de la JVM en cada PR y en main. La app y su APK se agregan cuando llegan sus módulos.
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Pruebas de la JVM
+        run: ./gradlew --no-daemon test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-pruebas
+          path: '**/build/reports/tests/'
+          retention-days: 14
