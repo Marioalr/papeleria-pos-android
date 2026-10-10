@@ -1,17 +1,18 @@
 # El escáner
 
-Cómo lee la app los códigos de barras con la cámara y qué ve, oye y siente el personal mientras tanto. Las razones y
+Cómo lee la app los códigos de barras con la cámara y qué ve, oye y siente quien escanea mientras tanto. Las razones y
 las fuentes de cada número están en la [investigación](investigacion-escaner.md); los umbrales son puntos de partida
-que se calibran con los celulares de la tienda ([pruebas en tienda](pruebas-en-tienda.md)).
+que se calibran en el Pixel 8 Pro, el equipo de referencia ([plan](plan.md#entrega-7-lo-máximo-en-el-pixel-8-pro)), en
+casa y en la tienda ([pruebas en tienda](pruebas-en-tienda.md)).
 
 ## Qué tiene que lograr
 
 | Meta | Cómo se mide |
 |---|---|
 | **Cero lecturas incorrectas aceptadas** (cobrar otro producto es peor que no leer) | Sesión de prueba: resultado «lectura incorrecta» |
-| Que el personal sepa al instante que ya escanea | La línea de la retícula aparece con el primer cuadro analizado; arranque en frío a ese cuadro < 1.5 s |
+| Que el personal sepa al instante que ya escanea | La línea de la retícula aparece con el primer cuadro analizado; arranque en frío a ese cuadro: 629 ms en el Pixel (línea base) y bajando |
 | Abrir al instante, aun con el celular bloqueado | Marcas de cada paso de la apertura ([apertura](#apertura)); del bolsillo al bip con cronómetro en la tienda |
-| Leer rápido | Del código bien colocado al bip: p50 ≤ 250 ms y p95 ≤ 500 ms en gama baja; del resultado al bip, la vibración y el verde ≤ 50 ms |
+| Leer rápido | Del código bien colocado al bip: p50 ≤ 250 ms y p95 ≤ 500 ms en el Pixel; del resultado al bip, la vibración y el verde ≤ 50 ms |
 | Leer casi todo al primer intento | ≥ 98 % de los intentos leídos en ≤ 2 s |
 | Gastar poco | CPU de la app < 35 % de un núcleo escaneando; el localizador < 3 ms por cuadro (p95); la cámara se apaga sola si nadie escanea |
 

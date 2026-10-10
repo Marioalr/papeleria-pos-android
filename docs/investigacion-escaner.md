@@ -3,11 +3,11 @@
 > Hecha el 2026-10-09 con seis investigaciones en paralelo (ML Kit, zxing-cpp, CameraX, UX de escáneres, pruebas y
 > el localizador para la guía), cada una revisada por un verificador que intentó refutar sus afirmaciones con fuentes
 > primarias. Donde una afirmación salió corregida o refutada, aquí va la versión corregida. Es la base de las decisiones
-> de [el diseño](escaner.md); los números marcados [E] o [P] se recalibran con los celulares de la tienda.
+> de [el diseño](escaner.md); los números marcados [E] o [P] se recalibran en el Pixel 8 Pro ([plan](plan.md)).
 
 Etiquetas:
 - **[V]**: verificado en fuente primaria o con prueba propia.
-- **[E]**: medido solo en emulador x86_64 o en PC. No representa un celular de gama baja.
+- **[E]**: medido solo en emulador x86_64 o en PC. No representa un celular de verdad.
 - **[P]**: propuesta de ingeniería sin fuente. Hay que calibrarla.
 - **[NV]**: no verificado.
 
