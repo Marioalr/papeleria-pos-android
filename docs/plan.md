@@ -16,7 +16,7 @@ consultar precios y, después, vender). Se instala a mano, sin publicarla en Goo
 | Motor de lectura | ML Kit (incluido en la app, sin descargas) por defecto y zxing-cpp para comparar; se elige con la prueba en la tienda ([por qué](investigacion-escaner.md#1-motores-de-detección-recomendados)) |
 | Guía para moverse | Un localizador propio sobre la imagen en gris dice dónde está el código, su tamaño, si está borroso y la luz, aunque todavía no se pueda leer ([diseño](escaner.md#localizador)) |
 | Simbologías | EAN-13 (incluidos los internos que empiezan con 2), UPC-A, UPC-E, EAN-8, ITF-14, Code 128 (las claves de eleventa) y QR (los tickets); las de verificación débil (Code 39, Codabar) no se leen |
-| Distribución | APK firmado que se instala en cada celular; GitHub Actions lo arma con cada versión |
+| Distribución | APK firmado que se instala en cada celular; GitHub Actions lo arma con cada versión. La llave (generada el 2026-10-09) vive fuera del repo y en GitHub como secretos; si se pierde, los celulares tienen que desinstalar la app |
 | Idioma | Todo en español: documentos, código, commits y PRs, como en el POS |
 
 **El escáner, nativo; el resto, como diga la fase 2.** El [plan del POS](https://github.com/Marioalr/papeleria-pos/blob/main/docs/plan.md)
@@ -93,7 +93,6 @@ permisos por rol.
 
 - **Cómo se une al POS** (fase 2): app nativa que habla con el servicio de la caja principal, o el escáner dentro de
   una app MAUI.
-- **La llave de firma** para los APK de la tienda.
 - **Cómo guarda eleventa los UPC.** El POS ya trata los códigos de 12 dígitos como UPC-A
   (`RegistroCompras.EsCodigoDeBarras`); el escáner entrega las claves de 12 y 13 dígitos (y las de 8 de un UPC-E) para que
   la búsqueda las encuentre de cualquier forma. Se confirma en la fase 2 con una copia de la base, sin tocar eleventa.

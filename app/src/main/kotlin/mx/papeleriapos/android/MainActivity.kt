@@ -8,9 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -24,7 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.android.ui.AppEscaner
@@ -136,19 +133,21 @@ const val ETIQUETA_ESCANEANDO = "escaneando"
 /**
  * El primer cuadro es solo el fondo negro (lo mismo que la ventana): el sistema quita la pantalla de inicio cuanto
  * antes y [contenido] se compone en el cuadro siguiente, mientras la cámara (enlazada en `onCreate`) sigue abriendo.
- * Encima va la marca [ETIQUETA_ESCANEANDO] y los testTags se exponen como ids para UiAutomator.
+ * La caja de fondo lleva la marca [ETIQUETA_ESCANEANDO] y expone los testTags como ids para UiAutomator. La marca va en
+ * la caja y no en un punto aparte: Compose no le pasa a UiAutomator un nodo que solo tiene testTag y no dibuja nada.
  */
 @Composable
 internal fun ContenidoEnDosCuadros(controlador: ControladorEscaner, contenido: @Composable () -> Unit) {
     var completo by remember { mutableStateOf(false) }
+    val escaneando = escaneando(controlador)
     Box(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .semantics { testTagsAsResourceId = true },
+            .semantics { testTagsAsResourceId = true }
+            .then(if (escaneando) Modifier.testTag(ETIQUETA_ESCANEANDO) else Modifier),
     ) {
         if (completo) contenido()
-        MarcaEscaneando(controlador)
     }
     LaunchedEffect(Unit) {
         withFrameNanos { }
@@ -156,9 +155,9 @@ internal fun ContenidoEnDosCuadros(controlador: ControladorEscaner, contenido: @
     }
 }
 
-/** Un punto invisible con testTag [ETIQUETA_ESCANEANDO] mientras se escanea y ya hubo un cuadro analizado en esta apertura. */
+/** Si se escanea y ya hubo un cuadro analizado en esta apertura (la marca [ETIQUETA_ESCANEANDO]). */
 @Composable
-private fun MarcaEscaneando(controlador: ControladorEscaner) {
+private fun escaneando(controlador: ControladorEscaner): Boolean {
     val estado = controlador.estado.collectAsStateWithLifecycle()
     val escaneando by remember(estado) {
         derivedStateOf {
@@ -167,5 +166,5 @@ private fun MarcaEscaneando(controlador: ControladorEscaner) {
                 (e.fase == Fase.ESCANEANDO || e.fase == Fase.VIENDO || e.fase == Fase.LEIDO || e.fase == Fase.PAUSADO)
         }
     }
-    if (escaneando) Spacer(Modifier.size(1.dp).testTag(ETIQUETA_ESCANEANDO))
+    return escaneando
 }

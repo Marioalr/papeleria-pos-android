@@ -49,6 +49,9 @@ class NavegacionTest {
 
     @Test
     fun pasaPorTodasLasPestanasSinCaerse() {
+        if (hayCamara) {
+            assertTrue("La app no empezó a escanear", dispositivo.wait(Until.hasObject(By.res(ETIQUETA_ESCANEANDO)), ESPERA_ESCANEO_MS))
+        }
         // Pestaña (etiqueta de la barra de abajo) → algo que solo está en esa pantalla.
         val recorrido = listOf(
             "Sesión" to "Sesión de prueba",

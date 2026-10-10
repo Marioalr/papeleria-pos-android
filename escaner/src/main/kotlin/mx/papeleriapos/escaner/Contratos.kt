@@ -150,6 +150,12 @@ interface ControladorEscaner {
     fun enfocar(x: Float, y: Float)
     fun permisoConcedido(concedido: Boolean)
     /**
+     * El visor que mostraba [superficie] salió de la pantalla (cambio de pestaña, giro): su superficie murió con él. El
+     * siguiente [abrir] pide otra antes de abrir la cámara; si no, CameraX abre con la vieja y rearma la sesión dos veces
+     * cuando llega la del visor nuevo (la cámara abre, cierra y vuelve a abrir).
+     */
+    fun visorRetirado() {}
+    /**
      * Libera la cámara y los motores. Lo llama quien creó el controlador (el ViewModel en `onCleared`), no la pantalla:
      * al salir de la composición basta con que su ciclo de vida se detenga.
      */

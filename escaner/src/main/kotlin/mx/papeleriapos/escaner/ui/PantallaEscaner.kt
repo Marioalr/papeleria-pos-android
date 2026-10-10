@@ -99,6 +99,7 @@ fun PantallaEscaner(
 @Composable
 private fun VisorCamara(controlador: ControladorEscaner) {
     val solicitud by controlador.superficie.collectAsStateWithLifecycle()
+    DisposableEffect(controlador) { onDispose { controlador.visorRetirado() } }
     solicitud?.let {
         CameraXViewfinder(
             surfaceRequest = it,

@@ -199,6 +199,10 @@ Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los camino
   la apertura. Se valida una vez por proceso en segundo plano; si la cámara lo rechazó, queda «automático» para siempre
   en ese celular.
 - El motor se crea y se calienta en paralelo con la cámara; ML Kit empieza a cargar su modelo al crearse.
+- Al cambiar de pestaña la cámara se apaga y al volver abre **una sola vez**. El visor que sale avisa al controlador
+  (`visorRetirado`) y, ya con la cámara detenida, se pide otra solicitud de superficie para la vista previa. Antes la
+  cámara abría con la solicitud del visor que ya no existía y CameraX rearmaba la sesión dos veces al llegar la del
+  visor nuevo: abría, cerraba y volvía a abrir en ~350 ms, y lo que se apuntaba en ese momento se perdía.
 - Ventana y pantalla de inicio negras (sin destello blanco) y un primer cuadro de interfaz trivial.
 - Un perfil de arranque (Baseline Profile y Startup Profile, generados con `:baselineprofile`) precompila el camino
   de la apertura ([pruebas](pruebas.md#arranque-y-perfil)).

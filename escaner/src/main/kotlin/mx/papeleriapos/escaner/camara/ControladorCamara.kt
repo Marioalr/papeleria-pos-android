@@ -115,6 +115,8 @@ class ControladorCamara(
     )
     private val _eventos = MutableSharedFlow<EventoLectura>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val _superficie = MutableStateFlow<SurfaceRequest?>(null)
+    /** Le pasa al visor cada solicitud de superficie de la vista previa. */
+    private val proveedorSuperficie = Preview.SurfaceProvider { solicitud -> _superficie.value = solicitud }
 
     override val estado: StateFlow<EstadoEscaner> = _estado.asStateFlow()
     override val eventos: SharedFlow<EventoLectura> = _eventos.asSharedFlow()
@@ -401,6 +403,22 @@ class ControladorCamara(
         if (pedidoAbrir && p != null) pedir(p, rotacionPedida, forzar = false)
     }
 
+    /**
+     * El visor salió de la pantalla: la solicitud que tomó quedó sin superficie. Se pide otra en cuanto termina este
+     * cambio de pantalla, cuando la cámara ya se detuvo (al cambiar de pestaña el visor sale antes de que el ciclo de la
+     * pestaña se destruya): con la cámara detenida, CameraX crea la solicitud nueva sin rearmar la sesión, y al volver
+     * la cámara abre una sola vez con la superficie del visor nuevo.
+     */
+    @MainThread
+    override fun visorRetirado() {
+        if (cerrado) return
+        _superficie.value = null
+        principal.execute {
+            // Volver a poner el proveedor hace que la vista previa (si está enlazada) mande una solicitud nueva.
+            if (!cerrado) vista.setSurfaceProvider(principal, proveedorSuperficie)
+        }
+    }
+
     @MainThread
     override fun cerrar() {
         if (cerrado) return
@@ -434,7 +452,7 @@ class ControladorCamara(
     private fun crearVista(): Preview {
         val constructor = Preview.Builder().setResolutionSelector(selectorResolucion)
         Camera2Interop.Extender(constructor).setSessionCaptureCallback(senales)
-        return constructor.build().also { it.setSurfaceProvider(principal) { solicitud -> _superficie.value = solicitud } }
+        return constructor.build().also { it.setSurfaceProvider(principal, proveedorSuperficie) }
     }
 
     /** Tras [cerrar], un nuevo [abrir] vuelve a empezar: otro alcance, el analizador otra vez y el motor (en su hilo). */

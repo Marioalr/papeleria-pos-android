@@ -150,7 +150,9 @@ La pestaña **Estrés** de la app corre sobre la cámara real y dice si cada pru
   térmico moderado o más, margen ≥ 0.85, cuadros de análisis < 85 % del primer minuto o CPU por cuadro +25 %).
 
 En el emulador también hay pruebas instrumentadas de ciclos (`CiclosCamaraTest`) y de navegación de la app
-(`NavegacionTest`: cada pestaña y de vuelta al escáner, que debe volver a escanear). Monkey para lo inesperado:
+(`NavegacionTest`: cada pestaña y de vuelta al escáner, que debe volver a escanear; `ControladorCamaraTest` revisa que
+al volver la cámara abra una sola vez). Las pruebas con UiAutomator, el perfil y Macrobenchmark esperan el id
+`escaneando`, que aparece con el primer cuadro analizado. Monkey para lo inesperado:
 
 ```
 adb shell monkey -p mx.papeleriapos.android -s 20261009 --throttle 120 --pct-touch 45 --pct-motion 20 --pct-appswitch 10 -v 20000
