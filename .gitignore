@@ -1,0 +1,24 @@
+# Gradle y Android Studio
+.gradle/
+build/
+/local.properties
+local.properties
+*.iml
+.idea/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+.DS_Store
+
+# Firmas: el almacén de llaves y sus contraseñas nunca van al repositorio
+*.jks
+*.keystore
+*.p12
+firma.properties
+
+# Lo que sale de las pruebas en la tienda (sesiones exportadas, capturas)
+/salidas/
+
+# Los worktrees de trabajo de Claude Code
+/.claude/worktrees/
