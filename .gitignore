@@ -14,6 +14,7 @@ captures/
 # Firmas: el almacén de llaves y sus contraseñas nunca van al repositorio
 *.jks
 *.keystore
+*.p12
 firma.properties
 
 # Lo que sale de las pruebas en la tienda (sesiones exportadas, capturas)
