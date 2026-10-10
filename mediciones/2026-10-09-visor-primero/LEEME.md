@@ -26,3 +26,8 @@ sin código precompilado.
 **Lo que queda en el camino** (`hitos.csv`): en tibio y en caliente la cámara ya no espera al visor. El límite ahora es
 el HAL del Pixel, que tarda ~150 ms en dar el primer cuadro después de la sesión. En frío también, más la apertura de la
 cámara, que empieza a los ~190 ms del lanzamiento.
+
+**Encontrado después (2026-10-10):** fuera de Macrobenchmark esta versión a veces se volvía a enlazar ~300 ms después
+de abrir. La barra de pestañas vacía del primer cuadro medía 24 dp menos que con sus botones, así que el visor cambiaba
+de 1951 a 1897 px de alto. En estas trazas no pasó: 13 corridas con una sola sesión y 2 sin dato. Arreglado en
+`9964720`: la barra guarda su alto y el primer cuadro lo usa.
