@@ -10,6 +10,7 @@ que se calibran con los celulares de la tienda ([pruebas en tienda](pruebas-en-t
 |---|---|
 | **Cero lecturas incorrectas aceptadas** (cobrar otro producto es peor que no leer) | Sesión de prueba: resultado «lectura incorrecta» |
 | Que el personal sepa al instante que ya escanea | La línea de la retícula aparece con el primer cuadro analizado; arranque en frío a ese cuadro < 1.5 s |
+| Abrir al instante, aun con el celular bloqueado | Marcas de cada paso de la apertura ([apertura](#apertura)); del bolsillo al bip con cronómetro en la tienda |
 | Leer rápido | Del código bien colocado al bip: p50 ≤ 250 ms y p95 ≤ 500 ms en gama baja; del resultado al bip, la vibración y el verde ≤ 50 ms |
 | Leer casi todo al primer intento | ≥ 98 % de los intentos leídos en ≤ 2 s |
 | Gastar poco | CPU de la app < 35 % de un núcleo escaneando; el localizador < 3 ms por cuadro (p95); la cámara se apaga sola si nadie escanea |
@@ -173,9 +174,67 @@ corriendo hasta 1 s después del último indicio: si dejara de verlo, el filtro 
 - El zoom actual se muestra («1.5×») y un panel de diagnóstico opcional da cuadros por segundo, milisegundos, px por
   módulo, nitidez y brillo.
 
+## Apertura
+
+Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los caminos, del más rápido al más lento:
+
+1. **El escáner se quedó abierto:** al encender la pantalla aparece escaneando (el escáner rápido se muestra sobre el
+   bloqueo).
+2. **Un gesto del celular** configurado para abrir la app: Samsung (doble pulsación del botón lateral), Motorola (Quick
+   Launch), Pixel (Toque rápido). Lo configura cada quien; la app no puede.
+3. **El mosaico «Escanear» de Ajustes rápidos:** abre el **escaneo rápido** sobre el bloqueo, sin pedir el PIN (la
+   Activity declara `showWhenLocked` en el manifiesto: en tiempo de ejecución no basta). Solo deja escanear y ver lo
+   leído; «Abrir la app» pide desbloquear. Se cierra sola tras 5 minutos sin escanear o cuando la cámara se apaga por
+   inactividad, y la pantalla solo se mantiene encendida mientras escanea. El mosaico es «no activo»: el sistema arranca
+   el proceso al abrir el panel, antes del toque. En la primera versión de Android 14 el sistema todavía pedía el PIN.
+4. **El ícono** o sus accesos directos «Escanear venta» y «Escanear conteo».
+
+**Cómo abre rápido:**
+
+- La cámara se enlaza en el `onCreate` de la Activity, antes de que haya interfaz, con la proporción del visor que se
+  guardó la vez anterior: abre mientras Compose dibuja. Antes se enlazaba al medir el visor, y **dos veces** (Compose lo
+  mide primero sin las barras del sistema y luego con ellas); ahora abrir es idempotente y un cambio real de tamaño
+  espera 300 ms y enlaza una sola vez.
+- El rango de cuadros por segundo se guarda por modelo de celular (`Build.FINGERPRINT`): no se consulta en el camino de
+  la apertura. Se valida una vez por proceso en segundo plano; si la cámara lo rechazó, queda «automático» para siempre
+  en ese celular.
+- El motor se crea y se calienta en paralelo con la cámara; ML Kit empieza a cargar su modelo al crearse.
+- Ventana y pantalla de inicio negras (sin destello blanco) y un primer cuadro de interfaz trivial.
+- Un perfil de arranque (Baseline Profile y Startup Profile, generados con `:baselineprofile`) precompila el camino
+  de la apertura ([pruebas](pruebas.md#arranque-y-perfil)).
+
+**Lo que se mide** (`MarcasApertura`, en `elapsedRealtimeNanos`): proceso, `Application`, Activity, primer cuadro de la
+interfaz, inicio y fin del enlace, cámara abierta, primer cuadro del sensor, primer cuadro analizado y primera lectura.
+El tipo de arranque es frío (el proceso nació para la Activity), tibio (el proceso vivía: también el que arrancó el
+mosaico) o caliente (volvió de segundo plano o de la pantalla apagada); en Android 15+ lo dice el sistema
+(`ApplicationStartInfo`). Cada apertura queda en el registro («Apertura: frío: proceso=0 … primer_analisis=…»), en
+`aperturas.csv` de la sesión de prueba (también las del escaneo rápido) y, para Macrobenchmark, como TTFD (el primer
+cuadro analizado) y en secciones de trace (`escaner.hastaPrimerCuadro`, `escaner.esperaProveedor`,
+`escaner.rangosFps`, `escaner.enlazar`).
+
+**Si la cámara falla:**
+
+| Estado de CameraX | Qué hace |
+|---|---|
+| Otra app la usa (o hay demasiadas abiertas) | «Otra app está usando la cámara»; CameraX reintenta solo y vuelve a escanear al liberarse |
+| Desactivada (privacidad o política) | Lo avisa; se reintenta con el botón |
+| No molestar | Pide desactivarlo |
+| Rechazó la configuración con 30 fps fijos | Vuelve a enlazar sin rango fijo y lo recuerda |
+| Error grave | Dos reintentos (a 0.5 y 1 s) y luego el error con «Reintentar» |
+
+Además, si con la cámara abierta y la pantalla al frente pasan 2 s sin cuadros, se vuelve a enlazar una vez. Los estados
+que llegan de un enlace anterior se descartan (cada enlace tiene su número).
+
 ## Consumo
 
 - 20 s sin códigos a la vista: el análisis se pausa (los cuadros se descartan sin procesar). 60 s en pausa: se apaga
-  la cámara. Al salir de la pantalla o ir a segundo plano, se libera todo.
+  la cámara. Al salir de la pantalla o ir a segundo plano, se libera todo. La pantalla solo se mantiene encendida
+  mientras escanea.
 - Un solo hilo de análisis, sin asignaciones de memoria por cuadro en el camino del localizador, la guía y el recorte.
 - La vista usa `SurfaceView` (menos energía que `TextureView`).
+- El motor automático corre ML Kit solo cuando hace falta (ver [motores](#motores)).
+- **Monitor de recursos** (en la sesión de prueba, a 1 Hz en un hilo de baja prioridad): CPU del proceso (ms y % de un
+  núcleo), memoria (heap de Java y nativo, RSS, hilos, descriptores), batería (corriente autocalibrada: signo con el
+  equipo desconectado y unidad µA/mA por magnitud, cruzada con el contador de carga; voltaje, potencia, temperatura),
+  estado térmico y margen térmico, y cuadros por segundo producidos y analizados. La CPU de la app no incluye el
+  servicio de la cámara ni su HAL (otros procesos): para eso, Perfetto ([pruebas](pruebas.md#rendimiento-y-batería)).

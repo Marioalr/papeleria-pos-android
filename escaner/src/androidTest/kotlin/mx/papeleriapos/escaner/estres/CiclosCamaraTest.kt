@@ -54,7 +54,20 @@ class CiclosCamaraTest {
 
     private data class Ciclo(val n: Int, val abrirMs: Double, val cuadroMs: Double, val cerrarMs: Double, val error: String?)
 
-    private data class Memoria(val n: Int, val heapKb: Long, val nativoKb: Long, val hilos: Int, val fds: Int)
+    private data class Memoria(
+        val n: Int, val heapKb: Long, val nativoKb: Long, val hilos: Int, val fds: Int,
+        /** Hilos por nombre (los números cambiados por #), también los nativos: dice cuáles se acumulan. */
+        val porNombre: Map<String, Int> = emptyMap(),
+    ) {
+        override fun toString() = "Memoria(n=$n, heapKb=$heapKb, nativoKb=$nativoKb, hilos=$hilos, fds=$fds)"
+    }
+
+    /** Los nombres de hilo que crecieron de [base] a [final], los que más primero. */
+    private fun hilosQueCrecen(base: Memoria, final: Memoria): String =
+        (final.porNombre.keys + base.porNombre.keys)
+            .map { it to (final.porNombre[it] ?: 0) - (base.porNombre[it] ?: 0) }
+            .filter { it.second != 0 }.sortedByDescending { it.second }.take(12)
+            .joinToString { "${it.first} ${if (it.second > 0) "+" else ""}${it.second}" }
 
     private val instrumentacion = InstrumentationRegistry.getInstrumentation()
     private val contexto: Context = instrumentacion.targetContext
@@ -166,28 +179,35 @@ class CiclosCamaraTest {
         val buenos = ciclos.filter { it.error == null }
         val ultimoBueno = buenos.lastOrNull()?.n ?: 0
         val sinRecuperar = ciclos.count { it.error != null && it.n > ultimoBueno }
-        val k = maxOf(3, ciclos.size / 10)
-        val p95Inicio = p95(buenos.take(k).map { it.cuadroMs })
-        val p95Final = p95(buenos.takeLast(k).map { it.cuadroMs })
-        val base = memoria.first()
+        // Ventanas de un tercio, sin el primer ciclo (frío): el primer cuadro es bimodal (~20 o ~230 ms en el emulador) y
+        // un p95 de 3 ciclos es puro ruido; se compara la mediana y el p95 solo se informa.
+        val tibios = buenos.filter { it.n > 1 }
+        val k = maxOf(3, tibios.size / 3)
+        val p50Inicio = p50(tibios.take(k).map { it.cuadroMs })
+        val p50Final = p50(tibios.takeLast(k).map { it.cuadroMs })
+        val p95Inicio = p95(tibios.take(k).map { it.cuadroMs })
+        val p95Final = p95(tibios.takeLast(k).map { it.cuadroMs })
+        // La base, ya calentados los grupos de hilos que crecen solos hasta su tope (binder, E/S de CameraX, corrutinas).
+        val base = memoria.firstOrNull { it.n >= 10 } ?: memoria.first()
         val final = memoria.last()
         Log.i(
             ETIQUETA,
             "$modo: ${ciclos.size} ciclos, ${ciclos.count { it.error != null }} errores ($sinRecuperar sin recuperar); " +
-                "primer cuadro p50 ${p50(buenos.map { it.cuadroMs })} ms, p95 inicio $p95Inicio → final $p95Final; " +
+                "primer cuadro p50 ${p50(buenos.map { it.cuadroMs })} ms, p50 inicio $p50Inicio → final $p50Final, " +
+                "p95 inicio $p95Inicio → final $p95Final; " +
                 "abrir p50 ${p50(buenos.map { it.abrirMs })} ms; cerrar p50 ${p50(buenos.map { it.cerrarMs })} ms; " +
                 "memoria $base → $final",
         )
         assertTrue("Errores sin recuperar: ${ciclos.filter { it.error != null }}", sinRecuperar == 0)
         assertTrue("Menos de la mitad de los ciclos leyeron cuadros", buenos.size * 2 >= ciclos.size)
         // Los hilos y descriptores vuelven a la base (± 2); el emulador es ruidoso, así que con un margen de 4.
-        assertTrue("Se fugan hilos: ${base.hilos} → ${final.hilos}", final.hilos - base.hilos <= 4)
+        assertTrue("Se fugan hilos: ${base.hilos} → ${final.hilos} (${hilosQueCrecen(base, final)})", final.hilos - base.hilos <= 4)
         assertTrue("Se fugan descriptores: ${base.fds} → ${final.fds}", final.fds - base.fds <= 4)
         // El heap nativo no crece más de 2 MB por cada 100 ciclos.
         val ciclosEntre = (final.n - base.n).coerceAtLeast(1)
         val crecimiento = (final.nativoKb - base.nativoKb) * 100.0 / ciclosEntre
         assertTrue("El heap nativo crece $crecimiento KB por 100 ciclos", crecimiento < 2048 || final.nativoKb - base.nativoKb < 2048)
-        if (ciclos.size >= 20) assertTrue("El primer cuadro se atrasó: $p95Inicio → $p95Final", p95Final <= p95Inicio * 1.5)
+        if (ciclos.size >= 20) assertTrue("El primer cuadro se atrasó: mediana $p50Inicio → $p50Final", p50Final <= p50Inicio * 1.5)
     }
 
     /** Le da a la vista previa una superficie que se vacía sola; se cierra cuando CameraX la suelta. */
@@ -213,7 +233,10 @@ class CiclosCamaraTest {
             -1
         }
         val fds = File("/proc/self/fd").list()?.size ?: -1
-        return Memoria(n, (rt.totalMemory() - rt.freeMemory()) / 1024, Debug.getNativeHeapAllocatedSize() / 1024, hilos, fds).also {
+        val porNombre = (File("/proc/self/task").listFiles() ?: emptyArray())
+            .mapNotNull { t -> runCatching { File(t, "comm").readText().trim().replace(Regex("[0-9]+"), "#") }.getOrNull() }
+            .groupingBy { it }.eachCount()
+        return Memoria(n, (rt.totalMemory() - rt.freeMemory()) / 1024, Debug.getNativeHeapAllocatedSize() / 1024, hilos, fds, porNombre).also {
             Log.i(ETIQUETA, "memoria,$it")
         }
     }

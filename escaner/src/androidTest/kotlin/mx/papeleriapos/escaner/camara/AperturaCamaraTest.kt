@@ -158,7 +158,8 @@ class AperturaCamaraTest {
         val d = c.estado.value.diagnostico
         Log.i(ETIQUETA, "Diagnóstico: producidos ${d.cuadrosProducidos}, analizados ${d.cuadrosAnalizados}, estado ${d.estadoCamara}, FPS «${d.rangoFps}»")
         assertEquals("OPEN", d.estadoCamara)
-        assertTrue("Analizó más cuadros de los que dio la cámara", d.cuadrosProducidos >= d.cuadrosAnalizados)
+        // Los dos contadores se toman en momentos distintos y entre la captura y el análisis hay unos cuadros en camino.
+        assertTrue("Analizó más cuadros de los que dio la cámara", d.cuadrosProducidos + CUADROS_EN_CAMINO >= d.cuadrosAnalizados)
         assertEquals("Calculó el rango en lugar de usar el guardado", "", d.rangoFps)
         assertEquals(1, c.enlacesHechos)
         // La validación (solo tras enlazar con lo guardado) corrige lo guardado para la próxima, sin volver a enlazar.
@@ -227,6 +228,8 @@ class AperturaCamaraTest {
     }
 
     private companion object {
+
+        const val CUADROS_EN_CAMINO = 4
         const val ETIQUETA = "AperturaCamaraTest"
         const val PANTALLA = "prueba"
     }

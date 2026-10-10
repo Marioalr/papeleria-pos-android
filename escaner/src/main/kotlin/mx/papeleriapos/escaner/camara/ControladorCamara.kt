@@ -125,12 +125,11 @@ class ControladorCamara(
     private var alcance = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     /**
-     * Un solo hilo de análisis (los cuadros y las órdenes, en orden). Sin trabajo se termina a los 10 s y el siguiente
-     * encargo crea otro: así [cerrar] no tiene que apagarlo para siempre y un [abrir] posterior lo vuelve a usar.
+     * Un solo hilo de análisis (los cuadros y las órdenes, en orden). [cerrar] lo apaga en cuanto termina lo que tenga
+     * encargado (liberar el motor) y un [abrir] posterior crea otro: abrir y cerrar seguido (el escaneo rápido, las
+     * pruebas de estrés) no deja hilos vivos. Sin trabajo también se termina a los 10 s.
      */
-    private val hiloAnalisis: ExecutorService = ThreadPoolExecutor(
-        0, 1, 10L, TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>(),
-    ) { Thread(it, "escaner-analisis") }
+    @Volatile private var hiloAnalisis: ExecutorService = nuevoHiloAnalisis()
     private val senales = SenalesCamara()
 
     /** La cámara enlazada ahora (null si no hay): las pruebas de estrés la usan para el zoom y la linterna directos. */
@@ -423,8 +422,9 @@ class ControladorCamara(
         }
         ciclo = null
         analisis.clearAnalyzer()
-        // El motor se cierra en su hilo, después del cuadro en curso.
+        // El motor se cierra en su hilo, después del cuadro en curso; luego el hilo se termina.
         enAnalisis { analizador.liberar() }
+        hiloAnalisis.shutdown()
         _superficie.value = null
     }
 
@@ -447,8 +447,12 @@ class ControladorCamara(
         errorDeCamara = false
         errorRecuperable = false
         alcance = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        // Por el mismo ejecutor: va después del liberar() que dejó cerrar().
+        // cerrar() apagó el hilo: uno nuevo, que primero espera a que el viejo termine su liberar(); si no, el liberar()
+        // atrasado cerraría el motor que revivir() acaba de crear.
+        val viejo = hiloAnalisis
+        hiloAnalisis = nuevoHiloAnalisis()
         enAnalisis {
+            viejo.awaitTermination(ESPERA_HILO_VIEJO_S, TimeUnit.SECONDS)
             analizador.revivir()
             analizador.configurar(_config.value)
         }
@@ -939,7 +943,13 @@ class ControladorCamara(
         }
     }
 
+    private fun nuevoHiloAnalisis(): ExecutorService =
+        ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>()) { Thread(it, "escaner-analisis") }
+
     companion object {
+        /** Lo más que espera el hilo nuevo a que el viejo suelte el motor al revivir (un cuadro tarda ~100 ms). */
+        private const val ESPERA_HILO_VIEJO_S = 2L
+
         /** La pantalla principal de la app (con pestañas): su visor no ocupa toda la ventana. */
         const val PANTALLA_PRINCIPAL = "principal"
         /** El escaneo rápido (sobre la pantalla de bloqueo): visor a pantalla completa. */
