@@ -65,6 +65,7 @@ import mx.papeleriapos.escaner.Diagnostico
 import mx.papeleriapos.escaner.EstadoEscaner
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.PasoApertura
 import java.util.concurrent.ConcurrentHashMap
@@ -142,6 +143,10 @@ class ControladorCamara(
         private set
     private var proveedor: ProcessCameraProvider? = null
     private var sesion: SessionConfig? = null
+    /** La cámara con que se enlaza: la trasera lógica o una de sus físicas ([ConfigEscaner.lente], [selectorPara]). */
+    @Volatile private var selector: CameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    /** El id de la cámara física en uso (null = la lógica). */
+    private var idFisicoEnUso: String? = null
     private var ciclo: CicloCamara? = null
     private var dueno: LifecycleOwner? = null
 
@@ -363,9 +368,9 @@ class ControladorCamara(
         enAnalisis { analizador.configurar(config) }
         val cam = camara
         when {
-            // El rango de FPS solo cambia al volver a enlazar.
-            vieja.preferenciaFps != config.preferenciaFps && sesion != null -> {
-                sinFpsFijo = false
+            // El rango de FPS y la lente solo cambian al volver a enlazar.
+            (vieja.preferenciaFps != config.preferenciaFps || vieja.lente != config.lente) && sesion != null -> {
+                if (vieja.preferenciaFps != config.preferenciaFps) sinFpsFijo = false
                 enlazar()
             }
             vieja.zoomMaximo != config.zoomMaximo && cam != null -> {
@@ -535,6 +540,7 @@ class ControladorCamara(
             try {
                 val prov = proveedor ?: esperarProveedor().also { proveedor = it }
                 soltarSesion(conservarPedido = true)
+                selector = selectorPara(prov, _config.value.lente)
                 if (!prov.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
                     _estado.update { it.copy(fase = Fase.ERROR, mensajeError = "Este celular no tiene cámara trasera.") }
                     return@launch
@@ -614,14 +620,14 @@ class ControladorCamara(
         // adaptador de estado que la cámara enlazada.
         val numero = maquina.nuevoEnlace(fpsFijo = rango != null)
         val oyente = Consumer<CameraState> { e -> alCambiarEstado(numero, e) }
-        val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+        val info = p.getCameraInfo(selector)
         info.oirEstados(principal, oyente)
         oyenteEstado = oyente
         infoOyente = info
         MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_INICIO)
         Trace.beginSection("escaner.enlazar")
         try {
-            return p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
+            return p.bindToLifecycle(dueno, selector, nueva).also { sesion = nueva }
         } catch (e: Exception) {
             info.dejarDeOirEstados(oyente)
             oyenteEstado = null
@@ -636,7 +642,7 @@ class ControladorCamara(
     private fun calcularRangoFps(p: ProcessCameraProvider, puerto: ViewPort, pref: PreferenciaFps): Range<Int>? {
         Trace.beginSection("escaner.rangosFps")
         try {
-            val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+            val info = p.getCameraInfo(selector)
             val base = SessionConfig.Builder(vista, analisis).setViewPort(puerto).build()
             return elegirRangoFps(info.getSupportedFrameRateRanges(base), pref)
         } finally {
@@ -691,7 +697,7 @@ class ControladorCamara(
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                 .build()
             val puerto = ViewPort.Builder(Rational(visor.ancho, visor.alto), rotacion).setScaleType(ViewPort.FILL_CENTER).build()
-            val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+            val info = p.getCameraInfo(selector)
             val base = SessionConfig.Builder(vistaPrueba, analisisPrueba).setViewPort(puerto).build()
             return elegirRangoFps(info.getSupportedFrameRateRanges(base), pref)
         } finally {
@@ -725,7 +731,8 @@ class ControladorCamara(
         msEsperaProveedor = -1L
         Log.i(
             ETIQUETA,
-            "Cámara enlazada: FPS $textoRango$origenFps, visor ${p.texto()}, zoom inicial $inicial (tope $tope), " +
+            "Cámara enlazada: FPS $textoRango$origenFps, visor ${p.texto()}, " +
+                (idFisicoEnUso?.let { "cámara física $it, " } ?: "") + "zoom inicial $inicial (tope $tope), " +
                 "linterna $hayLinterna${if (espera >= 0) ", esperó $espera ms a CameraX" else ""}" +
                 if (temprano) ", antes de la interfaz" else "",
         )
@@ -887,16 +894,57 @@ class ControladorCamara(
         val minimo = zs?.minZoomRatio ?: 1f
         val maximo = zs?.maxZoomRatio ?: caracteristica(info, CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) ?: 1f
         val tope = min(config.zoomMaximo, maximo).coerceAtLeast(minimo)
-        val calibracion = caracteristica(info, CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION)
+        // El lente es el de la cámara física en uso, si hay una: la gran angular enfoca mucho más cerca que la lógica.
+        val lente = infoFisica(info) ?: info
+        val calibracion = caracteristica(lente, CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION)
         val inicial = zoomSugerido(
-            dioptriasMinimas = caracteristica(info, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE),
-            anchoSensorMm = caracteristica(info, CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)?.width,
-            focalMm = caracteristica(info, CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull(),
+            dioptriasMinimas = caracteristica(lente, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE),
+            anchoSensorMm = caracteristica(lente, CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)?.width,
+            focalMm = caracteristica(lente, CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull(),
             calibrado = calibracion != null &&
                 calibracion != CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_UNCALIBRATED,
             tope = tope,
         ).coerceIn(minimo, tope)
         return inicial to tope
+    }
+
+    /** El CameraInfo de la cámara física en uso, si se eligió una ([idFisicoEnUso]). */
+    @OptIn(ExperimentalCamera2Interop::class)
+    private fun infoFisica(info: CameraInfo): CameraInfo? {
+        val id = idFisicoEnUso ?: return null
+        return try {
+            info.physicalCameraInfos.firstOrNull { Camera2CameraInfo.from(it).cameraId == id }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * El selector para [lente]: la trasera lógica o una de sus cámaras físicas ([elegirLenteFisica]). El id elegido se
+     * guarda por sistema en la memoria de la apertura: así leer las características de las físicas no va en cada
+     * apertura. Si algo falla o no hay físicas, la lógica.
+     */
+    @OptIn(ExperimentalCamera2Interop::class)
+    private fun selectorPara(p: ProcessCameraProvider, lente: Lente): CameraSelector {
+        idFisicoEnUso = null
+        if (lente == Lente.SISTEMA) return CameraSelector.DEFAULT_BACK_CAMERA
+        val id = memoria.idFisico(lente) ?: try {
+            val logica = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
+            val fisicas = logica.physicalCameraInfos.mapNotNull { info ->
+                val c = Camera2CameraInfo.from(info)
+                val focal = c.getCameraCharacteristic(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.minOrNull()
+                val tam = c.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+                if (focal == null || tam == null) null else LenteFisica(c.cameraId, focal, tam.width * tam.height)
+            }
+            val focalLogica = caracteristica(logica, CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull()
+            (elegirLenteFisica(fisicas, focalLogica, lente) ?: "").also { memoria.guardarIdFisico(lente, it) }
+        } catch (e: Exception) {
+            Log.w(ETIQUETA, "No se pudieron leer las cámaras físicas: se usa la lógica", e)
+            ""
+        }
+        if (id.isEmpty()) return CameraSelector.DEFAULT_BACK_CAMERA
+        idFisicoEnUso = id
+        return CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).setPhysicalCameraId(id).build()
     }
 
     @OptIn(ExperimentalCamera2Interop::class)

@@ -1,5 +1,6 @@
 package mx.papeleriapos.escaner.camara
 
+import mx.papeleriapos.escaner.Lente
 import androidx.camera.core.CameraState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -115,6 +116,27 @@ class PoliticasTest {
         assertEquals(15 to 30, elegirRangoFps(sin60, PreferenciaFps(fijo = false, tope = 60)))
         // Con 60 solo variable, el fijo toma el mínimo más alto de los de 60.
         assertEquals(7 to 60, elegirRangoFps(listOf(7 to 60, 30 to 30), PreferenciaFps(fijo = true, tope = 60)))
+    }
+
+    @Test
+    fun laLenteFisicaSeEligePorFocalYSensor() {
+        // Las cámaras físicas del Pixel 8 Pro (dumpsys media.camera): la principal completa y su recorte 2x (6.9 mm), el
+        // teleobjetivo y su recorte (18 mm) y la gran angular (2.23 mm).
+        val pixel = listOf(
+            LenteFisica("2", 6.9f, 9.792f * 7.3728f),
+            LenteFisica("5", 6.9f, 4.896f * 3.6864f),
+            LenteFisica("4", 18f, 5.6448f * 4.2336f),
+            LenteFisica("6", 18f, 2.8224f * 2.1168f),
+            LenteFisica("3", 2.23f, 6.4f * 4.8f),
+        )
+        assertEquals("2", elegirLenteFisica(pixel, 6.9f, Lente.PRINCIPAL))
+        assertEquals("3", elegirLenteFisica(pixel, 6.9f, Lente.GRAN_ANGULAR))
+        assertNull(elegirLenteFisica(pixel, 6.9f, Lente.SISTEMA))
+        // Sin la focal de la lógica: la de sensor más grande.
+        assertEquals("2", elegirLenteFisica(pixel, null, Lente.PRINCIPAL))
+        // Una sola física (o ninguna): la lógica.
+        assertNull(elegirLenteFisica(listOf(LenteFisica("0", 4f, 30f)), 4f, Lente.PRINCIPAL))
+        assertNull(elegirLenteFisica(emptyList(), null, Lente.GRAN_ANGULAR))
     }
 
     @Test

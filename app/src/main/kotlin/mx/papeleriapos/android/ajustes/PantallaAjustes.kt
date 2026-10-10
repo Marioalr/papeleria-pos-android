@@ -37,6 +37,7 @@ import mx.papeleriapos.android.ui.FilaInterruptor
 import mx.papeleriapos.android.ui.Opciones
 import mx.papeleriapos.android.ui.TituloSeccion
 import mx.papeleriapos.escaner.ConfigEscaner
+import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.nucleo.Modo
 import kotlin.math.roundToInt
@@ -143,6 +144,8 @@ fun ContenidoAjustes(
         )
 
         TituloSeccion("Cámara")
+        Etiqueta("Lente")
+        Opciones(Lente.entries, config.lente, { it.etiqueta }, { alCambiar(config.copy(lente = it)) })
         FilaInterruptor(
             "Linterna automática", config.linternaAutomatica, { alCambiar(config.copy(linternaAutomatica = it)) },
             descripcion = "La enciende sola si hay poca luz.",
