@@ -22,7 +22,7 @@ data class PuntoMemoria(
 )
 
 /** Con qué cámara corrió una prueba: el motor y el rango de cuadros por segundo (va en sus CSV). */
-data class ConfigEstres(val motor: Motor = Motor.AUTOMATICO, val fpsFijo: Boolean = true, val fps60: Boolean = true) {
+data class ConfigEstres(val motor: Motor = Motor.AUTOMATICO, val fpsFijo: Boolean = true, val fps60: Boolean = false) {
     val textoFps: String get() = ConfigEscaner(fpsFijo = fpsFijo, fps60 = fps60).rangoFpsPedido
 }
 

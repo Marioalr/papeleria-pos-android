@@ -120,10 +120,11 @@ data class ConfigEscaner(
     /** Rango de cuadros por segundo fijo (exposición corta, menos movido) o variable desde 15 (más luz, más movido). */
     val fpsFijo: Boolean = true,
     /**
-     * Hasta 60 cuadros por segundo si la cámara los da con esta sesión (el Pixel 8 Pro sí); si no, hasta 30. Experimento
-     * 4 del plan: menos tiempo entre cuadros y exposición más corta, a cambio de más CPU y batería.
+     * Hasta 60 cuadros por segundo si la cámara los da con esta sesión (el Pixel 8 Pro sí); si no, hasta 30. Apagado: el
+     * experimento 4 del plan midió en el Pixel que abre casi igual (el HAL tarda en dar el primer cuadro por armar su
+     * proceso, no por el ritmo) y cada cuadro cuesta más. Queda para probar si ayuda con códigos en movimiento.
      */
-    val fps60: Boolean = true,
+    val fps60: Boolean = false,
     /** Recortar la franja antes de pasarla al motor (más rápido) o pasar el cuadro completo (para comparar). */
     val recortarFranja: Boolean = true,
     val mostrarDiagnostico: Boolean = false,
