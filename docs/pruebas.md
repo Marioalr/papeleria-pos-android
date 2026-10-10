@@ -136,6 +136,11 @@ adb pull /sdcard/Android/media/mx.papeleriapos.benchmark/ resultados/    # JSON 
 adb uninstall mx.papeleriapos.benchmark
 ```
 
+**Las trazas:** `herramientas/trazas.sh <carpeta-con-las-trazas>` saca de cada traza los hitos de la apertura:
+cámara abierta, sesión, primer cuadro analizado y cuánto espera la cámara a la sesión. Imprime las medianas por caso.
+Usa el trace_processor de Macrobenchmark, que es un binario de Android: corre en el emulador (o en un celular
+conectado) y no toca la app.
+
 **La línea base en el Pixel 8 Pro** (2026-10-09, Android 17, 15 iteraciones, medianas; el TTFD es el primer cuadro
 analizado):
 

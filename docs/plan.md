@@ -105,7 +105,7 @@ temperatura en 30 minutos de escaneo continuo.
 
 1. **El camino crítico de la apertura en frío.** Ya hay 90 trazas de Perfetto del Pixel: ver qué espera a qué entre el
    proceso, CameraX, el dispositivo de la cámara y el primer cuadro, y adelantar o quitar lo que sobre (por ejemplo,
-   empezar a abrir la cámara desde el mosaico o desde `Application`).
+   empezar a abrir la cámara desde el mosaico o desde `Application`). **Hecho el 2026-10-09** (abajo).
 2. **La vuelta en caliente.** Casi todo es reabrir la cámara: medir dejarla abierta unos segundos al salir (y lo que
    cuesta en batería) o reabrirla antes.
 3. **Las cámaras del Pixel.** Principal, ultra gran angular (enfoca muy de cerca) y teleobjetivo 5x: ver qué expone
@@ -121,6 +121,35 @@ temperatura en 30 minutos de escaneo continuo.
    abierto, cronometrados de punta a punta.
 8. **Batería y temperatura.** Escaneo continuo de 30 minutos con el monitor de recursos, antes y después de cada cambio
    que gaste más (resolución, 60 cuadros por segundo, ML Kit en más cuadros).
+
+**Resultado del experimento 1** (las 90 trazas del Pixel, `herramientas/trazas.sh`; ms desde que el sistema lanza
+la Activity, medianas con perfil):
+
+| Arranque | Cámara abierta | Sesión de la cámara | Primer cuadro analizado | Cámara abierta esperando la sesión |
+|---|---|---|---|---|
+| Frío | 235 | 396 | 575 | **160** |
+| Tibio | 134 | 186 | 374 | 61 |
+| Caliente | 78 | 80 | 307 | 2 |
+
+- **En frío y tibio, lo que más estorba es el visor.** La cámara ya está abierta y espera 160 ms (61 en tibio) a que
+  la app cree la sesión, y la sesión necesita la superficie del visor (SurfaceView). La superficie llega hasta que se
+  dibuja la interfaz completa. El primer cuadro es negro a propósito, y el segundo compone todo: ~40 ms de medir texto
+  y ~95 ms de la GPU. CameraX no deja crear la sesión antes: CameraPipe sabe usar superficies diferidas, pero CameraX
+  marca la de la vista previa como `Preview` y no como `SurfaceHolder`, y no hay API para cambiarlo. **Siguiente
+  cambio:** que el visor esté desde el primer cuadro y lo demás de la interfaz llegue después (se calcula ~150 ms menos
+  en frío y ~60 en tibio).
+- **Los ~95 ms de GPU son de compilar shaders** (`CreateGraphicsPipeline-CompileAfterCacheMiss`): Macrobenchmark borra
+  la caché de shaders antes de cada arranque frío. Con el celular de todos los días (sacarlo del bolsillo) esa caché
+  está en disco y no se paga. Falta un caso de Macrobenchmark de **frío con caché** para medir eso.
+- **En caliente no hay espera, pero el primer cuadro tarda ~170 ms después de la sesión.** El HAL del Pixel arma su
+  procesamiento completo para la vista previa: segmentación, rostros, saliencia, reducción de ruido temporal y 76
+  buffers. Además, la cámara lógica enciende los tres sensores. Va a los experimentos 3 (una sola cámara física), 4
+  (más cuadros por segundo) y 5 (sugerencias de uso del flujo al HAL).
+- **Mientras la cámara abre, la interfaz dibuja ~30 cuadros** (~90 ms de GPU en caliente) sin que nada se vea
+  cambiar. Hay que encontrar qué los pide.
+- **Lo que no vale la pena:** `bindApplication` (~55 ms) es del sistema (cargar el dex y los recursos). CameraX se
+  inicializa en paralelo (~35 ms). Los sonidos se decodifican con MediaCodec a los ~200 ms, en otros hilos; se revisa
+  después del visor.
 
 **Fuera de esta fase:** buscar el producto en el POS, vender, contar o recibir con el POS, el inicio de sesión y los
 permisos por rol, y adaptar el escáner a los celulares del personal.
