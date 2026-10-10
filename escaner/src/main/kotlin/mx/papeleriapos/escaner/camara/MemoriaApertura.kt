@@ -21,30 +21,26 @@ internal class MemoriaApertura(contexto: Context) {
         prefs.edit().putString(VISOR + pantalla, p.texto()).apply()
     }
 
-    fun rangoFps(fijo30: Boolean): RangoEnCache = decodificarRango(prefs.getString(llaveFps(fijo30), null), huella())
+    fun rangoFps(pref: PreferenciaFps): RangoEnCache = decodificarRango(prefs.getString(pref.llave, null), huella())
 
-    fun guardarRangoFps(fijo30: Boolean, rango: Pair<Int, Int>?) = guardar(fijo30, codificarRango(huella(), rango))
+    fun guardarRangoFps(pref: PreferenciaFps, rango: Pair<Int, Int>?) = guardar(pref, codificarRango(huella(), rango))
 
     /** La sesión rechazó el FPS fijo (STREAM_CONFIG): sin rango con este sistema, aunque la cámara lo anuncie. */
-    fun guardarAutoPorError(fijo30: Boolean) = guardar(fijo30, codificarRango(huella(), null, porError = true))
+    fun guardarAutoPorError(pref: PreferenciaFps) = guardar(pref, codificarRango(huella(), null, porError = true))
 
-    private fun guardar(fijo30: Boolean, texto: String) {
-        if (prefs.getString(llaveFps(fijo30), null) == texto) return
-        prefs.edit().putString(llaveFps(fijo30), texto).apply()
+    private fun guardar(pref: PreferenciaFps, texto: String) {
+        if (prefs.getString(pref.llave, null) == texto) return
+        prefs.edit().putString(pref.llave, texto).apply()
     }
 
-    fun olvidarRangoFps(fijo30: Boolean) {
-        prefs.edit().remove(llaveFps(fijo30)).apply()
+    fun olvidarRangoFps(pref: PreferenciaFps) {
+        prefs.edit().remove(pref.llave).apply()
     }
-
-    private fun llaveFps(fijo30: Boolean) = if (fijo30) FPS_30 else FPS_15
 
     private fun huella(): String = Build.FINGERPRINT ?: ""
 
     private companion object {
         const val VISOR = "visor_"
-        const val FPS_30 = "fps_30"
-        const val FPS_15 = "fps_15_30"
     }
 }
 

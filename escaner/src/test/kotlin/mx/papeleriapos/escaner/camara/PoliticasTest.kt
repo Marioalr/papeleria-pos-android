@@ -96,11 +96,34 @@ class PoliticasTest {
 
     @Test
     fun elRangoQueSeGuardaEsElQueSeElige() {
-        // Las mismas reglas que al calcularlo: 30 fijo si se puede; si no, 15–30.
+        // Las mismas reglas que al calcularlo: con tope 30, 30 fijo si se puede; si no, 15–30.
         val rangos = listOf(15 to 15, 15 to 30, 24 to 30, 30 to 30, 7 to 60)
-        assertEquals(30 to 30, elegirRangoFps(rangos, fijo30 = true))
-        assertEquals(15 to 30, elegirRangoFps(rangos, fijo30 = false))
-        assertNull(elegirRangoFps(emptyList(), fijo30 = true))
+        assertEquals(30 to 30, elegirRangoFps(rangos, PreferenciaFps(fijo = true, tope = 30)))
+        assertEquals(15 to 30, elegirRangoFps(rangos, PreferenciaFps(fijo = false, tope = 30)))
+        assertNull(elegirRangoFps(emptyList(), PreferenciaFps(fijo = true, tope = 30)))
+    }
+
+    @Test
+    fun conTope60UsaLos60QueDaLaCamaraOSeQuedaEnLoMasRapido() {
+        // Los rangos del Pixel 8 Pro.
+        val pixel = listOf(15 to 15, 15 to 24, 24 to 24, 15 to 30, 24 to 30, 30 to 30, 15 to 60, 60 to 60)
+        assertEquals(60 to 60, elegirRangoFps(pixel, PreferenciaFps(fijo = true, tope = 60)))
+        assertEquals(15 to 60, elegirRangoFps(pixel, PreferenciaFps(fijo = false, tope = 60)))
+        // Una cámara que no llega a 60: lo más rápido que tenga.
+        val sin60 = listOf(15 to 30, 30 to 30)
+        assertEquals(30 to 30, elegirRangoFps(sin60, PreferenciaFps(fijo = true, tope = 60)))
+        assertEquals(15 to 30, elegirRangoFps(sin60, PreferenciaFps(fijo = false, tope = 60)))
+        // Con 60 solo variable, el fijo toma el mínimo más alto de los de 60.
+        assertEquals(7 to 60, elegirRangoFps(listOf(7 to 60, 30 to 30), PreferenciaFps(fijo = true, tope = 60)))
+    }
+
+    @Test
+    fun lasLlavesDe30SonLasDeAntes() {
+        // Lo guardado antes de que hubiera 60 sigue sirviendo.
+        assertEquals("fps_30", PreferenciaFps(fijo = true, tope = 30).llave)
+        assertEquals("fps_15_30", PreferenciaFps(fijo = false, tope = 30).llave)
+        assertEquals("fps_60", PreferenciaFps(fijo = true, tope = 60).llave)
+        assertEquals("fps_15_60", PreferenciaFps(fijo = false, tope = 60).llave)
     }
 
     @Test

@@ -99,7 +99,8 @@ class EstresViewModel(app: Application) : AndroidViewModel(app) {
     fun cambiarControladorNuevo(v: Boolean) = _estado.update { if (it.corriendo != null) it else it.copy(controladorNuevo = v) }
     fun cambiarMinutos(m: Int) = _estado.update { if (it.corriendo != null) it else it.copy(minutosContinuo = m.coerceIn(1, 120)) }
     fun cambiarMotor(m: Motor) = _estado.update { if (it.corriendo != null) it else it.copy(camara = it.camara.copy(motor = m)) }
-    fun cambiarFpsFijo30(v: Boolean) = _estado.update { if (it.corriendo != null) it else it.copy(camara = it.camara.copy(fpsFijo30 = v)) }
+    fun cambiarFpsFijo(v: Boolean) = _estado.update { if (it.corriendo != null) it else it.copy(camara = it.camara.copy(fpsFijo = v)) }
+    fun cambiarFps60(v: Boolean) = _estado.update { if (it.corriendo != null) it else it.copy(camara = it.camara.copy(fps60 = v)) }
 
     fun correr(prueba: PruebaEstres) {
         if (trabajo?.isActive == true) return
@@ -241,7 +242,7 @@ class EstresViewModel(app: Application) : AndroidViewModel(app) {
         val c = crearControlador(
             getApplication(),
             ConfigEscaner(
-                motor = cam.motor, fpsFijo30 = cam.fpsFijo30, segundosParaPausar = 0, segundosParaApagar = 0, sonido = false,
+                motor = cam.motor, fpsFijo = cam.fpsFijo, fps60 = cam.fps60, segundosParaPausar = 0, segundosParaApagar = 0, sonido = false,
                 vibracion = false,
             ),
         )

@@ -1,8 +1,10 @@
 package mx.papeleriapos.android.ui
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FactCheck
@@ -23,12 +25,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -44,6 +49,7 @@ import mx.papeleriapos.android.estres.PantallaEstres
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.sesion.PantallaSesion
 import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.camara.ARCHIVO_APERTURA
 import mx.papeleriapos.escaner.ui.LocalAlVisorListo
 import mx.papeleriapos.escaner.ui.LocalSoloVisor
 import java.util.Locale
@@ -82,19 +88,28 @@ fun AppEscaner(
     BackHandler(enabled = pestana != Pestana.ESCANEAR) { pestana = Pestana.ESCANEAR }
     MonitorDeLaSesion(vm, pestana)
 
-    // En el primer cuadro solo el visor (LocalSoloVisor): la barra va vacía, que mide lo mismo, para que el visor quede
-    // ya en su lugar. Si la pestaña no es la del escáner no hay visor que esperar.
+    // En el primer cuadro solo el visor (LocalSoloVisor): la barra va vacía pero con el alto que midió la vez anterior,
+    // para que el visor quede ya en su lugar y su tamaño. Vacía sin más mide 24 dp menos (en el Pixel 8 Pro): el visor
+    // cambiaba de tamaño al llegar lo demás y la cámara se volvía a enlazar. Si la pestaña no es la del escáner no hay
+    // visor que esperar.
     val soloVisor = LocalSoloVisor.current
+    val contexto = LocalContext.current
+    val altoBarra = remember { AltoBarraPestanas.guardado(contexto) }
     if (soloVisor && pestana != Pestana.ESCANEAR) {
         val alVisorListo = LocalAlVisorListo.current
         LaunchedEffect(Unit) { alVisorListo() }
+    }
+    val modificadorBarra = when {
+        !soloVisor -> Modifier.onSizeChanged { AltoBarraPestanas.guardar(contexto, it.height) }
+        altoBarra > 0 -> Modifier.height(with(LocalDensity.current) { altoBarra.toDp() })
+        else -> Modifier
     }
     Scaffold(
         topBar = {
             if (pestana != Pestana.ESCANEAR && !soloVisor) TopAppBar(title = { Text(pestana.titulo) })
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modificadorBarra) {
                 if (!soloVisor) {
                     for (p in Pestana.entries) {
                         NavigationBarItem(
@@ -120,6 +135,23 @@ fun AppEscaner(
             }
         }
     }
+}
+
+/**
+ * El alto en píxeles de la barra de pestañas con sus botones, para dibujarla vacía del mismo alto en el primer cuadro.
+ * Va en el archivo de la memoria de la apertura, que la Application empieza a leer al arrancar el proceso.
+ */
+internal object AltoBarraPestanas {
+    private const val LLAVE = "barra_pestanas_px"
+
+    fun guardado(contexto: Context): Int = prefs(contexto).getInt(LLAVE, 0)
+
+    fun guardar(contexto: Context, px: Int) {
+        val p = prefs(contexto)
+        if (px > 0 && p.getInt(LLAVE, 0) != px) p.edit().putInt(LLAVE, px).apply()
+    }
+
+    private fun prefs(contexto: Context) = contexto.applicationContext.getSharedPreferences(ARCHIVO_APERTURA, Context.MODE_PRIVATE)
 }
 
 /**

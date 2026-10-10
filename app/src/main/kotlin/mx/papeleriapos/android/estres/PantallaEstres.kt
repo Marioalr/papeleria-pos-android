@@ -112,7 +112,8 @@ fun PantallaEstres(vm: EstresViewModel) {
         alCambiarControladorNuevo = vm::cambiarControladorNuevo,
         alCambiarMinutos = vm::cambiarMinutos,
         alCambiarMotor = vm::cambiarMotor,
-        alCambiarFpsFijo30 = vm::cambiarFpsFijo30,
+        alCambiarFpsFijo = vm::cambiarFpsFijo,
+        alCambiarFps60 = vm::cambiarFps60,
     )
 }
 
@@ -126,7 +127,8 @@ fun ContenidoEstres(
     alCambiarControladorNuevo: (Boolean) -> Unit,
     alCambiarMinutos: (Int) -> Unit,
     alCambiarMotor: (Motor) -> Unit = {},
-    alCambiarFpsFijo30: (Boolean) -> Unit = {},
+    alCambiarFpsFijo: (Boolean) -> Unit = {},
+    alCambiarFps60: (Boolean) -> Unit = {},
 ) {
     val libre = e.corriendo == null
     LazyColumn(
@@ -156,10 +158,17 @@ fun ContenidoEstres(
                     )
                     Opciones(Motor.entries, e.camara.motor, { it.etiqueta }, alCambiarMotor, habilitado = libre)
                     FilaInterruptor(
-                        titulo = "30 cuadros por segundo fijos",
-                        descripcion = if (e.camara.fpsFijo30) "30-30" else "15-30",
-                        valor = e.camara.fpsFijo30,
-                        alCambiar = alCambiarFpsFijo30,
+                        titulo = "Hasta 60 cuadros por segundo",
+                        descripcion = e.camara.textoFps,
+                        valor = e.camara.fps60,
+                        alCambiar = alCambiarFps60,
+                        habilitado = libre,
+                    )
+                    FilaInterruptor(
+                        titulo = "Cuadros por segundo fijos",
+                        descripcion = e.camara.textoFps,
+                        valor = e.camara.fpsFijo,
+                        alCambiar = alCambiarFpsFijo,
                         habilitado = libre,
                     )
                 }

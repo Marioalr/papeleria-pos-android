@@ -6,6 +6,7 @@ import android.view.Surface
 import androidx.camera.camera2.Camera2Config
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraXConfig
+import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.Rotacion
 import mx.papeleriapos.escaner.nucleo.Transformacion
@@ -38,26 +39,42 @@ internal fun rotacionSurface(rotacion: Int): Int = when (rotacion) {
 }
 
 /**
- * El rango de cuadros por segundo, de entre los que la cámara acepta con esta sesión (si no sale de ahí, el enlace
- * lanza IAE). [fijo30]: tope 30 con el mínimo más alto ([30, 30] ideal: exposición corta, menos movido); si no,
- * [15, 30] (más luz y más movido). Nunca más de 30. Null = que decida CameraX.
+ * Qué rango de cuadros por segundo se quiere: [fijo] (el mínimo más alto: exposición corta, menos movido) o variable
+ * (desde 15: más luz, más movido), y el [tope] (30, o 60 donde la cámara los da, como el Pixel 8 Pro). También es la
+ * llave con que se guarda en la memoria de la apertura y se valida una vez por proceso.
  */
-internal fun elegirRangoFps(rangos: List<Pair<Int, Int>>, fijo30: Boolean): Pair<Int, Int>? {
-    val validos = rangos.filter { it.first in 1..it.second && it.second <= 30 }
-    val con30 = validos.filter { it.second == 30 }
-    val elegido = if (fijo30) {
-        con30.maxByOrNull { it.first }
-    } else {
-        con30.firstOrNull { it.first == 15 }
-            ?: con30.filter { it.first >= 15 }.minByOrNull { it.first }
-            ?: con30.minByOrNull { it.first }
+internal data class PreferenciaFps(val fijo: Boolean, val tope: Int) {
+    /** Las de 30 conservan las llaves de antes de que hubiera 60. */
+    val llave: String get() = when {
+        tope == 30 && fijo -> "fps_30"
+        tope == 30 -> "fps_15_30"
+        fijo -> "fps_$tope"
+        else -> "fps_15_$tope"
     }
-    // Sin tope de 30: el más rápido que no pase de 30, con el mínimo más alto.
-    return elegido ?: validos.maxWithOrNull(compareBy<Pair<Int, Int>> { it.second }.thenBy { it.first })
 }
 
-internal fun elegirRangoFps(rangos: Set<Range<Int>>, fijo30: Boolean): Range<Int>? {
-    val par = elegirRangoFps(rangos.map { it.lower to it.upper }, fijo30) ?: return null
+internal val ConfigEscaner.preferenciaFps: PreferenciaFps get() = PreferenciaFps(fpsFijo, if (fps60) 60 else 30)
+
+/**
+ * El rango de cuadros por segundo, de entre los que la cámara acepta con esta sesión (si no sale de ahí, el enlace
+ * lanza IAE). Se usa el máximo más alto que no pase del tope ([60, 60] o [30, 30] fijos; [15, 60] o [15, 30]
+ * variables); si la cámara no llega al tope, el más rápido que tenga. Null = que decida CameraX.
+ */
+internal fun elegirRangoFps(rangos: List<Pair<Int, Int>>, pref: PreferenciaFps): Pair<Int, Int>? {
+    val validos = rangos.filter { it.first in 1..it.second && it.second <= pref.tope }
+    val alto = validos.maxOfOrNull { it.second } ?: return null
+    val conAlto = validos.filter { it.second == alto }
+    return if (pref.fijo) {
+        conAlto.maxByOrNull { it.first }
+    } else {
+        conAlto.firstOrNull { it.first == 15 }
+            ?: conAlto.filter { it.first >= 15 }.minByOrNull { it.first }
+            ?: conAlto.minByOrNull { it.first }
+    }
+}
+
+internal fun elegirRangoFps(rangos: Set<Range<Int>>, pref: PreferenciaFps): Range<Int>? {
+    val par = elegirRangoFps(rangos.map { it.lower to it.upper }, pref) ?: return null
     return rangos.first { it.lower == par.first && it.upper == par.second }
 }
 

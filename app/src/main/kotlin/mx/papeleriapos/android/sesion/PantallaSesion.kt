@@ -63,6 +63,7 @@ import mx.papeleriapos.android.ui.ALTO_TOCABLE
 import mx.papeleriapos.android.ui.FilaDato
 import mx.papeleriapos.android.ui.TituloSeccion
 import mx.papeleriapos.escaner.ConfigEscaner
+import mx.papeleriapos.escaner.rangoFpsPedido
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -171,7 +172,7 @@ fun ConSesion(
                     Text(sesion.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     FilaDato("Inicio", SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ROOT).format(Date(sesion.inicio)))
                     FilaDato("Motor y modo", "${config.motor.etiqueta} · ${config.modo.etiqueta}")
-                    FilaDato("Cuadros por segundo", if (config.fpsFijo30) "30 fijos" else "15 a 30")
+                    FilaDato("Cuadros por segundo", config.rangoFpsPedido)
                     FilaDato("Intentos", sesion.intentos.size.toString())
                 }
             }
