@@ -122,7 +122,9 @@ temperatura en 30 minutos de escaneo continuo.
    cuesta en batería) o reabrirla antes.
 3. **Las cámaras del Pixel.** Principal, ultra gran angular (enfoca muy de cerca) y teleobjetivo 5x: ver qué expone
    CameraX (cámara lógica y zoom de 0.5x en adelante, cámaras físicas con Camera2), y usar la de cerca para códigos
-   chicos y el zoom para los lejanos.
+   chicos y el zoom para los lejanos. **Para abrir, medido el 2026-10-10:** una sola física no gana. CameraX abre la
+   lógica y el HAL enciende los mismos tres sensores ([medición](../mediciones/2026-10-10-lente-principal/LEEME.md)).
+   Queda «Lente» en ajustes; falta ver si la gran angular (enfoca a 2 cm) lee mejor los códigos chicos de cerca.
 4. **Resolución y cuadros por segundo.** Con 2.4 ms por cuadro sobra margen: probar más resolución para códigos chicos
    o lejanos y 60 cuadros por segundo (menos tiempo hasta leer y menos movido). **60 cuadros, medido el 2026-10-10:** no
    se queda como predeterminado. El HAL solo tarda ~15 ms menos en dar el primer cuadro, en frío no gana, y cada cuadro
