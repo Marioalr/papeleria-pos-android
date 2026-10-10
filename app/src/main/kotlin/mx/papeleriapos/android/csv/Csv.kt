@@ -11,7 +11,7 @@ object Csv {
     const val FIN_DE_LINEA = "\r\n"
 
     /** Excel en Windows solo lee bien los acentos de un CSV en UTF-8 si empieza con esta marca. */
-    const val BOM = "﻿"
+    const val BOM = "\uFEFF"
 
     /** Un campo listo para escribir: entre comillas (y con las comillas dobladas) solo si hace falta. */
     fun campo(valor: String): String {

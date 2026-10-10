@@ -234,8 +234,8 @@ internal class Analizador(
 
         // 1) El localizador mira el cuadro COMPLETO (~0.2 ms): tiene que poder guiar hacia la franja, y le dice al motor
         // automático si vale la pena su respaldo.
-        Trace.beginSection("escaner.localizar")
         val inicioLocalizar = SystemClock.elapsedRealtimeNanos()
+        Trace.beginSection("escaner.localizar")
         val loc = try {
             localizador(ancho, alto).procesar(y, pasoFila, ancho, alto, preferidoX, preferidoY)
         } finally {

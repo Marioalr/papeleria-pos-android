@@ -1,6 +1,7 @@
 package mx.papeleriapos.escaner.camara
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
@@ -66,6 +67,7 @@ import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.PasoApertura
+import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
@@ -612,7 +614,7 @@ class ControladorCamara(
         val numero = maquina.nuevoEnlace(fpsFijo = rango != null)
         val oyente = Consumer<CameraState> { e -> alCambiarEstado(numero, e) }
         val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
-        info.addCameraStateListener(principal, oyente)
+        info.oirEstados(principal, oyente)
         oyenteEstado = oyente
         infoOyente = info
         MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_INICIO)
@@ -620,7 +622,7 @@ class ControladorCamara(
         try {
             return p.bindToLifecycle(dueno, CameraSelector.DEFAULT_BACK_CAMERA, nueva).also { sesion = nueva }
         } catch (e: Exception) {
-            info.removeCameraStateListener(oyente)
+            info.dejarDeOirEstados(oyente)
             oyenteEstado = null
             infoOyente = null
             throw e
@@ -859,7 +861,7 @@ class ControladorCamara(
     /** Desenlaza lo de este controlador y quita sus observadores (lo que llegue después de ese enlace ya no cuenta). */
     private fun soltarSesion(conservarPedido: Boolean = false) {
         camara?.let { cam -> cam.cameraInfo.torchState.removeObserver(observadorLinterna) }
-        oyenteEstado?.let { o -> infoOyente?.removeCameraStateListener(o) }
+        oyenteEstado?.let { o -> infoOyente?.dejarDeOirEstados(o) }
         oyenteEstado = null
         infoOyente = null
         maquina.soltar()
@@ -1021,3 +1023,17 @@ internal object ValidacionFps {
     /** No terminó (se canceló): el siguiente enlace la vuelve a intentar. */
     fun olvidar(fijo: Boolean) = de(fijo).set(false)
 }
+
+/**
+ * Cada estado de la cámara, en orden y sin perder ninguno. `CameraInfo.cameraState`, la API pública, es un LiveData que
+ * CameraX actualiza con `postValue`: los cambios rápidos (OPENING, OPEN, CLOSING…) llegan juntos como el último, y al
+ * observarlo antes del enlace entrega el estado del enlace anterior. Este oyente CameraX lo marca para sus pruebas
+ * (`@RestrictTo`, `@VisibleForTesting`) y en la interfaz no hace nada: lo cumple su implementación con CameraPipe
+ * (camera-camera2 1.6), la única que trae la app. Al subir CameraX hay que revisar que siga llegando (los estados salen
+ * en el registro, «Cámara: OPEN», y `ControladorCamaraTest` y `AperturaCamaraTest` los esperan).
+ */
+@SuppressLint("RestrictedApi", "VisibleForTests")
+private fun CameraInfo.oirEstados(ejecutor: Executor, oyente: Consumer<CameraState>) = addCameraStateListener(ejecutor, oyente)
+
+@SuppressLint("RestrictedApi", "VisibleForTests")
+private fun CameraInfo.dejarDeOirEstados(oyente: Consumer<CameraState>) = removeCameraStateListener(oyente)
