@@ -10,8 +10,8 @@ La primera medición en el equipo de referencia: contra esta se comparan los exp
 - **Corrida:** `AperturaBenchmark`, 15 iteraciones por caso, instalada y corrida a mano ([pruebas](../../docs/pruebas.md#arranque-y-perfil)).
   Macrobenchmark borra la caché de shaders antes de cada arranque frío.
 - **Archivos:** `benchmarkData.json` (lo que escribe Macrobenchmark) y `hitos.csv` (de `herramientas/trazas.sh`). Las
-  90 trazas de Perfetto (537 MB) no van en git. Están en `~/Documents/TPV/mediciones-pixel8pro/2026-10-09-linea-base/`
-  en la PC del dueño.
+  90 trazas de Perfetto (537 MB) y el APK medido (`app-benchmarkRelease.apk`, vuelto a armar de `fd439ff`) no van en
+  git. Están en `~/Documents/TPV/mediciones-pixel8pro/2026-10-09-linea-base/` en la PC del dueño.
 
 | Medianas | Sin perfil | Con perfil |
 |---|---|---|
