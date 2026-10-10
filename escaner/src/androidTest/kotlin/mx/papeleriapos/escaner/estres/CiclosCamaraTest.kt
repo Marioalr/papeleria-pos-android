@@ -190,6 +190,11 @@ class CiclosCamaraTest {
         // La base, ya calentados los grupos de hilos que crecen solos hasta su tope (binder, E/S de CameraX, corrutinas).
         val base = memoria.firstOrNull { it.n >= 10 } ?: memoria.first()
         val final = memoria.last()
+        // Lo que queda de las muestras después de la base: una fuga crece y se queda; un pico pasajero (buffers en camino
+        // al tomar la muestra: 121 → 131 → 121 descriptores en el emulador) no. Se compara el menor de las dos últimas.
+        val ultimas = memoria.filter { it.n > base.n }.takeLast(2).ifEmpty { listOf(final) }
+        val hilosFinal = ultimas.minOf { it.hilos }
+        val fdsFinal = ultimas.minOf { it.fds }
         Log.i(
             ETIQUETA,
             "$modo: ${ciclos.size} ciclos, ${ciclos.count { it.error != null }} errores ($sinRecuperar sin recuperar); " +
@@ -201,13 +206,20 @@ class CiclosCamaraTest {
         assertTrue("Errores sin recuperar: ${ciclos.filter { it.error != null }}", sinRecuperar == 0)
         assertTrue("Menos de la mitad de los ciclos leyeron cuadros", buenos.size * 2 >= ciclos.size)
         // Los hilos y descriptores vuelven a la base (± 2); el emulador es ruidoso, así que con un margen de 4.
-        assertTrue("Se fugan hilos: ${base.hilos} → ${final.hilos} (${hilosQueCrecen(base, final)})", final.hilos - base.hilos <= 4)
-        assertTrue("Se fugan descriptores: ${base.fds} → ${final.fds}", final.fds - base.fds <= 4)
+        assertTrue("Se fugan hilos: ${base.hilos} → $hilosFinal (${hilosQueCrecen(base, final)})", hilosFinal - base.hilos <= 4)
+        assertTrue("Se fugan descriptores: ${base.fds} → $fdsFinal (${ultimas.map { it.fds }})", fdsFinal - base.fds <= 4)
         // El heap nativo no crece más de 2 MB por cada 100 ciclos.
         val ciclosEntre = (final.n - base.n).coerceAtLeast(1)
         val crecimiento = (final.nativoKb - base.nativoKb) * 100.0 / ciclosEntre
         assertTrue("El heap nativo crece $crecimiento KB por 100 ciclos", crecimiento < 2048 || final.nativoKb - base.nativoKb < 2048)
-        if (ciclos.size >= 20) assertTrue("El primer cuadro se atrasó: mediana $p50Inicio → $p50Final", p50Final <= p50Inicio * 1.5)
+        // El primer cuadro del emulador es bimodal: una mediana de ~35 ms puede pasar a ~65 sin que nada se atrase. Un
+        // atraso de verdad (algo que se acumula) pasa de 1.5 veces y de 50 ms más.
+        if (ciclos.size >= 20) {
+            assertTrue(
+                "El primer cuadro se atrasó: mediana $p50Inicio → $p50Final",
+                p50Final <= maxOf(p50Inicio * 1.5, p50Inicio + MS_RUIDO_PRIMER_CUADRO),
+            )
+        }
     }
 
     /** Le da a la vista previa una superficie que se vacía sola; se cierra cuando CameraX la suelta. */
@@ -269,6 +281,9 @@ class CiclosCamaraTest {
     }
 
     private companion object {
+        /** Lo que el primer cuadro del emulador puede variar entre ventanas sin que nada se atrase (es bimodal). */
+        const val MS_RUIDO_PRIMER_CUADRO = 50.0
+
         const val ETIQUETA = "CiclosCamaraTest"
     }
 }
