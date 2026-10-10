@@ -97,6 +97,18 @@ con códigos borrosos, con reflejo y con poca luz en grados crecientes, pruebas 
 | Caliente (vuelve de segundo plano): ya escaneando | 278 ms, de ellos ~200 ms reabrir la cámara |
 | Por cuadro: total / localizador / lectura | 2.4 / 0.6 / 1.8 ms |
 
+**Lo mejor medido hasta ahora** (se actualiza con cada cambio que se queda; cada medición, con su APK y sus trazas, en
+[mediciones](../mediciones/)):
+
+| Medida | Línea base | Mejor | Con qué |
+|---|---|---|---|
+| Frío: ya escaneando | 629 ms | **532 ms** | El visor desde el primer cuadro (2026-10-09) |
+| Tibio: ya escaneando | 386 ms | 386 ms | |
+| Caliente: ya escaneando | 278 ms | 278 ms | |
+| Por cuadro | 2.4 ms | 2.4 ms | |
+
+En el Pixel queda instalada siempre la versión más rápida medida, con su perfil compilado.
+
 Lo que falta medir para completar la línea base: del bolsillo al bip por cada camino (mosaico, gesto, ícono, pantalla
 apagada), la lectura de lo difícil (borroso, reflejo, poca luz, chico, lejos) con productos reales, y la batería y la
 temperatura en 30 minutos de escaneo continuo.
@@ -135,13 +147,15 @@ la Activity, medianas con perfil):
   la app cree la sesión, y la sesión necesita la superficie del visor (SurfaceView). La superficie llega hasta que se
   dibuja la interfaz completa. El primer cuadro es negro a propósito, y el segundo compone todo: ~40 ms de medir texto
   y ~95 ms de la GPU. CameraX no deja crear la sesión antes: CameraPipe sabe usar superficies diferidas, pero CameraX
-  marca la de la vista previa como `Preview` y no como `SurfaceHolder`, y no hay API para cambiarlo. **Siguiente
-  cambio:** que el visor esté desde el primer cuadro y lo demás de la interfaz llegue después (se calcula ~150 ms menos
-  en frío y ~60 en tibio).
+  marca la de la vista previa como `Preview` y no como `SurfaceHolder`, y no hay API para cambiarlo. **Hecho:**
+  el visor sale desde el primer cuadro y lo demás llega cuando el visor ya entregó su superficie. En frío, la espera
+  bajó de 160 a 42 ms y ya escaneando de 629 a 532 ms ([medición](../mediciones/2026-10-09-visor-primero/LEEME.md)).
+  En tibio no cambió: la espera bajó de 61 a 18 ms, pero ahí manda el HAL.
 - **Los ~95 ms de GPU son de compilar shaders** (`CreateGraphicsPipeline-CompileAfterCacheMiss`): Macrobenchmark borra
   la caché de shaders antes de cada arranque frío. Con el celular de todos los días (sacarlo del bolsillo) esa caché
   está en disco y no se paga. Falta un caso de Macrobenchmark de **frío con caché** para medir eso.
-- **En caliente no hay espera, pero el primer cuadro tarda ~170 ms después de la sesión.** El HAL del Pixel arma su
+- **Ahora el límite en los tres arranques es el HAL:** ~150 ms desde que la sesión está lista hasta el primer cuadro.
+  En caliente nunca hubo espera, y el primer cuadro tarda ~170 ms después de la sesión. El HAL del Pixel arma su
   procesamiento completo para la vista previa: segmentación, rostros, saliencia, reducción de ruido temporal y 76
   buffers. Además, la cámara lógica enciende los tres sensores. Va a los experimentos 3 (una sola cámara física), 4
   (más cuadros por segundo) y 5 (sugerencias de uso del flujo al HAL).
