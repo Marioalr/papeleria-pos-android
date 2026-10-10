@@ -195,7 +195,9 @@ class BancoLimites(
                         val escena = EscenaLimite(condicion, g, v)
                         progreso(hechos, "${condicion.etiqueta} ${Csv.decimal(escena.grado, 2)} · variante ${v + 1}")
                         cargar(escena)
-                        val orden = if (v % 2 == 0) subiendo.toList() else subiendo.reversed()
+                        // asReversed() y no reversed(): en un LinkedHashSet, reversed() es el de Java 21 (API 35+) y
+                        // en los celulares con Android 14 o anterior truena con NoSuchMethodError.
+                        val orden = if (v % 2 == 0) subiendo.toList() else subiendo.toList().asReversed()
                         for (m in orden) {
                             val motor = activos[m] ?: continue
                             buffer.rewind()
