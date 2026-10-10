@@ -119,10 +119,20 @@ fun ContenidoAjustes(
             alTerminar = { alCambiar(config.copy(altoFranja = it)) },
         )
         FilaInterruptor(
-            titulo = "30 cuadros por segundo fijos",
-            descripcion = if (config.fpsFijo30) "Menos movido; con poca luz se ve más oscuro." else "De 15 a 30: más luz, pero más movido.",
-            valor = config.fpsFijo30,
-            alCambiar = { alCambiar(config.copy(fpsFijo30 = it)) },
+            titulo = "Hasta 60 cuadros por segundo",
+            descripcion = if (config.fps60) {
+                "Si la cámara los da: cuadros más seguidos y menos movidos, pero gasta más batería."
+            } else {
+                "Hasta 30: gasta menos."
+            },
+            valor = config.fps60,
+            alCambiar = { alCambiar(config.copy(fps60 = it)) },
+        )
+        FilaInterruptor(
+            titulo = "Cuadros por segundo fijos",
+            descripcion = if (config.fpsFijo) "Menos movido; con poca luz se ve más oscuro." else "Desde 15: más luz, pero más movido.",
+            valor = config.fpsFijo,
+            alCambiar = { alCambiar(config.copy(fpsFijo = it)) },
         )
 
         TituloSeccion("Confirmación")

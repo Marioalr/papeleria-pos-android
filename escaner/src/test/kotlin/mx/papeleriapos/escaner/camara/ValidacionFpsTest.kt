@@ -7,19 +7,21 @@ import org.junit.Test
 class ValidacionFpsTest {
     @Test
     fun seValidaUnaVezPorProcesoYPreferenciaYSiSeCancelaSeRepite() {
-        ValidacionFps.olvidar(true)
-        ValidacionFps.olvidar(false)
+        val fijo60 = PreferenciaFps(fijo = true, tope = 60)
+        val variable60 = PreferenciaFps(fijo = false, tope = 60)
+        val fijo30 = PreferenciaFps(fijo = true, tope = 30)
+        ValidacionFps.olvidarTodas()
         // El primer enlace la toma; el segundo (otro controlador, o un reenlace) ya no.
-        assertTrue(ValidacionFps.empezar(true))
-        assertTrue(ValidacionFps.hecha(true))
-        assertFalse(ValidacionFps.empezar(true))
-        // La otra preferencia es otra validación.
-        assertFalse(ValidacionFps.hecha(false))
-        assertTrue(ValidacionFps.empezar(false))
+        assertTrue(ValidacionFps.empezar(fijo60))
+        assertTrue(ValidacionFps.hecha(fijo60))
+        assertFalse(ValidacionFps.empezar(fijo60))
+        // Otra preferencia es otra validación, también si solo cambia el tope.
+        assertFalse(ValidacionFps.hecha(variable60))
+        assertTrue(ValidacionFps.empezar(variable60))
+        assertFalse(ValidacionFps.hecha(fijo30))
         // Cancelada antes de terminar: el siguiente enlace la vuelve a intentar.
-        ValidacionFps.olvidar(true)
-        assertTrue(ValidacionFps.empezar(true))
-        ValidacionFps.olvidar(true)
-        ValidacionFps.olvidar(false)
+        ValidacionFps.olvidar(fijo60)
+        assertTrue(ValidacionFps.empezar(fijo60))
+        ValidacionFps.olvidarTodas()
     }
 }

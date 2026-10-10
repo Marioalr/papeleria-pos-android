@@ -86,7 +86,8 @@ class CamaraEstres(
     private var controlador: ControladorEscaner? = null
     private var config = ConfigEscaner(
         motor = configuracion.motor,
-        fpsFijo30 = configuracion.fpsFijo30,
+        fpsFijo = configuracion.fpsFijo,
+        fps60 = configuracion.fps60,
         // Que no se pause ni se apague sola a media prueba, y sin bip ni vibración.
         segundosParaPausar = 0,
         segundosParaApagar = 0,

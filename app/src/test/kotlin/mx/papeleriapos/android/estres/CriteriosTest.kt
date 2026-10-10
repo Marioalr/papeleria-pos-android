@@ -240,7 +240,7 @@ class CriteriosTest {
     @Test
     fun `los CSV de estres traen sus columnas y el resumen sus criterios`() {
         val ciclos = listOf(ciclo(1), ciclo(2, error = "no abrió").copy(abrirMs = Double.NaN))
-        val config = ConfigEstres(Motor.ML_KIT, fpsFijo30 = false)
+        val config = ConfigEstres(Motor.ML_KIT, fpsFijo = false, fps60 = false)
         val texto = CsvEstres.ciclos(ciclos, listOf(memoria(1)), config)
         val f = Csv.leer(texto)
         assertEquals(CsvEstres.COLUMNAS_CICLOS, f[0])
