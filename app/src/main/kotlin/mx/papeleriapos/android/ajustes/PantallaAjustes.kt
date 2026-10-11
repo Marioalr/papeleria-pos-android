@@ -1,9 +1,12 @@
 package mx.papeleriapos.android.ajustes
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -16,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.catalogo.EstadoCatalogo
+import mx.papeleriapos.android.catalogo.OrigenCatalogo
 import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
 import mx.papeleriapos.android.rapido.mensajeMosaico
 import mx.papeleriapos.android.rapido.pedirMosaico
@@ -45,8 +51,15 @@ import kotlin.math.roundToInt
 @Composable
 fun PantallaAjustes(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
+    val catalogo by vm.catalogo.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
     var mensaje by remember { mutableStateOf<String?>(null) }
+    // El catálogo se carga perezoso: aquí, para decir cuál está y cuántos códigos trae.
+    LaunchedEffect(Unit) { vm.prepararCatalogo() }
+    // El selector del sistema: sin permisos; el archivo se lee una vez y se copia a la memoria de la app.
+    val elegirCatalogo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) vm.cargarCatalogo(uri)
+    }
     ContenidoAjustes(
         config,
         alCambiar = vm::cambiarConfig,
@@ -60,8 +73,14 @@ fun PantallaAjustes(vm: EscanerViewModel) {
             }
         },
         mensajeMosaico = mensaje,
+        catalogo = catalogo,
+        alCargarCatalogo = { elegirCatalogo.launch(TIPOS_CATALOGO) },
+        alUsarCatalogoDeEjemplo = vm::usarCatalogoDeEjemplo,
     )
 }
+
+/** Texto o CSV (algunos proveedores dan el CSV como application/csv). */
+private val TIPOS_CATALOGO = arrayOf("text/*", "application/csv")
 
 /** Los ajustes del escáner; cada cambio se guarda y se aplica en caliente. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -74,6 +93,10 @@ fun ContenidoAjustes(
     alAgregarMosaico: (() -> Unit)? = null,
     /** Lo que contestó el sistema la última vez que se pidió. */
     mensajeMosaico: String? = null,
+    /** El catálogo de prueba cargado; null mientras carga. */
+    catalogo: EstadoCatalogo? = null,
+    alCargarCatalogo: () -> Unit = {},
+    alUsarCatalogoDeEjemplo: () -> Unit = {},
 ) {
     Column(
         Modifier
@@ -174,6 +197,28 @@ fun ContenidoAjustes(
         }
         mensajeMosaico?.let { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp).testTag("mensaje-mosaico")) }
 
+        TituloSeccion("Catálogo de prueba")
+        Text(textoCatalogo(catalogo), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("catalogo-cargado"))
+        Nota(
+            "Cada lectura se busca aquí, sin red, y la sesión de prueba anota si está. El archivo (texto o CSV, con el " +
+                "código en la primera columna) se copia al celular y no sale de él.",
+        )
+        catalogo?.aviso?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("catalogo-aviso"))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = alCargarCatalogo,
+                enabled = catalogo?.cargando != true,
+                modifier = Modifier.weight(1f).heightIn(min = ALTO_TOCABLE).testTag("catalogo-cargar"),
+            ) { Text("Cargar archivo…") }
+            OutlinedButton(
+                onClick = alUsarCatalogoDeEjemplo,
+                enabled = catalogo != null && catalogo.origen == OrigenCatalogo.ARCHIVO && !catalogo.cargando,
+                modifier = Modifier.weight(1f).heightIn(min = ALTO_TOCABLE).testTag("catalogo-ejemplo"),
+            ) { Text("Usar el de ejemplo") }
+        }
+
         TituloSeccion("Pruebas")
         FilaInterruptor(
             "Mostrar diagnóstico", config.mostrarDiagnostico, { alCambiar(config.copy(mostrarDiagnostico = it)) },
@@ -186,6 +231,16 @@ fun ContenidoAjustes(
         Nota("Versión ${BuildConfig.VERSION_NAME} · ${BuildConfig.COMMIT}")
     }
 }
+
+/** Cuál catálogo está cargado y cuántos códigos trae. */
+internal fun textoCatalogo(catalogo: EstadoCatalogo?): String = when {
+    catalogo == null -> "Cargando…"
+    catalogo.cargando -> "Cargando el archivo…"
+    catalogo.origen == OrigenCatalogo.EJEMPLO -> "El de ejemplo · ${codigos(catalogo.catalogo.tamano)}"
+    else -> "${catalogo.nombre} · ${codigos(catalogo.catalogo.tamano)}"
+}
+
+private fun codigos(n: Int) = if (n == 1) "1 código" else "$n códigos"
 
 @Composable
 private fun Etiqueta(texto: String) {

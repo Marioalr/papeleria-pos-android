@@ -13,10 +13,10 @@ import java.util.TimeZone
 object CsvSesion {
     val COLUMNAS = listOf(
         "sesion", "n", "hora", "motor", "via", "modo", "rango_fps", "condicion", "ms_desde_candidato", "indicaciones",
-        "simbologia", "valor", "normalizado", "esperado", "coincide", "modulo_px", "zoom", "linterna", "resultado", "nota",
-        "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo", "estado_termico", "tipo_arranque", "ms_actividad",
-        "ms_enlace", "ms_camara", "ms_primer_cuadro", "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk",
-        "version_app", "commit",
+        "simbologia", "valor", "normalizado", "esperado", "coincide", "en_catalogo", "variante", "clave_catalogo",
+        "modulo_px", "zoom", "linterna", "resultado", "nota", "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo",
+        "estado_termico", "tipo_arranque", "ms_actividad", "ms_enlace", "ms_camara", "ms_primer_cuadro",
+        "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk", "version_app", "commit",
     )
 
     /** Las que tiene que traer un CSV para recuperar sus intentos (los de versiones anteriores no traen las nuevas). */
@@ -55,7 +55,10 @@ object CsvSesion {
                     Csv.textoSeguro(i.valor),
                     Csv.textoSeguro(i.normalizado),
                     Csv.textoSeguro(i.esperado),
-                    when (i.coincide) { true -> "si"; false -> "no"; null -> "" },
+                    siNo(i.coincide),
+                    siNo(i.enCatalogo),
+                    i.variante,
+                    Csv.textoSeguro(i.claveCatalogo),
                     if (i.moduloPx > 0f) Csv.decimal(i.moduloPx) else "",
                     if (i.zoom > 0f) Csv.decimal(i.zoom) else "",
                     if (i.linterna) "si" else "no",
@@ -111,7 +114,10 @@ object CsvSesion {
                     valor = Csv.textoOriginal(col("valor")),
                     normalizado = Csv.textoOriginal(col("normalizado")),
                     esperado = Csv.textoOriginal(col("esperado")),
-                    coincide = when (col("coincide")) { "si" -> true; "no" -> false; else -> null },
+                    coincide = deSiNo(col("coincide")),
+                    enCatalogo = deSiNo(col("en_catalogo")),
+                    variante = col("variante"),
+                    claveCatalogo = Csv.textoOriginal(col("clave_catalogo")),
                     moduloPx = col("modulo_px").toFloatOrNull() ?: 0f,
                     zoom = col("zoom").toFloatOrNull() ?: 0f,
                     linterna = col("linterna") == "si",
@@ -168,4 +174,8 @@ object CsvSesion {
         prefijo + "-" + clave.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').take(80) + ".csv"
 
     private fun ms(v: Long) = if (v >= 0) v.toString() else ""
+
+    private fun siNo(v: Boolean?) = when (v) { true -> "si"; false -> "no"; null -> "" }
+
+    private fun deSiNo(v: String) = when (v) { "si" -> true; "no" -> false; else -> null }
 }

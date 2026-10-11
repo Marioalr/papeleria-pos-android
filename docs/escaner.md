@@ -21,9 +21,10 @@ casa y en la tienda ([pruebas en tienda](pruebas-en-tienda.md)).
 ```
 app ──► escaner ──► nucleo
  │        │           └─ Kotlin puro (se prueba en la JVM): GTIN, codificadores, escenas sintéticas,
- │        │              geometría, localizador, guía, validación y consenso
+ │        │              geometría, localizador, guía, validación y consenso, búsqueda en el catálogo
  │        └─ Android: cámara (CameraX), motores (ML Kit, zxing-cpp), pantalla del escáner, bip y vibración
- └─ la app de prueba: modo venta y modo conteo, ajustes, sesión de prueba (CSV) y banco de pruebas
+ └─ la app de prueba: modo venta y modo conteo, ajustes, catálogo de prueba, sesión de prueba (CSV) y
+    banco de pruebas
 ```
 
 El módulo `escaner` no sabe nada del POS: recibe una configuración y entrega lecturas (`ControladorEscaner`). Así se
@@ -145,8 +146,8 @@ Una lectura falsa es peor que una lenta (decisión del dueño, 2026-10-11): la m
 | Simbología | Se acepta si… | Lecturas iguales | Se entrega como |
 |---|---|---|---|
 | EAN-13 (750…, internos 2…) | Dígito verificador | 2 en cuadros seguidos | 13 dígitos |
-| UPC-A | Dígito verificador | 2 seguidas | GTIN-13 con 0 adelante; se busca también con 12 |
-| UPC-E | Su expansión a UPC-A es válida (con su verificador) | 2 seguidas | GTIN-13; se busca también con 8 y 12 |
+| UPC-A | Dígito verificador | 2 seguidas | GTIN-13 con 0 adelante; en el catálogo se busca con 12 ([abajo](#búsqueda-en-el-catálogo)) |
+| UPC-E | Su expansión a UPC-A es válida (con su verificador) | 2 seguidas | GTIN-13; en el catálogo se busca con 8 y con su UPC-A de 12 |
 | EAN-8 | Dígito verificador | 2 seguidas | 8 dígitos |
 | ITF | **Exactamente 14 dígitos** con verificador (ML Kit llega a leer basura de 40 dígitos) | 2 seguidas | 14 dígitos |
 | Code 128 | Su símbolo de verificación (lo valida el decodificador); sin `]C1` ni caracteres de control | 2 seguidas | Igual |
@@ -175,6 +176,72 @@ vuelta; así cuenta cada uno a lo más una vez cada 1.5 s. El respaldo de ML Kit
 
 - **Modo venta:** lista de lo leído; el mismo código suma uno a su renglón. Botones +1, −1 y deshacer.
 - **Modo conteo:** contador grande del código actual que crece con cada suma; −1 y deshacer siempre a la vista.
+
+## Búsqueda en el catálogo
+
+Cada lectura aceptada se busca en un catálogo de prueba: el de ejemplo (ficticio) o el archivo que exporte el dueño.
+Es la misma regla que usará el servicio del POS ([plan](plan.md#entrega-8-medir-la-lectura), parte 4), en
+`nucleo/Catalogo.kt`. Se prueba, en este orden, y nada más:
+
+1. El código tal cual (`TAL_CUAL`).
+2. Un UPC-A de 12 que empieza con 0: sin ese 0, de 11 dígitos (`UPC_A_11`).
+3. Un EAN-13 que empieza con 0: como UPC-A de 12 (`EAN13_A_UPC_A`) y luego, si ese empieza con 0, de 11
+   (`EAN13_A_UPC_A_11`).
+4. Un UPC-E: expandido a su UPC-A de 12 (`UPC_E_A_UPC_A`).
+
+Gana la primera que esté en el catálogo. Ninguna otra corrección: no se adivinan ni se completan dígitos, no se quitan
+ceros a otros códigos (EAN-8, ITF, Code 128) y una lectura sin verificar no se busca. Las variantes de una lectura
+válida también tienen su verificador bien: un código del catálogo con el verificador mal nunca coincide. Es un hallazgo
+del catálogo y no se arregla.
+
+**Sobre qué texto.** Sobre lo que entregó el decodificador, con su simbología, en la forma que dan las barras y ML Kit.
+zxing-cpp alarga el UPC-A y el UPC-E a 13 dígitos; la forma se arma desde el normalizado, que es igual con los dos
+motores, así que el resultado no depende del motor:
+
+| Lectura | ML Kit | zxing-cpp | Se busca como |
+|---|---|---|---|
+| UPC-A | 12 dígitos | 13 («0…») | UPC-A de 12: pasos 1 y 2 |
+| EAN-13 que empieza con 0 | UPC-A de 12 (las mismas barras) | 13 | UPC-A de 12: pasos 1 y 2 |
+| UPC-E | 8 dígitos | Expandido a 13 | Sus 8 dígitos: pasos 1 y 4 |
+| EAN-13, EAN-8, ITF-14, Code 128, QR | | | El normalizado: paso 1 |
+
+Un EAN-13 que empieza con 0 tiene las mismas barras que un UPC-A: la cámara no los distingue. El paso 3 es para el
+texto de 13 dígitos que manda un lector configurado así; con la cámara, la misma clave sale por el paso 1 (la de 12) o
+el 2 (la de 11). Un UPC-A guardado con 13 dígitos («0…») no coincide con la lectura: la regla no completa dígitos.
+
+**Dónde se aplica.** Cada intento de la sesión de prueba lleva `en_catalogo` (si o no; vacío si no se buscó),
+`variante` y `clave_catalogo` (oculta en el QR, como su valor). En el panel de lecturas, el renglón que no está en el
+catálogo dice «no está en el catálogo».
+
+**El archivo.** Texto o CSV con el código en la primera columna (hasta la primera coma, punto y coma o tabulador), sin
+comillas ni espacios alrededor. El encabezado es opcional: el primer renglón lo es si su primera columna empieza con
+«codigo», «código», «clave», «code» o «barcode». Las líneas vacías se saltan y un repetido cuenta una vez. UTF-8 o
+Windows-1252 (el «CSV» de Excel), hasta 8 MB. Las claves van en un HashSet: buscar cuesta microsegundos.
+
+**Cuándo se carga.** Perezoso, en su propio hilo: con la primera lectura o al abrir Ajustes, nunca en la apertura de
+la cámara. Con sesión de prueba, la primera lectura espera la carga (solo esa vez); la vibración y el verde no.
+
+**En Ajustes, «Catálogo de prueba»:** cuál está cargado y cuántos códigos trae, «Cargar archivo…» (el selector del
+sistema: sin permisos ni red) y «Usar el de ejemplo». El archivo se copia a la memoria privada de la app
+(`files/catalogo`, sin respaldo en la nube) y sigue ahí al reabrirla; «Usar el de ejemplo» borra la copia.
+
+**Privacidad.** El archivo del dueño puede traer códigos reales: no va al registro, no se exporta y no entra a las
+pruebas ni al repositorio. Los CSV de la sesión llevan lo de antes (los códigos leídos) y la clave con que coincidió
+cada uno.
+
+**El de ejemplo** (`app/src/main/assets/catalogo-ejemplo.csv`): un caso por variante, todos ficticios. Trae también los
+códigos de los carteles del emulador.
+
+| Código | Qué es | Variante con la cámara |
+|---|---|---|
+| 7509993456786 | EAN-13 750999 | `TAL_CUAL` |
+| 099999291452 | UPC-A guardado de 12 | `TAL_CUAL` (con 13 dígitos, `EAN13_A_UPC_A`) |
+| 99999400021 | UPC-A 099999400021 guardado de 11 | `UPC_A_11` |
+| 99999400038 | Guardado de 11; llega como EAN-13 0099999400038 | `UPC_A_11` (con 13 dígitos, `EAN13_A_UPC_A_11`) |
+| 099994000059 | El UPC-A del UPC-E 09999459 | `UPC_E_A_UPC_A` |
+| 75099916, 17509995000014, 2999990000016, 2999990000023 | EAN-8, GTIN-14 del ITF e internos del POS | `TAL_CUAL` |
+| ZZ0001, ZZ-PRUEBA-0001, ZZP0042x | Claves en Code 128 | `TAL_CUAL` |
+| 7509994000996 | EAN-13 con el verificador mal (el bueno termina en 5) | Ninguna: no coincide |
 
 ## Experiencia
 

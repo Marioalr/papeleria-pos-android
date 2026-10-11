@@ -18,12 +18,15 @@ export JAVA_HOME=/opt/android-studio/jbr
 
 - **`nucleo`:** verificación de GTIN, codificadores (comprobados contra zbar), geometría y rotaciones, el localizador
   sobre escenas sintéticas (tamaños, giros, desenfoque, código cortado, escenas sin código), la guía (secuencias de
-  cuadros: cada indicación, histéresis y que no parpadee) y la validación y el consenso (normalización, ITF de 14
+  cuadros: cada indicación, histéresis y que no parpadee), la validación y el consenso (normalización, ITF de 14
   dígitos, verificador mal que nunca entra, dos lecturas iguales en cuadros seguidos, QR de un cuadro, repetidos al
-  salir de la mira o a los 1.5 s, dos códigos juntos que no se suman sin fin).
+  salir de la mira o a los 1.5 s, dos códigos juntos que no se suman sin fin) y la búsqueda en el catálogo (cada
+  variante, el orden, que no corrige nada más, un catálogo con el verificador mal y que da lo mismo con ML Kit que con
+  zxing-cpp).
 - **`escaner`:** las marcas de la apertura, la máquina de estados y las políticas de la cámara, y el turno del respaldo
   de ML Kit (si lee en su turno, corre también en el cuadro siguiente para la segunda lectura).
-- **`app`:** la sesión de prueba y su CSV, el banco de pruebas y las listas de venta y conteo.
+- **`app`:** la sesión de prueba y su CSV, el banco de pruebas, las listas de venta y conteo y el catálogo de prueba
+  (el de ejemplo trae un caso por variante; copiar el archivo, reabrir y volver al de ejemplo).
 
 **Escenas sintéticas.** `Lienzo` (en `nucleo`) dibuja un código en un plano de luminancia como lo vería la cámara:
 posición, tamaño, giro, perspectiva, desenfoque, movimiento, ruido, poca luz y reflejo. Lo usan las pruebas, el banco
@@ -96,7 +99,8 @@ Sin ir a la tienda: cualquier producto de la casa, las etiquetas del POS impresa
 2. **Escanear** en modo venta y en modo conteo; en Ajustes se cambia el motor y se puede ver el diagnóstico (cuadros por
    segundo, milisegundos, px por módulo, nitidez, brillo).
 3. **Banco de pruebas:** compara los dos motores en ese celular con escenas sintéticas, sin depender de la mano.
-4. **Sesión de prueba:** registra cada intento con sus tiempos y exporta un CSV, igual que en la tienda.
+4. **Sesión de prueba:** registra cada intento con sus tiempos y si está en el catálogo de prueba, y exporta un CSV,
+   igual que en la tienda. Con el catálogo de ejemplo, los códigos de los carteles del emulador salen «si».
 
 ## Arranque y perfil
 

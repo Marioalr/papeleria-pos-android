@@ -42,9 +42,9 @@ código de barras: [pruebas](docs/pruebas.md).
 
 | Módulo | Qué tiene |
 |---|---|
-| `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso |
+| `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso, búsqueda en el catálogo |
 | `escaner` | Android: la cámara (CameraX), los motores (ML Kit y zxing-cpp) y la pantalla del escáner con su guía, bip y vibración |
-| `app` | La app de prueba: modo venta y modo conteo, escaneo rápido sobre el bloqueo (mosaico y accesos directos), ajustes, sesión de prueba con CSV, banco de pruebas y pruebas de estrés |
+| `app` | La app de prueba: modo venta y modo conteo, escaneo rápido sobre el bloqueo (mosaico y accesos directos), ajustes, catálogo de prueba, sesión de prueba con CSV, banco de pruebas y pruebas de estrés |
 | `baselineprofile` | Genera el perfil de arranque (Baseline Profile y Startup Profile) que precompila la apertura |
 | `benchmark` | Macrobenchmark de la apertura: frío, tibio y caliente hasta el primer cuadro analizado |
 

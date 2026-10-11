@@ -15,9 +15,16 @@
   medir desde el primer día, con el cable: `adb shell cmd package compile -f -m speed-profile mx.papeleriapos.android`
   ([pruebas](pruebas.md#arranque-y-perfil)).
 - **Una lista de productos de prueba** que estén en la tienda, por tipo de código (ver abajo), con su código esperado
-  escrito a mano o sacado de la etiqueta. Para buscar en el catálogo, el dueño exporta los códigos a un archivo fuera
-  del repositorio y la app lo carga en el celular ([plan](plan.md#entrega-8-medir-la-lectura), parte 4). Nada se conecta
-  a eleventa ni al servicio de la tienda, y los códigos reales no van al repositorio.
+  escrito a mano o sacado de la etiqueta.
+- **El catálogo de la tienda en el Pixel** ([búsqueda en el catálogo](escaner.md#búsqueda-en-el-catálogo)):
+  1. El dueño exporta los códigos de eleventa a un archivo de texto o CSV, con el código en la primera columna, fuera
+     del repositorio.
+  2. Lo pasa al Pixel con el cable (a Descargas). Ni por correo ni a la nube: son códigos de la tienda.
+  3. En Ajustes → «Catálogo de prueba» → «Cargar archivo…» lo elige. Debe decir su nombre y cuántos códigos trae
+     (casi tantos como productos tiene eleventa); si avisa algo (vacío, más de 8 MB), revisar la exportación.
+  4. La app lo copia a su memoria privada: se puede borrar de Descargas.
+
+  Nada se conecta a eleventa ni al servicio de la tienda, y los códigos reales no van al repositorio.
 - **La laptop** con el cable, el repositorio y Android Studio, por si hay que ver el registro (`adb logcat -s Escaner`).
 - **Un cronómetro o la cámara lenta de otro celular** (240 cuadros por segundo) para la parte humana de la apertura:
   del bolsillo al bip.
@@ -48,6 +55,9 @@ con el nombre de quien escanea.
 - **En qué condiciones:** con la luz normal del mostrador; en el rincón más oscuro (con y sin linterna); empaques
   brillantes con reflejo; superficies curvas (botes, plumas); códigos chicos o desde lejos; varios códigos juntos (una
   hoja de etiquetas); con la mano movida. Cada condición, unos 10 intentos.
+- **El catálogo:** la sesión anota sola si cada lectura está en el catálogo (`en_catalogo`), por qué variante y con
+  qué clave. Un producto de la tienda que sale «no» es un hallazgo (cómo lo guardó eleventa, o un verificador mal en el
+  catálogo): se anota en la nota del intento y no se corrige. El panel de lecturas lo marca: «no está en el catálogo».
 - **Marcar cada intento** en la sesión: lo normal es OK y no hay que tocar nada. Si leyó otro código, «lectura
   incorrecta» (es lo más grave: anotar qué producto era y qué código leyó; fotos, solo si el dueño lo decide y sin que salgan del
   celular); si leyó algo donde no había código,
@@ -96,5 +106,7 @@ laptop con el cable. Ni por correo ni a la nube: llevan códigos de la tienda.
 - Con los CSV: completar la línea base del Pixel (lo difícil con productos reales, del bolsillo al bip, batería), ver
   qué falla y en qué condición, y decidir qué experimento del [plan](plan.md#entrega-7-lo-máximo-en-el-pixel-8-pro) va
   primero. Lo que se cambie, con su porqué, en [CAMBIOS.md](../CAMBIOS.md).
+- Con `en_catalogo` y `variante`: qué productos no se encontraron y cómo guarda eleventa los que sí (12 u 11 dígitos,
+  UPC-E como UPC-A). Si el catálogo de la tienda ya no hace falta en el celular, «Usar el de ejemplo» borra la copia.
 - El motor y los umbrales definitivos se deciden cuando el POS llegue a su fase de Android ([plan](plan.md)); aquí se
   junta la evidencia.
