@@ -193,17 +193,19 @@ internal fun PantallaEscanerInterna(
     // --- Bip, vibración y aviso de volumen ---
     val retro = remember(contexto) { if (enVistaPrevia) null else Retroalimentacion(contexto.applicationContext) }
     DisposableEffect(retro) { onDispose { retro?.close() } }
+    LaunchedEffect(retro, config.sonido) { if (config.sonido) retro?.prepararSonidos() }
     var sinVolumen by remember { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { sinVolumen = retro?.sinVolumen() ?: false }
-    DisposableEffect(retro) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { sinVolumen = config.sonido && retro?.sinVolumen() == true }
+    DisposableEffect(retro, config.sonido) {
+        if (retro == null || !config.sonido) return@DisposableEffect onDispose {}
         // Los cambios de volumen se guardan en Settings.System: así el aviso se va en cuanto suben el volumen.
         val observador = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(propio: Boolean) {
-                sinVolumen = retro?.sinVolumen() ?: false
+                sinVolumen = retro.sinVolumen()
             }
         }
-        if (retro != null) contexto.contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, observador)
-        onDispose { if (retro != null) contexto.contentResolver.unregisterContentObserver(observador) }
+        contexto.contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, observador)
+        onDispose { contexto.contentResolver.unregisterContentObserver(observador) }
     }
 
     // --- Confirmación de lectura ---

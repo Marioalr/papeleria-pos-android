@@ -163,13 +163,14 @@ corriendo hasta 1 s después del último indicio: si dejara de verlo, el filtro 
 | Abriendo | Fuera de la retícula oscuro al 60 %, «Abriendo cámara…» (rueda si tarda > 1 s) | — |
 | Escaneando | Una línea a la mitad de la franja y la retícula que pulsa suave (cada 2.5 s): empieza con el **primer cuadro analizado** | — |
 | Viendo | Esquinas ámbar que siguen al código en vivo; la indicación en un recuadro de texto grande con su flecha o icono | — |
-| Leído | En el mismo instante: retícula verde, palomita y el código en grande; un destello verde suave | Bip corto y vibración de confirmación |
+| Leído | En el mismo instante: retícula verde, palomita y el código en grande; un destello verde suave | Vibración de confirmación; el bip corto, si se enciende en Ajustes |
 | En pausa | Imagen atenuada y «Toca para seguir escaneando» | — |
-| Error | Tache, el mensaje y «Reintentar» | Dos tonos graves |
+| Error | Tache, el mensaje y «Reintentar» | Vibración de rechazo; dos tonos graves, si el sonido está encendido |
 
-- **Nunca depende solo del color:** cada estado tiene forma, icono y texto; el éxito, además, sonido y vibración. El
-  bip puede estar silenciado (volumen o modo del teléfono) y la vibración apagada en los ajustes del celular: lo visual
-  basta solo, y si el volumen está en cero se avisa.
+- **Nunca depende solo del color:** cada estado tiene forma, icono y texto; el éxito, además, vibración. El bip viene
+  apagado (decisión del dueño, 2026-10-11): con el sonido apagado no se cargan los sonidos al abrir. Encendido, puede
+  estar silenciado (volumen o modo del teléfono) y entonces se avisa; la vibración puede estar apagada en los ajustes
+  del celular. Lo visual basta solo.
 - Botones de 56 dp o más (linterna, pausa, +1, −1); texto blanco sobre la capa oscura (contraste ≥ 5.7:1); probado con
   letra al 200 %. Las indicaciones se anuncian al lector de pantalla sin interrumpir.
 - El zoom actual se muestra («1.5×») y un panel de diagnóstico opcional da cuadros por segundo, milisegundos, px por

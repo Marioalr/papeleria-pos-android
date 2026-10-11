@@ -125,7 +125,8 @@ data class ConfigEscaner(
     /** En pausa durante esto, se apaga la cámara; 0 = nunca. */
     val segundosParaApagar: Int = 60,
     val linternaAutomatica: Boolean = false,
-    val sonido: Boolean = true,
+    /** El bip al aceptar y el tono de error. Apagado por omisión: basta la vibración (docs/escaner.md, «Experiencia»). */
+    val sonido: Boolean = false,
     val vibracion: Boolean = true,
     /** Tope del zoom propio (más de 2x puede cambiar al teleobjetivo, que enfoca más lejos). */
     val zoomMaximo: Float = 2f,

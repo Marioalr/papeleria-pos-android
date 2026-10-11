@@ -13,10 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * El bip, el tono de error y la vibración del escáner (docs/escaner.md, «Experiencia»).
  *
- * Los sonidos se cargan al crearla para que el primer bip salga a tiempo (≤50 ms desde la lectura): SoundPool tarda
- * en decodificar y un `play` antes de eso no suena. Hay que llamar [close] al salir de la pantalla.
+ * Los sonidos se cargan con [prepararSonidos] en cuanto se enciende el sonido, para que el primer bip salga a tiempo
+ * (≤50 ms desde la lectura): SoundPool tarda en decodificar y un `play` antes de eso no suena. Con el sonido apagado
+ * (lo normal) no se crea el SoundPool. Hay que llamar [close] al salir de la pantalla.
  */
-class Retroalimentacion(contexto: Context) : AutoCloseable {
+class Retroalimentacion(private val contexto: Context) : AutoCloseable {
     private val audio = contexto.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     private val atributos = AudioAttributes.Builder()
@@ -28,32 +29,36 @@ class Retroalimentacion(contexto: Context) : AutoCloseable {
     val stream: Int =
         if (Build.VERSION.SDK_INT >= 26) atributos.volumeControlStream else AudioManager.STREAM_SYSTEM
 
-    private val pool = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(atributos).build()
+    private var pool: SoundPool? = null
     private val bipListo = AtomicBoolean(false)
     private val errorListo = AtomicBoolean(false)
-    private val idBip: Int
-    private val idError: Int
+    @Volatile private var idBip = 0
+    @Volatile private var idError = 0
 
-    init {
+    /** Carga el bip y el tono de error; solo la primera vez. Desde el hilo principal. */
+    fun prepararSonidos() {
+        if (pool != null) return
+        val nuevo = SoundPool.Builder().setMaxStreams(2).setAudioAttributes(atributos).build()
         // El listener va antes de load para no perder el aviso si la carga termina muy rápido.
-        pool.setOnLoadCompleteListener { _, id, estado ->
+        nuevo.setOnLoadCompleteListener { _, id, estado ->
             if (estado == 0) {
                 if (id == idBip) bipListo.set(true)
                 if (id == idError) errorListo.set(true)
             }
         }
-        idBip = pool.load(contexto, R.raw.bip, 1)
-        idError = pool.load(contexto, R.raw.error, 1)
+        idBip = nuevo.load(contexto, R.raw.bip, 1)
+        idError = nuevo.load(contexto, R.raw.error, 1)
+        pool = nuevo
     }
 
     /** Los dos sonidos ya están decodificados y listos para sonar. */
     val listos: Boolean get() = bipListo.get() && errorListo.get()
 
     /** Suena el bip de lectura; false si todavía no está cargado. */
-    fun bip(): Boolean = bipListo.get() && pool.play(idBip, 1f, 1f, 1, 0, 1f) != 0
+    fun bip(): Boolean = bipListo.get() && (pool?.play(idBip, 1f, 1f, 1, 0, 1f) ?: 0) != 0
 
     /** Suena el doble tono grave de error; false si todavía no está cargado. */
-    fun error(): Boolean = errorListo.get() && pool.play(idError, 1f, 1f, 1, 0, 1f) != 0
+    fun error(): Boolean = errorListo.get() && (pool?.play(idError, 1f, 1f, 1, 0, 1f) ?: 0) != 0
 
     /** El bip no se va a oír: el volumen de su stream está en cero o lo calla el modo de timbre. */
     fun sinVolumen(): Boolean =
@@ -73,6 +78,9 @@ class Retroalimentacion(contexto: Context) : AutoCloseable {
     }
 
     override fun close() {
-        pool.release()
+        pool?.release()
+        pool = null
+        bipListo.set(false)
+        errorListo.set(false)
     }
 }
