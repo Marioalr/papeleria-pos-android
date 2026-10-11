@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mx.papeleriapos.android.camara.FichaCamara
 import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 
@@ -66,13 +67,15 @@ object ExportarSesion {
     }
 
     /**
-     * La medición de la sesión: recursos.csv del monitor (una fila por segundo) y aperturas.csv (una fila por apertura
-     * del escáner, también las del escaneo rápido). Los que no haya no van.
+     * La medición de la sesión: recursos.csv del monitor (una fila por segundo), aperturas.csv (una fila por apertura
+     * del escáner, también las del escaneo rápido) y ficha-camara.csv (una fila por lente trasera, para saber con qué
+     * cámara se midió). Los que no haya no van.
      */
     suspend fun medicion(contexto: Context, sesion: SesionPrueba): List<Uri> = withContext(Dispatchers.IO) {
         listOfNotNull(
             MonitorDeSesion.leer(contexto)?.let { Compartir.escribir(contexto, CsvSesion.nombreArchivo("recursos", sesion.clave()), it) },
             RegistroAperturas.leer(contexto)?.let { Compartir.escribir(contexto, CsvSesion.nombreArchivo("aperturas", sesion.clave()), it) },
+            Compartir.escribir(contexto, CsvSesion.nombreArchivo("ficha-camara", sesion.clave()), FichaCamara.csv(contexto)),
         )
     }
 }

@@ -81,7 +81,8 @@ con el nombre de quien escanea.
 y 60 %. Primero 3 minutos sin escanear (en la pestaña Sesión: es la línea base), luego 10 a 15 minutos escaneando de
 corrido. El costo de escanear es la potencia escaneando menos la de la línea base. Si da tiempo, repetir con cada motor
 en orden ABBA. La sesión exporta recursos.csv (una fila por segundo: CPU, memoria, corriente, potencia, temperatura,
-estado térmico, cuadros por segundo) además de los intentos.
+estado térmico, cuadros por segundo) y ficha-camara.csv (una fila por lente trasera: focal, sensor, desde dónde enfoca,
+zoom, resoluciones; dice con qué cámara se midió) además de los intentos.
 
 **Estrés (si sobra tiempo):** la pestaña Estrés: 200 ciclos de abrir y cerrar la cámara, la ráfaga de zoom y
 linterna, 50 cambios de motor y 15 minutos de escaneo continuo. Cada prueba dice si pasa y exporta su CSV.

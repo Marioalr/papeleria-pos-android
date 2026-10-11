@@ -28,10 +28,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.camara.CsvFicha
+import mx.papeleriapos.android.camara.FichaLente
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
 import mx.papeleriapos.android.catalogo.OrigenCatalogo
 import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
@@ -52,10 +55,14 @@ import kotlin.math.roundToInt
 fun PantallaAjustes(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
     val catalogo by vm.catalogo.collectAsStateWithLifecycle()
+    val ficha by vm.ficha.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
     var mensaje by remember { mutableStateOf<String?>(null) }
-    // El catálogo se carga perezoso: aquí, para decir cuál está y cuántos códigos trae.
-    LaunchedEffect(Unit) { vm.prepararCatalogo() }
+    // El catálogo y la ficha de la cámara se cargan perezosos: aquí, para mostrarlos.
+    LaunchedEffect(Unit) {
+        vm.prepararCatalogo()
+        vm.prepararFicha()
+    }
     // El selector del sistema: sin permisos; el archivo se lee una vez y se copia a la memoria de la app.
     val elegirCatalogo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.cargarCatalogo(uri)
@@ -76,6 +83,7 @@ fun PantallaAjustes(vm: EscanerViewModel) {
         catalogo = catalogo,
         alCargarCatalogo = { elegirCatalogo.launch(TIPOS_CATALOGO) },
         alUsarCatalogoDeEjemplo = vm::usarCatalogoDeEjemplo,
+        ficha = ficha,
     )
 }
 
@@ -97,6 +105,8 @@ fun ContenidoAjustes(
     catalogo: EstadoCatalogo? = null,
     alCargarCatalogo: () -> Unit = {},
     alUsarCatalogoDeEjemplo: () -> Unit = {},
+    /** Las lentes traseras según Camera2; null mientras se leen. */
+    ficha: List<FichaLente>? = null,
 ) {
     Column(
         Modifier
@@ -169,6 +179,17 @@ fun ContenidoAjustes(
         TituloSeccion("Cámara")
         Etiqueta("Lente")
         Opciones(Lente.entries, config.lente, { it.etiqueta }, { alCambiar(config.copy(lente = it)) })
+        Etiqueta("Ficha de la cámara")
+        Text(
+            textoFicha(ficha),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.testTag("ficha-camara"),
+        )
+        Nota(
+            "Lo que dice Camera2 de cada lente trasera: desde dónde enfoca, cuánto abarca ahí y con qué zoom abre la app. " +
+                "Va con la medición de la sesión (ficha-camara.csv).",
+        )
         FilaInterruptor(
             "Linterna automática", config.linternaAutomatica, { alCambiar(config.copy(linternaAutomatica = it)) },
             descripcion = "La enciende sola si hay poca luz.",
@@ -241,6 +262,13 @@ internal fun textoCatalogo(catalogo: EstadoCatalogo?): String = when {
 }
 
 private fun codigos(n: Int) = if (n == 1) "1 código" else "$n códigos"
+
+/** La ficha para Ajustes: una línea por lente, o qué pasa mientras no hay. */
+internal fun textoFicha(ficha: List<FichaLente>?): String = when {
+    ficha == null -> "Leyendo la cámara…"
+    ficha.isEmpty() -> "Sin cámara trasera."
+    else -> CsvFicha.resumen(ficha)
+}
 
 @Composable
 private fun Etiqueta(texto: String) {

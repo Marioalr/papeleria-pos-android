@@ -16,10 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
+import mx.papeleriapos.android.camara.FichaCamara
+import mx.papeleriapos.android.camara.FichaLente
 import mx.papeleriapos.android.catalogo.CatalogoPrueba
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
 import mx.papeleriapos.android.fabrica.crearControlador
@@ -96,6 +99,11 @@ class EscanerViewModel(
             _sesion.drop(1).conflate().collect { s -> withContext(Dispatchers.IO) { almacen.guardar(s, equipo) } }
         }
         viewModelScope.launch { controlador.eventos.collect { alLeer(it) } }
+        viewModelScope.launch {
+            // La ficha de la cámara, una vez por proceso y fuera de la apertura: cuando ya se analizó el primer cuadro.
+            controlador.estado.first { it.apertura.marcas.containsKey(PasoApertura.PRIMER_ANALISIS) }
+            FichaCamara.asegurar(getApplication())
+        }
     }
 
     private suspend fun alLeer(e: EventoLectura) {
@@ -180,6 +188,16 @@ class EscanerViewModel(
     fun cargarCatalogo(uri: Uri) = CatalogoPrueba.cargarArchivo(getApplication(), uri)
 
     fun usarCatalogoDeEjemplo() = CatalogoPrueba.usarEjemplo(getApplication())
+
+    // Ficha de la cámara (docs/escaner.md, «Ficha de la cámara»)
+
+    /** null mientras no se ha leído: se arma con el primer cuadro analizado o con [prepararFicha]. */
+    val ficha: StateFlow<List<FichaLente>?> get() = FichaCamara.estado
+
+    /** Para Ajustes: la arma si todavía no está, en segundo plano (sin abrir la cámara ni pedir su permiso). */
+    fun prepararFicha() {
+        viewModelScope.launch { FichaCamara.asegurar(getApplication()) }
+    }
 
     // Lista de venta o conteo (la del modo actual)
 

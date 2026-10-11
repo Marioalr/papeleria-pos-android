@@ -36,3 +36,7 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   variante y con qué clave, y el panel de lecturas marca lo que no está.
 - Hoja de etiquetas de prueba para imprimir a tamaño real (`./gradlew :nucleo:hojaEtiquetas`): EAN-13, Code 128 y
   EAN-8 ficticios con módulos de 0.25 a 0.5 mm y varias alturas, con su regla de 100 mm y su CSV de catálogo.
+- Ficha de la cámara: al primer arranque lee de Camera2 cada lente trasera (la lógica y sus físicas): focal, sensor,
+  desde dónde enfoca y si viene calibrado, modos de enfoque, rango de zoom, resoluciones y cuadros por segundo. Dice
+  cuánto abarca cada lente donde ya enfoca, cuántos píxeles le tocan a un módulo de 0.33 mm ahí y con qué zoom abre la
+  app. Se ve en Ajustes (junto al lente) y sale con la medición de la sesión (ficha-camara.csv).

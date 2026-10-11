@@ -108,8 +108,10 @@ internal fun elegirLenteFisica(fisicas: List<LenteFisica>, focalLogicaMm: Float?
  * @param anchoSensorMm el lado largo de `SENSOR_INFO_PHYSICAL_SIZE`.
  * @param focalMm la primera de `LENS_INFO_AVAILABLE_FOCAL_LENGTHS`.
  * @param tope el zoom máximo propio (más de 2x puede cambiar al teleobjetivo, que enfoca más lejos).
+ *
+ * Pública: la ficha de la cámara (en :app) muestra con qué zoom abre cada lente, con esta misma cuenta.
  */
-internal fun zoomSugerido(
+fun zoomSugerido(
     dioptriasMinimas: Float?,
     anchoSensorMm: Float?,
     focalMm: Float?,
