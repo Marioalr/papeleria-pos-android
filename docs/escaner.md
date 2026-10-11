@@ -65,6 +65,28 @@ Dibujar es multiplicar por el tamaño del visor.
 | Linterna | Botón que pulsa si hay poca luz (≥ 1 s); automática como ajuste | Nunca se apaga por la luz, porque la propia linterna la sube |
 | Arranque | CameraX se prepara al abrir la app y solo con la cámara trasera | Abre más rápido |
 
+## Ficha de la cámara
+
+Para elegir con qué lente leer ([plan](plan.md#entrega-8-medir-la-lectura), parte 6), la app lee de Camera2 cada lente
+trasera: la cámara lógica y, desde API 28, cada una de sus físicas (en el Pixel 8 Pro, la 2, 3 y 4 de la 0). De cada una,
+`app/camara/FichaCamara.kt`: nivel de hardware, focal, apertura, sensor (mm y píxeles), `LENS_INFO_MINIMUM_FOCUS_DISTANCE`
+y si viene calibrada, hiperfocal, modos de enfoque, rango de zoom, resoluciones para el análisis (YUV) y para el visor,
+rangos de cuadros por segundo, linterna y capacidades.
+
+Con eso, por lente, tres cuentas con el modelo de agujero y el recorte 16:9 (a lo ancho del celular en vertical va 9/16
+del lado largo del sensor; el análisis pone ahí 720 px):
+
+- **Cuánto abarca donde ya enfoca:** campo = (lado largo del sensor × 9/16) × distancia ÷ focal. La principal del Pixel
+  (6.9 mm, 9.8 mm de sensor, enfoca desde 10.5 cm) abarca 8.4 cm ahí; la gran angular (2 mm, enfoca desde 2 cm), 3.2 cm.
+- **Píxeles por módulo ahí:** 720 × módulo ÷ campo. Un módulo de 0.33 mm da 2.8 px en la principal a 10.5 cm y 7.5 px en
+  la gran angular a 2 cm: para los códigos chicos, la gran angular de cerca o la principal con zoom.
+- **Con qué zoom abre la app:** la misma cuenta del [zoom inicial](#cámara) (`zoomSugerido`): un código de 30 mm llena
+  el 60 % del ancho a 6.3 cm con la principal, más cerca de lo que enfoca, así que abre con 1.7×.
+
+Se lee una vez por proceso, fuera del hilo principal y nunca en la apertura (con el primer cuadro analizado, o al abrir
+Ajustes); no abre la cámara ni necesita su permiso. Queda en `files/camara/ficha-camara.csv` (una fila por lente, con la
+huella del sistema; se rehace si cambia), se ve en Ajustes junto al lente y sale con la medición de la sesión.
+
 ## Motores
 
 Medido en el emulador con códigos dibujados (prueba `MotoresTest`), por cuadro:
