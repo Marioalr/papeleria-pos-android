@@ -119,7 +119,14 @@ data class ConfigEscaner(
     ),
     /** Alto de la franja de lectura respecto a la región visible. */
     val altoFranja: Float = 0.36f,
+    /** El mismo código vuelve a contar si sale de la mira al menos esto (antirrebote del motor). */
     val msAusenciaParaRepetir: Long = 500,
+    /**
+     * El mismo código vuelve a contar cuando pasa esto desde que se aceptó, aunque siga a la vista; 0 = nunca mientras
+     * siga a la vista. Sostener el mismo producto más de 1.5 s lo cuenta otra vez (así lo pidió el dueño; se mide como
+     * duplicado).
+     */
+    val msParaRepetirAVista: Long = 1500,
     /** Sin candidatos durante esto, se pausa el análisis (toca para seguir); 0 = nunca. */
     val segundosParaPausar: Int = 20,
     /** En pausa durante esto, se apaga la cámara; 0 = nunca. */

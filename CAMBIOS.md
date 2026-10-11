@@ -13,8 +13,9 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
 - Guía al personal con una sola indicación a la vez: muévete a un lado, acércate, aléjate, mantén firme, enfocando,
   poca luz o reflejo. Si el código ya se leyó y sigue enfrente, lo dice («Ya leído: retíralo para leerlo otra vez»).
 - Confirma cada lectura con vibración, retícula verde y el código en grande; el bip viene apagado y se enciende en
-  Ajustes. Valida el dígito verificador y pide dos lecturas iguales; el mismo código vuelve a contar solo si se retira
-  medio segundo.
+  Ajustes. Valida el dígito verificador y, en los códigos de barras, pide dos lecturas iguales en cuadros seguidos
+  (nunca de un solo cuadro; el QR entra de una). El mismo código vuelve a contar cuando sale de la mira medio segundo o
+  a los 1.5 s aunque siga enfrente (sostenerlo más lo cuenta otra vez).
 - Modo venta (lista con +1, −1 y deshacer) y modo conteo (contador grande).
 - Abre rápido: la cámara se enlaza antes de que haya interfaz, sin destello blanco y con un perfil de arranque. El
   mosaico «Escanear» de Ajustes rápidos abre el escaneo rápido sobre la pantalla de bloqueo, sin pedir el PIN; también

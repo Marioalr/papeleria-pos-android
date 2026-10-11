@@ -10,45 +10,63 @@ data class Aceptada(val codigo: CodigoLeido, val caja: Caja?, val nanos: Long, v
 
 /** Reglas de validación, consenso y repetidos (docs/escaner.md, «Validación y consenso»). */
 data class ReglasConfirmacion(
-    /** Lecturas iguales que hacen falta en la ventana para aceptar, por simbología. */
+    /**
+     * Lecturas iguales en cuadros analizados seguidos (el actual y los anteriores) que hacen falta para aceptar, por
+     * simbología. Un cuadro analizado sin esa lectura rompe la racha. En 1D, 2: nunca de un solo cuadro, una lectura
+     * falsa es peor que una lenta. El QR, 1: trae su propia corrección de errores.
+     */
     val consenso: Map<Simbologia, Int> = mapOf(
         Simbologia.EAN_13 to 2, Simbologia.UPC_A to 2, Simbologia.UPC_E to 2, Simbologia.EAN_8 to 2,
         Simbologia.ITF to 2, Simbologia.CODE_128 to 2, Simbologia.QR to 1,
     ),
-    /** Cuadros que se miran hacia atrás para el consenso. */
-    val ventanaCuadros: Int = 3,
-    /** El mismo código vuelve a contar solo si estuvo ausente al menos esto. */
+    /** Sale de la mira: el mismo código vuelve a contar si estuvo ausente al menos esto (antirrebote del motor). */
     val msAusenciaParaRepetir: Long = 500,
+    /**
+     * Sigue a la vista: el mismo código vuelve a contar cuando pasa esto desde que se aceptó, aunque no se haya
+     * retirado; 0 = nunca mientras siga a la vista. Sostener el mismo producto más de esto lo cuenta otra vez: así lo
+     * pidió el dueño, y en la sesión de prueba se mide como duplicado.
+     */
+    val msParaRepetirAVista: Long = 1500,
 )
 
 /**
- * Valida (dígito verificador, largo del ITF), normaliza, exige consenso entre cuadros, elige el código más cercano al
- * centro de la franja y filtra repetidos.
+ * Valida, normaliza, exige consenso entre cuadros seguidos, elige el código más cercano al centro de la franja y filtra
+ * repetidos.
  *
- * - Consenso: el código (ya normalizado) debe aparecer en [ReglasConfirmacion.consenso] de los últimos
- *   [ReglasConfirmacion.ventanaCuadros] cuadros, contando el actual. Un UPC-A de 12 y su EAN-13 con 0 cuentan juntos.
+ * - Validación: EAN-13, UPC-A, UPC-E, EAN-8 e ITF (solo de 14 dígitos) siempre con su dígito verificador ([Gtin]); el
+ *   Code 128 con su símbolo de verificación, que valida el decodificador (ni zxing-cpp ni ML Kit entregan uno que no
+ *   cuadre). Lo que no pasa no entra nunca, por más cuadros que llegue, y no se «corrige».
+ * - Consenso: el código (ya normalizado) debe aparecer en [ReglasConfirmacion.consenso] cuadros analizados seguidos,
+ *   contando el actual: en 1D, en este y en el anterior. Un cuadro sin él (vacío o con otro código) rompe la racha. El
+ *   QR entra de un cuadro. Un UPC-A de 12 y su EAN-13 con 0 cuentan juntos.
  * - Varios a la vista: solo se considera el que contiene el centro de la franja o, si ninguno, el más cercano a él;
  *   los demás esperan aunque tengan consenso (el empleado apunta al que quiere).
- * - Repetidos: un código ya aceptado vuelve a aceptarse solo después de [ReglasConfirmacion.msAusenciaParaRepetir] de
- *   ausencia (ni leído ni con un potencial o una lectura inválida que traslape más de 0.3 con su última caja). Un
- *   código que no se ha aceptado hace poco entra de inmediato. Se recuerdan varios aceptados, no solo el último: con
- *   dos códigos juntos a la vista, el centro de la franja puede caer alternadamente en uno y otro, y sin esta memoria
- *   se sumarían los dos una y otra vez.
+ * - Repetidos: un código ya aceptado vuelve a aceptarse cuando (a) sale de la mira: estuvo ausente
+ *   [ReglasConfirmacion.msAusenciaParaRepetir] (ni leído ni con un potencial o una lectura inválida que traslape más de
+ *   0.3 con su última caja); o (b) pasan [ReglasConfirmacion.msParaRepetirAVista] desde que se aceptó, aunque siga a la
+ *   vista. Con (b), sostener el mismo producto más de 1.5 s lo cuenta otra vez: así lo pidió el dueño, y se mide como
+ *   duplicado. Mientras no se rearme, [yaLeidoEnCuadro]. Un código que no se ha aceptado hace poco entra de inmediato.
+ *   Se recuerdan varios aceptados, no solo el último: con dos códigos juntos a la vista, el centro de la franja puede
+ *   caer alternadamente en uno y otro, y sin esta memoria se sumarían los dos una y otra vez (con (b), cada uno a lo
+ *   más una vez cada 1.5 s).
  *
- * Se llama en cada cuadro analizado, aunque el motor no haya leído nada: así corren la ventana y la ausencia. En un
- * cuadro sin lecturas, o con las mismas de los cuadros anteriores, no asigna memoria.
+ * Se llama en cada cuadro analizado, aunque el motor no haya leído nada: así se rompe la racha y corre la ausencia. Un
+ * cuadro que no se pudo analizar llama a [cortarRacha]. En un cuadro sin lecturas, o con las mismas de los cuadros
+ * anteriores, no asigna memoria.
  */
 class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
-    private val ventana = reglas.ventanaCuadros
-
     init {
-        require(ventana >= 1) { "La ventana debe ser de al menos un cuadro." }
-        require(reglas.consenso.values.all { it in 1..ventana }) { "El consenso debe caber en la ventana ($ventana)." }
+        require(reglas.consenso.values.all { it >= 1 }) { "El consenso debe ser de al menos una lectura." }
         require(reglas.msAusenciaParaRepetir >= 0) { "La ausencia no puede ser negativa." }
+        require(reglas.msParaRepetirAVista >= 0) { "El plazo a la vista no puede ser negativo." }
     }
 
-    private val necesarias = IntArray(Simbologia.entries.size) { reglas.consenso[Simbologia.entries[it]] ?: minOf(2, ventana) }
+    /** Lecturas seguidas por simbología; las que no están en las reglas, como 1D. */
+    private val necesarias = IntArray(Simbologia.entries.size) { reglas.consenso[Simbologia.entries[it]] ?: 2 }
+    /** Cuadros que se recuerdan: los que pide la racha más larga. */
+    private val ventana = necesarias.max()
     private val msAusencia = reglas.msAusenciaParaRepetir * 1_000_000L
+    private val msAVista = reglas.msParaRepetirAVista * 1_000_000L
 
     // Los últimos cuadros, en anillo: hasta POR_CUADRO códigos válidos en cada uno.
     private val historia = arrayOfNulls<CodigoLeido>(ventana * POR_CUADRO)
@@ -66,13 +84,15 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
     /** Desde cuándo no se ve; −1 = presente. */
     private val recAusenteDesde = LongArray(RECIENTES)
     private val recVisto = LongArray(RECIENTES)
-    /** Ya estuvo ausente lo suficiente: puede volver a contar. */
+    /** Cuándo se aceptó (para volver a contar a la vista). */
+    private val recAceptado = LongArray(RECIENTES)
+    /** Ya salió de la mira o ya pasó el plazo a la vista: puede volver a contar. */
     private val recRearmado = BooleanArray(RECIENTES)
     private var ultima: CodigoLeido? = null
 
     /**
-     * En el último cuadro procesado, el código a la vista es uno ya aceptado que todavía no se retira: la guía dice «ya
-     * leído» en vez de «leyendo» (no va a contar otra vez hasta que desaparezca).
+     * En el último cuadro procesado, el código a la vista es uno ya aceptado que todavía no se rearma: la guía dice «ya
+     * leído» en vez de «leyendo» (no va a contar otra vez hasta que salga de la mira o pase el plazo a la vista).
      */
     var yaLeidoEnCuadro = false
         private set
@@ -124,7 +144,7 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
             yaLeidoEnCuadro = true
             return null
         }
-        if (cuadrosCon(codigo) < necesarias[codigo.simbologia.ordinal]) return null
+        if (!enRacha(codigo, necesarias[codigo.simbologia.ordinal])) return null
         val repetida = ultima?.let { mismo(it, codigo) } ?: false
         val caja = cajas[elegido]
         recordar(r, codigo, caja, nanos)
@@ -132,11 +152,20 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
         return Aceptada(codigo, caja, nanos, repetida)
     }
 
+    /**
+     * Un cuadro que no se pudo analizar (p. ej. el motor falló): rompe la racha, como uno sin lecturas. No toca lo
+     * aceptado ni su ausencia.
+     */
+    fun cortarRacha() {
+        historia.fill(null); cuentaHistoria.fill(0)
+    }
+
     fun reiniciar() {
         yaLeidoEnCuadro = false
         historia.fill(null); cuentaHistoria.fill(0); cuadro = -1
         cajas.fill(null); cajasInvalidas.fill(null); invalidas = 0
-        recCodigo.fill(null); recCaja.fill(null); recAusenteDesde.fill(-1L); recVisto.fill(0L); recRearmado.fill(false)
+        recCodigo.fill(null); recCaja.fill(null); recAusenteDesde.fill(-1L); recVisto.fill(0L); recAceptado.fill(0L)
+        recRearmado.fill(false)
         ultima = null
         cacheTexto.fill(null); cacheSimbologia.fill(null); cacheCodigo.fill(null); cacheSiguiente = 0
     }
@@ -165,12 +194,15 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
         for (r in 0 until RECIENTES) {
             val codigo = recCodigo[r] ?: continue
             if (presente(r, codigo, base, n, potenciales)) {
+                // (a) Volvió después de salir de la mira.
                 if (recAusenteDesde[r] >= 0 && nanos - recAusenteDesde[r] >= msAusencia) recRearmado[r] = true
                 recAusenteDesde[r] = -1
                 recVisto[r] = nanos
             } else if (recAusenteDesde[r] < 0) {
                 recAusenteDesde[r] = nanos
             }
+            // (b) Ya pasó el plazo desde que se aceptó, siga o no a la vista.
+            if (msAVista > 0 && nanos - recAceptado[r] >= msAVista) recRearmado[r] = true
         }
     }
 
@@ -212,18 +244,20 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
         return mejor
     }
 
-    /** En cuántos cuadros de la ventana aparece [codigo]. */
-    private fun cuadrosCon(codigo: CodigoLeido): Int {
-        var cuenta = 0
-        for (f in 0 until ventana) {
-            val base = f * POR_CUADRO
-            for (k in 0 until cuentaHistoria[f]) {
-                if (mismo(historia[base + k]!!, codigo)) {
-                    cuenta++; break
-                }
-            }
+    /** Si [codigo] aparece en los últimos [seguidos] cuadros, uno tras otro y contando el actual. */
+    private fun enRacha(codigo: CodigoLeido, seguidos: Int): Boolean {
+        var f = cuadro
+        for (i in 0 until seguidos) {
+            if (!enCuadro(f, codigo)) return false
+            f = if (f == 0) ventana - 1 else f - 1
         }
-        return cuenta
+        return true
+    }
+
+    private fun enCuadro(f: Int, codigo: CodigoLeido): Boolean {
+        val base = f * POR_CUADRO
+        for (k in 0 until cuentaHistoria[f]) if (mismo(historia[base + k]!!, codigo)) return true
+        return false
     }
 
     private fun reciente(codigo: CodigoLeido): Int {
@@ -246,7 +280,8 @@ class Confirmador(val reglas: ReglasConfirmacion = ReglasConfirmacion()) {
                 if (recVisto[i] < recVisto[r]) r = i
             }
         }
-        recCodigo[r] = codigo; recCaja[r] = caja; recAusenteDesde[r] = -1; recVisto[r] = nanos; recRearmado[r] = false
+        recCodigo[r] = codigo; recCaja[r] = caja; recAusenteDesde[r] = -1; recVisto[r] = nanos; recAceptado[r] = nanos
+        recRearmado[r] = false
     }
 
     companion object {

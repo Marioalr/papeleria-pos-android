@@ -52,6 +52,8 @@ con el nombre de quien escanea.
   incorrecta» (es lo más grave: anotar qué producto era y qué código leyó; fotos, solo si el dueño lo decide y sin que salgan del
   celular); si leyó algo donde no había código,
   «falso positivo»; si contó dos veces la misma pieza, «duplicado»; si no leyó en unos 5 segundos, «no leyó».
+  Sostener la misma pieza más de 1.5 s la cuenta otra vez (así está pensado): también se marca «duplicado», para medir
+  cuántas veces pasa.
 - **Que escanee también alguien del personal**, unos 20 intentos con el Pixel, y preguntarle (y anotarlo en la sesión):
   si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si la vibración se
   notaba con el ruido de la tienda (el bip viene apagado; si hace falta, se prueba encendiéndolo en Ajustes), y qué
