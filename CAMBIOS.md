@@ -40,3 +40,8 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   desde dónde enfoca y si viene calibrado, modos de enfoque, rango de zoom, resoluciones y cuadros por segundo. Dice
   cuánto abarca cada lente donde ya enfoca, cuántos píxeles le tocan a un módulo de 0.33 mm ahí y con qué zoom abre la
   app. Se ve en Ajustes (junto al lente) y sale con la medición de la sesión (ficha-camara.csv).
+- Registro por intento: cada intento de la sesión de prueba guarda además el lente, la cámara física, la resolución
+  de análisis, los ms por cuadro y a qué distancia enfocaba al leer (solo si la cámara da el enfoque calibrado). Y un
+  resumen corto por tanda (cada bloque de condición), en la pestaña Sesión y en resumen.csv al exportar los intentos:
+  cuántos leyó bien y a qué distancia, la lectura típica y la p90, lecturas por minuto, falsas (deben ser 0), con y
+  sin linterna, y por lente.

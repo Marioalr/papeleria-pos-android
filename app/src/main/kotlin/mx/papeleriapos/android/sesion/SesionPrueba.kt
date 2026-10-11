@@ -95,6 +95,12 @@ data class Contexto(
     /** Solo para los intentos fallidos (los leídos traen su propio zoom y linterna). */
     val zoom: Float = 0f,
     val linterna: Boolean = false,
+    /** El lente elegido en Ajustes ([mx.papeleriapos.escaner.Lente]), la cámara física en uso y la resolución de análisis. */
+    val lente: String = "",
+    val camaraFisica: String = "",
+    val resolucion: String = "",
+    /** Los ms por cuadro del diagnóstico, solo para los fallidos (los leídos traen el suyo); 0 = no se sabe. */
+    val msCuadro: Float = 0f,
     /** El catálogo de prueba en que se busca cada lectura; null = no se buscó. */
     val catalogo: Catalogo? = null,
 )
@@ -132,6 +138,16 @@ data class Intento(
     /** 0 = desconocido. */
     val zoom: Float,
     val linterna: Boolean,
+    /** El lente de Ajustes (SISTEMA, PRINCIPAL o GRAN_ANGULAR); vacío en un CSV de antes. */
+    val lente: String = "",
+    /** La cámara física en uso (id de Camera2, API 29+); vacío si no se sabe. */
+    val camaraFisica: String = "",
+    /** La resolución del análisis («1280x720»); vacío si no se sabe. */
+    val resolucion: String = "",
+    /** ms de análisis por cuadro al momento del intento; 0 = desconocido. */
+    val msCuadro: Float = 0f,
+    /** A cuántos cm enfocaba al leer, si la cámara da el enfoque calibrado; −1 = desconocido (los fallidos no lo traen). */
+    val distanciaCm: Float = -1f,
     val resultado: ResultadoIntento,
     val medicion: Medicion,
 )
@@ -185,6 +201,11 @@ data class SesionPrueba(
             moduloPx = evento.moduloPx,
             zoom = evento.zoom,
             linterna = evento.linterna,
+            lente = c.lente,
+            camaraFisica = c.camaraFisica,
+            resolucion = c.resolucion,
+            msCuadro = evento.msCuadro,
+            distanciaCm = evento.distanciaCm,
             // Si se tecleó el esperado y no coincide, de entrada es lectura incorrecta; el operador lo puede cambiar.
             resultado = if (coincide == false) ResultadoIntento.LECTURA_INCORRECTA else ResultadoIntento.OK,
             medicion = c.medicion,
@@ -211,6 +232,10 @@ data class SesionPrueba(
             moduloPx = 0f,
             zoom = c.zoom,
             linterna = c.linterna,
+            lente = c.lente,
+            camaraFisica = c.camaraFisica,
+            resolucion = c.resolucion,
+            msCuadro = c.msCuadro,
             resultado = resultado,
             medicion = c.medicion,
         )

@@ -159,7 +159,10 @@ localizador verificó o ve con indicio fuerte. Si no hay nada de eso, no se dan 
 Las condiciones de un solo cuadro (reflejo, movimiento, tocar un borde, cortado) cuentan solo si duran tres cuadros
 seguidos: si una va y viene, no debe impedir que se confirme lo demás. La proporción de enfoque (`LENS_FOCUS_DISTANCE` /
 `LENS_INFO_MINIMUM_FOCUS_DISTANCE`) no puede pasar de 1 en un equipo calibrado; si pasa de 1.2 (el emulador da 10–20) se
-toma como desconocida. El ancho del módulo no decide «aléjate» con el código borroso: el desenfoque lo infla.
+toma como desconocida. El ancho del módulo no decide «aléjate» con el código borroso: el desenfoque lo infla. Esa misma
+distancia de enfoque, en cm (100 / dioptrías), va en cada lectura para la sesión de prueba, solo si el lente en uso da
+el enfoque calibrado (`LENS_INFO_FOCUS_DISTANCE_CALIBRATION` aproximado o calibrado) y el dato es creíble; con la mira
+sobre el código es la distancia al código.
 
 ## Validación y consenso
 

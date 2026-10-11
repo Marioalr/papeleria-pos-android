@@ -90,8 +90,8 @@ fun PantallaSesion(vm: EscanerViewModel) {
             alFallar = vm::registrarFallo,
             alExportar = {
                 alcance.launch {
-                    val uri = ExportarSesion.intentos(contexto, s, vm.equipo)
-                    Compartir.enviar(contexto, uri, "Sesión de prueba ${s.nombre}")
+                    val uris = ExportarSesion.intentos(contexto, s, vm.equipo)
+                    Compartir.enviarVarios(contexto, uris, "Sesión de prueba ${s.nombre}")
                 }
             },
             alTerminar = vm::terminarSesion,
@@ -266,6 +266,16 @@ fun ConSesion(
             val bien = contadores.getValue(ResultadoIntento.OK)
             FilaDato("Leídos bien", if (leidos == 0) "—" else "$bien de $leidos (${bien * 100 / leidos} %)")
             for ((r, n) in contadores) if (r != ResultadoIntento.OK) FilaDato(r.etiqueta, n.toString())
+            // Por tanda (cada bloque de condición), la última arriba: qué leyó bien y a qué distancia, lecturas por
+            // minuto, falsas, linterna y lente.
+            val tandas = ResumenTandas.de(sesion, anotaciones)
+            for ((k, t) in tandas.withIndex().reversed()) {
+                Text(
+                    t.texto(enCurso = k == tandas.lastIndex),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 6.dp).testTag("resumen-tanda"),
+                )
+            }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {

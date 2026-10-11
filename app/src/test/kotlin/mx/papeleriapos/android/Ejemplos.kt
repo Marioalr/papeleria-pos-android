@@ -23,6 +23,8 @@ object Ejemplos {
         zoom: Float = 1.5f,
         linterna: Boolean = false,
         via: Via = Via.DIRECTA,
+        distanciaCm: Float = 12.5f,
+        msCuadro: Float = 8.4f,
     ) = EventoLectura(
         aceptada = Aceptada(CodigoLeido(original, normalizado, simbologia, claves), Caja(0.2f, 0.4f, 0.8f, 0.6f), 0L, false),
         msDesdeCandidato = ms,
@@ -32,6 +34,8 @@ object Ejemplos {
         moduloPx = moduloPx,
         zoom = zoom,
         linterna = linterna,
+        distanciaCm = distanciaCm,
+        msCuadro = msCuadro,
     )
 
     /** Un UPC-A como lo da ML Kit (12 dígitos), ya normalizado a 13. */
