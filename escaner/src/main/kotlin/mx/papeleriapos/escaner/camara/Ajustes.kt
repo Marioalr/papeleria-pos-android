@@ -7,9 +7,11 @@ import androidx.camera.camera2.Camera2Config
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraXConfig
 import mx.papeleriapos.escaner.ConfigEscaner
+import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.Rotacion
 import mx.papeleriapos.escaner.nucleo.Transformacion
+import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.tan
 
@@ -76,6 +78,25 @@ internal fun elegirRangoFps(rangos: List<Pair<Int, Int>>, pref: PreferenciaFps):
 internal fun elegirRangoFps(rangos: Set<Range<Int>>, pref: PreferenciaFps): Range<Int>? {
     val par = elegirRangoFps(rangos.map { it.lower to it.upper }, pref) ?: return null
     return rangos.first { it.lower == par.first && it.upper == par.second }
+}
+
+/** Una cámara física de la trasera lógica: su id de Camera2, su focal y el área de su sensor. */
+internal data class LenteFisica(val id: String, val focalMm: Float, val areaSensorMm2: Float)
+
+/**
+ * El id de la cámara física para [lente], o null para usar la lógica (también si hay menos de dos físicas). PRINCIPAL:
+ * de las que tienen la focal de la lógica (±0.5 mm; si no hay, todas), la de sensor más grande. En el Pixel 8 Pro hay
+ * dos de 6.9 mm, la completa y un recorte del mismo sensor. GRAN_ANGULAR: la de focal más corta.
+ */
+internal fun elegirLenteFisica(fisicas: List<LenteFisica>, focalLogicaMm: Float?, lente: Lente): String? {
+    if (lente == Lente.SISTEMA || fisicas.size < 2) return null
+    return when (lente) {
+        Lente.GRAN_ANGULAR -> fisicas.minByOrNull { it.focalMm }?.id
+        else -> {
+            val mismaFocal = if (focalLogicaMm == null) emptyList() else fisicas.filter { abs(it.focalMm - focalLogicaMm) <= 0.5f }
+            mismaFocal.ifEmpty { fisicas }.maxByOrNull { it.areaSensorMm2 }?.id
+        }
+    }
 }
 
 /**

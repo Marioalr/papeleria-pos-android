@@ -3,6 +3,7 @@ package mx.papeleriapos.escaner.camara
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import mx.papeleriapos.escaner.Lente
 
 /**
  * Lo que la apertura recuerda de la vez anterior para no preguntárselo a la cámara ni esperar a Compose: la proporción
@@ -37,10 +38,26 @@ internal class MemoriaApertura(contexto: Context) {
         prefs.edit().remove(pref.llave).apply()
     }
 
+    /**
+     * La cámara física que se eligió para [lente] en este sistema: el id, «» si no hay física (se usa la lógica), o null
+     * si no se ha calculado (o cambió el sistema).
+     */
+    fun idFisico(lente: Lente): String? {
+        val texto = prefs.getString(LENTE + lente.name, null) ?: return null
+        val partes = texto.split('|', limit = 2)
+        return if (partes.size == 2 && partes[0] == huella()) partes[1] else null
+    }
+
+    fun guardarIdFisico(lente: Lente, id: String?) {
+        val texto = huella() + "|" + (id ?: "")
+        if (prefs.getString(LENTE + lente.name, null) != texto) prefs.edit().putString(LENTE + lente.name, texto).apply()
+    }
+
     private fun huella(): String = Build.FINGERPRINT ?: ""
 
     private companion object {
         const val VISOR = "visor_"
+        const val LENTE = "lente_"
     }
 }
 

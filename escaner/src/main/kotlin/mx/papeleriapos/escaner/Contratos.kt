@@ -97,6 +97,18 @@ data class EstadoEscaner(
     val apertura: Apertura = Apertura(),
 )
 
+/**
+ * Qué lente de la cámara trasera. [SISTEMA] es la cámara lógica: el sistema cambia de lente con el zoom y, en el Pixel
+ * 8 Pro, enciende sus tres sensores al abrir. Las otras usan una sola cámara física de la lógica (la misma lente
+ * siempre): [PRINCIPAL] la de la focal de la lógica con el sensor más grande, y [GRAN_ANGULAR] la de focal más corta
+ * (en el Pixel 8 Pro enfoca a 2 cm). Si el celular no tiene cámaras físicas, todas son la lógica.
+ */
+enum class Lente(val etiqueta: String) {
+    SISTEMA("La del sistema"),
+    PRINCIPAL("Solo la principal"),
+    GRAN_ANGULAR("Solo la gran angular"),
+}
+
 /** Configuración del escáner; se puede cambiar en caliente con [ControladorEscaner.configurar]. */
 data class ConfigEscaner(
     val motor: Motor = Motor.AUTOMATICO,
@@ -125,6 +137,8 @@ data class ConfigEscaner(
      * proceso, no por el ritmo) y cada cuadro cuesta más. Queda para probar si ayuda con códigos en movimiento.
      */
     val fps60: Boolean = false,
+    /** Qué lente de la cámara trasera usar ([Lente]). Experimento 3 del plan. */
+    val lente: Lente = Lente.SISTEMA,
     /** Recortar la franja antes de pasarla al motor (más rápido) o pasar el cuadro completo (para comparar). */
     val recortarFranja: Boolean = true,
     val mostrarDiagnostico: Boolean = false,
