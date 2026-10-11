@@ -2,6 +2,7 @@ package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.Apertura
+import mx.papeleriapos.escaner.ComparacionMotores
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Motor
@@ -148,6 +149,8 @@ data class Intento(
     val msCuadro: Float = 0f,
     /** A cuántos cm enfocaba al leer, si la cámara da el enfoque calibrado; −1 = desconocido (los fallidos no lo traen). */
     val distanciaCm: Float = -1f,
+    /** Con el motor «Lado a lado»: qué hizo cada motor con los cuadros de esta lectura; null con los demás y en los fallidos. */
+    val comparacion: ComparacionMotores? = null,
     val resultado: ResultadoIntento,
     val medicion: Medicion,
 )
@@ -206,6 +209,7 @@ data class SesionPrueba(
             resolucion = c.resolucion,
             msCuadro = evento.msCuadro,
             distanciaCm = evento.distanciaCm,
+            comparacion = evento.comparacion,
             // Si se tecleó el esperado y no coincide, de entrada es lectura incorrecta; el operador lo puede cambiar.
             resultado = if (coincide == false) ResultadoIntento.LECTURA_INCORRECTA else ResultadoIntento.OK,
             medicion = c.medicion,

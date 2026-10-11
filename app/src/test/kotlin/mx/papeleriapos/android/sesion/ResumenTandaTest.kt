@@ -2,6 +2,8 @@ package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.Ejemplos
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.escaner.ComparacionMotores
+import mx.papeleriapos.escaner.LadoMotor
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.nucleo.Simbologia
@@ -107,6 +109,48 @@ class ResumenTandaTest {
         // Lo de antes de esta versión no trae lente.
         val c = ResumenTanda(Condicion.NORMAL, 1, 2, 2, 2, 0, 0, 0, 0, porLente = mapOf("" to Conteo(2, 2)))
         assertEquals("Normal (#1–2): 2 de 2 bien (100 %), 0 falsas.\nLente: sin dato 2/2.", c.texto())
+    }
+
+    @Test
+    fun `con lado a lado la tanda dice como le fue a cada motor`() {
+        val sinLado = ResumenTandas.de(sesion(), anotaciones)
+        assertNull(sinLado[0].ladoALado)
+        // Tres lecturas con «Lado a lado»: zxing-cpp lee en dos (a 120 y 200 ms) y en una lee otra cosa; ML Kit lee en las tres.
+        val s = SesionPrueba("Pixel", inicio)
+            .registrarLectura(
+                Ejemplos.evento("7509993456786", comparacion = ComparacionMotores(10, LadoMotor(6, 0, 120, 0.4f), LadoMotor(4, 0, 250, 35f))),
+                contexto(inicio),
+            )
+            .registrarLectura(
+                Ejemplos.evento("7509993456786", comparacion = ComparacionMotores(8, LadoMotor(3, 0, 200, 0.5f), LadoMotor(5, 0, 180, 40f))),
+                contexto(inicio + 5_000),
+            )
+            .registrarLectura(
+                Ejemplos.evento("75099916", Simbologia.EAN_8, comparacion = ComparacionMotores(20, LadoMotor(0, 2, -1, 0.45f), LadoMotor(7, 0, 400, 38f))),
+                contexto(inicio + 9_000),
+            )
+            .registrarFallo(ResultadoIntento.TIMEOUT, contexto(inicio + 12_000))
+        val t = ResumenTandas.de(s, Anotaciones(inicio)).single()
+        // Medianas por rango más cercano: zxing 120 y 200 → 120; 0.4, 0.45 y 0.5 → 0.45; ML Kit 180, 250 y 400 → 250; 35, 38 y 40 → 38.
+        assertEquals(ResumenLado(3, LadoTanda(2, 1, 120, 0.45f), LadoTanda(3, 0, 250, 38f)), t.ladoALado)
+        assertEquals(
+            "Lado a lado (3): zxing-cpp leyó 2 (primera a 120 ms, 0.45 ms/cuadro), ML Kit 3 (primera a 250 ms, 38 ms/cuadro); " +
+                "otras lecturas: zxing-cpp 1, ML Kit 0.",
+            t.texto().lines().last(),
+        )
+        val r = Csv.leer(CsvResumen.escribir(s, listOf(t), DatosEquipo("Pixel 8 Pro", 36, "0.1.0", "abc"), TimeZone.getTimeZone("UTC")))
+        val col = { nombre: String -> r[1][CsvResumen.COLUMNAS.indexOf(nombre)] }
+        assertEquals("3", col("lado_intentos"))
+        assertEquals("2", col("zxing_leyo"))
+        assertEquals("1", col("zxing_otras"))
+        assertEquals("120", col("zxing_ms_primera"))
+        assertEquals("0.45", col("zxing_ms_cuadro"))
+        assertEquals("3", col("mlkit_leyo"))
+        assertEquals("250", col("mlkit_ms_primera"))
+        assertEquals("38.00", col("mlkit_ms_cuadro"))
+        // Sin lado a lado, las columnas van vacías.
+        val r2 = Csv.leer(CsvResumen.escribir(sesion(), sinLado, DatosEquipo("x", 1, "1", "1"), TimeZone.getTimeZone("UTC")))
+        assertEquals("", r2[1][CsvResumen.COLUMNAS.indexOf("lado_intentos")])
     }
 
     @Test

@@ -3,6 +3,8 @@ package mx.papeleriapos.android.sesion
 import mx.papeleriapos.android.Ejemplos
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.Apertura
+import mx.papeleriapos.escaner.ComparacionMotores
+import mx.papeleriapos.escaner.LadoMotor
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.TipoArranque
@@ -51,6 +53,10 @@ class SesionPruebaTest {
         assertEquals("1280x720", i.resolucion)
         assertEquals(8.4f, i.msCuadro)
         assertEquals(12.5f, i.distanciaCm)
+        // Sin el motor «Lado a lado» no hay comparación; con él, la trae el evento.
+        assertNull(i.comparacion)
+        val lado = ComparacionMotores(9, LadoMotor(5, 0, 120, 0.4f), LadoMotor(2, 0, 300, 35f))
+        assertEquals(lado, s.registrarLectura(Ejemplos.evento("7509993456786", comparacion = lado), contexto).ultimo!!.comparacion)
         // Sin código esperado no se compara y de entrada está bien.
         assertNull(i.coincide)
         assertEquals(ResultadoIntento.OK, i.resultado)

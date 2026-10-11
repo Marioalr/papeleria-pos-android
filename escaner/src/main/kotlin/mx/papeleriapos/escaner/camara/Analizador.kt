@@ -20,6 +20,8 @@ import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.MotorDeLectura
 import mx.papeleriapos.escaner.PasoApertura
+import mx.papeleriapos.escaner.ComparacionMotores
+import mx.papeleriapos.escaner.motores.MotorLadoALado
 import mx.papeleriapos.escaner.motores.crearMotor
 import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.Confirmador
@@ -363,6 +365,7 @@ internal class Analizador(
                 distanciaCm = senales.distanciaCm(),
                 // El promedio hasta el cuadro anterior: el de este se suma al terminar.
                 msCuadro = promedioCuadro.valor,
+                comparacion = compararMotores(aceptada.codigo.normalizado, ahora),
             )
             eventos.tryEmit(evento)
             val c = aceptada.codigo
@@ -483,7 +486,22 @@ internal class Analizador(
             cuadrosProducidos = senales.producidos.get() - baseProducidos,
             cuadrosAnalizados = cuadrosAnalizados,
             estadoCamara = textoEstadoCamara,
+            ladoALado = (motor as? MotorLadoALado)?.bitacora?.resumenReciente() ?: "",
         )
+    }
+
+    /**
+     * Con el motor «Lado a lado»: lo que hizo cada motor con los cuadros de este candidato (desde que apareció, o desde
+     * que se reanudó; si no hay marca, los últimos 2 s) frente al código [normalizado] que se aceptó. Null con otro motor.
+     */
+    private fun compararMotores(normalizado: String, ahora: Long): ComparacionMotores? {
+        val bitacora = (motor as? MotorLadoALado)?.bitacora ?: return null
+        val desde = when {
+            inicioCandidato > 0L -> inicioCandidato
+            inicioReanudar > 0L -> inicioReanudar
+            else -> ahora - 2_000_000_000L
+        }
+        return bitacora.comparar(desde, ahora, normalizado)
     }
 
     /** Posición, tamaño, bordes y movimiento del candidato respecto a la franja. */

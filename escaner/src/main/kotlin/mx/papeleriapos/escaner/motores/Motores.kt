@@ -2,6 +2,7 @@ package mx.papeleriapos.escaner.motores
 
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.MotorDeLectura
+import mx.papeleriapos.escaner.nucleo.Confirmador
 import mx.papeleriapos.escaner.nucleo.Lectura
 import mx.papeleriapos.escaner.nucleo.ResultadoMotor
 import mx.papeleriapos.escaner.nucleo.Simbologia
@@ -18,6 +19,13 @@ fun crearMotor(motor: Motor, simbologias: Set<Simbologia>, probarGiros: Boolean 
     Motor.AUTOMATICO -> MotorAutomatico(simbologias, probarGiros = probarGiros)
     Motor.ML_KIT -> MotorMlKit(simbologias)
     Motor.ZXING_CPP -> MotorZxingCpp(simbologias, probarGiros)
+    Motor.LADO_A_LADO -> MotorLadoALado(simbologias, probarGiros)
+}
+
+/** Alguna lectura pasa la validación (verificador, largo): lo que cuenta como «leyó» para el motor automático y el lado a lado. */
+internal fun algunaValida(lecturas: List<Lectura>): Boolean {
+    for (i in lecturas.indices) if (Confirmador.normalizar(lecturas[i]) != null) return true
+    return false
 }
 
 /**

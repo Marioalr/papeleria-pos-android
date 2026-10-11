@@ -179,6 +179,7 @@ internal fun PanelDiagnostico(estado: State<EstadoEscaner>, modifier: Modifier =
         linea(stringResource(R.string.escaner_diag_camara, d.zoom, d.resolucion.ifEmpty { "?" }, d.rangoFps.ifEmpty { "?" }))
         linea(stringResource(R.string.escaner_diag_franja, d.franjaPx.ifEmpty { "?" }, d.camaraFisica.ifEmpty { "?" }))
         linea(stringResource(R.string.escaner_diag_enfoque, d.estadoEnfoque.ifEmpty { "?" }))
+        if (d.ladoALado.isNotEmpty()) linea(d.ladoALado)
     }
 }
 

@@ -29,6 +29,9 @@ import java.util.concurrent.Executors
 /** El catálogo de escenas fijas, o los límites: la dificultad sube por grados hasta que el motor deja de leer. */
 enum class ModoBanco(val etiqueta: String) { CATALOGO("Catálogo"), LIMITES("Límites") }
 
+/** Los motores que compara el banco: los de verdad («Lado a lado» es para compararlos en vivo, con la cámara). */
+val MOTORES_DEL_BANCO: List<Motor> = Motor.entries.filter { it != Motor.LADO_A_LADO }
+
 data class EstadoBanco(
     val modo: ModoBanco = ModoBanco.CATALOGO,
     val corriendo: Boolean = false,
@@ -37,7 +40,7 @@ data class EstadoBanco(
     val etiqueta: String = "",
     /** Leer solo la franja central, como en vivo; si no, el cuadro completo. */
     val recortarFranja: Boolean = true,
-    val motores: Set<Motor> = Motor.entries.toSet(),
+    val motores: Set<Motor> = MOTORES_DEL_BANCO.toSet(),
     val escenas: Int = 0,
     val simbologias: Set<Simbologia> = emptySet(),
     val resultados: List<ResultadoEscena> = emptyList(),

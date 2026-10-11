@@ -119,6 +119,14 @@ solo motor (ML Kit o zxing-cpp) para compararlos; el de la tienda se decide con 
 tienda](pruebas-en-tienda.md)). Solo se piden las simbologías que se usan, nunca «todas». Cada lectura dice por cuál
 vía salió (directa, umbral o respaldo) en el registro y en la sesión de prueba.
 
+**Lado a lado** (parte 9 del [plan](plan.md#entrega-8-medir-la-lectura)): el motor «Lado a lado» de ajustes corre
+zxing-cpp (directo y con umbral) y ML Kit en cada cuadro sobre la misma región, y lee lo que lea cualquiera (zxing-cpp
+primero). Anota por cuadro qué leyó cada uno y cuánto tardó; cada lectura aceptada lleva a la sesión de prueba, para los
+cuadros de su candidato, en cuántos leyó cada motor el código, en cuántos leyó otra cosa, a los cuántos ms lo leyó por
+primera vez y su mediana por cuadro (columnas `zxing_*` y `mlkit_*` de intentos.csv), y el resumen de la tanda lo junta
+por motor. El diagnóstico muestra lo mismo de los últimos 30 cuadros. Es más lento que el automático (ML Kit en todos
+los cuadros): para medir, no para la tienda.
+
 ## Localizador
 
 `nucleo/Localizador.kt`. Sobre el plano Y, en celdas de 32×32 px muestreadas cada 4 px: el tensor de estructura de cada

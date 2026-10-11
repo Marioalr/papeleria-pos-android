@@ -1,6 +1,8 @@
 package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.escaner.ComparacionMotores
+import mx.papeleriapos.escaner.LadoMotor
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -14,10 +16,11 @@ object CsvSesion {
     val COLUMNAS = listOf(
         "sesion", "n", "hora", "motor", "via", "modo", "rango_fps", "condicion", "ms_desde_candidato", "indicaciones",
         "simbologia", "valor", "normalizado", "esperado", "coincide", "en_catalogo", "variante", "clave_catalogo",
-        "modulo_px", "zoom", "linterna", "lente", "camara_fisica", "resolucion", "ms_cuadro", "distancia_cm", "resultado",
-        "nota", "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo", "estado_termico", "tipo_arranque", "ms_actividad",
-        "ms_enlace", "ms_camara", "ms_primer_cuadro", "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk",
-        "version_app", "commit",
+        "modulo_px", "zoom", "linterna", "lente", "camara_fisica", "resolucion", "ms_cuadro", "distancia_cm",
+        "lado_cuadros", "zxing_leidos", "zxing_otras", "zxing_ms_primera", "zxing_ms_cuadro", "mlkit_leidos", "mlkit_otras",
+        "mlkit_ms_primera", "mlkit_ms_cuadro", "resultado", "nota", "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo",
+        "estado_termico", "tipo_arranque", "ms_actividad", "ms_enlace", "ms_camara", "ms_primer_cuadro",
+        "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk", "version_app", "commit",
     )
 
     /** Las que tiene que traer un CSV para recuperar sus intentos (los de versiones anteriores no traen las nuevas). */
@@ -40,6 +43,7 @@ object CsvSesion {
         for (i in sesion.intentos) {
             val m = i.medicion
             val a = m.apertura
+            val l = i.comparacion
             Csv.renglon(
                 listOf(
                     clave,
@@ -68,6 +72,15 @@ object CsvSesion {
                     i.resolucion,
                     if (i.msCuadro > 0f) Csv.decimal(i.msCuadro, 1) else "",
                     if (i.distanciaCm > 0f) Csv.decimal(i.distanciaCm, 1) else "",
+                    l?.cuadros?.toString() ?: "",
+                    lado(l?.zxing, LadoMotor::leidos),
+                    lado(l?.zxing, LadoMotor::otras),
+                    l?.zxing?.msPrimera?.let(::ms) ?: "",
+                    l?.zxing?.msCuadro?.let { if (it > 0f) Csv.decimal(it, 2) else "" } ?: "",
+                    lado(l?.mlKit, LadoMotor::leidos),
+                    lado(l?.mlKit, LadoMotor::otras),
+                    l?.mlKit?.msPrimera?.let(::ms) ?: "",
+                    l?.mlKit?.msCuadro?.let { if (it > 0f) Csv.decimal(it, 2) else "" } ?: "",
                     i.resultado.name,
                     Csv.textoSeguro(notas.notaDe(i.n)),
                     if (m.bateriaPct >= 0) m.bateriaPct.toString() else "",
@@ -132,6 +145,15 @@ object CsvSesion {
                     resolucion = col("resolucion"),
                     msCuadro = col("ms_cuadro").toFloatOrNull() ?: 0f,
                     distanciaCm = col("distancia_cm").toFloatOrNull() ?: -1f,
+                    comparacion = col("lado_cuadros").toIntOrNull()?.let { cuadros ->
+                        fun lado(p: String) = LadoMotor(
+                            col("${p}_leidos").toIntOrNull() ?: 0,
+                            col("${p}_otras").toIntOrNull() ?: 0,
+                            largo("${p}_ms_primera"),
+                            col("${p}_ms_cuadro").toFloatOrNull() ?: 0f,
+                        )
+                        ComparacionMotores(cuadros, lado("zxing"), lado("mlkit"))
+                    },
                     resultado = ResultadoIntento.valueOf(col("resultado")),
                     medicion = Medicion(
                         bateriaPct = col("bateria_pct").toIntOrNull() ?: -1,
@@ -185,6 +207,8 @@ object CsvSesion {
         prefijo + "-" + clave.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').take(80) + ".csv"
 
     private fun ms(v: Long) = if (v >= 0) v.toString() else ""
+
+    private fun lado(l: LadoMotor?, campo: (LadoMotor) -> Int) = l?.let { campo(it).toString() } ?: ""
 
     private fun siNo(v: Boolean?) = when (v) { true -> "si"; false -> "no"; null -> "" }
 

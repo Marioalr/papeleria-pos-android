@@ -49,3 +49,8 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   recortado a la franja, y siempre el último cuadro, así que lo que cuesta de más es la franja más grande. Y «Leer
   también girados 90°», para que zxing-cpp pruebe las dos orientaciones de la franja. Las dos vienen apagadas hasta
   medirlas en la tienda; la sesión guarda la resolución de cada intento.
+- Lado a lado: un motor más en Ajustes que corre zxing-cpp y ML Kit en cada cuadro sobre la misma franja y lee lo que
+  lea cualquiera. Cada intento de la sesión dice, para los cuadros de esa lectura, en cuántos leyó cada motor el código,
+  en cuántos leyó otra cosa, a los cuántos ms lo leyó por primera vez y lo que costó por cuadro; el resumen de la tanda
+  lo junta por motor y el diagnóstico lo muestra en vivo. Es para comparar los motores con productos reales, no para
+  la tienda.

@@ -18,6 +18,11 @@ enum class Motor(val nombre: String) {
     AUTOMATICO("Automático"),
     ML_KIT("ML Kit"),
     ZXING_CPP("zxing-cpp"),
+    /**
+     * zxing-cpp y ML Kit en cada cuadro sobre la misma región, para compararlos con productos reales (parte 9 del plan):
+     * lee lo que lea cualquiera y cada lectura lleva qué hizo cada uno ([EventoLectura.comparacion]). Más lento.
+     */
+    LADO_A_LADO("Lado a lado"),
 }
 
 /** En qué va el escáner (docs/escaner.md, «Estados»). */
@@ -58,7 +63,24 @@ data class Diagnostico(
     val cuadrosAnalizados: Long = 0,
     /** El estado de CameraX (`CameraState`): abriendo, abierta, error y su código. */
     val estadoCamara: String = "",
+    /** En «Lado a lado»: qué leyó cada motor y cuánto tardó en los últimos cuadros; vacío con los demás motores. */
+    val ladoALado: String = "",
 )
+
+/** Lo que hizo un motor con los cuadros de una lectura en «Lado a lado» ([Motor.LADO_A_LADO]). */
+data class LadoMotor(
+    /** Cuadros en que leyó el código que se aceptó. */
+    val leidos: Int,
+    /** Cuadros en que leyó otra cosa (lo peor: una lectura incorrecta). */
+    val otras: Int,
+    /** ms desde que apareció el candidato hasta la primera vez que leyó el código; −1 = nunca lo leyó. */
+    val msPrimera: Long,
+    /** Mediana de lo que costó por cuadro, en ms; 0 = sin cuadros. */
+    val msCuadro: Float,
+)
+
+/** zxing-cpp y ML Kit sobre los mismos [cuadros]: los del candidato que acabó en la lectura aceptada. */
+data class ComparacionMotores(val cuadros: Int, val zxing: LadoMotor, val mlKit: LadoMotor)
 
 /** Una lectura aceptada con lo que tardó (para la retroalimentación y la sesión de prueba). */
 data class EventoLectura(
@@ -80,6 +102,8 @@ data class EventoLectura(
     val distanciaCm: Float = -1f,
     /** Lo que tardó el análisis por cuadro (promedio móvil) al leer, en ms; 0 = no se sabe. */
     val msCuadro: Float = 0f,
+    /** Con el motor «Lado a lado»: qué hizo cada motor con los cuadros de este candidato; null con los demás. */
+    val comparacion: ComparacionMotores? = null,
 )
 
 /** Todo lo que la interfaz necesita para dibujar el escáner. Las cajas van en la región visible normalizada. */

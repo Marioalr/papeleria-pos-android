@@ -2,6 +2,8 @@ package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.Ejemplos
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.escaner.ComparacionMotores
+import mx.papeleriapos.escaner.LadoMotor
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.Via
@@ -25,6 +27,8 @@ class CsvSesionTest {
         lente = "PRINCIPAL", camaraFisica = "2", resolucion = "1280x720", msCuadro = 9.9f, catalogo = catalogo,
     )
     private val apertura = MedidasApertura("CALIENTE", 0, 40, 95, 140, 180, 610)
+    /** Con «Lado a lado»: zxing-cpp no leyó el UPC-A en 12 cuadros y ML Kit sí (y una vez otra cosa). */
+    private val ladoALado = ComparacionMotores(12, LadoMotor(0, 0, -1, 0.45f), LadoMotor(3, 1, 210, 38.25f))
     private val conApertura = contexto.copy(medicion = Medicion(54, 120, 2, paredMs = 480, apertura = apertura))
 
     private fun sesion() = SesionPrueba("Moto, \"Lupita\"", 1_760_000_000_000)
@@ -32,7 +36,7 @@ class CsvSesionTest {
             Ejemplos.evento("7509993456786", indicaciones = listOf(Indicacion.ACERCATE, Indicacion.IZQUIERDA, Indicacion.QUIETO)),
             contexto,
         )
-        .registrarLectura(Ejemplos.upcA.copy(via = Via.RESPALDO), conApertura)
+        .registrarLectura(Ejemplos.upcA.copy(via = Via.RESPALDO, comparacion = ladoALado), conApertura)
         .registrarLectura(Ejemplos.evento("ZZ-000001", Simbologia.QR, ms = -1, moduloPx = 0f), contexto)
         .registrarLectura(Ejemplos.evento("=CMD|x", Simbologia.CODE_128), contexto)
         .marcarUltimo(ResultadoIntento.FALSO_POSITIVO)
@@ -45,7 +49,8 @@ class CsvSesionTest {
         assertEquals(
             "sesion,n,hora,motor,via,modo,rango_fps,condicion,ms_desde_candidato,indicaciones,simbologia,valor," +
                 "normalizado,esperado,coincide,en_catalogo,variante,clave_catalogo,modulo_px,zoom,linterna,lente," +
-                "camara_fisica,resolucion,ms_cuadro,distancia_cm,resultado,nota," +
+                "camara_fisica,resolucion,ms_cuadro,distancia_cm,lado_cuadros,zxing_leidos,zxing_otras,zxing_ms_primera," +
+                "zxing_ms_cuadro,mlkit_leidos,mlkit_otras,mlkit_ms_primera,mlkit_ms_cuadro,resultado,nota," +
                 "bateria_pct,cpu_ms,pared_ms," +
                 "cpu_pct_nucleo,estado_termico,tipo_arranque,ms_actividad,ms_enlace,ms_camara,ms_primer_cuadro," +
                 "ms_primer_analisis,ms_primera_lectura,dispositivo,sdk,version_app,commit",
@@ -88,6 +93,8 @@ class CsvSesionTest {
         assertEquals("1280x720", col(1, "resolucion"))
         assertEquals("8.4", col(1, "ms_cuadro"))
         assertEquals("12.5", col(1, "distancia_cm"))
+        assertEquals("", col(1, "lado_cuadros"))
+        assertEquals("", col(1, "mlkit_ms_cuadro"))
         assertEquals("OK", col(1, "resultado"))
         assertEquals("55", col(1, "bateria_pct"))
         assertEquals("9876", col(1, "cpu_ms"))
@@ -120,6 +127,16 @@ class CsvSesionTest {
         assertEquals("140", col(2, "ms_primer_cuadro"))
         assertEquals("180", col(2, "ms_primer_analisis"))
         assertEquals("610", col(2, "ms_primera_lectura"))
+        // Lado a lado: lo que hizo cada motor con los cuadros de esa lectura.
+        assertEquals("12", col(2, "lado_cuadros"))
+        assertEquals("0", col(2, "zxing_leidos"))
+        assertEquals("0", col(2, "zxing_otras"))
+        assertEquals("", col(2, "zxing_ms_primera"))
+        assertEquals("0.45", col(2, "zxing_ms_cuadro"))
+        assertEquals("3", col(2, "mlkit_leidos"))
+        assertEquals("1", col(2, "mlkit_otras"))
+        assertEquals("210", col(2, "mlkit_ms_primera"))
+        assertEquals("38.25", col(2, "mlkit_ms_cuadro"))
         // Lo que no se sabe va vacío, no en −1 ni en 0.
         assertEquals("", col(3, "ms_desde_candidato"))
         assertEquals("", col(3, "modulo_px"))

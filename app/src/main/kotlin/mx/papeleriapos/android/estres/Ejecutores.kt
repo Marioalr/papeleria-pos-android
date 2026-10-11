@@ -167,7 +167,7 @@ interface MotorBajoPrueba {
 class CambiosMotor(
     private val escaner: MotorBajoPrueba,
     private val veces: Int = 50,
-    private val motores: List<Motor> = Motor.entries,
+    private val motores: List<Motor> = Motor.entries.filter { it != Motor.LADO_A_LADO },
     private val cadaMemoria: Int = 10,
     private val limiteMs: Long = 5_000,
     private val relojNs: () -> Long = System::nanoTime,
