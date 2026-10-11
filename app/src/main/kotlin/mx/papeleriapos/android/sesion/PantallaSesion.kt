@@ -180,7 +180,7 @@ fun ConSesion(
         item {
             OutlinedTextField(
                 value = sesion.esperado,
-                onValueChange = { alCambiarEsperado(it.trim()) },
+                onValueChange = { alCambiarEsperado(SesionPrueba.sinEspacios(it)) },
                 label = { Text("Código esperado (opcional)") },
                 supportingText = { Text("Se compara con cada lectura hasta que lo cambies.") },
                 singleLine = true,

@@ -71,7 +71,7 @@ data class EscenaLimite(val condicion: CondicionLimite, val indiceGrado: Int, va
     fun dibujar(ancho: Int, alto: Int): Luma {
         val luma = Lienzo.dibujar(Barras.para(SIMBOLOGIA, CODIGO), Barras.zonaEnBlanco(SIMBOLOGIA), ancho, alto, escena(ancho))
         if (luz != 1f) Lienzo.ganancia(luma, luz)
-        ruido(luma, ruido, Random(SEMILLA_BASE * 3 + condicion.ordinal * 7919 + indiceGrado * 101 + variante))
+        Lienzo.ruido(luma, ruido, Random(SEMILLA_BASE * 3 + condicion.ordinal * 7919 + indiceGrado * 101 + variante))
         return luma
     }
 
@@ -82,16 +82,6 @@ data class EscenaLimite(val condicion: CondicionLimite, val indiceGrado: Int, va
         const val PX_POR_MODULO_BASE = 3f
         const val RUIDO_BASE = 2f
         private const val SEMILLA_BASE = 20261009
-
-        private fun ruido(luma: Luma, sigma: Float, azar: Random) {
-            if (sigma <= 0f) return
-            val p = luma.pixeles
-            for (i in 0 until luma.ancho * luma.alto) {
-                // Suma de tres uniformes: casi normal y sin Box-Muller.
-                val n = (azar.nextFloat() + azar.nextFloat() + azar.nextFloat() - 1.5f) * 2f * sigma
-                p[i] = ((p[i].toInt() and 0xFF) + n).roundToInt().coerceIn(0, 255).toByte()
-            }
-        }
     }
 }
 
@@ -176,7 +166,7 @@ class BancoLimites(
                 try {
                     activos[m] = crearMotor(m, simbologias).also { it.calentar() }
                 } catch (t: Throwable) {
-                    errores[m] = descripcion(t)
+                    errores[m] = descripcionDe(t)
                 }
             }
             for (condicion in condiciones) {
@@ -210,7 +200,7 @@ class BancoLimites(
                                     else -> Veredicto.LECTURA_INCORRECTA
                                 }
                             } catch (t: Throwable) {
-                                errores[m] = descripcion(t)
+                                errores[m] = descripcionDe(t)
                                 null
                             }
                             tiempos.getOrPut(m) { ArrayList() } += (reloj() - t0) / 1e6
@@ -261,8 +251,6 @@ class BancoLimites(
         buffer.put(plano)
         buffer.rewind()
     }
-
-    private fun descripcion(t: Throwable) = t::class.java.simpleName + (t.message?.let { ": $it" } ?: "")
 }
 
 /**

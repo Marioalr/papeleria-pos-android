@@ -99,8 +99,10 @@ object CsvAperturas {
  * Desde el hilo principal solo se encarga la fila; el disco se toca en un hilo propio, en orden.
  */
 object RegistroAperturas {
+    /** Un solo hilo: las filas se escriben en orden y [leer] espera a lo que esté por escribirse. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val alcance = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+    private val hilo = Dispatchers.IO.limitedParallelism(1)
+    private val alcance = CoroutineScope(SupervisorJob() + hilo)
 
     /** La clave de la última apertura registrada (en el hilo principal): cada una va una sola vez. */
     private var ultima = 0L
@@ -147,9 +149,12 @@ object RegistroAperturas {
         alcance.launch { archivo(app).delete() }
     }
 
-    /** El contenido para exportarlo; null si no hay. En el mismo hilo que escribe, así no se lee a medias. */
+    /**
+     * El contenido para exportarlo; null si no hay. En el mismo hilo que escribe, así no se lee a medias; solo el
+     * despachador, no el alcance entero: con su Job, cancelar a quien llama no cancelaría la lectura.
+     */
     suspend fun leer(contexto: Context): String? =
-        withContext(alcance.coroutineContext) { archivo(contexto).takeIf { it.exists() }?.readText() }
+        withContext(hilo) { archivo(contexto).takeIf { it.exists() }?.readText() }
 
     private const val ETIQUETA = "RegistroAperturas"
     private const val DESCONOCIDA = -1L

@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.papeleriapos.android.archivo.escribirAtomico
 import mx.papeleriapos.escaner.nucleo.Modo
 import java.io.File
 import java.io.IOException
@@ -91,13 +92,7 @@ internal class AlmacenListas(obtenerCarpeta: () -> File) {
     fun guardar(modo: Modo, lista: ListaLecturas) {
         try {
             carpeta.mkdirs()
-            val destino = archivo(modo)
-            val temporal = File(carpeta, destino.name + ".tmp")
-            temporal.writeText(lista.aTexto())
-            if (!temporal.renameTo(destino)) {
-                destino.delete()
-                if (!temporal.renameTo(destino)) throw IOException("No se pudo renombrar ${temporal.name}")
-            }
+            archivo(modo).escribirAtomico(lista.aTexto())
         } catch (e: IOException) {
             Log.w(ETIQUETA, "No se pudo guardar la lista de ${modo.name}", e)
         }

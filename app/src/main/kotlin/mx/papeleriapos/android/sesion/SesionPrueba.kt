@@ -156,7 +156,8 @@ data class SesionPrueba(
         return "${nombre.trim()}@${f.format(Date(inicio))}"
     }
 
-    fun conEsperado(codigo: String): SesionPrueba = copy(esperado = codigo.trim())
+    /** El esperado se guarda sin ningún espacio: tecleado con espacios en medio («7509 9934 56786») no coincidiría nunca. */
+    fun conEsperado(codigo: String): SesionPrueba = copy(esperado = sinEspacios(codigo))
 
     fun registrarLectura(evento: EventoLectura, c: Contexto): SesionPrueba {
         val codigo = evento.aceptada.codigo
@@ -243,12 +244,16 @@ data class SesionPrueba(
     }
 
     companion object {
+        /** Lo tecleado sin espacios ni tabuladores (en medio también): un código no los lleva. */
+        fun sinEspacios(texto: String): String = texto.filterNot { it.isWhitespace() }
+
         /**
          * Si lo leído es el código esperado. Los GTIN se comparan con ceros a la izquierda hasta 14 dígitos, así un UPC-A
-         * de 12 dígitos coincide con su EAN-13 y un UPC-E con su expansión.
+         * de 12 dígitos coincide con su EAN-13 y un UPC-E con su expansión. Los espacios del esperado no cuentan (una
+         * sesión recuperada de un CSV viejo puede traerlos).
          */
         fun coincide(esperado: String, codigo: CodigoLeido): Boolean {
-            val e = esperado.trim()
+            val e = sinEspacios(esperado)
             if (e.isEmpty()) return false
             val leidos = buildSet {
                 add(codigo.original); add(codigo.normalizado); addAll(codigo.clavesDeBusqueda)

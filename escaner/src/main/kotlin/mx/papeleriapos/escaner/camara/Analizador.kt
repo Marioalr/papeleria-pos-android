@@ -36,6 +36,7 @@ import mx.papeleriapos.escaner.nucleo.Simbologia
 import mx.papeleriapos.escaner.nucleo.Transformacion
 import mx.papeleriapos.escaner.nucleo.Via
 import java.nio.ByteBuffer
+import java.util.Locale
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -144,7 +145,6 @@ internal class Analizador(
     private var indicacionRegistrada: Indicacion? = null
     private var ultimoEnfoque = 0L
     private var lecturas = 0L
-    private var ultimoEvento: EventoLectura? = null
     /** Se puso una marca de la apertura en este cuadro: se publica con el estado. */
     private var aperturaCambio = false
     /** Las aperturas en las que ya se intentó marcar el primer análisis y la primera lectura (una vez por apertura). */
@@ -318,7 +318,8 @@ internal class Analizador(
             Log.i(
                 ETIQUETA,
                 "Indicación: $indicacion (dx %.2f dy %.2f largo %.2f módulo %.1f nitidez %.2f brillo %.0f saturados %.2f enfoque %.2f%s%s)"
-                    .format(o.dx, o.dy, o.largoRelativo, o.moduloPx, o.nitidez, o.brillo, o.saturados, o.proporcionEnfoque,
+                    // Con punto decimal sin importar el idioma del celular, como los CSV.
+                    .format(Locale.ROOT, o.dx, o.dy, o.largoRelativo, o.moduloPx, o.nitidez, o.brillo, o.saturados, o.proporcionEnfoque,
                         if (o.enfocando) " enfocando" else "", if (o.cortado) " cortado" else ""),
             )
         }
@@ -349,10 +350,16 @@ internal class Analizador(
                 inicioReanudar > 0L -> (ahora - inicioReanudar) / NANOS_POR_MS
                 else -> -1L
             }
+            // La marca va ANTES de avisar: quien recibe el evento (el hilo principal) lee las marcas de la apertura en ese
+            // momento, y si se pusiera después podría ganarle la carrera y registrar el intento sin ms_primera_lectura.
+            val propia = senales.aperturaPropia
+            if (propia != 0 && propia != lecturaMarcadaEn) {
+                lecturaMarcadaEn = propia
+                if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMERA_LECTURA)) aperturaCambio = true
+            }
             evento = EventoLectura(
                 aceptada, ms, ArrayList(indicaciones), motorActual, resultado.via, o.moduloPx, zoomActual, linternaEncendida,
             )
-            ultimoEvento = evento
             eventos.tryEmit(evento)
             val c = aceptada.codigo
             // Del QR (tickets) no se registra el contenido.
@@ -361,11 +368,6 @@ internal class Analizador(
                 (if (resultado.via != Via.DIRECTA) " (${resultado.via})" else "") + (if (aceptada.repetida) ", repetido" else ""))
             leidoHasta = ahora + NANOS_LEIDO
             cajaLeida = aceptada.caja ?: caja
-            val propia = senales.aperturaPropia
-            if (propia != 0 && propia != lecturaMarcadaEn) {
-                lecturaMarcadaEn = propia
-                if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMERA_LECTURA)) aperturaCambio = true
-            }
             // El siguiente código empieza su propio conteo de tiempo e indicaciones.
             hayCandidato = false
             inicioCandidato = 0L

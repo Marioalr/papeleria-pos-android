@@ -161,7 +161,7 @@ class Banco(
                     m = crearMotor(motor, simbologias)
                     resultados += medir(m, motor, escena, Pasada.FRIO)
                 } catch (t: Throwable) {
-                    errores[motor] = descripcion(t)
+                    errores[motor] = descripcionDe(t)
                 } finally {
                     runCatching { m?.close() }
                 }
@@ -178,7 +178,7 @@ class Banco(
                 try {
                     activos[motor] = crearMotor(motor, simbologias).also { it.calentar() }
                 } catch (t: Throwable) {
-                    errores[motor] = descripcion(t)
+                    errores[motor] = descripcionDe(t)
                 }
             }
             for ((i, escena) in escenas.withIndex()) {
@@ -213,7 +213,7 @@ class Banco(
             val ms = (reloj() - t0) / 1e6
             ResultadoEscena(escena, motor, pasada, Clasificador.clasificar(escena, r.lecturas), r.lecturas.joinToString("|") { it.texto }, ms)
         } catch (t: Throwable) {
-            ResultadoEscena(escena, motor, pasada, null, "", (reloj() - t0) / 1e6, descripcion(t))
+            ResultadoEscena(escena, motor, pasada, null, "", (reloj() - t0) / 1e6, descripcionDe(t))
         }
     }
 
@@ -225,8 +225,6 @@ class Banco(
         buffer.put(plano)
         buffer.rewind()
     }
-
-    private fun descripcion(t: Throwable) = t::class.java.simpleName + (t.message?.let { ": $it" } ?: "")
 
     companion object {
         /**
@@ -260,3 +258,6 @@ class Banco(
         }
     }
 }
+
+/** Cómo se describe una excepción de un motor en los resultados y en el CSV: su clase y, si trae, su mensaje. */
+internal fun descripcionDe(t: Throwable): String = t::class.java.simpleName + (t.message?.let { ": $it" } ?: "")

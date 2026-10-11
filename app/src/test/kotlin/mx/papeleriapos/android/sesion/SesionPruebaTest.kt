@@ -64,6 +64,16 @@ class SesionPruebaTest {
     }
 
     @Test
+    fun `el esperado se guarda sin espacios y coincide aunque se teclee con ellos en medio`() {
+        val s = vacia.conEsperado("7509 9934 56786").registrarLectura(Ejemplos.evento("7509993456786"), contexto)
+        assertEquals("7509993456786", s.esperado)
+        assertEquals(true, s.intentos[0].coincide)
+        assertEquals(ResultadoIntento.OK, s.intentos[0].resultado)
+        // Una sesión recuperada de un CSV viejo puede traer el espacio: la comparación también lo ignora.
+        assertTrue(SesionPrueba.coincide("7509 9934 56786", CodigoLeido("7509993456786", "7509993456786", Simbologia.EAN_13, emptyList())))
+    }
+
+    @Test
     fun `un UPC-A coincide con su EAN-13 y un UPC-E con su expansion`() {
         assertTrue(SesionPrueba.coincide("0099999291452", CodigoLeido("099999291452", "099999291452", Simbologia.UPC_A, emptyList())))
         assertTrue(SesionPrueba.coincide("099999291452", CodigoLeido("0099999291452", "0099999291452", Simbologia.EAN_13, emptyList())))

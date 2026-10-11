@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mx.papeleriapos.android.archivo.escribirAtomico
 import mx.papeleriapos.escaner.nucleo.Catalogo
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -72,8 +73,8 @@ class AlmacenCatalogo(private val carpeta: File, private val abrirEjemplo: () ->
         }
         return try {
             carpeta.mkdirs()
-            escribirAtomico(archivo, bytes)
-            escribirAtomico(nombre, nombreArchivo.toByteArray(Charsets.UTF_8))
+            archivo.escribirAtomico(bytes)
+            nombre.escribirAtomico(nombreArchivo)
             EstadoCatalogo(OrigenCatalogo.ARCHIVO, nombreArchivo, catalogo)
         } catch (e: IOException) {
             anterior.copy(aviso = "No se pudo guardar el archivo en el celular.", cargando = false)
@@ -104,16 +105,6 @@ class AlmacenCatalogo(private val carpeta: File, private val abrirEjemplo: () ->
             salida.write(buffer, 0, n)
         }
         return salida.toByteArray()
-    }
-
-    /** Escribe a un temporal y lo renombra: si la app muere a la mitad queda el anterior completo. */
-    private fun escribirAtomico(destino: File, bytes: ByteArray) {
-        val temporal = File(carpeta, destino.name + ".tmp")
-        temporal.writeBytes(bytes)
-        if (!temporal.renameTo(destino)) {
-            destino.delete()
-            if (!temporal.renameTo(destino)) throw IOException("No se pudo renombrar ${temporal.name}")
-        }
     }
 
     companion object {

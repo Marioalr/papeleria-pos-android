@@ -23,6 +23,7 @@ import mx.papeleriapos.android.sesion.ResultadoIntento
 import mx.papeleriapos.android.sesion.SesionPrueba
 import mx.papeleriapos.android.ui.CicloPropio
 import mx.papeleriapos.escaner.ConfigEscaner
+import mx.papeleriapos.escaner.camara.franjaPara
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.ui.PantallaEscaner
 
@@ -70,12 +71,6 @@ fun PestanaEscanear(vm: EscanerViewModel) {
     }
 }
 
-/** Dónde empieza y dónde termina la franja de lectura, como fracción del alto del visor (la misma cuenta del escáner). */
-internal fun bordesFranja(altoFranja: Float): Pair<Float, Float> {
-    val a = altoFranja.coerceIn(0.1f, 1f)
-    return (0.5f - a / 2f) to (0.5f + a / 2f)
-}
-
 /**
  * Lo que va sobre el visor: arriba la barra de la sesión de prueba (si hay) y abajo la lista del modo, ninguna sobre la
  * franja de lectura. La barra va completa (dos filas) si cabe arriba de la franja; si no, en una sola.
@@ -89,10 +84,11 @@ fun BoxScope.EncimaDelEscaner(
     altoFranja: Float = ConfigEscaner().altoFranja,
 ) {
     BoxWithConstraints(Modifier.matchParentSize()) {
-        val (arriba, abajo) = bordesFranja(altoFranja)
-        val libreArriba: Dp = maxHeight * arriba - MARGEN * 2
+        // La misma franja que dibuja el escáner: nada de lo de encima la tapa.
+        val franja = franjaPara(altoFranja)
+        val libreArriba: Dp = maxHeight * franja.arriba - MARGEN * 2
         // Abajo, lo que queda bajo la franja menos un respiro (y nunca menos de un panel usable).
-        val altoPanel = maxHeight * ((1f - abajo) - 0.01f).coerceAtLeast(PANEL_MINIMO)
+        val altoPanel = maxHeight * ((1f - franja.abajo) - 0.01f).coerceAtLeast(PANEL_MINIMO)
         if (sesion != null) {
             BarraSesion(
                 sesion = sesion,

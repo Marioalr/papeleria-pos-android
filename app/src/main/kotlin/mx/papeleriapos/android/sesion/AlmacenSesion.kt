@@ -2,6 +2,7 @@ package mx.papeleriapos.android.sesion
 
 import android.content.Context
 import android.util.Log
+import mx.papeleriapos.android.archivo.escribirAtomico
 import java.io.File
 import java.io.IOException
 
@@ -9,6 +10,9 @@ import java.io.IOException
  * Guarda la sesión de prueba en curso para que sobreviva si Android cierra la app (en una prueba de 200 escaneos pasa).
  * Los intentos van en el mismo CSV que se exporta; el nombre, el inicio y el esperado en un archivo aparte, y la
  * condición de los bloques y las notas en otro (cambian sin que cambie la sesión). Se llama fuera del hilo principal.
+ *
+ * Cada archivo se reescribe solo si cambió lo suyo: teclear el esperado no vuelve a escribir los intentos (con cientos,
+ * ~100 KB por tecla mientras se escanea) ni una lectura el archivo de datos.
  */
 class AlmacenSesion(context: Context) {
     private val app = context.applicationContext
@@ -18,18 +22,30 @@ class AlmacenSesion(context: Context) {
     private val datos by lazy { File(carpeta, "sesion.txt") }
     private val notas by lazy { File(carpeta, "anotaciones.csv") }
 
+    // Lo último que se escribió (los intentos, por identidad: cada cambio de la sesión crea otra lista).
+    private var datosEscritos: String? = null
+    private var intentosEscritos: List<Intento>? = null
+
     fun guardar(sesion: SesionPrueba?, equipo: DatosEquipo) {
         try {
             if (sesion == null) {
                 intentos.delete(); datos.delete(); notas.delete()
+                datosEscritos = null; intentosEscritos = null
                 AnotacionesSesion.reemplazar(Anotaciones())
                 // recursos.csv y aperturas.csv los borra quien terminó la sesión (EscanerViewModel.terminarSesion): sabe
                 // cuál terminó y no se lleva los de una sesión nueva que ya empezó.
                 return
             }
             carpeta.mkdirs()
-            escribirAtomico(datos, listOf(sesion.inicio.toString(), sesion.esperado, sesion.nombre).joinToString("\n"))
-            escribirAtomico(intentos, CsvSesion.escribir(sesion, equipo, anotaciones = AnotacionesSesion.de(sesion)))
+            val textoDatos = listOf(sesion.inicio.toString(), sesion.esperado, sesion.nombre).joinToString("\n")
+            if (textoDatos != datosEscritos) {
+                guardarAtomico(datos, textoDatos)
+                datosEscritos = textoDatos
+            }
+            if (sesion.intentos !== intentosEscritos) {
+                guardarAtomico(intentos, CsvSesion.escribir(sesion, equipo, anotaciones = AnotacionesSesion.de(sesion)))
+                intentosEscritos = sesion.intentos
+            }
         } catch (e: IOException) {
             Log.e(ETIQUETA, "No se pudo guardar la sesión de prueba", e)
         }
@@ -39,7 +55,7 @@ class AlmacenSesion(context: Context) {
     fun guardarAnotaciones(anotaciones: Anotaciones) {
         try {
             carpeta.mkdirs()
-            escribirAtomico(notas, anotaciones.aTexto())
+            guardarAtomico(notas, anotaciones.aTexto())
         } catch (e: IOException) {
             Log.e(ETIQUETA, "No se pudieron guardar las anotaciones", e)
         }
@@ -76,15 +92,8 @@ class AlmacenSesion(context: Context) {
         null
     }
 
-    /** Escribe a un temporal y lo renombra: si la app muere a la mitad queda la versión anterior completa. */
-    private fun escribirAtomico(destino: File, texto: String) = synchronized(BLOQUEO) {
-        val temporal = File(destino.parentFile, destino.name + ".tmp")
-        temporal.writeText(texto)
-        if (!temporal.renameTo(destino)) {
-            destino.delete()
-            if (!temporal.renameTo(destino)) throw IOException("No se pudo renombrar ${temporal.name}")
-        }
-    }
+    /** Con candado: el ViewModel y la pantalla pueden guardar a la vez. */
+    private fun guardarAtomico(destino: File, texto: String) = synchronized(BLOQUEO) { destino.escribirAtomico(texto) }
 
     private companion object {
         const val ETIQUETA = "AlmacenSesion"
