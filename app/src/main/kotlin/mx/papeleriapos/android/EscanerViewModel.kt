@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
+import mx.papeleriapos.android.catalogo.CatalogoPrueba
+import mx.papeleriapos.android.catalogo.EstadoCatalogo
 import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
@@ -54,7 +56,8 @@ import kotlin.math.roundToInt
 /**
  * El estado de la app de prueba: el controlador del escáner (este ViewModel es su dueño: lo cierra en [onCleared]), los
  * ajustes, las listas de venta y conteo (guardadas en disco, ver [ListasCompartidas]) y la sesión de prueba. Cada lectura
- * aceptada suma en la lista del modo actual y, si hay sesión, queda como intento.
+ * aceptada suma en la lista del modo actual y, si hay sesión, queda como intento con lo que encontró en el catálogo de
+ * prueba ([CatalogoPrueba]).
  */
 class EscanerViewModel(
     app: Application,
@@ -97,16 +100,25 @@ class EscanerViewModel(
         viewModelScope.launch { controlador.eventos.collect { alLeer(it) } }
     }
 
-    private fun alLeer(e: EventoLectura) {
+    private suspend fun alLeer(e: EventoLectura) {
         val hora = System.currentTimeMillis()
         val codigo = e.aceptada.codigo
         listaActual().update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
         val apertura = aperturaActual()
-        _sesion.update { it?.registrarLectura(e, contexto(hora, apertura)) }
+        // Lo del celular, en el momento de la lectura.
+        val c = if (_sesion.value != null) contexto(hora, apertura) else null
         // La apertura ya está completa (sacar del bolsillo → primera lectura): a aperturas.csv si hay sesión.
         if (apertura.marcas.containsKey(PasoApertura.PRIMERA_LECTURA)) {
             RegistroAperturas.registrar(getApplication(), CsvAperturas.ORIGEN_APP, apertura)
         }
+        if (c == null) {
+            // Sin sesión basta la marca del panel: que el catálogo se cargue, sin esperarlo.
+            CatalogoPrueba.precargar(getApplication())
+            return
+        }
+        // El catálogo se carga con la primera lectura (fuera de la apertura): solo esa vez se espera, en su hilo.
+        val catalogo = CatalogoPrueba.listo(getApplication())
+        _sesion.update { it?.registrarLectura(e, c.copy(catalogo = catalogo)) }
     }
 
     /** La apertura de este escáner, con las marcas más recientes (la primera lectura llega justo después del evento). */
@@ -157,6 +169,19 @@ class EscanerViewModel(
     }
 
     fun restablecerAjustes() = cambiarConfig(ConfigEscaner().copy(modo = _config.value.modo))
+
+    // Catálogo de prueba (docs/escaner.md, «Búsqueda en el catálogo»)
+
+    /** null mientras no se ha cargado: se carga con la primera lectura o con [prepararCatalogo]. */
+    val catalogo: StateFlow<EstadoCatalogo?> get() = CatalogoPrueba.estado
+
+    /** Para Ajustes: carga el catálogo si todavía no está, en segundo plano. */
+    fun prepararCatalogo() = CatalogoPrueba.precargar(getApplication())
+
+    /** El archivo que eligió el dueño con el selector del sistema: se copia a la memoria de la app. */
+    fun cargarCatalogo(uri: Uri) = CatalogoPrueba.cargarArchivo(getApplication(), uri)
+
+    fun usarCatalogoDeEjemplo() = CatalogoPrueba.usarEjemplo(getApplication())
 
     // Lista de venta o conteo (la del modo actual)
 

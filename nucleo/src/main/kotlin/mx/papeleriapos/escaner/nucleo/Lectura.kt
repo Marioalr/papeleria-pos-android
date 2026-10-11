@@ -47,6 +47,9 @@ data class CodigoLeido(
     /** La forma canónica: GTIN-13 para EAN-13/UPC-A/UPC-E, 8 para EAN-8, 14 para ITF-14; lo demás igual. */
     val normalizado: String,
     val simbologia: Simbologia,
-    /** Las formas con que conviene buscarlo en el catálogo del POS (8, 12, 13 o 14 dígitos según el caso). */
+    /**
+     * Las otras formas del mismo código (8, 12, 13 o 14 dígitos según el caso), para compararlo con el esperado de la
+     * sesión de prueba. La búsqueda en el catálogo no las usa: sigue su propia regla ([Catalogo.buscar]).
+     */
     val clavesDeBusqueda: List<String>,
 )

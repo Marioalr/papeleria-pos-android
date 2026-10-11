@@ -1,11 +1,13 @@
 package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.Ejemplos
+import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.TipoArranque
 import mx.papeleriapos.escaner.nucleo.Via
+import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.CodigoLeido
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.nucleo.Simbologia
@@ -85,6 +87,34 @@ class SesionPruebaTest {
         assertFalse(i.normalizado.contains("A-000123"))
         assertFalse(i.esperado.contains("A-000123"))
         assertEquals(true, i.coincide)
+    }
+
+    @Test
+    fun `cada lectura se busca en el catalogo de prueba, igual venga de ML Kit o de zxing-cpp`() {
+        val catalogo = Catalogo.deTexto("codigo,descripcion\n7509993456786,x\n99999291452,UPC-A guardado de 11\nA-000123,x\n")
+        val conCatalogo = contexto.copy(catalogo = catalogo)
+        val mlKit = Ejemplos.upcA
+        val zxing = Ejemplos.evento(
+            "0099999291452", Simbologia.UPC_A, claves = listOf("0099999291452", "099999291452"), motor = Motor.ZXING_CPP,
+        )
+        val s = vacia
+            .registrarLectura(Ejemplos.evento("7509993456786"), conCatalogo)
+            .registrarLectura(mlKit, conCatalogo)
+            .registrarLectura(zxing, conCatalogo)
+            .registrarLectura(Ejemplos.evento("75099916", Simbologia.EAN_8), conCatalogo)
+            .registrarLectura(Ejemplos.evento("A-000123", Simbologia.QR), conCatalogo)
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto)
+            .registrarFallo(ResultadoIntento.TIMEOUT, conCatalogo)
+        val busqueda = s.intentos.map { Triple(it.enCatalogo, it.variante, it.claveCatalogo) }
+        assertEquals(Triple(true, "TAL_CUAL", "7509993456786"), busqueda[0])
+        assertEquals(Triple(true, "UPC_A_11", "99999291452"), busqueda[1])
+        assertEquals(busqueda[1], busqueda[2])
+        assertEquals(Triple(false, "", ""), busqueda[3])
+        // El QR: la clave tampoco sale.
+        assertEquals(Triple(true, "TAL_CUAL", Csv.ocultar("A-000123")), busqueda[4])
+        // Sin catálogo no se buscó; un fallo no tiene qué buscar.
+        assertEquals(Triple(null, "", ""), busqueda[5])
+        assertEquals(Triple(null, "", ""), busqueda[6])
     }
 
     @Test

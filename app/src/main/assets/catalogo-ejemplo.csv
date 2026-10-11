@@ -1,0 +1,14 @@
+codigo,descripcion
+7509993456786,Cuaderno ficticio: EAN-13 750999 (TAL_CUAL)
+099999291452,Plumón ficticio: UPC-A guardado de 12 (TAL_CUAL; si llega como EAN-13 0099999291452: EAN13_A_UPC_A)
+99999400021,Pegamento ficticio: UPC-A 099999400021 guardado de 11 sin el 0 (UPC_A_11)
+99999400038,Marcador ficticio: guardado de 11 y llega como EAN-13 0099999400038 (EAN13_A_UPC_A_11; la cámara lo da como UPC-A: UPC_A_11)
+099994000059,Pluma ficticia: su código es el UPC-E 09999459 y está guardada como UPC-A (UPC_E_A_UPC_A)
+75099916,Goma ficticia: EAN-8 (TAL_CUAL)
+17509995000014,Caja ficticia: GTIN-14 del ITF (TAL_CUAL)
+2999990000016,Producto interno ficticio del POS (TAL_CUAL)
+2999990000023,Otro producto interno ficticio del POS (TAL_CUAL)
+ZZ0001,Clave corta ficticia en Code 128 (TAL_CUAL)
+ZZ-PRUEBA-0001,Clave larga ficticia en Code 128 (TAL_CUAL)
+ZZP0042x,Clave ficticia del cartel del emulador en Code 128 (TAL_CUAL)
+7509994000996,Verificador mal (el bueno sería 5): ninguna lectura debe coincidir

@@ -29,3 +29,8 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   Cada APK revisa al armarse que solo pide la cámara y la vibración.
 - El banco de pruebas, los carteles del emulador y las pruebas usan solo códigos ficticios (EAN-13 750999…, internos
   299999…, UPC-A 099999…, Code 128 ZZ…), ninguno de un producto real.
+- Busca cada lectura en un catálogo de prueba con la regla que usará el servicio del POS: el código tal cual, el UPC-A
+  sin el 0 inicial, el EAN-13 que empieza con 0 como UPC-A de 12 y de 11, y el UPC-E expandido; nada más. Da lo mismo
+  con ML Kit que con zxing-cpp. Trae un catálogo de ejemplo ficticio; en Ajustes se carga el archivo que exporte el
+  dueño, que se copia al celular y no sale de él. La sesión de prueba anota si cada lectura está en el catálogo, por qué
+  variante y con qué clave, y el panel de lecturas marca lo que no está.

@@ -47,7 +47,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.ajustes.etiqueta
+import mx.papeleriapos.android.catalogo.CatalogoPrueba
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.Renglon
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
@@ -192,7 +194,10 @@ private fun BotonDeshacer(lista: ListaLecturas, acciones: AccionesEscaner, modif
     }
 }
 
-/** Los códigos leídos, el último arriba y resaltado. */
+/**
+ * Los códigos leídos, el último arriba y resaltado. Los que no están en el catálogo de prueba llevan una marca (sin
+ * catálogo cargado, ninguna: se carga con la primera lectura).
+ */
 @Composable
 private fun ListaRenglones(lista: ListaLecturas, modifier: Modifier = Modifier) {
     val estado = rememberLazyListState()
@@ -208,15 +213,20 @@ private fun ListaRenglones(lista: ListaLecturas, modifier: Modifier = Modifier) 
         return
     }
     val hora = remember { SimpleDateFormat("HH:mm:ss", Locale.ROOT) }
+    val catalogo = CatalogoPrueba.estado.collectAsStateWithLifecycle().value?.catalogo
     LazyColumn(modifier.testTag("lista"), state = estado) {
         items(lista.renglones, key = { it.id }) { r ->
-            FilaRenglon(r, ultimo = r.id == lista.actual?.id, hora = hora.format(Date(r.hora)))
+            val fuera = remember(r.codigo, r.simbologia, catalogo) {
+                catalogo != null && catalogo.buscarNormalizado(r.codigo, r.simbologia) == null
+            }
+            FilaRenglon(r, ultimo = r.id == lista.actual?.id, hora = hora.format(Date(r.hora)), fueraDelCatalogo = fuera)
         }
     }
 }
 
 @Composable
-private fun FilaRenglon(r: Renglon, ultimo: Boolean, hora: String) {
+private fun FilaRenglon(r: Renglon, ultimo: Boolean, hora: String, fueraDelCatalogo: Boolean) {
+    val marca = if (fueraDelCatalogo) " · no está en el catálogo" else ""
     val fondo = if (ultimo) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0f)
     val texto = if (ultimo) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     Row(
@@ -226,7 +236,7 @@ private fun FilaRenglon(r: Renglon, ultimo: Boolean, hora: String) {
             .heightIn(min = 40.dp)
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .semantics(mergeDescendants = true) {
-                contentDescription = "${r.codigo}, ${r.simbologia.nombre}, ${r.cantidad} piezas, $hora"
+                contentDescription = "${r.codigo}, ${r.simbologia.nombre}, ${r.cantidad} piezas, $hora$marca"
             },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -240,7 +250,7 @@ private fun FilaRenglon(r: Renglon, ultimo: Boolean, hora: String) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text("${r.simbologia.nombre} · $hora", style = MaterialTheme.typography.bodySmall, color = texto.copy(alpha = 0.75f))
+            Text("${r.simbologia.nombre} · $hora$marca", style = MaterialTheme.typography.bodySmall, color = texto.copy(alpha = 0.75f))
         }
         Text(
             "×${r.cantidad}",

@@ -3,6 +3,7 @@ package mx.papeleriapos.android.sesion
 import mx.papeleriapos.android.Ejemplos
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.Via
 import mx.papeleriapos.escaner.nucleo.Indicacion
 import mx.papeleriapos.escaner.nucleo.Modo
@@ -17,7 +18,11 @@ import java.util.TimeZone
 class CsvSesionTest {
     private val utc = TimeZone.getTimeZone("UTC")
     private val equipo = DatosEquipo("motorola moto g24", 34, "0.1.0", "abc1234")
-    private val contexto = Contexto(1_760_000_000_123, Modo.CONTEO, Motor.ML_KIT, "15-30", Medicion(55, 9876, 2), 2f, true)
+    /** Con el EAN-13, el UPC-A guardado de 11, el QR y el Code 128 de [sesion]. */
+    private val catalogo = Catalogo.deTexto("7509993456786\n99999291452\nZZ-000001\n=CMD|x\n")
+    private val contexto = Contexto(
+        1_760_000_000_123, Modo.CONTEO, Motor.ML_KIT, "15-30", Medicion(55, 9876, 2), 2f, true, catalogo = catalogo,
+    )
     private val apertura = MedidasApertura("CALIENTE", 0, 40, 95, 140, 180, 610)
     private val conApertura = contexto.copy(medicion = Medicion(54, 120, 2, paredMs = 480, apertura = apertura))
 
@@ -38,7 +43,8 @@ class CsvSesionTest {
         val renglones = Csv.leer(CsvSesion.escribir(sesion(), equipo, utc))
         assertEquals(
             "sesion,n,hora,motor,via,modo,rango_fps,condicion,ms_desde_candidato,indicaciones,simbologia,valor," +
-                "normalizado,esperado,coincide,modulo_px,zoom,linterna,resultado,nota,bateria_pct,cpu_ms,pared_ms," +
+                "normalizado,esperado,coincide,en_catalogo,variante,clave_catalogo,modulo_px,zoom,linterna,resultado,nota," +
+                "bateria_pct,cpu_ms,pared_ms," +
                 "cpu_pct_nucleo,estado_termico,tipo_arranque,ms_actividad,ms_enlace,ms_camara,ms_primer_cuadro," +
                 "ms_primer_analisis,ms_primera_lectura,dispositivo,sdk,version_app,commit",
             renglones[0].joinToString(","),
@@ -69,6 +75,9 @@ class CsvSesionTest {
         assertEquals("7509993456786", col(1, "valor"))
         assertEquals("", col(1, "esperado"))
         assertEquals("", col(1, "coincide"))
+        assertEquals("si", col(1, "en_catalogo"))
+        assertEquals("TAL_CUAL", col(1, "variante"))
+        assertEquals("7509993456786", col(1, "clave_catalogo"))
         assertEquals("2.50", col(1, "modulo_px"))
         assertEquals("1.50", col(1, "zoom"))
         assertEquals("no", col(1, "linterna"))
@@ -88,6 +97,10 @@ class CsvSesionTest {
         // UPC-A: el valor como lo dio el motor y el normalizado en 13.
         assertEquals("099999291452", col(2, "valor"))
         assertEquals("0099999291452", col(2, "normalizado"))
+        // Guardado de 11 en el catálogo: sin el 0 del UPC-A.
+        assertEquals("si", col(2, "en_catalogo"))
+        assertEquals("UPC_A_11", col(2, "variante"))
+        assertEquals("99999291452", col(2, "clave_catalogo"))
         // El que leyó ML Kit de respaldo, con la CPU del intento y la apertura en caliente.
         assertEquals("RESPALDO", col(2, "via"))
         assertEquals("120", col(2, "cpu_ms"))
@@ -105,10 +118,14 @@ class CsvSesionTest {
         assertEquals("", col(3, "modulo_px"))
         // El Code 128 que parece fórmula va neutralizado.
         assertEquals("'=CMD|x", col(4, "valor"))
+        assertEquals("'=CMD|x", col(4, "clave_catalogo"))
         assertEquals("FALSO_POSITIVO", col(4, "resultado"))
         // El intento fallido.
         assertEquals("TIMEOUT", col(5, "resultado"))
         assertEquals("", col(5, "via"))
+        assertEquals("", col(5, "en_catalogo"))
+        assertEquals("", col(5, "variante"))
+        assertEquals("", col(5, "clave_catalogo"))
         assertEquals("", col(5, "simbologia"))
         assertEquals("7509993456786", col(5, "esperado"))
         assertEquals("2.00", col(5, "zoom"))
@@ -123,6 +140,9 @@ class CsvSesionTest {
         val valor = r[3][CsvSesion.COLUMNAS.indexOf("valor")]
         assertEquals(Csv.ocultar("ZZ-000001"), valor)
         assertTrue(valor.endsWith("...0001"))
+        // Está en el catálogo, pero la clave sale igual de oculta.
+        assertEquals("si", r[3][CsvSesion.COLUMNAS.indexOf("en_catalogo")])
+        assertEquals(Csv.ocultar("ZZ-000001"), r[3][CsvSesion.COLUMNAS.indexOf("clave_catalogo")])
     }
 
     @Test
@@ -192,6 +212,8 @@ class CsvSesionTest {
         val i = CsvSesion.leerIntentos(viejo, utc).single()
         assertEquals("7509993456786", i.valor)
         assertEquals("", i.via)
+        assertEquals(null, i.enCatalogo)
+        assertEquals("", i.variante)
         assertEquals(80, i.medicion.bateriaPct)
         assertEquals(-1L, i.medicion.cpuMs)
         assertEquals(1, i.medicion.estadoTermico)

@@ -5,6 +5,7 @@ import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.CodigoLeido
 import mx.papeleriapos.escaner.nucleo.Gtin
 import mx.papeleriapos.escaner.nucleo.Modo
@@ -94,11 +95,13 @@ data class Contexto(
     /** Solo para los intentos fallidos (los leídos traen su propio zoom y linterna). */
     val zoom: Float = 0f,
     val linterna: Boolean = false,
+    /** El catálogo de prueba en que se busca cada lectura; null = no se buscó. */
+    val catalogo: Catalogo? = null,
 )
 
 /**
- * Un intento de la prueba, ya como va al CSV: en los códigos 2D (el QR del ticket) [valor], [normalizado] y [esperado]
- * quedan ocultos desde aquí, para que no salgan ni en el archivo ni en la copia que se guarda.
+ * Un intento de la prueba, ya como va al CSV: en los códigos 2D (el QR del ticket) [valor], [normalizado], [esperado] y
+ * [claveCatalogo] quedan ocultos desde aquí, para que no salgan ni en el archivo ni en la copia que se guarda.
  */
 data class Intento(
     val n: Int,
@@ -118,6 +121,12 @@ data class Intento(
     val esperado: String,
     /** null = no había código esperado o no se leyó nada. */
     val coincide: Boolean?,
+    /** Si lo leído está en el catálogo de prueba (docs/escaner.md, «Búsqueda en el catálogo»); null = no se buscó. */
+    val enCatalogo: Boolean? = null,
+    /** Por qué variante coincidió ([mx.papeleriapos.escaner.nucleo.Variante]); vacío si no coincidió. */
+    val variante: String = "",
+    /** La clave del catálogo que coincidió; vacío si no coincidió. */
+    val claveCatalogo: String = "",
     /** 0 = desconocido. */
     val moduloPx: Float,
     /** 0 = desconocido. */
@@ -153,6 +162,8 @@ data class SesionPrueba(
         val codigo = evento.aceptada.codigo
         val coincide = if (esperado.isEmpty()) null else coincide(esperado, codigo)
         val oculto = !codigo.simbologia.unaDimension
+        // Un HashSet: microsegundos.
+        val enElCatalogo = c.catalogo?.buscar(codigo)
         val intento = Intento(
             n = intentos.size + 1,
             hora = c.hora,
@@ -167,6 +178,9 @@ data class SesionPrueba(
             normalizado = if (oculto) Csv.ocultar(codigo.normalizado) else codigo.normalizado,
             esperado = if (oculto) Csv.ocultar(esperado) else esperado,
             coincide = coincide,
+            enCatalogo = if (c.catalogo == null) null else enElCatalogo != null,
+            variante = enElCatalogo?.variante?.name.orEmpty(),
+            claveCatalogo = enElCatalogo?.clave?.let { if (oculto) Csv.ocultar(it) else it }.orEmpty(),
             moduloPx = evento.moduloPx,
             zoom = evento.zoom,
             linterna = evento.linterna,

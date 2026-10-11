@@ -3,7 +3,7 @@ package mx.papeleriapos.escaner.nucleo
 /**
  * Validación y forma canónica de lo que entrega un motor (docs/escaner.md, «Validación y consenso»). Los motores no
  * coinciden: ML Kit da el UPC-A con 12 dígitos y el UPC-E con 8 sin expandir; zxing-cpp da ambos con 13. Todo lo de
- * fábrica se lleva a GTIN-13 (o 8/14) y se buscan además las otras formas, porque no se sabe cómo las guardó eleventa.
+ * fábrica se lleva a GTIN-13 (o 8/14), igual con los dos. La búsqueda en el catálogo parte de esa forma ([Catalogo]).
  */
 internal object Normalizacion {
     /** Valida y normaliza; null si no es válida o si la simbología no se espera en la papelería. */
