@@ -57,12 +57,20 @@ fun recordarEditorAnotaciones(): EditorAnotaciones {
 
 /** Los CSV de la sesión, listos para compartir. */
 object ExportarSesion {
-    /** Los intentos con sus anotaciones (condición y notas). */
-    suspend fun intentos(contexto: Context, sesion: SesionPrueba, equipo: DatosEquipo): Uri = withContext(Dispatchers.IO) {
-        Compartir.escribir(
-            contexto,
-            CsvSesion.nombreArchivo("sesion", sesion.clave()),
-            CsvSesion.escribir(sesion, equipo, anotaciones = AnotacionesSesion.de(sesion)),
+    /** Los intentos con sus anotaciones (condición y notas), y el resumen de cada tanda (resumen.csv). */
+    suspend fun intentos(contexto: Context, sesion: SesionPrueba, equipo: DatosEquipo): List<Uri> = withContext(Dispatchers.IO) {
+        val anotaciones = AnotacionesSesion.de(sesion)
+        listOf(
+            Compartir.escribir(
+                contexto,
+                CsvSesion.nombreArchivo("sesion", sesion.clave()),
+                CsvSesion.escribir(sesion, equipo, anotaciones = anotaciones),
+            ),
+            Compartir.escribir(
+                contexto,
+                CsvSesion.nombreArchivo("resumen", sesion.clave()),
+                CsvResumen.escribir(sesion, ResumenTandas.de(sesion, anotaciones), equipo),
+            ),
         )
     }
 

@@ -359,6 +359,9 @@ internal class Analizador(
             }
             evento = EventoLectura(
                 aceptada, ms, ArrayList(indicaciones), motorActual, resultado.via, o.moduloPx, zoomActual, linternaEncendida,
+                distanciaCm = senales.distanciaCm(),
+                // El promedio hasta el cuadro anterior: el de este se suma al terminar.
+                msCuadro = promedioCuadro.valor,
             )
             eventos.tryEmit(evento)
             val c = aceptada.codigo

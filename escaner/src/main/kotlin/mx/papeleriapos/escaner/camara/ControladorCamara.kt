@@ -709,7 +709,10 @@ class ControladorCamara(
     private fun alEnlazar(cam: Camera, rango: Range<Int>?, guardado: RangoEnCache, p: Proporcion) {
         val info = cam.cameraInfo
         val (inicial, tope) = zoomesPara(info, _config.value)
-        senales.distanciaMinima = caracteristica(info, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: -1f
+        // Del lente en uso (la física elegida, si hay): la gran angular enfoca más cerca que la lógica.
+        val lente = infoFisica(info) ?: info
+        senales.distanciaMinima = caracteristica(lente, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: -1f
+        senales.enfoqueCalibrado = enfoqueCalibrado(lente)
         val hayLinterna = info.hasFlashUnit()
         val c = ciclo
         if (c != null) info.torchState.observe(c, observadorLinterna)
@@ -896,16 +899,21 @@ class ControladorCamara(
         val tope = min(config.zoomMaximo, maximo).coerceAtLeast(minimo)
         // El lente es el de la cámara física en uso, si hay una: la gran angular enfoca mucho más cerca que la lógica.
         val lente = infoFisica(info) ?: info
-        val calibracion = caracteristica(lente, CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION)
         val inicial = zoomSugerido(
             dioptriasMinimas = caracteristica(lente, CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE),
             anchoSensorMm = caracteristica(lente, CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)?.width,
             focalMm = caracteristica(lente, CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull(),
-            calibrado = calibracion != null &&
-                calibracion != CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_UNCALIBRATED,
+            calibrado = enfoqueCalibrado(lente),
             tope = tope,
         ).coerceIn(minimo, tope)
         return inicial to tope
+    }
+
+    /** Si [lente] da la distancia de enfoque calibrada (aproximada o calibrada; sin el dato se toma como no). */
+    @OptIn(ExperimentalCamera2Interop::class)
+    private fun enfoqueCalibrado(lente: CameraInfo): Boolean {
+        val calibracion = caracteristica(lente, CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION)
+        return calibracion != null && calibracion != CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION_UNCALIBRATED
     }
 
     /** El CameraInfo de la cámara física en uso, si se eligió una ([idFisicoEnUso]). */

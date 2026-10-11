@@ -150,6 +150,10 @@ class EscanerViewModel(
             medicion = medidor.medir(aperturas.medidas(apertura)),
             zoom = estado.zoom,
             linterna = estado.linterna,
+            lente = c.lente.name,
+            camaraFisica = estado.diagnostico.camaraFisica,
+            resolucion = estado.diagnostico.resolucion,
+            msCuadro = estado.diagnostico.msCuadro,
         )
     }
 

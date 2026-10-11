@@ -64,6 +64,11 @@ con el nombre de quien escanea.
   «falso positivo»; si contó dos veces la misma pieza, «duplicado»; si no leyó en unos 5 segundos, «no leyó».
   Sostener la misma pieza más de 1.5 s la cuenta otra vez (así está pensado): también se marca «duplicado», para medir
   cuántas veces pasa.
+- **Al cerrar cada tanda** (al cambiar la condición), leer su resumen en la pestaña Sesión, debajo de los contadores:
+  cuántos leyó bien y a qué distancia (si la cámara da el enfoque calibrado), la lectura típica y la p90, lecturas por
+  minuto, falsas (deben ser 0), con y sin linterna, y por lente. Si algo sorprende, es el momento de repetir la tanda
+  o anotarlo. Lo mismo sale en resumen.csv junto con los intentos al exportar; cada intento lleva además el lente, la
+  cámara física, la resolución, los ms por cuadro y la distancia.
 - **Que escanee también alguien del personal**, unos 20 intentos con el Pixel, y preguntarle (y anotarlo en la sesión):
   si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si la vibración se
   notaba con el ruido de la tienda (el bip viene apagado; si hace falta, se prueba encendiéndolo en Ajustes), y qué
@@ -87,8 +92,8 @@ zoom, resoluciones; dice con qué cámara se midió) además de los intentos.
 **Estrés (si sobra tiempo):** la pestaña Estrés: 200 ciclos de abrir y cerrar la cámara, la ráfaga de zoom y
 linterna, 50 cambios de motor y 15 minutos de escaneo continuo. Cada prueba dice si pasa y exporta su CSV.
 
-**Al terminar:** exportar los CSV de la sesión y del banco a mano: Compartir → guardar en el celular, y de ahí a la
-laptop con el cable. Ni por correo ni a la nube: llevan códigos de la tienda.
+**Al terminar:** exportar los CSV de la sesión (intentos y resumen por tanda; recursos, aperturas y ficha de la cámara)
+y del banco a mano: Compartir → guardar en el celular, y de ahí a la laptop con el cable. Ni por correo ni a la nube: llevan códigos de la tienda.
 
 ## Qué se espera
 

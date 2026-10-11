@@ -31,6 +31,12 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
     /** `LENS_INFO_MINIMUM_FOCUS_DISTANCE` (lo más cerca que enfoca) en dioptrías; −1 = no se sabe. */
     @Volatile var distanciaMinima = -1f
 
+    /**
+     * Si el lente da la distancia de enfoque calibrada (`LENS_INFO_FOCUS_DISTANCE_CALIBRATION` aproximada o calibrada;
+     * sin calibrar, las dioptrías no son de verdad y no se convierten a cm).
+     */
+    @Volatile var enfoqueCalibrado = false
+
     /** La cámara física activa en un equipo con varias (API 29+), para saber si cambió al teleobjetivo. */
     @Volatile var camaraFisica = ""
         private set
@@ -89,6 +95,19 @@ internal class SenalesCamara : CameraCaptureSession.CaptureCallback() {
         if (d <= 0f || m <= 0f) return -1f
         val p = d / m
         return if (p > PROPORCION_MAXIMA_CREIBLE) -1f else p
+    }
+
+    /**
+     * A cuántos cm enfoca ahora, por [distanciaEnfoque]: solo con el lente calibrado ([enfoqueCalibrado]) y si el dato es
+     * creíble (no más cerca de lo que el lente puede, con el margen de [proporcionEnfoque]); −1 = no se sabe (también
+     * con foco fijo o en el infinito, que vienen en 0 dioptrías).
+     */
+    fun distanciaCm(): Float {
+        val d = distanciaEnfoque
+        if (!enfoqueCalibrado || d <= 0f) return -1f
+        val m = distanciaMinima
+        if (m > 0f && d / m > PROPORCION_MAXIMA_CREIBLE) return -1f
+        return 100f / d
     }
 
     fun textoAf(): String = when (estadoAf) {

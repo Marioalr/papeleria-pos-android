@@ -21,7 +21,8 @@ class CsvSesionTest {
     /** Con el EAN-13, el UPC-A guardado de 11, el QR y el Code 128 de [sesion]. */
     private val catalogo = Catalogo.deTexto("7509993456786\n99999291452\nZZ-000001\n=CMD|x\n")
     private val contexto = Contexto(
-        1_760_000_000_123, Modo.CONTEO, Motor.ML_KIT, "15-30", Medicion(55, 9876, 2), 2f, true, catalogo = catalogo,
+        1_760_000_000_123, Modo.CONTEO, Motor.ML_KIT, "15-30", Medicion(55, 9876, 2), 2f, true,
+        lente = "PRINCIPAL", camaraFisica = "2", resolucion = "1280x720", msCuadro = 9.9f, catalogo = catalogo,
     )
     private val apertura = MedidasApertura("CALIENTE", 0, 40, 95, 140, 180, 610)
     private val conApertura = contexto.copy(medicion = Medicion(54, 120, 2, paredMs = 480, apertura = apertura))
@@ -43,7 +44,8 @@ class CsvSesionTest {
         val renglones = Csv.leer(CsvSesion.escribir(sesion(), equipo, utc))
         assertEquals(
             "sesion,n,hora,motor,via,modo,rango_fps,condicion,ms_desde_candidato,indicaciones,simbologia,valor," +
-                "normalizado,esperado,coincide,en_catalogo,variante,clave_catalogo,modulo_px,zoom,linterna,resultado,nota," +
+                "normalizado,esperado,coincide,en_catalogo,variante,clave_catalogo,modulo_px,zoom,linterna,lente," +
+                "camara_fisica,resolucion,ms_cuadro,distancia_cm,resultado,nota," +
                 "bateria_pct,cpu_ms,pared_ms," +
                 "cpu_pct_nucleo,estado_termico,tipo_arranque,ms_actividad,ms_enlace,ms_camara,ms_primer_cuadro," +
                 "ms_primer_analisis,ms_primera_lectura,dispositivo,sdk,version_app,commit",
@@ -81,6 +83,11 @@ class CsvSesionTest {
         assertEquals("2.50", col(1, "modulo_px"))
         assertEquals("1.50", col(1, "zoom"))
         assertEquals("no", col(1, "linterna"))
+        assertEquals("PRINCIPAL", col(1, "lente"))
+        assertEquals("2", col(1, "camara_fisica"))
+        assertEquals("1280x720", col(1, "resolucion"))
+        assertEquals("8.4", col(1, "ms_cuadro"))
+        assertEquals("12.5", col(1, "distancia_cm"))
         assertEquals("OK", col(1, "resultado"))
         assertEquals("55", col(1, "bateria_pct"))
         assertEquals("9876", col(1, "cpu_ms"))
@@ -130,6 +137,9 @@ class CsvSesionTest {
         assertEquals("7509993456786", col(5, "esperado"))
         assertEquals("2.00", col(5, "zoom"))
         assertEquals("si", col(5, "linterna"))
+        assertEquals("PRINCIPAL", col(5, "lente"))
+        assertEquals("9.9", col(5, "ms_cuadro"))
+        assertEquals("", col(5, "distancia_cm"))
     }
 
     @Test
@@ -218,6 +228,9 @@ class CsvSesionTest {
         assertEquals(-1L, i.medicion.cpuMs)
         assertEquals(1, i.medicion.estadoTermico)
         assertEquals(MedidasApertura(), i.medicion.apertura)
+        assertEquals("", i.lente)
+        assertEquals(0f, i.msCuadro)
+        assertEquals(-1f, i.distanciaCm)
     }
 
     @Test

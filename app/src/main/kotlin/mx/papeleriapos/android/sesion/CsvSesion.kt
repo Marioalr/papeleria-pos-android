@@ -14,9 +14,10 @@ object CsvSesion {
     val COLUMNAS = listOf(
         "sesion", "n", "hora", "motor", "via", "modo", "rango_fps", "condicion", "ms_desde_candidato", "indicaciones",
         "simbologia", "valor", "normalizado", "esperado", "coincide", "en_catalogo", "variante", "clave_catalogo",
-        "modulo_px", "zoom", "linterna", "resultado", "nota", "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo",
-        "estado_termico", "tipo_arranque", "ms_actividad", "ms_enlace", "ms_camara", "ms_primer_cuadro",
-        "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk", "version_app", "commit",
+        "modulo_px", "zoom", "linterna", "lente", "camara_fisica", "resolucion", "ms_cuadro", "distancia_cm", "resultado",
+        "nota", "bateria_pct", "cpu_ms", "pared_ms", "cpu_pct_nucleo", "estado_termico", "tipo_arranque", "ms_actividad",
+        "ms_enlace", "ms_camara", "ms_primer_cuadro", "ms_primer_analisis", "ms_primera_lectura", "dispositivo", "sdk",
+        "version_app", "commit",
     )
 
     /** Las que tiene que traer un CSV para recuperar sus intentos (los de versiones anteriores no traen las nuevas). */
@@ -62,6 +63,11 @@ object CsvSesion {
                     if (i.moduloPx > 0f) Csv.decimal(i.moduloPx) else "",
                     if (i.zoom > 0f) Csv.decimal(i.zoom) else "",
                     if (i.linterna) "si" else "no",
+                    i.lente,
+                    i.camaraFisica,
+                    i.resolucion,
+                    if (i.msCuadro > 0f) Csv.decimal(i.msCuadro, 1) else "",
+                    if (i.distanciaCm > 0f) Csv.decimal(i.distanciaCm, 1) else "",
                     i.resultado.name,
                     Csv.textoSeguro(notas.notaDe(i.n)),
                     if (m.bateriaPct >= 0) m.bateriaPct.toString() else "",
@@ -121,6 +127,11 @@ object CsvSesion {
                     moduloPx = col("modulo_px").toFloatOrNull() ?: 0f,
                     zoom = col("zoom").toFloatOrNull() ?: 0f,
                     linterna = col("linterna") == "si",
+                    lente = col("lente"),
+                    camaraFisica = col("camara_fisica"),
+                    resolucion = col("resolucion"),
+                    msCuadro = col("ms_cuadro").toFloatOrNull() ?: 0f,
+                    distanciaCm = col("distancia_cm").toFloatOrNull() ?: -1f,
                     resultado = ResultadoIntento.valueOf(col("resultado")),
                     medicion = Medicion(
                         bateriaPct = col("bateria_pct").toIntOrNull() ?: -1,

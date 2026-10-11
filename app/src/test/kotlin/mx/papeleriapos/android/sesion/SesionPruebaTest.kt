@@ -23,6 +23,7 @@ class SesionPruebaTest {
     private val contexto = Contexto(
         hora = 1_760_000_000_000, modo = Modo.VENTA, motor = Motor.ZXING_CPP, rangoFps = "30-30",
         medicion = Medicion(87, 1234, 1), zoom = 1.5f, linterna = true,
+        lente = "GRAN_ANGULAR", camaraFisica = "3", resolucion = "1280x720", msCuadro = 7f,
     )
     private val vacia = SesionPrueba("Moto G24 Lupita", 1_760_000_000_000)
 
@@ -44,6 +45,12 @@ class SesionPruebaTest {
         assertEquals(2.5f, i.moduloPx)
         assertEquals(1.5f, i.zoom)
         assertEquals(Medicion(87, 1234, 1), i.medicion)
+        // El lente, la cámara física y la resolución vienen del contexto; los ms por cuadro y la distancia, del evento.
+        assertEquals("GRAN_ANGULAR", i.lente)
+        assertEquals("3", i.camaraFisica)
+        assertEquals("1280x720", i.resolucion)
+        assertEquals(8.4f, i.msCuadro)
+        assertEquals(12.5f, i.distanciaCm)
         // Sin código esperado no se compara y de entrada está bien.
         assertNull(i.coincide)
         assertEquals(ResultadoIntento.OK, i.resultado)
@@ -151,6 +158,11 @@ class SesionPruebaTest {
         assertEquals(1.5f, i.zoom)
         assertTrue(i.linterna)
         assertEquals(-1L, i.msDesdeCandidato)
+        assertEquals("GRAN_ANGULAR", i.lente)
+        assertEquals("1280x720", i.resolucion)
+        // Los ms por cuadro, del diagnóstico del momento; la distancia no se sabe (no enfocó nada).
+        assertEquals(7f, i.msCuadro)
+        assertEquals(-1f, i.distanciaCm)
         // Un fallido puede cambiar entre TIMEOUT y CANCELADO, pero no a OK.
         assertEquals(ResultadoIntento.CANCELADO, s.marcarUltimo(ResultadoIntento.CANCELADO).ultimo!!.resultado)
         assertSame(s, s.marcarUltimo(ResultadoIntento.OK))

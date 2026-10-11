@@ -73,6 +73,13 @@ data class EventoLectura(
     val moduloPx: Float,
     val zoom: Float,
     val linterna: Boolean,
+    /**
+     * A cuántos cm enfocaba el lente al leer (por `LENS_FOCUS_DISTANCE`), solo si la cámara lo da calibrado; −1 = no se
+     * sabe. Con la mira sobre el código es la distancia al código.
+     */
+    val distanciaCm: Float = -1f,
+    /** Lo que tardó el análisis por cuadro (promedio móvil) al leer, en ms; 0 = no se sabe. */
+    val msCuadro: Float = 0f,
 )
 
 /** Todo lo que la interfaz necesita para dibujar el escáner. Las cajas van en la región visible normalizada. */
