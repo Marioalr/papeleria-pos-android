@@ -69,6 +69,10 @@ con el nombre de quien escanea.
   minuto, falsas (deben ser 0), con y sin linterna, y por lente. Si algo sorprende, es el momento de repetir la tanda
   o anotarlo. Lo mismo sale en resumen.csv junto con los intentos al exportar; cada intento lleva además el lente, la
   cámara física, la resolución, los ms por cuadro y la distancia.
+- **Resolución y códigos girados:** con los códigos chicos y los lejanos, una tanda a 720p y otra a 1080p (Ajustes →
+  Cámara → Resolución del análisis; 1440p o 4K si sobra tiempo): el resumen de cada tanda dice cuál leyó mejor y a qué
+  distancia, y el diagnóstico lo que cuesta por cuadro. Con los códigos de pie (plumas, marcadores), una tanda con «Leer
+  también girados 90°» y otra sin.
 - **Que escanee también alguien del personal**, unos 20 intentos con el Pixel, y preguntarle (y anotarlo en la sesión):
   si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si la vibración se
   notaba con el ruido de la tienda (el bip viene apagado; si hace falta, se prueba encendiéndolo en Ajustes), y qué

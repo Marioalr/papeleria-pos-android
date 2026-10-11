@@ -23,7 +23,8 @@ import java.nio.ByteBuffer
  * sentido horario como `rotationDegrees`), en píxeles enteros.
  *
  * @param probarGiros `tryRotate`: buscar también códigos girados 90°. La franja es horizontal y el empleado alinea el
- * código con ella, así que no hace falta y cuesta tiempo (ver MotoresTest).
+ * código con ella, así que por omisión no se prueba y se ahorra ese tiempo (ver MotoresTest); en ajustes, «Leer también
+ * girados 90°» lo enciende para medir en la tienda si vale la pena con los códigos de pie.
  */
 class MotorZxingCpp(simbologias: Set<Simbologia>, probarGiros: Boolean = false) : MotorDeLectura {
     override val motor = Motor.ZXING_CPP

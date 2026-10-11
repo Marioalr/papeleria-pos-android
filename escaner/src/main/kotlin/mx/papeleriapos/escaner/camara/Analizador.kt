@@ -93,6 +93,7 @@ internal class Analizador(
     private var motor: MotorDeLectura? = null
     private var motorActual = Motor.AUTOMATICO
     private var simbologiasActuales: Set<Simbologia> = emptySet()
+    private var giradosActuales = false
     private var localizador: Localizador? = null
     private var ladoLocalizador = 0
     private val guia = Guia()
@@ -588,7 +589,7 @@ internal class Analizador(
     /** Crea o cambia el motor y las reglas; el motor viejo se cierra aquí, entre cuadros. */
     fun configurar(cfg: ConfigEscaner) {
         if (cerrado) return
-        if (motor == null || cfg.motor != motorActual || cfg.simbologias != simbologiasActuales) {
+        if (motor == null || cfg.motor != motorActual || cfg.simbologias != simbologiasActuales || cfg.leerGirados != giradosActuales) {
             motor?.close()
             motor = null
             crear(cfg).calentar()
@@ -695,7 +696,7 @@ internal class Analizador(
 
     private fun crear(cfg: ConfigEscaner): MotorDeLectura {
         val nuevo = try {
-            crearMotor(cfg.motor, cfg.simbologias)
+            crearMotor(cfg.motor, cfg.simbologias, cfg.leerGirados)
         } catch (e: Throwable) {
             if (e is VirtualMachineError || cfg.motor == Motor.ML_KIT) throw e
             // Si zxing-cpp no carga (biblioteca nativa), se sigue con ML Kit.
@@ -705,6 +706,7 @@ internal class Analizador(
         motor = nuevo
         motorActual = nuevo.motor
         simbologiasActuales = cfg.simbologias
+        giradosActuales = cfg.leerGirados
         return nuevo
     }
 

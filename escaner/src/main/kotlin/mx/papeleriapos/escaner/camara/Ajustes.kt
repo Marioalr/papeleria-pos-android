@@ -8,6 +8,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraXConfig
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Lente
+import mx.papeleriapos.escaner.ResolucionAnalisis
 import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.Rotacion
 import mx.papeleriapos.escaner.nucleo.Transformacion
@@ -42,20 +43,24 @@ internal fun rotacionSurface(rotacion: Int): Int = when (rotacion) {
 
 /**
  * Qué rango de cuadros por segundo se quiere: [fijo] (el mínimo más alto: exposición corta, menos movido) o variable
- * (desde 15: más luz, más movido), y el [tope] (30, o 60 donde la cámara los da, como el Pixel 8 Pro). También es la
- * llave con que se guarda en la memoria de la apertura y se valida una vez por proceso.
+ * (desde 15: más luz, más movido), y el [tope] (30, o 60 donde la cámara los da, como el Pixel 8 Pro). Lleva también
+ * la [resolucion] del análisis: los rangos que acepta la sesión dependen de los flujos que lleva. Es la llave con que
+ * se guarda en la memoria de la apertura y se valida una vez por proceso.
  */
-internal data class PreferenciaFps(val fijo: Boolean, val tope: Int) {
-    /** Las de 30 conservan las llaves de antes de que hubiera 60. */
-    val llave: String get() = when {
-        tope == 30 && fijo -> "fps_30"
-        tope == 30 -> "fps_15_30"
-        fijo -> "fps_$tope"
-        else -> "fps_15_$tope"
+internal data class PreferenciaFps(val fijo: Boolean, val tope: Int, val resolucion: ResolucionAnalisis = ResolucionAnalisis.HD) {
+    /** Las de 30 a 720p conservan las llaves de antes de que hubiera 60; otra resolución es otra llave. */
+    val llave: String get() {
+        val base = when {
+            tope == 30 && fijo -> "fps_30"
+            tope == 30 -> "fps_15_30"
+            fijo -> "fps_$tope"
+            else -> "fps_15_$tope"
+        }
+        return if (resolucion == ResolucionAnalisis.HD) base else base + "_" + resolucion.etiqueta
     }
 }
 
-internal val ConfigEscaner.preferenciaFps: PreferenciaFps get() = PreferenciaFps(fpsFijo, if (fps60) 60 else 30)
+internal val ConfigEscaner.preferenciaFps: PreferenciaFps get() = PreferenciaFps(fpsFijo, if (fps60) 60 else 30, resolucion)
 
 /**
  * El rango de cuadros por segundo, de entre los que la cámara acepta con esta sesión (si no sale de ahí, el enlace

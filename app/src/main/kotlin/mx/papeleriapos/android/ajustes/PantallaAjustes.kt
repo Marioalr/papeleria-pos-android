@@ -48,6 +48,7 @@ import mx.papeleriapos.android.ui.TituloSeccion
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.ResolucionAnalisis
 import mx.papeleriapos.escaner.nucleo.Modo
 import kotlin.math.roundToInt
 
@@ -144,6 +145,14 @@ fun ContenidoAjustes(
             alCambiar = { alCambiar(config.copy(recortarFranja = it)) },
             modifier = Modifier.testTag("ajuste-recortar"),
         )
+        FilaInterruptor(
+            titulo = "Leer también girados 90°",
+            descripcion = "zxing-cpp prueba las dos orientaciones de la franja (los códigos de pie); cuesta más por cuadro. " +
+                "ML Kit los lee girados de por sí.",
+            valor = config.leerGirados,
+            alCambiar = { alCambiar(config.copy(leerGirados = it)) },
+            modifier = Modifier.testTag("ajuste-girados"),
+        )
         Deslizador(
             titulo = "Alto de la franja",
             valor = config.altoFranja,
@@ -179,6 +188,15 @@ fun ContenidoAjustes(
         TituloSeccion("Cámara")
         Etiqueta("Lente")
         Opciones(Lente.entries, config.lente, { it.etiqueta }, { alCambiar(config.copy(lente = it)) })
+        Etiqueta("Resolución del análisis")
+        Opciones(
+            ResolucionAnalisis.entries, config.resolucion, { it.etiqueta }, { alCambiar(config.copy(resolucion = it)) },
+            modifier = Modifier.testTag("ajuste-resolucion"),
+        )
+        Nota(
+            "720p basta con 2 px por módulo. Más resolución da más píxeles a los códigos chicos o lejanos y cuesta más " +
+                "por cuadro (se ve en el diagnóstico); el visor se queda en 720p. La sesión de prueba guarda la de cada intento.",
+        )
         Etiqueta("Ficha de la cámara")
         Text(
             textoFicha(ficha),
