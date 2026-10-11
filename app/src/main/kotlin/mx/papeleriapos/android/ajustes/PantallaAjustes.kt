@@ -215,6 +215,13 @@ fun ContenidoAjustes(
                 "Va con la medición de la sesión (ficha-camara.csv).",
         )
         FilaInterruptor(
+            titulo = "Medir la luz en la mira",
+            descripcion = "La exposición se ajusta al código, no al fondo. Apágalo para comparar con todo el cuadro.",
+            valor = config.medirLuzEnMira,
+            alCambiar = { alCambiar(config.copy(medirLuzEnMira = it)) },
+            modifier = Modifier.testTag("ajuste-luz-mira"),
+        )
+        FilaInterruptor(
             "Linterna automática", config.linternaAutomatica, { alCambiar(config.copy(linternaAutomatica = it)) },
             descripcion = "La enciende sola si hay poca luz.",
         )

@@ -31,6 +31,7 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             lente = prefs.getString(LENTE, null)?.let { runCatching { Lente.valueOf(it) }.getOrNull() } ?: d.lente,
             resolucion = enumO(prefs.getString(RESOLUCION, null), d.resolucion),
             leerGirados = prefs.getBoolean(LEER_GIRADOS, d.leerGirados),
+            medirLuzEnMira = prefs.getBoolean(LUZ_EN_MIRA, d.medirLuzEnMira),
             segundosParaPausar = prefs.getInt(SEGUNDOS_PARA_PAUSAR, d.segundosParaPausar).coerceIn(0, MAX_SEGUNDOS_PAUSA),
             mostrarDiagnostico = prefs.getBoolean(MOSTRAR_DIAGNOSTICO, d.mostrarDiagnostico),
             altoFranja = prefs.getFloat(ALTO_FRANJA, d.altoFranja).coerceIn(MIN_ALTO_FRANJA, MAX_ALTO_FRANJA),
@@ -51,6 +52,7 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             .putString(LENTE, c.lente.name)
             .putString(RESOLUCION, c.resolucion.name)
             .putBoolean(LEER_GIRADOS, c.leerGirados)
+            .putBoolean(LUZ_EN_MIRA, c.medirLuzEnMira)
             .putInt(SEGUNDOS_PARA_PAUSAR, c.segundosParaPausar)
             .putBoolean(MOSTRAR_DIAGNOSTICO, c.mostrarDiagnostico)
             .putFloat(ALTO_FRANJA, c.altoFranja)
@@ -91,6 +93,7 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
         private const val LENTE = "lente"
         private const val RESOLUCION = "resolucion"
         private const val LEER_GIRADOS = "leer_girados"
+        private const val LUZ_EN_MIRA = "luz_en_mira"
         private const val SEGUNDOS_PARA_PAUSAR = "segundos_para_pausar"
         private const val MOSTRAR_DIAGNOSTICO = "mostrar_diagnostico"
         private const val ALTO_FRANJA = "alto_franja"

@@ -18,6 +18,7 @@ class PreferenciasEscanerTest {
         val c = ConfigEscaner(
             motor = Motor.ZXING_CPP, lente = Lente.GRAN_ANGULAR, fps60 = true, fpsFijo = false,
             resolucion = ResolucionAnalisis.FULL_HD, leerGirados = true, recortarFranja = false, altoFranja = 0.5f,
+            medirLuzEnMira = false,
         )
         p.guardar(c)
         assertEquals(c, p.leer())

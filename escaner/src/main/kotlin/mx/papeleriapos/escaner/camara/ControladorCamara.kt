@@ -71,6 +71,7 @@ import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.ResolucionAnalisis
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
@@ -175,6 +176,10 @@ class ControladorCamara(
     private var vigilante: Job? = null
     private var confirmacion: Job? = null
     private var validacionFps: Job? = null
+    /** Dónde se mide la luz (centro y lado en el buffer de análisis, de 0 a 1); null = con todo el cuadro. */
+    private var medicionLuz: FloatArray? = null
+    /** Repone la región de la mira cuando una acción de enfoque se cancela sola. */
+    private var reponerLuz: Job? = null
 
     // Estado de la cámara.
     /** Qué hacer con cada `CameraState` (por enlace) y cuántos reintentos van. */
@@ -209,6 +214,10 @@ class ControladorCamara(
         }
 
         override fun enfocar(xBuffer: Float, yBuffer: Float) = enPrincipal { enfocarEnBuffer(xBuffer, yBuffer) }
+
+        override fun medirLuzEn(xBuffer: Float, yBuffer: Float, lado: Float) = enPrincipal { medirLuzEnBuffer(xBuffer, yBuffer, lado) }
+
+        override fun medirLuzEnTodo() = enPrincipal { medirLuzEnTodoElCuadro() }
 
         override fun encenderLinterna(encender: Boolean) = enPrincipal {
             val cam = camara ?: return@enPrincipal
@@ -757,6 +766,8 @@ class ControladorCamara(
                 if (temprano) ", antes de la interfaz" else "",
         )
         enAnalisis { analizador.alEnlazar(inicial, tope, hayLinterna, textoRango) }
+        // La cámara nueva no sabe de la región de la mira: se le vuelve a pedir (si la geometría cambia, el análisis la manda otra vez).
+        aplicarMedicionLuz()
         if (temprano) vigilarConfirmacion()
         // El vigilante empieza cuando esta cámara llegue a OPEN (alCambiarEstado), no aquí.
     }
@@ -902,6 +913,7 @@ class ControladorCamara(
         }
         vigilante?.cancel()
         validacionFps?.cancel()
+        reponerLuz?.cancel()
         // Lo soltado ya no se reintenta (p. ej. un error que llegó justo antes de apagar por inactividad).
         reintento?.cancel()
         reintento = null
@@ -989,8 +1001,47 @@ class ControladorCamara(
                 .setAutoCancelDuration(2, TimeUnit.SECONDS)
                 .build()
             if (cam.cameraInfo.isFocusMeteringSupported(accion)) cam.cameraControl.startFocusAndMetering(accion)
+            // La acción de enfoque toma las regiones; al cancelarse sola vuelven las de fábrica: se repone la mira.
+            reponerLuz?.cancel()
+            if (medicionLuz != null) reponerLuz = alcance.launch { delay(REPONER_LUZ_MS); aplicarMedicionLuz() }
         } catch (e: IllegalStateException) {
             // El caso de uso ya no está enlazado (se cerró mientras llegaba la orden).
+        }
+    }
+
+    /** La región AE de la mira, en el buffer de análisis: se guarda (para reponerla) y se pide a la cámara. */
+    private fun medirLuzEnBuffer(x: Float, y: Float, lado: Float) {
+        val m = medicionLuz
+        if (m != null && m[0] == x && m[1] == y && m[2] == lado) return
+        medicionLuz = floatArrayOf(x, y, lado)
+        Log.i(ETIQUETA, "Luz medida en la mira: centro (${"%.2f".format(Locale.ROOT, x)}, ${"%.2f".format(Locale.ROOT, y)}) del buffer, lado ${"%.2f".format(Locale.ROOT, lado)}")
+        aplicarMedicionLuz()
+    }
+
+    /** Como de fábrica: la cámara mide la luz con todo el cuadro (el ajuste se apagó). */
+    private fun medirLuzEnTodoElCuadro() {
+        if (medicionLuz == null) return
+        medicionLuz = null
+        reponerLuz?.cancel()
+        val cam = camara ?: return
+        Log.i(ETIQUETA, "Luz medida con todo el cuadro")
+        try {
+            cam.cameraControl.cancelFocusAndMetering()
+        } catch (e: IllegalStateException) {
+            // El caso de uso ya no está enlazado.
+        }
+    }
+
+    /** Solo AE (el enfoque sigue continuo) y sin cancelación automática: se queda hasta que otra acción la reemplace. */
+    private fun aplicarMedicionLuz() {
+        val m = medicionLuz ?: return
+        val cam = camara ?: return
+        try {
+            val punto = SurfaceOrientedMeteringPointFactory(1f, 1f, analisis).createPoint(m[0], m[1], m[2])
+            val accion = FocusMeteringAction.Builder(punto, FocusMeteringAction.FLAG_AE).disableAutoCancel().build()
+            if (cam.cameraInfo.isFocusMeteringSupported(accion)) cam.cameraControl.startFocusAndMetering(accion)
+        } catch (e: IllegalStateException) {
+            // El caso de uso ya no está enlazado.
         }
     }
 
@@ -1055,6 +1106,8 @@ class ControladorCamara(
          * recorte anterior.
          */
         const val ESPERA_REENLACE_MS = 300L
+        /** Un poco más que los 2 s en que se cancela sola la acción de enfoque. */
+        const val REPONER_LUZ_MS = 2_200L
         /** Con la Activity al frente, lo que se espera a que la pantalla confirme lo enlazado en `onCreate`. */
         const val PLAZO_CONFIRMAR_MS = 3_000L
         /** Cuándo se valida el rango de FPS guardado (con la cámara ya escaneando, fuera del camino crítico). */

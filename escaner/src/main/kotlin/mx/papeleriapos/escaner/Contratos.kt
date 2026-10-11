@@ -65,6 +65,8 @@ data class Diagnostico(
     val estadoCamara: String = "",
     /** En «Lado a lado»: qué leyó cada motor y cuánto tardó en los últimos cuadros; vacío con los demás motores. */
     val ladoALado: String = "",
+    /** La luz se mide en la mira ([ConfigEscaner.medirLuzEnMira] y ya se pidió a la cámara) o con todo el cuadro. */
+    val luzEnMira: Boolean = false,
 )
 
 /** Lo que hizo un motor con los cuadros de una lectura en «Lado a lado» ([Motor.LADO_A_LADO]). */
@@ -203,6 +205,12 @@ data class ConfigEscaner(
      * turno de ML Kit, que sí los lee girados. Apagado hasta medir cuánto cuesta por cuadro en la tienda.
      */
     val leerGirados: Boolean = false,
+    /**
+     * Medir la luz (la exposición) en la mira: la región AE de la cámara queda en el centro de la franja, siempre; al
+     * tocar o al disparar el enfoque, 2 s en ese punto y de vuelta a la mira. Apagado, la cámara expone con todo el
+     * cuadro, como de fábrica; queda para comparar en la tienda (parte 10 del plan).
+     */
+    val medirLuzEnMira: Boolean = true,
     val mostrarDiagnostico: Boolean = false,
 )
 
