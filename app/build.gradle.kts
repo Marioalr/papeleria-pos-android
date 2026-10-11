@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import java.util.Properties
 
 plugins {
@@ -101,6 +102,43 @@ baselineProfile {
     mergeIntoMain = true
     saveInSrc = true
     automaticGenerationDuringBuild = false
+}
+
+// Sin red (docs/plan.md, «Decisiones», «Red y privacidad»): el manifiesto final de cada variante pide solo cámara y vibración y
+// no trae el envío de estadísticas de ML Kit (datatransport). Una biblioteca nueva puede volver a meterlos al combinar
+// los manifiestos; esta revisión corre antes de armar cada APK y lo detiene.
+abstract class VerificarSinRed : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val manifiesto: RegularFileProperty
+
+    @get:OutputFile
+    abstract val marca: RegularFileProperty
+
+    @TaskAction
+    fun verificar() {
+        val texto = manifiesto.get().asFile.readText()
+        val permisos = Regex("""<uses-permission[^>]*android:name="([^"]+)"""").findAll(texto).map { it.groupValues[1] }.toSet()
+        // El de AndroidX es de firma: solo protege los receptores de la propia app, no da acceso a nada.
+        val sobran = permisos.filterNot {
+            it == "android.permission.CAMERA" || it == "android.permission.VIBRATE" ||
+                it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+        }
+        check(sobran.isEmpty()) { "El manifiesto pide permisos de más (la app no usa la red): $sobran" }
+        check("datatransport" !in texto) { "El manifiesto trae el envío de estadísticas de ML Kit (datatransport)" }
+        marca.get().asFile.writeText("ok\n")
+    }
+}
+
+androidComponents {
+    onVariants { variante ->
+        val nombre = variante.name.replaceFirstChar { it.uppercase() }
+        val revision = tasks.register<VerificarSinRed>("verificarSinRed$nombre") {
+            manifiesto.set(variante.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+            marca.set(layout.buildDirectory.file("intermediates/sin_red/${variante.name}.txt"))
+        }
+        tasks.matching { it.name == "assemble$nombre" }.configureEach { dependsOn(revision) }
+    }
 }
 
 fun commitActual(): String =

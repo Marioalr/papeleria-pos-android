@@ -107,7 +107,7 @@ class RetroalimentacionTest {
         val instrumento = InstrumentationRegistry.getInstrumentation()
         var retro: Retroalimentacion? = null
         // En el hilo principal, como en la pantalla: ahí llega el aviso de carga.
-        instrumento.runOnMainSync { retro = Retroalimentacion(contexto) }
+        instrumento.runOnMainSync { retro = Retroalimentacion(contexto).apply { prepararSonidos() } }
         val r = retro!!
         try {
             val limite = SystemClock.uptimeMillis() + 5_000
