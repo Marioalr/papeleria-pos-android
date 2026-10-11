@@ -62,5 +62,5 @@
     <string name="escaner_diag_imagen">módulo %1$.1f px · nitidez %2$.2f · brillo %3$.0f</string>
     <string name="escaner_diag_camara">zoom %1$.2f× · %2$s · %3$s fps</string>
     <string name="escaner_diag_franja">franja %1$s · cámara %2$s</string>
-    <string name="escaner_diag_enfoque">enfoque: %1$s</string>
+    <string name="escaner_diag_enfoque">enfoque: %1$s · luz: %2$s</string>
 </resources>

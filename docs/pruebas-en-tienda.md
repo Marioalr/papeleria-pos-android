@@ -76,6 +76,8 @@ con el nombre de quien escanea.
 - **Lado a lado:** una o dos tandas con el motor «Lado a lado» (Ajustes → Motor) y los productos difíciles (brillantes,
   curvos, chicos, gastados): cada intento dice qué leyó cada motor en los mismos cuadros y cuánto tardó, y el resumen de
   la tanda lo junta. Es más lento que el automático: no cuenta para las lecturas por minuto.
+- **Luz en la mira:** en el rincón oscuro y a contraluz (el mostrador bajo la ventana, una etiqueta oscura), una tanda
+  con «Medir la luz en la mira» (Ajustes → Cámara, viene encendido) y otra sin, con y sin linterna.
 - **Que escanee también alguien del personal**, unos 20 intentos con el Pixel, y preguntarle (y anotarlo en la sesión):
   si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si la vibración se
   notaba con el ruido de la tienda (el bip viene apagado; si hace falta, se prueba encendiéndolo en Ajustes), y qué

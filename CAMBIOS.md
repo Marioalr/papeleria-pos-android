@@ -54,3 +54,7 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   en cuántos leyó otra cosa, a los cuántos ms lo leyó por primera vez y lo que costó por cuadro; el resumen de la tanda
   lo junta por motor y el diagnóstico lo muestra en vivo. Es para comparar los motores con productos reales, no para
   la tienda.
+- Luz en la mira: la cámara mide la exposición en el centro de la franja (no con todo el cuadro), siempre, y la vuelve
+  a poner después de cada disparo de enfoque; así un código oscuro con el fondo claro no sale quemado ni negro. Se
+  apaga en Ajustes para comparar; el diagnóstico dice cuál rige. El enfoque sigue continuo con su disparo al abrir, al
+  tocar y cuando un código no se lee, y la linterna a mano (o automática en Ajustes), como antes.

@@ -49,6 +49,13 @@ internal interface AccionesCamara {
     fun aplicarZoom(zoom: Float)
     /** Enfoca y mide la luz en un punto del buffer de análisis, normalizado de 0 a 1 (sin rotar). */
     fun enfocar(xBuffer: Float, yBuffer: Float)
+    /**
+     * Mide la luz (solo AE; el enfoque sigue continuo) en un cuadrado del buffer de análisis (centro y lado, de 0 a 1),
+     * y lo deja así hasta que se cambie o se quite con [medirLuzEnTodo].
+     */
+    fun medirLuzEn(xBuffer: Float, yBuffer: Float, lado: Float)
+    /** Vuelve a medir la luz con todo el cuadro, como de fábrica. */
+    fun medirLuzEnTodo()
     fun encenderLinterna(encender: Boolean)
     /** Lleva [ConfigEscaner.segundosParaApagar] en pausa: soltar la cámara. */
     fun apagarPorInactividad()
@@ -120,6 +127,10 @@ internal class Analizador(
     private var toleranciaBordeX = 0f
     private var toleranciaBordeY = 0f
     private var pasoLuz = 8
+    /** El lado del cuadrado de la mira donde se mide la luz, respecto al buffer (el menor de los dos lados de la franja). */
+    private var tamanoMira = 0f
+    /** Ya se le pidió a la cámara medir la luz en la mira (con la geometría vigente). */
+    private var luzEnMiraPedida = false
     private var textoResolucion = ""
     private var textoFranja = ""
     private val punto = FloatArray(2)
@@ -487,6 +498,7 @@ internal class Analizador(
             cuadrosAnalizados = cuadrosAnalizados,
             estadoCamara = textoEstadoCamara,
             ladoALado = (motor as? MotorLadoALado)?.bitacora?.resumenReciente() ?: "",
+            luzEnMira = luzEnMiraPedida,
         )
     }
 
@@ -618,6 +630,24 @@ internal class Analizador(
         val reglas = confirmador.reglas
         if (ausencia != reglas.msAusenciaParaRepetir || aVista != reglas.msParaRepetirAVista) {
             confirmador = Confirmador(ReglasConfirmacion(msAusenciaParaRepetir = ausencia, msParaRepetirAVista = aVista))
+        }
+        if (cfg.medirLuzEnMira != luzEnMiraPedida) pedirLuzEnMira(cfg)
+    }
+
+    /**
+     * La luz se mide en el centro de la franja (parte 10 del plan) o, con el ajuste apagado, con todo el cuadro. Se pide
+     * al cambiar la geometría (el centro y el tamaño van en píxeles del buffer) y al cambiar el ajuste; el controlador la
+     * repone tras cada disparo de enfoque y en cada enlace.
+     */
+    private fun pedirLuzEnMira(cfg: ConfigEscaner) {
+        if (cfg.medirLuzEnMira) {
+            // Sin cuadros todavía no hay geometría: se pide con el primero.
+            if (cacheAncho == 0) return
+            luzEnMiraPedida = true
+            acciones.medirLuzEn(preferidoX / cacheAncho, preferidoY / cacheAlto, tamanoMira)
+        } else if (luzEnMiraPedida) {
+            luzEnMiraPedida = false
+            acciones.medirLuzEnTodo()
         }
     }
 
@@ -764,6 +794,8 @@ internal class Analizador(
         pasoLuz = max(2, sqrt(regionFranja.ancho.toFloat() * regionFranja.alto / MUESTRAS_LUZ).toInt())
         textoResolucion = "${imagen.width}x${imagen.height}"
         textoFranja = "${regionFranja.ancho}x${regionFranja.alto}"
+        tamanoMira = min(regionFranja.ancho.toFloat() / imagen.width, regionFranja.alto.toFloat() / imagen.height).coerceIn(0.05f, 1f)
+        pedirLuzEnMira(cfg)
         Log.i(
             ETIQUETA,
             "Geometría: buffer $textoResolucion, visible $regionVisible, rotación $rotacion°, franja $regionFranja",
