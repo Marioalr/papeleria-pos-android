@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.ResolucionAnalisis
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.nucleo.Simbologia
 
@@ -28,6 +29,8 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             fpsFijo = prefs.getBoolean(FPS_FIJO, d.fpsFijo),
             fps60 = prefs.getBoolean(FPS_60, d.fps60),
             lente = prefs.getString(LENTE, null)?.let { runCatching { Lente.valueOf(it) }.getOrNull() } ?: d.lente,
+            resolucion = enumO(prefs.getString(RESOLUCION, null), d.resolucion),
+            leerGirados = prefs.getBoolean(LEER_GIRADOS, d.leerGirados),
             segundosParaPausar = prefs.getInt(SEGUNDOS_PARA_PAUSAR, d.segundosParaPausar).coerceIn(0, MAX_SEGUNDOS_PAUSA),
             mostrarDiagnostico = prefs.getBoolean(MOSTRAR_DIAGNOSTICO, d.mostrarDiagnostico),
             altoFranja = prefs.getFloat(ALTO_FRANJA, d.altoFranja).coerceIn(MIN_ALTO_FRANJA, MAX_ALTO_FRANJA),
@@ -46,6 +49,8 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             .putBoolean(FPS_FIJO, c.fpsFijo)
             .putBoolean(FPS_60, c.fps60)
             .putString(LENTE, c.lente.name)
+            .putString(RESOLUCION, c.resolucion.name)
+            .putBoolean(LEER_GIRADOS, c.leerGirados)
             .putInt(SEGUNDOS_PARA_PAUSAR, c.segundosParaPausar)
             .putBoolean(MOSTRAR_DIAGNOSTICO, c.mostrarDiagnostico)
             .putFloat(ALTO_FRANJA, c.altoFranja)
@@ -84,6 +89,8 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
         private const val FPS_FIJO = "fps_fijo_30"
         private const val FPS_60 = "fps_60"
         private const val LENTE = "lente"
+        private const val RESOLUCION = "resolucion"
+        private const val LEER_GIRADOS = "leer_girados"
         private const val SEGUNDOS_PARA_PAUSAR = "segundos_para_pausar"
         private const val MOSTRAR_DIAGNOSTICO = "mostrar_diagnostico"
         private const val ALTO_FRANJA = "alto_franja"

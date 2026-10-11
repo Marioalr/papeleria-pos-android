@@ -56,7 +56,7 @@ Dibujar es multiplicar por el tamaño del visor.
 
 | Qué | Cómo | Por qué |
 |---|---|---|
-| Resolución | 1280×720 (16:9) para la vista y el análisis | Bastan ≥ 2 px por módulo; 1080p cuesta ~30 % más y no ayuda en vivo |
+| Resolución | 1280×720 (16:9) para el visor y, por omisión, el análisis. En ajustes, el análisis a 1080p, 1440p o 4K (la más cercana que dé la cámara); el visor se queda en 720p | Bastan ≥ 2 px por módulo y 1080p cuesta ~30 % más por cuadro. Más resolución da más píxeles a los códigos chicos o lejanos: parte 8 del [plan](plan.md#entrega-8-medir-la-lectura), se mide en la tienda (la sesión guarda la de cada intento). Como solo se analiza el plano Y recortado a la franja, y siempre el último cuadro, el costo crece con la franja |
 | Formato | YUV_420_888, sin rotar la salida | Se usa solo el plano Y; rotar cuesta 10–15 ms por cuadro |
 | Cuadros por segundo | 30 fijos (exposición corta, menos movido). En ajustes: variable desde 15 (más luz) o hasta 60 donde la cámara los da | 60 en el Pixel 8 Pro: abre casi igual y cada cuadro cuesta más (experimento 4 del [plan](plan.md#entrega-7-lo-máximo-en-el-pixel-8-pro)); falta ver si lee mejor códigos en movimiento |
 | Enfoque | Continuo; al abrir, al tocar y con un código que no se lee en 700 ms, enfoque al punto (se suelta solo a los 2 s) | Bloquear el enfoque falla al cambiar de distancia |
@@ -101,6 +101,8 @@ Medido en el emulador con códigos dibujados (prueba `MotoresTest`), por cuadro:
 Por eso el motor por defecto es el **automático**, con hasta tres pasadas por cuadro, de la más barata a la más cara:
 
 1. **zxing-cpp sobre la franja**, tal cual (`minLineCount = 2`, sin `tryHarder`: el siguiente cuadro es el reintento).
+   En ajustes, «Leer también girados 90°» (`tryRotate`) prueba las dos orientaciones de la franja, para los códigos de
+   pie (una pluma) sin esperar el turno de ML Kit; apagado hasta medir lo que cuesta por cuadro.
 2. Si no leyó y el localizador midió el nivel entre barras y espacios: **zxing-cpp sobre la franja binarizada con ese
    umbral** (~1 ms). Rescata la etiqueta blanca sobre cartón o empaque de color, el caso común en la tienda; con un cuadro
    real del emulador, sin esta pasada no se leía y con ella sí.

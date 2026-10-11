@@ -24,10 +24,10 @@ import mx.papeleriapos.escaner.nucleo.Via
  *
  * El ITF lo leen solo las pasadas de zxing-cpp: ML Kit no lo lee (da ceros o basura de 40 dígitos).
  */
-class MotorAutomatico(simbologias: Set<Simbologia>, cadaCuantos: Int = 2) : MotorDeLectura {
+class MotorAutomatico(simbologias: Set<Simbologia>, cadaCuantos: Int = 2, probarGiros: Boolean = false) : MotorDeLectura {
     override val motor = Motor.AUTOMATICO
 
-    private val rapido = MotorZxingCpp(simbologias)
+    private val rapido = MotorZxingCpp(simbologias, probarGiros)
     private val respaldo: MotorMlKit? = (simbologias - Simbologia.ITF)
         .takeIf { s -> s.any { aFormatoMlKit(it) != null } }
         ?.let { MotorMlKit(it) }

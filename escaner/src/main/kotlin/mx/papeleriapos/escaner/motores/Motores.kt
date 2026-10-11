@@ -10,13 +10,14 @@ import java.nio.ByteBuffer
 /**
  * Crea el motor pedido, configurado para [simbologias] (docs/escaner.md, «Motores»). Se llama en el hilo de análisis:
  * zxing-cpp carga su biblioteca nativa al crearse y ML Kit su modelo en la primera lectura ([MotorDeLectura.calentar]).
+ * [probarGiros]: que zxing-cpp pruebe también la región girada 90° (ML Kit lee girados de por sí).
  *
  * @throws IllegalArgumentException si ninguna de las simbologías la sabe leer el motor.
  */
-fun crearMotor(motor: Motor, simbologias: Set<Simbologia>): MotorDeLectura = when (motor) {
-    Motor.AUTOMATICO -> MotorAutomatico(simbologias)
+fun crearMotor(motor: Motor, simbologias: Set<Simbologia>, probarGiros: Boolean = false): MotorDeLectura = when (motor) {
+    Motor.AUTOMATICO -> MotorAutomatico(simbologias, probarGiros = probarGiros)
     Motor.ML_KIT -> MotorMlKit(simbologias)
-    Motor.ZXING_CPP -> MotorZxingCpp(simbologias)
+    Motor.ZXING_CPP -> MotorZxingCpp(simbologias, probarGiros)
 }
 
 /**

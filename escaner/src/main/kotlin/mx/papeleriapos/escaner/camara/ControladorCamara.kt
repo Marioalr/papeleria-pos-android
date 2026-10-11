@@ -68,6 +68,7 @@ import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.PasoApertura
+import mx.papeleriapos.escaner.ResolucionAnalisis
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
@@ -80,7 +81,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
 /**
- * El escáner con la cámara real (docs/escaner.md, «Cámara»): Preview + ImageAnalysis a 1280x720 en una sola
+ * El escáner con la cámara real (docs/escaner.md, «Cámara»): Preview a 1280x720 + ImageAnalysis a la resolución de
+ * ajustes (720p por omisión; [ConfigEscaner.resolucion]) en una sola
  * `SessionConfig` con el `ViewPort` del visor (así `ImageProxy.cropRect` es justo lo que se ve), FPS elegidos de los que
  * acepta la sesión, zoom inicial según la distancia mínima de enfoque, enfoque al abrir, al tocar y cuando un código no
  * se deja leer, linterna, y pausa por inactividad.
@@ -223,16 +225,24 @@ class ControladorCamara(
     var enlacesHechos = 0
         private set
 
-    private val selectorResolucion = ResolutionSelector.Builder()
-        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
-        // Sin esto ImageAnalysis usa 640x480; 1080p cuesta ~30 % más por cuadro y para lejos ayuda más el zoom.
-        .setResolutionStrategy(ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
-        .build()
+    /** El visor siempre a 720p (16:9); el análisis pide lo suyo ([selectorAnalisis]). */
+    private val selectorVisor = selectorResolucion(ResolucionAnalisis.HD)
 
     private val vista: Preview = crearVista()
 
-    private val analisis: ImageAnalysis = ImageAnalysis.Builder()
-        .setResolutionSelector(selectorResolucion)
+    /** Con qué resolución se armó [analisis]: otra en la configuración lo arma de nuevo antes de enlazar. */
+    private var resolucionAnalisis = configInicial.resolucion
+    private var analisis: ImageAnalysis = crearAnalisis(resolucionAnalisis)
+
+    /** Sin esto ImageAnalysis usa 640x480. La cámara da la más cercana a 16:9 que tenga (por arriba, si no por abajo). */
+    private fun selectorResolucion(r: ResolucionAnalisis): ResolutionSelector = ResolutionSelector.Builder()
+        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+        .setResolutionStrategy(ResolutionStrategy(Size(r.ancho, r.alto), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+        .build()
+
+    private fun crearAnalisis(r: ResolucionAnalisis): ImageAnalysis = ImageAnalysis.Builder()
+        .setResolutionSelector(selectorResolucion(r))
+        // Siempre el último cuadro, sin cola: lo que llega mientras se analiza se descarta.
         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
         // YUV sin rotar: girar la salida cuesta 10–15 ms por cuadro; los motores reciben la rotación.
         .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
@@ -368,7 +378,7 @@ class ControladorCamara(
         enAnalisis { analizador.configurar(config) }
         val cam = camara
         when {
-            // El rango de FPS y la lente solo cambian al volver a enlazar.
+            // El rango de FPS, la resolución (va en la preferencia) y la lente solo cambian al volver a enlazar.
             (vieja.preferenciaFps != config.preferenciaFps || vieja.lente != config.lente) && sesion != null -> {
                 if (vieja.preferenciaFps != config.preferenciaFps) sinFpsFijo = false
                 enlazar()
@@ -458,7 +468,7 @@ class ControladorCamara(
 
     @OptIn(ExperimentalCamera2Interop::class)
     private fun crearVista(): Preview {
-        val constructor = Preview.Builder().setResolutionSelector(selectorResolucion)
+        val constructor = Preview.Builder().setResolutionSelector(selectorVisor)
         Camera2Interop.Extender(constructor).setSessionCaptureCallback(senales)
         return constructor.build().also { it.setSurfaceProvider(principal, proveedorSuperficie) }
     }
@@ -544,6 +554,13 @@ class ControladorCamara(
                 if (!prov.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
                     _estado.update { it.copy(fase = Fase.ERROR, mensajeError = "Este celular no tiene cámara trasera.") }
                     return@launch
+                }
+                // Cambió la resolución de análisis en ajustes: otro ImageAnalysis (el de antes ya está sin enlazar).
+                val r = _config.value.resolucion
+                if (r != resolucionAnalisis) {
+                    analisis.clearAnalyzer()
+                    analisis = crearAnalisis(r)
+                    resolucionAnalisis = r
                 }
                 vista.targetRotation = rotacion
                 analisis.targetRotation = rotacion
@@ -690,9 +707,9 @@ class ControladorCamara(
     private fun calcularRangoFpsAparte(p: ProcessCameraProvider, visor: Proporcion, rotacion: Int, pref: PreferenciaFps): Range<Int>? {
         Trace.beginSection("escaner.validarFps")
         try {
-            val vistaPrueba = Preview.Builder().setResolutionSelector(selectorResolucion).build()
+            val vistaPrueba = Preview.Builder().setResolutionSelector(selectorVisor).build()
             val analisisPrueba = ImageAnalysis.Builder()
-                .setResolutionSelector(selectorResolucion)
+                .setResolutionSelector(selectorResolucion(pref.resolucion))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                 .build()

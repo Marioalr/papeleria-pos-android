@@ -45,3 +45,7 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   resumen corto por tanda (cada bloque de condición), en la pestaña Sesión y en resumen.csv al exportar los intentos:
   cuántos leyó bien y a qué distancia, la lectura típica y la p90, lecturas por minuto, falsas (deben ser 0), con y
   sin linterna, y por lente.
+- Más resolución: en Ajustes, el análisis a 1080p, 1440p o 4K (el visor se queda en 720p); se analiza solo el plano Y,
+  recortado a la franja, y siempre el último cuadro, así que lo que cuesta de más es la franja más grande. Y «Leer
+  también girados 90°», para que zxing-cpp pruebe las dos orientaciones de la franja. Las dos vienen apagadas hasta
+  medirlas en la tienda; la sesión guarda la resolución de cada intento.

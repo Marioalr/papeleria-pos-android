@@ -116,6 +116,19 @@ enum class Lente(val etiqueta: String) {
     GRAN_ANGULAR("Solo la gran angular"),
 }
 
+/**
+ * La resolución que se pide para el análisis (la cámara da la más cercana a 16:9 que tenga; el visor se queda en 720p).
+ * Parte 8 de la entrega 8: más píxeles por módulo para los códigos chicos o lejanos, a cambio de más trabajo por cuadro.
+ * Se analiza solo el plano Y, recortado a la franja, y siempre el último cuadro: el costo crece con la franja, no con el
+ * cuadro.
+ */
+enum class ResolucionAnalisis(val ancho: Int, val alto: Int, val etiqueta: String) {
+    HD(1280, 720, "720p"),
+    FULL_HD(1920, 1080, "1080p"),
+    QHD(2560, 1440, "1440p"),
+    UHD(3840, 2160, "4K"),
+}
+
 /** Configuración del escáner; se puede cambiar en caliente con [ControladorEscaner.configurar]. */
 data class ConfigEscaner(
     val motor: Motor = Motor.AUTOMATICO,
@@ -154,8 +167,18 @@ data class ConfigEscaner(
     val fps60: Boolean = false,
     /** Qué lente de la cámara trasera usar ([Lente]). Experimento 3 del plan. */
     val lente: Lente = Lente.SISTEMA,
+    /**
+     * La resolución del análisis ([ResolucionAnalisis]). 720p por omisión: bastan ≥ 2 px por módulo y 1080p cuesta
+     * ~30 % más por cuadro; las demás quedan para medir en la tienda con códigos chicos o lejanos (parte 8 del plan).
+     */
+    val resolucion: ResolucionAnalisis = ResolucionAnalisis.HD,
     /** Recortar la franja antes de pasarla al motor (más rápido) o pasar el cuadro completo (para comparar). */
     val recortarFranja: Boolean = true,
+    /**
+     * zxing-cpp prueba también la franja girada 90° (`tryRotate`): lee los códigos de pie (una pluma) sin esperar el
+     * turno de ML Kit, que sí los lee girados. Apagado hasta medir cuánto cuesta por cuadro en la tienda.
+     */
+    val leerGirados: Boolean = false,
     val mostrarDiagnostico: Boolean = false,
 )
 

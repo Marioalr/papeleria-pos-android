@@ -1,6 +1,8 @@
 package mx.papeleriapos.escaner.camara
 
+import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Lente
+import mx.papeleriapos.escaner.ResolucionAnalisis
 import androidx.camera.core.CameraState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -102,6 +104,21 @@ class PoliticasTest {
         assertEquals(30 to 30, elegirRangoFps(rangos, PreferenciaFps(fijo = true, tope = 30)))
         assertEquals(15 to 30, elegirRangoFps(rangos, PreferenciaFps(fijo = false, tope = 30)))
         assertNull(elegirRangoFps(emptyList(), PreferenciaFps(fijo = true, tope = 30)))
+    }
+
+    @Test
+    fun laPreferenciaDeFpsLlevaLaResolucionYConservaLasLlavesDeAntesA720p() {
+        assertEquals("fps_30", PreferenciaFps(fijo = true, tope = 30).llave)
+        assertEquals("fps_15_30", PreferenciaFps(fijo = false, tope = 30).llave)
+        assertEquals("fps_60", PreferenciaFps(fijo = true, tope = 60).llave)
+        // Otra resolución es otra sesión (otros flujos): otra llave y otra validación.
+        assertEquals("fps_30_1080p", PreferenciaFps(fijo = true, tope = 30, resolucion = ResolucionAnalisis.FULL_HD).llave)
+        assertEquals("fps_15_60_4K", PreferenciaFps(fijo = false, tope = 60, resolucion = ResolucionAnalisis.UHD).llave)
+        assertEquals(PreferenciaFps(true, 30), ConfigEscaner().preferenciaFps)
+        assertEquals(
+            PreferenciaFps(false, 60, ResolucionAnalisis.QHD),
+            ConfigEscaner(fpsFijo = false, fps60 = true, resolucion = ResolucionAnalisis.QHD).preferenciaFps,
+        )
     }
 
     @Test
