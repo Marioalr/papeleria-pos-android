@@ -34,3 +34,5 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
   con ML Kit que con zxing-cpp. Trae un catálogo de ejemplo ficticio; en Ajustes se carga el archivo que exporte el
   dueño, que se copia al celular y no sale de él. La sesión de prueba anota si cada lectura está en el catálogo, por qué
   variante y con qué clave, y el panel de lecturas marca lo que no está.
+- Hoja de etiquetas de prueba para imprimir a tamaño real (`./gradlew :nucleo:hojaEtiquetas`): EAN-13, Code 128 y
+  EAN-8 ficticios con módulos de 0.25 a 0.5 mm y varias alturas, con su regla de 100 mm y su CSV de catálogo.
