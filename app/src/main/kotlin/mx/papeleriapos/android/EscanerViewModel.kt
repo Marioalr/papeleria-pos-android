@@ -48,6 +48,7 @@ import mx.papeleriapos.escaner.camara.ControladorCamara
 import mx.papeleriapos.escaner.camara.Proporcion
 import mx.papeleriapos.escaner.camara.proporcionInicial
 import mx.papeleriapos.escaner.nucleo.Modo
+import mx.papeleriapos.escaner.rangoFpsPedido
 import kotlin.math.roundToInt
 
 /**
@@ -126,7 +127,7 @@ class EscanerViewModel(
             modo = c.modo,
             motor = c.motor,
             // El rango que de verdad eligió la cámara; si todavía no lo dice, el que se pidió.
-            rangoFps = estado.diagnostico.rangoFps.ifEmpty { if (c.fpsFijo30) "30-30" else "15-30" },
+            rangoFps = estado.diagnostico.rangoFps.ifEmpty { c.rangoFpsPedido },
             // Las columnas de la apertura solo en el primer intento de cada apertura.
             medicion = medidor.medir(aperturas.medidas(apertura)),
             zoom = estado.zoom,

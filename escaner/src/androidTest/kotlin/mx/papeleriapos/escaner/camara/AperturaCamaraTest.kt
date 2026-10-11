@@ -57,8 +57,7 @@ class AperturaCamaraTest {
         // Sin proporción ni rango guardados: se prueba también el camino de calcularlos.
         ctx.getSharedPreferences(ARCHIVO_APERTURA, Context.MODE_PRIVATE).edit().clear().commit()
         // La validación del rango corre una vez por proceso: cada prueba empieza como un proceso nuevo.
-        ValidacionFps.olvidar(true)
-        ValidacionFps.olvidar(false)
+        ValidacionFps.olvidarTodas()
     }
 
     @After
@@ -121,7 +120,7 @@ class AperturaCamaraTest {
         }
         assertTrue(a.ms(PasoApertura.ENLACE_FIN) <= a.ms(PasoApertura.PRIMER_ANALISIS))
         // El rango de FPS quedó guardado para la próxima apertura.
-        assertNotEquals(RangoEnCache.SinDato, MemoriaApertura(ctx).rangoFps(ConfigEscaner().fpsFijo30))
+        assertNotEquals(RangoEnCache.SinDato, MemoriaApertura(ctx).rangoFps(ConfigEscaner().preferenciaFps))
         // La proporción la guardó la pantalla, no el enlace temprano.
         assertEquals(Proporcion(1080, 2400), MemoriaApertura(ctx).proporcion(PANTALLA))
     }
@@ -142,14 +141,15 @@ class AperturaCamaraTest {
         val calculado = primero.estado.value.diagnostico.rangoFps
         inst.runOnMainSync { primero.cerrar() }
         val memoria = MemoriaApertura(ctx)
-        val guardado = memoria.rangoFps(true)
+        val pref = ConfigEscaner().preferenciaFps
+        val guardado = memoria.rangoFps(pref)
         assertNotEquals(RangoEnCache.SinDato, guardado)
-        assumeTrue("La cámara no acepta un rango fijo de 30: no se distingue lo guardado de lo calculado", guardado is RangoEnCache.Fijo)
+        assumeTrue("La cámara no acepta un rango fijo: no se distingue lo guardado de lo calculado", guardado is RangoEnCache.Fijo)
         assertTrue(calculado.isNotEmpty())
 
         // Lo guardado ahora dice «sin rango fijo»: el cálculo daría el fijo de arriba.
-        memoria.guardarRangoFps(true, null)
-        assertEquals(RangoEnCache.Auto, memoria.rangoFps(true))
+        memoria.guardarRangoFps(pref, null)
+        assertEquals(RangoEnCache.Auto, memoria.rangoFps(pref))
 
         val c = nuevo()
         val otro = crearDueno(Lifecycle.State.RESUMED)
@@ -163,8 +163,8 @@ class AperturaCamaraTest {
         assertEquals("Calculó el rango en lugar de usar el guardado", "", d.rangoFps)
         assertEquals(1, c.enlacesHechos)
         // La validación (solo tras enlazar con lo guardado) corrige lo guardado para la próxima, sin volver a enlazar.
-        atenderHasta(c, ControladorCamara.VALIDAR_FPS_TRAS_MS + 5_000) { memoria.rangoFps(true) == guardado }
-        assertEquals("La validación no restauró el rango fijo", guardado, memoria.rangoFps(true))
+        atenderHasta(c, ControladorCamara.VALIDAR_FPS_TRAS_MS + 5_000) { memoria.rangoFps(pref) == guardado }
+        assertEquals("La validación no restauró el rango fijo", guardado, memoria.rangoFps(pref))
         assertEquals(1, c.enlacesHechos)
     }
 

@@ -3,7 +3,9 @@ package mx.papeleriapos.android.estres
 import mx.papeleriapos.android.banco.Estadistica
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.android.medicion.MuestraRecursos
+import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.rangoFpsPedido
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -20,8 +22,8 @@ data class PuntoMemoria(
 )
 
 /** Con qué cámara corrió una prueba: el motor y el rango de cuadros por segundo (va en sus CSV). */
-data class ConfigEstres(val motor: Motor = Motor.AUTOMATICO, val fpsFijo30: Boolean = true) {
-    val textoFps: String get() = if (fpsFijo30) "30-30" else "15-30"
+data class ConfigEstres(val motor: Motor = Motor.AUTOMATICO, val fpsFijo: Boolean = true, val fps60: Boolean = false) {
+    val textoFps: String get() = ConfigEscaner(fpsFijo = fpsFijo, fps60 = fps60).rangoFpsPedido
 }
 
 /** Una regla de la prueba con lo medido, el límite y si pasa. */

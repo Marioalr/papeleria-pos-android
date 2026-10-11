@@ -124,7 +124,10 @@ temperatura en 30 minutos de escaneo continuo.
    CameraX (cámara lógica y zoom de 0.5x en adelante, cámaras físicas con Camera2), y usar la de cerca para códigos
    chicos y el zoom para los lejanos.
 4. **Resolución y cuadros por segundo.** Con 2.4 ms por cuadro sobra margen: probar más resolución para códigos chicos
-   o lejanos y 60 cuadros por segundo (menos tiempo hasta leer y menos movido).
+   o lejanos y 60 cuadros por segundo (menos tiempo hasta leer y menos movido). **60 cuadros, medido el 2026-10-10:** no
+   se queda como predeterminado. El HAL solo tarda ~15 ms menos en dar el primer cuadro, en frío no gana, y cada cuadro
+   cuesta más ([medición](../mediciones/2026-10-10-60fps/LEEME.md)). Queda en ajustes para ver si lee mejor códigos en
+   movimiento. Falta la resolución.
 5. **Exposición y enfoque.** Exposición más corta para que no salga movido, medición de la luz y enfoque en la franja,
    linterna automática.
 6. **Motores.** Con el margen de CPU, ML Kit en más cuadros o en paralelo con zxing: medir la lectura de lo difícil en

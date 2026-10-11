@@ -67,6 +67,7 @@ import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.PasoApertura
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
@@ -363,7 +364,7 @@ class ControladorCamara(
         val cam = camara
         when {
             // El rango de FPS solo cambia al volver a enlazar.
-            vieja.fpsFijo30 != config.fpsFijo30 && sesion != null -> {
+            vieja.preferenciaFps != config.preferenciaFps && sesion != null -> {
                 sinFpsFijo = false
                 enlazar()
             }
@@ -542,8 +543,8 @@ class ControladorCamara(
                 analisis.targetRotation = rotacion
                 // El mismo recorte para el visor y el análisis: FILL_CENTER como el ContentScale.Crop del visor.
                 val puerto = ViewPort.Builder(Rational(p.ancho, p.alto), rotacion).setScaleType(ViewPort.FILL_CENTER).build()
-                val fijo30 = _config.value.fpsFijo30
-                val e = enlazarCon(prov, dueno, puerto, fijo30)
+                val pref = _config.value.preferenciaFps
+                val e = enlazarCon(prov, dueno, puerto, pref)
                 MarcasApertura.marcarSi(aperturaPropia, PasoApertura.ENLACE_FIN)
                 enlazada = p
                 rotacionEnlazada = rotacion
@@ -551,8 +552,8 @@ class ControladorCamara(
                 apagadaPorInactividad = false
                 enlacesHechos++
                 alEnlazar(e.camara, e.rango, e.guardado, p)
-                if (debeValidarRangoFps(e.guardado, sinFpsFijo, yaValidado = ValidacionFps.hecha(fijo30))) {
-                    validarRangoFps(p, rotacion, fijo30, e.rango)
+                if (debeValidarRangoFps(e.guardado, sinFpsFijo, yaValidado = ValidacionFps.hecha(pref))) {
+                    validarRangoFps(p, rotacion, pref, e.rango)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -587,19 +588,19 @@ class ControladorCamara(
      * Enlaza con el rango de FPS guardado para este celular (sin preguntarle a la cámara, que en algunos equipos cuesta
      * en el camino de la apertura). Si no hay guardado o la sesión ya no lo acepta, lo calcula y lo guarda.
      */
-    private fun enlazarCon(p: ProcessCameraProvider, dueno: LifecycleOwner, puerto: ViewPort, fijo30: Boolean): Enlace {
-        val guardado = if (sinFpsFijo) RangoEnCache.AutoPorError else memoria.rangoFps(fijo30)
+    private fun enlazarCon(p: ProcessCameraProvider, dueno: LifecycleOwner, puerto: ViewPort, pref: PreferenciaFps): Enlace {
+        val guardado = if (sinFpsFijo) RangoEnCache.AutoPorError else memoria.rangoFps(pref)
         if (guardado != RangoEnCache.SinDato) {
             val rango = (guardado as? RangoEnCache.Fijo)?.let { Range(it.minimo, it.maximo) }
             try {
                 return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, guardado)
             } catch (e: IllegalArgumentException) {
                 Log.w(ETIQUETA, "La sesión ya no acepta el rango de FPS guardado ($rango); se vuelve a calcular", e)
-                memoria.olvidarRangoFps(fijo30)
+                memoria.olvidarRangoFps(pref)
             }
         }
-        val rango = calcularRangoFps(p, puerto, fijo30)
-        memoria.guardarRangoFps(fijo30, rango?.let { it.lower to it.upper })
+        val rango = calcularRangoFps(p, puerto, pref)
+        memoria.guardarRangoFps(pref, rango?.let { it.lower to it.upper })
         return Enlace(enlazarSesion(p, dueno, puerto, rango), rango, RangoEnCache.SinDato)
     }
 
@@ -632,12 +633,12 @@ class ControladorCamara(
     }
 
     /** El rango de FPS de entre los que acepta esta sesión ([elegirRangoFps]); null = que decida CameraX. */
-    private fun calcularRangoFps(p: ProcessCameraProvider, puerto: ViewPort, fijo30: Boolean): Range<Int>? {
+    private fun calcularRangoFps(p: ProcessCameraProvider, puerto: ViewPort, pref: PreferenciaFps): Range<Int>? {
         Trace.beginSection("escaner.rangosFps")
         try {
             val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
             val base = SessionConfig.Builder(vista, analisis).setViewPort(puerto).build()
-            return elegirRangoFps(info.getSupportedFrameRateRanges(base), fijo30)
+            return elegirRangoFps(info.getSupportedFrameRateRanges(base), pref)
         } finally {
             Trace.endSection()
         }
@@ -649,22 +650,22 @@ class ControladorCamara(
      * enlazar y en `Dispatchers.Default` con casos de uso propios sin enlazar (no los de la cámara, que el hilo principal
      * puede estar cambiando): ni la apertura ni el análisis esperan por él. Sección de trace «escaner.validarFps».
      */
-    private fun validarRangoFps(visor: Proporcion, rotacion: Int, fijo30: Boolean, usado: Range<Int>?) {
-        if (!ValidacionFps.empezar(fijo30)) return
+    private fun validarRangoFps(visor: Proporcion, rotacion: Int, pref: PreferenciaFps, usado: Range<Int>?) {
+        if (!ValidacionFps.empezar(pref)) return
         validacionFps?.cancel()
         validacionFps = alcance.launch {
             var terminada = false
             try {
                 delay(VALIDAR_FPS_TRAS_MS)
                 val p = proveedor ?: return@launch
-                val calculado = withContext(Dispatchers.Default) { calcularRangoFpsAparte(p, visor, rotacion, fijo30) }
+                val calculado = withContext(Dispatchers.Default) { calcularRangoFpsAparte(p, visor, rotacion, pref) }
                 terminada = true
                 // Si mientras tanto la sesión rechazó el FPS fijo, lo pegajoso manda.
-                if (sinFpsFijo || memoria.rangoFps(fijo30) == RangoEnCache.AutoPorError) return@launch
+                if (sinFpsFijo || memoria.rangoFps(pref) == RangoEnCache.AutoPorError) return@launch
                 val par = calculado?.let { it.lower to it.upper }
                 if (par != usado?.let { it.lower to it.upper }) {
                     Log.i(ETIQUETA, "Rango de FPS guardado $usado; la cámara ahora da $calculado: queda para la próxima apertura")
-                    memoria.guardarRangoFps(fijo30, par)
+                    memoria.guardarRangoFps(pref, par)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -674,13 +675,13 @@ class ControladorCamara(
                 Log.w(ETIQUETA, "No se pudo validar el rango de FPS guardado", e)
             } finally {
                 // Cancelada antes de terminar (se volvió a enlazar o se soltó la cámara): el siguiente enlace la repite.
-                if (!terminada) ValidacionFps.olvidar(fijo30)
+                if (!terminada) ValidacionFps.olvidar(pref)
             }
         }
     }
 
     /** [calcularRangoFps] con un `Preview` y un `ImageAnalysis` propios, iguales a los del enlace pero sin enlazar. */
-    private fun calcularRangoFpsAparte(p: ProcessCameraProvider, visor: Proporcion, rotacion: Int, fijo30: Boolean): Range<Int>? {
+    private fun calcularRangoFpsAparte(p: ProcessCameraProvider, visor: Proporcion, rotacion: Int, pref: PreferenciaFps): Range<Int>? {
         Trace.beginSection("escaner.validarFps")
         try {
             val vistaPrueba = Preview.Builder().setResolutionSelector(selectorResolucion).build()
@@ -692,7 +693,7 @@ class ControladorCamara(
             val puerto = ViewPort.Builder(Rational(visor.ancho, visor.alto), rotacion).setScaleType(ViewPort.FILL_CENTER).build()
             val info = p.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
             val base = SessionConfig.Builder(vistaPrueba, analisisPrueba).setViewPort(puerto).build()
-            return elegirRangoFps(info.getSupportedFrameRateRanges(base), fijo30)
+            return elegirRangoFps(info.getSupportedFrameRateRanges(base), pref)
         } finally {
             Trace.endSection()
         }
@@ -776,7 +777,7 @@ class ControladorCamara(
             AccionEstado.REENLAZAR_SIN_FPS -> {
                 Log.w(ETIQUETA, "La sesión no aceptó el rango de FPS fijo: se enlaza sin él (y así queda para este sistema)")
                 sinFpsFijo = true
-                memoria.guardarAutoPorError(_config.value.fpsFijo30)
+                memoria.guardarAutoPorError(_config.value.preferenciaFps)
                 enlazar()
             }
             AccionEstado.REENLAZAR -> {
@@ -1005,23 +1006,25 @@ class ControladorCamara(
 }
 
 /**
- * La validación del rango de FPS guardado se hace una sola vez por proceso y por preferencia (30 fijo o 15–30); la
+ * La validación del rango de FPS guardado se hace una sola vez por proceso y por preferencia ([PreferenciaFps]); la
  * huella del sistema no cambia sin reiniciar el proceso. Es del proceso, no del controlador: la app y el escaneo rápido
  * la comparten.
  */
 internal object ValidacionFps {
-    private val fijo30 = AtomicBoolean()
-    private val de15a30 = AtomicBoolean()
+    private val hechas = ConcurrentHashMap<PreferenciaFps, AtomicBoolean>()
 
-    private fun de(fijo: Boolean) = if (fijo) fijo30 else de15a30
+    private fun de(pref: PreferenciaFps) = hechas.getOrPut(pref) { AtomicBoolean() }
 
-    fun hecha(fijo: Boolean): Boolean = de(fijo).get()
+    fun hecha(pref: PreferenciaFps): Boolean = de(pref).get()
 
     /** Devuelve false si ya se hizo o ya está en curso (la toma quien llega primero). */
-    fun empezar(fijo: Boolean): Boolean = de(fijo).compareAndSet(false, true)
+    fun empezar(pref: PreferenciaFps): Boolean = de(pref).compareAndSet(false, true)
 
     /** No terminó (se canceló): el siguiente enlace la vuelve a intentar. */
-    fun olvidar(fijo: Boolean) = de(fijo).set(false)
+    fun olvidar(pref: PreferenciaFps) = de(pref).set(false)
+
+    /** Para las pruebas: todas sin hacer. */
+    fun olvidarTodas() = hechas.clear()
 }
 
 /**

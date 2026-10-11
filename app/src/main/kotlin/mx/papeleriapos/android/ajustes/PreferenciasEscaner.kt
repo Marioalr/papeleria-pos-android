@@ -24,7 +24,8 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             vibracion = prefs.getBoolean(VIBRACION, d.vibracion),
             linternaAutomatica = prefs.getBoolean(LINTERNA_AUTOMATICA, d.linternaAutomatica),
             recortarFranja = prefs.getBoolean(RECORTAR_FRANJA, d.recortarFranja),
-            fpsFijo30 = prefs.getBoolean(FPS_FIJO_30, d.fpsFijo30),
+            fpsFijo = prefs.getBoolean(FPS_FIJO, d.fpsFijo),
+            fps60 = prefs.getBoolean(FPS_60, d.fps60),
             segundosParaPausar = prefs.getInt(SEGUNDOS_PARA_PAUSAR, d.segundosParaPausar).coerceIn(0, MAX_SEGUNDOS_PAUSA),
             mostrarDiagnostico = prefs.getBoolean(MOSTRAR_DIAGNOSTICO, d.mostrarDiagnostico),
             altoFranja = prefs.getFloat(ALTO_FRANJA, d.altoFranja).coerceIn(MIN_ALTO_FRANJA, MAX_ALTO_FRANJA),
@@ -40,7 +41,8 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
             .putBoolean(VIBRACION, c.vibracion)
             .putBoolean(LINTERNA_AUTOMATICA, c.linternaAutomatica)
             .putBoolean(RECORTAR_FRANJA, c.recortarFranja)
-            .putBoolean(FPS_FIJO_30, c.fpsFijo30)
+            .putBoolean(FPS_FIJO, c.fpsFijo)
+            .putBoolean(FPS_60, c.fps60)
             .putInt(SEGUNDOS_PARA_PAUSAR, c.segundosParaPausar)
             .putBoolean(MOSTRAR_DIAGNOSTICO, c.mostrarDiagnostico)
             .putFloat(ALTO_FRANJA, c.altoFranja)
@@ -73,7 +75,9 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
         private const val VIBRACION = "vibracion"
         private const val LINTERNA_AUTOMATICA = "linterna_automatica"
         private const val RECORTAR_FRANJA = "recortar_franja"
-        private const val FPS_FIJO_30 = "fps_fijo_30"
+        // La llave de cuando el tope era 30: lo que eligió cada quien se respeta.
+        private const val FPS_FIJO = "fps_fijo_30"
+        private const val FPS_60 = "fps_60"
         private const val SEGUNDOS_PARA_PAUSAR = "segundos_para_pausar"
         private const val MOSTRAR_DIAGNOSTICO = "mostrar_diagnostico"
         private const val ALTO_FRANJA = "alto_franja"

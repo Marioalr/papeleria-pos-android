@@ -117,12 +117,25 @@ data class ConfigEscaner(
     val vibracion: Boolean = true,
     /** Tope del zoom propio (más de 2x puede cambiar al teleobjetivo, que enfoca más lejos). */
     val zoomMaximo: Float = 2f,
-    /** Rango de cuadros por segundo preferido: 30 fijo (menos movido) o 15 a 30 (más luz). */
-    val fpsFijo30: Boolean = true,
+    /** Rango de cuadros por segundo fijo (exposición corta, menos movido) o variable desde 15 (más luz, más movido). */
+    val fpsFijo: Boolean = true,
+    /**
+     * Hasta 60 cuadros por segundo si la cámara los da con esta sesión (el Pixel 8 Pro sí); si no, hasta 30. Apagado: el
+     * experimento 4 del plan midió en el Pixel que abre casi igual (el HAL tarda en dar el primer cuadro por armar su
+     * proceso, no por el ritmo) y cada cuadro cuesta más. Queda para probar si ayuda con códigos en movimiento.
+     */
+    val fps60: Boolean = false,
     /** Recortar la franja antes de pasarla al motor (más rápido) o pasar el cuadro completo (para comparar). */
     val recortarFranja: Boolean = true,
     val mostrarDiagnostico: Boolean = false,
 )
+
+/** El rango de cuadros por segundo que se pide, como «60-60» o «15-30»; la cámara puede dar menos (sin 60, hasta 30). */
+val ConfigEscaner.rangoFpsPedido: String
+    get() {
+        val tope = if (fps60) 60 else 30
+        return "${if (fpsFijo) tope else 15}-$tope"
+    }
 
 /**
  * El escáner que usa la interfaz. Lo implementa la cámara real ([mx.papeleriapos.escaner.camara.ControladorCamara]) y,
