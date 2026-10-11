@@ -22,7 +22,6 @@ import kotlinx.coroutines.withContext
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.catalogo.CatalogoPrueba
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
-import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.ListasCompartidas
@@ -33,7 +32,6 @@ import mx.papeleriapos.android.sesion.Antirrebote
 import mx.papeleriapos.android.sesion.AperturaPorIntento
 import mx.papeleriapos.android.sesion.Contexto
 import mx.papeleriapos.android.sesion.CsvAperturas
-import mx.papeleriapos.android.sesion.CsvSesion
 import mx.papeleriapos.android.sesion.EditorAnotaciones
 import mx.papeleriapos.android.sesion.MedidorAndroid
 import mx.papeleriapos.android.sesion.RegistroAperturas
@@ -238,14 +236,6 @@ class EscanerViewModel(
         AnotacionesSesion.cambiar(s) { it.alQuitarIntento(u.n) }
         EditorAnotaciones.guardar(getApplication())
         antirreboteFallo.olvidar()
-    }
-
-    /** Escribe el CSV de la sesión en la caché y devuelve su URI para compartirlo. */
-    suspend fun csvSesion(): Uri? {
-        val s = _sesion.value ?: return null
-        return withContext(Dispatchers.IO) {
-            Compartir.escribir(getApplication(), CsvSesion.nombreArchivo("sesion", s.clave()), CsvSesion.escribir(s, equipo))
-        }
     }
 
     override fun onCleared() {

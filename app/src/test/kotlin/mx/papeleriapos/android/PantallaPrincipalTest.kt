@@ -1,6 +1,6 @@
 package mx.papeleriapos.android
 
-import mx.papeleriapos.android.escanear.bordesFranja
+import mx.papeleriapos.escaner.camara.franjaPara
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,11 +18,12 @@ class PantallaPrincipalTest {
 
     @Test
     fun `la franja va del 32 al 68 por ciento con el alto por omision y sigue al ajuste`() {
-        val (arriba, abajo) = bordesFranja(0.36f)
-        assertEquals(0.32f, arriba, 1e-6f)
-        assertEquals(0.68f, abajo, 1e-6f)
-        assertEquals(0.2f to 0.8f, bordesFranja(0.6f).let { (a, b) -> Math.round(a * 100) / 100f to Math.round(b * 100) / 100f })
-        // Fuera de rango se acota como en el escáner.
-        assertEquals(0.45f, bordesFranja(0.01f).first, 1e-6f)
+        // Lo de encima del visor (barra de la sesión y panel) se acomoda con la misma franja que dibuja el escáner.
+        val f = franjaPara(0.36f)
+        assertEquals(0.32f, f.arriba, 1e-6f)
+        assertEquals(0.68f, f.abajo, 1e-6f)
+        assertEquals(0.2f to 0.8f, franjaPara(0.6f).let { Math.round(it.arriba * 100) / 100f to Math.round(it.abajo * 100) / 100f })
+        // Fuera de rango se acota.
+        assertEquals(0.45f, franjaPara(0.01f).arriba, 1e-6f)
     }
 }

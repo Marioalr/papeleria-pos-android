@@ -147,7 +147,7 @@ object CatalogoEscenas {
                 // El margen rojo de la hoja, en gris.
                 val margen = ancho / 8
                 for (y in 0 until alto) p[y * ancho + margen] = 120.toByte()
-                ruido(Luma(ancho, alto, p), e.ruido, azar)
+                Lienzo.ruido(Luma(ancho, alto, p), e.ruido, azar)
             }
             Negativo.TEXTO -> {
                 val p = ByteArray(ancho * alto) { 235.toByte() }
@@ -168,19 +168,9 @@ object CatalogoEscenas {
                         x += letra + 2
                     }
                 }
-                ruido(Luma(ancho, alto, p), e.ruido, azar)
+                Lienzo.ruido(Luma(ancho, alto, p), e.ruido, azar)
             }
         }
-    }
-
-    private fun ruido(luma: Luma, sigma: Float, azar: Random): Luma {
-        if (sigma <= 0f) return luma
-        val p = luma.pixeles
-        for (i in 0 until luma.ancho * luma.alto) {
-            val n = (azar.nextFloat() + azar.nextFloat() + azar.nextFloat() - 1.5f) * 2f * sigma
-            p[i] = ((p[i].toInt() and 0xFF) + n).roundToInt().coerceIn(0, 255).toByte()
-        }
-        return luma
     }
 
     private fun nombre(s: Simbologia, texto: String) = when {

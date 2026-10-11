@@ -86,7 +86,21 @@ object Lienzo {
         if (escena.reflejo > 0f) reflejo(luma, cx, cy, escena.reflejo * anchoPx)
         if (escena.desenfoque > 0) repeat(3) { caja(luma, escena.desenfoque, escena.desenfoque) }
         if (escena.movido > 0) caja(luma, escena.movido, 0)
-        if (escena.ruido > 0f) ruido(luma, escena.ruido, escena.semilla)
+        if (escena.ruido > 0f) ruido(luma, escena.ruido, Random(escena.semilla))
+        return luma
+    }
+
+    /**
+     * Ruido del sensor: gaussiano aproximado (suma de tres uniformes, sin el costo de Box-Muller) de desviación [sigma],
+     * con [azar]; sin cambios si [sigma] ≤ 0. La misma receta para las escenas, el banco de pruebas y el modo «Límites».
+     */
+    fun ruido(luma: Luma, sigma: Float, azar: Random): Luma {
+        if (sigma <= 0f) return luma
+        val p = luma.pixeles
+        for (i in 0 until luma.ancho * luma.alto) {
+            val n = (azar.nextFloat() + azar.nextFloat() + azar.nextFloat() - 1.5f) * 2f * sigma
+            p[i] = ((p[i].toInt() and 0xFF) + n).roundToInt().coerceIn(0, 255).toByte()
+        }
         return luma
     }
 
@@ -135,16 +149,6 @@ object Lienzo {
                 p[y * w + x] = (suma / (2 * ry + 1)).toByte()
                 suma += tmp[(y + ry + 1).coerceAtMost(h - 1)] - tmp[(y - ry).coerceAtLeast(0)]
             }
-        }
-    }
-
-    private fun ruido(luma: Luma, sigma: Float, semilla: Int) {
-        val r = Random(semilla)
-        val p = luma.pixeles
-        for (i in 0 until luma.ancho * luma.alto) {
-            // Suma de uniformes: aproxima una normal sin costo de Box-Muller.
-            val n = (r.nextFloat() + r.nextFloat() + r.nextFloat() - 1.5f) * 2f * sigma
-            p[i] = ((p[i].toInt() and 0xFF) + n).roundToInt().coerceIn(0, 255).toByte()
         }
     }
 }

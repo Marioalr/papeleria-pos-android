@@ -221,7 +221,7 @@ fun DialogoEsperado(actual: String, alTerminar: (String?) -> Unit) {
                 )
                 OutlinedTextField(
                     value = texto,
-                    onValueChange = { texto = it.trim() },
+                    onValueChange = { texto = SesionPrueba.sinEspacios(it) },
                     singleLine = true,
                     label = { Text("Código") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),

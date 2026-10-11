@@ -25,8 +25,8 @@ fun configuracionCameraX(): CameraXConfig =
         .setMinimumLoggingLevel(Log.ERROR)
         .build()
 
-/** La franja de lectura en la región visible: casi todo el ancho y [alto] del alto, centrada. */
-internal fun franjaPara(alto: Float): Caja {
+/** La franja de lectura en la región visible: casi todo el ancho y [alto] del alto, centrada. Pública: la app acomoda lo que va encima con la misma cuenta. */
+fun franjaPara(alto: Float): Caja {
     val a = alto.coerceIn(0.1f, 1f)
     return Caja(0.04f, 0.5f - a / 2f, 0.96f, 0.5f + a / 2f)
 }

@@ -22,8 +22,8 @@ object CsvSesion {
     /** Las que tiene que traer un CSV para recuperar sus intentos (los de versiones anteriores no traen las nuevas). */
     private val ESENCIALES = listOf("n", "hora", "motor", "modo", "rango_fps", "resultado")
 
-    /** ISO 8601 con la diferencia horaria, para que no haya duda al juntar archivos de varios días. */
-    private const val FORMATO_HORA = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    /** ISO 8601 con la diferencia horaria, para que no haya duda al juntar archivos de varios días (también aperturas.csv). */
+    const val FORMATO_HORA = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
 
     fun escribir(
         sesion: SesionPrueba,
