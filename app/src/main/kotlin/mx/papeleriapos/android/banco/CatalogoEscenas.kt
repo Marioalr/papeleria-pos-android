@@ -52,12 +52,12 @@ data class EscenaBanco(
 object CatalogoEscenas {
     /** Los códigos que importan en la tienda: de fábrica, internos (2…), de cajas y las claves de eleventa. */
     val CODIGOS: List<Pair<Simbologia, String>> = listOf(
-        Simbologia.EAN_13 to "7501234567893",
-        Simbologia.EAN_13 to Gtin.completar("200000004201"),
-        Simbologia.UPC_A to "036000291452",
-        Simbologia.EAN_8 to "96385074",
-        Simbologia.ITF to "17501000000019",
-        Simbologia.CODE_128 to "PAP0042x",
+        Simbologia.EAN_13 to "7509993456786",
+        Simbologia.EAN_13 to Gtin.completar("299999004201"),
+        Simbologia.UPC_A to "099999291452",
+        Simbologia.EAN_8 to "75099916",
+        Simbologia.ITF to "17509990000019",
+        Simbologia.CODE_128 to "ZZP0042x",
     )
     val MODULOS = listOf(1.5f, 2f, 3f, 5f)
     val GIROS = listOf(0f, 20f, 45f)

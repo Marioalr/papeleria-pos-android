@@ -35,7 +35,7 @@ class LimitesTest {
             assertTrue(cuadro.y.isDirect)
             val g = e.condicion to e.indiceGrado
             val texto = when {
-                g in leeMal -> "7501234567899"
+                g in leeMal -> "7509993456782"
                 e.indiceGrado > (hasta[e.condicion] ?: Int.MAX_VALUE) -> null
                 e.variante in (fallaVariantes[g] ?: emptySet()) -> null
                 else -> EscenaLimite.CODIGO

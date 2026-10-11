@@ -15,12 +15,12 @@ import javax.imageio.ImageIO
  */
 object Carteles {
     val codigos = listOf(
-        "ean13" to (Simbologia.EAN_13 to "7501234567893"),
-        "interno" to (Simbologia.EAN_13 to Gtin.completar("200000000001")),
-        "ean8" to (Simbologia.EAN_8 to "96385074"),
-        "upca" to (Simbologia.UPC_A to "036000291452"),
-        "itf14" to (Simbologia.ITF to "10012345000017"),
-        "code128" to (Simbologia.CODE_128 to "PAP0042x"),
+        "ean13" to (Simbologia.EAN_13 to "7509993456786"),
+        "interno" to (Simbologia.EAN_13 to Gtin.completar("299999000001")),
+        "ean8" to (Simbologia.EAN_8 to "75099916"),
+        "upca" to (Simbologia.UPC_A to "099999291452"),
+        "itf14" to (Simbologia.ITF to "17509995000014"),
+        "code128" to (Simbologia.CODE_128 to "ZZP0042x"),
     )
 
     val escenas = mapOf(

@@ -96,7 +96,7 @@ class AperturaAppTest {
             ctx.startActivity(lanzador)
             val vieja = esperarMainActivity(distintaDe = null)
             // Una lectura en la venta en curso.
-            listas.venta.update { it.sumar("7501234567893", Simbologia.EAN_13, System.currentTimeMillis()) }
+            listas.venta.update { it.sumar("7509993456786", Simbologia.EAN_13, System.currentTimeMillis()) }
             val total = listas.venta.value.total
 
             val atajo = Intent(ctx, MainActivity::class.java)

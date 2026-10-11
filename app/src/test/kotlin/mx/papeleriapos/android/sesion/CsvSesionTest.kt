@@ -23,14 +23,14 @@ class CsvSesionTest {
 
     private fun sesion() = SesionPrueba("Moto, \"Lupita\"", 1_760_000_000_000)
         .registrarLectura(
-            Ejemplos.evento("7501234567893", indicaciones = listOf(Indicacion.ACERCATE, Indicacion.IZQUIERDA, Indicacion.QUIETO)),
+            Ejemplos.evento("7509993456786", indicaciones = listOf(Indicacion.ACERCATE, Indicacion.IZQUIERDA, Indicacion.QUIETO)),
             contexto,
         )
         .registrarLectura(Ejemplos.upcA.copy(via = Via.RESPALDO), conApertura)
-        .registrarLectura(Ejemplos.evento("TICKET-SECRETO-1234", Simbologia.QR, ms = -1, moduloPx = 0f), contexto)
+        .registrarLectura(Ejemplos.evento("ZZ-000001", Simbologia.QR, ms = -1, moduloPx = 0f), contexto)
         .registrarLectura(Ejemplos.evento("=CMD|x", Simbologia.CODE_128), contexto)
         .marcarUltimo(ResultadoIntento.FALSO_POSITIVO)
-        .conEsperado("7501234567893")
+        .conEsperado("7509993456786")
         .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
 
     @Test
@@ -66,7 +66,7 @@ class CsvSesionTest {
         assertEquals("180", col(1, "ms_desde_candidato"))
         assertEquals("ACERCATE|IZQUIERDA|QUIETO", col(1, "indicaciones"))
         assertEquals("EAN_13", col(1, "simbologia"))
-        assertEquals("7501234567893", col(1, "valor"))
+        assertEquals("7509993456786", col(1, "valor"))
         assertEquals("", col(1, "esperado"))
         assertEquals("", col(1, "coincide"))
         assertEquals("2.50", col(1, "modulo_px"))
@@ -86,8 +86,8 @@ class CsvSesionTest {
         assertEquals("0.1.0", col(1, "version_app"))
         assertEquals("abc1234", col(1, "commit"))
         // UPC-A: el valor como lo dio el motor y el normalizado en 13.
-        assertEquals("036000291452", col(2, "valor"))
-        assertEquals("0036000291452", col(2, "normalizado"))
+        assertEquals("099999291452", col(2, "valor"))
+        assertEquals("0099999291452", col(2, "normalizado"))
         // El que leyó ML Kit de respaldo, con la CPU del intento y la apertura en caliente.
         assertEquals("RESPALDO", col(2, "via"))
         assertEquals("120", col(2, "cpu_ms"))
@@ -110,7 +110,7 @@ class CsvSesionTest {
         assertEquals("TIMEOUT", col(5, "resultado"))
         assertEquals("", col(5, "via"))
         assertEquals("", col(5, "simbologia"))
-        assertEquals("7501234567893", col(5, "esperado"))
+        assertEquals("7509993456786", col(5, "esperado"))
         assertEquals("2.00", col(5, "zoom"))
         assertEquals("si", col(5, "linterna"))
     }
@@ -118,11 +118,11 @@ class CsvSesionTest {
     @Test
     fun `el contenido del QR no sale en el archivo`() {
         val texto = CsvSesion.escribir(sesion(), equipo, utc)
-        assertFalse(texto.contains("SECRETO"))
+        assertFalse(texto.contains("ZZ-000001"))
         val r = Csv.leer(texto)
         val valor = r[3][CsvSesion.COLUMNAS.indexOf("valor")]
-        assertEquals(Csv.ocultar("TICKET-SECRETO-1234"), valor)
-        assertTrue(valor.endsWith("...1234"))
+        assertEquals(Csv.ocultar("ZZ-000001"), valor)
+        assertTrue(valor.endsWith("...0001"))
     }
 
     @Test
@@ -187,10 +187,10 @@ class CsvSesionTest {
             "sesion,n,hora,motor,modo,rango_fps,ms_desde_candidato,indicaciones,simbologia,valor,normalizado,esperado," +
             "coincide,modulo_px,zoom,linterna,resultado,bateria_pct,cpu_ms_proceso,estado_termico,dispositivo,sdk," +
             "version_app,commit\r\n" +
-            "x@1,1,2025-10-09T08:53:20.123+0000,ML_KIT,VENTA,30-30,180,QUIETO,EAN_13,7501234567893,7501234567893,,," +
+            "x@1,1,2025-10-09T08:53:20.123+0000,ML_KIT,VENTA,30-30,180,QUIETO,EAN_13,7509993456786,7509993456786,,," +
             "2.50,1.50,no,OK,80,123456,1,moto,34,0.1.0,abc\r\n"
         val i = CsvSesion.leerIntentos(viejo, utc).single()
-        assertEquals("7501234567893", i.valor)
+        assertEquals("7509993456786", i.valor)
         assertEquals("", i.via)
         assertEquals(80, i.medicion.bateriaPct)
         assertEquals(-1L, i.medicion.cpuMs)

@@ -27,7 +27,7 @@ class ExperimentoTest {
                 Barcode.FORMAT_ITF, Barcode.FORMAT_CODE_128, Barcode.FORMAT_QR_CODE,
             ).enableAllPotentialBarcodes().build(),
         )
-        val modulos = Barras.ean13("7501234567893")
+        val modulos = Barras.ean13("7509993456786")
         fun nv21(w: Int, h: Int, rot: Int): ByteArray {
             // Código horizontal en el derecho; si rot=90 el buffer es h×w girado.
             val dw = if (rot % 180 == 0) w else h
@@ -52,7 +52,7 @@ class ExperimentoTest {
             val ts = DoubleArray(15) {
                 val t0 = SystemClock.elapsedRealtimeNanos()
                 val r = Tasks.await(cliente.process(img()))
-                check(r.any { it.rawValue == "7501234567893" }) { "no leyó ${w}x$h rot $rot: ${r.map { it.rawValue }}" }
+                check(r.any { it.rawValue == "7509993456786" }) { "no leyó ${w}x$h rot $rot: ${r.map { it.rawValue }}" }
                 (SystemClock.elapsedRealtimeNanos() - t0) / 1e6
             }.sorted()
             Log.i("Experimento", "ML Kit ${w}x$h rot=$rot mediana %.1f ms min %.1f".format(ts[7], ts[0]))
@@ -63,7 +63,7 @@ class ExperimentoTest {
     @Test
     fun itfConBarrasAnchasDe2y3() {
         val cliente = BarcodeScanning.getClient(BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_ITF).build())
-        val texto = Gtin.completar("1750100000001")
+        val texto = Gtin.completar("1750999000001")
         for (ancho in listOf(2, 3)) for (modulo in listOf(2f, 3f, 4f)) {
             val m = Barras.itf(texto, ancho)
             val w = 1280; val h = 720

@@ -75,9 +75,9 @@ val scanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder()
 |---|---|---|---|
 | EAN-13 (750…, internos 2…) | GS1 mod-10 (ML Kit ya lo valida; repetirlo cuesta nada) | 2 iguales en los últimos 3 cuadros (A/B contra N=1) | 13 dígitos |
 | UPC-A | GS1 | igual que EAN-13 | ML Kit entrega 12 dígitos: un EAN-13 que empieza con 0 llega como UPC_A, aunque solo se pida EAN_13 (#797) [V]. zxing-cpp entrega 13. Buscar `v` y `"0"+v`. |
-| UPC-E | longitud 8 + GS1 sobre la expansión | 2 de 3 | ML Kit da 8 dígitos sin expandir ("01234565"). zxing-cpp da 13 expandidos ("0012345000065") [V]. Expandir a UPC-A y luego a GTIN-13; buscar 8, 12 y 13 dígitos. |
+| UPC-E | longitud 8 + GS1 sobre la expansión | 2 de 3 | ML Kit da 8 dígitos sin expandir ("09999961"). zxing-cpp da 13 expandidos ("0099999000061") [V]. Expandir a UPC-A y luego a GTIN-13; buscar 8, 12 y 13 dígitos. |
 | EAN-8 | GS1 | 2 de 3 | 8 dígitos |
-| ITF | **exactamente 14 dígitos + GS1 mod-10** | **2 iguales obligatorias** | ML Kit no valida ITF. Reproduje la lectura falsa `"1750100000000000000000000000000000000000"` (40 dígitos) [V/E]. El filtro ITF_14 de zxing-cpp no limita la longitud [V]. |
+| ITF | **exactamente 14 dígitos + GS1 mod-10** | **2 iguales obligatorias** | ML Kit no valida ITF. Reproduje una lectura falsa de 40 dígitos (el principio del ITF de prueba y luego ceros) [V/E]. El filtro ITF_14 de zxing-cpp no limita la longitud [V]. |
 | Code 128 (claves de eleventa) | ninguna disponible (no hay GS1) | **2 iguales obligatorias** (3 si aparecen lecturas erróneas) | Quitar `]C1` si aparece (#176; no lo volví a probar en 17.3.0) [NV]. El issue #17, abierto, incluye Code 128 mal leídos [V]. |
 | QR (tickets) | Reed-Solomon interno | 1 | En los logs guardar solo hash + últimos 4 caracteres. |
 
@@ -296,9 +296,9 @@ Marcas de tiempo: `SystemClock.elapsedRealtimeNanos()` al entrar a `analyze()`. 
 **N1. Instrumentadas en el emulador** (API 37 x86_64):
 - `DecodeAccuracyTest` lee `androidTest/assets/dataset/manifest.csv` (`file,format,expected`), lo pasa por ML Kit y zxing-cpp, y escribe un CSV con `ok, got, format, ms, cold`.
 - Casos obligatorios:
-  - `7501234567893`, interno `2…`, `0036000291452` (debe normalizarse), UPC-E `01234565`, EAN-8 `96385074`, Code 128 `ELEV-00123a`, QR;
-  - ITF válido `17501000000019` e inválido `17501000000018` (este debe rechazarse);
-  - EAN con dígito malo `7501000000013` (debe rechazarse);
+  - `7509993456786`, interno `2…`, `0099999291452` (debe normalizarse), UPC-E `09999961`, EAN-8 `75099916`, Code 128 `ZZEV-00123a`, QR;
+  - ITF válido `17509990000019` e inválido `17509990000018` (este debe rechazarse);
+  - EAN con dígito malo `7509990000013` (debe rechazarse);
   - la lectura ITF de 40 dígitos debe caer en el validador;
   - `falsepositives-1/2` de zxing-cpp (Apache-2.0) con 0 falsos positivos.
 - Comparar latencia ROI NV21 contra frame completo.

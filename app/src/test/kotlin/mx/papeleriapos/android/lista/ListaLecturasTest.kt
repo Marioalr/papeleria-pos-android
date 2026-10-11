@@ -9,9 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ListaLecturasTest {
-    private val ean = "7501234567893"
-    private val interno = "2000000042010"
-    private val code128 = "PAP0042x"
+    private val ean = "7509993456786"
+    private val interno = "2999990042011"
+    private val code128 = "ZZP0042x"
 
     private fun ListaLecturas.codigos() = renglones.map { it.codigo to it.cantidad }
 

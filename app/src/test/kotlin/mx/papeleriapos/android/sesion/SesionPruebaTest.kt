@@ -27,8 +27,8 @@ class SesionPruebaTest {
     @Test
     fun `cada lectura es un intento numerado con lo que trae el evento`() {
         val s = vacia
-            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
-            .registrarLectura(Ejemplos.evento("96385074", Simbologia.EAN_8, motor = Motor.ZXING_CPP), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto)
+            .registrarLectura(Ejemplos.evento("75099916", Simbologia.EAN_8, motor = Motor.ZXING_CPP), contexto)
         assertEquals(listOf(1, 2), s.intentos.map { it.n })
         val i = s.intentos[0]
         assertEquals("ML_KIT", i.motor)
@@ -38,7 +38,7 @@ class SesionPruebaTest {
         assertEquals(180L, i.msDesdeCandidato)
         assertEquals(listOf("ACERCATE", "QUIETO"), i.indicaciones)
         assertEquals("EAN_13", i.simbologia)
-        assertEquals("7501234567893", i.valor)
+        assertEquals("7509993456786", i.valor)
         assertEquals(2.5f, i.moduloPx)
         assertEquals(1.5f, i.zoom)
         assertEquals(Medicion(87, 1234, 1), i.medicion)
@@ -50,46 +50,46 @@ class SesionPruebaTest {
 
     @Test
     fun `con codigo esperado compara y si no coincide queda como lectura incorrecta`() {
-        val s = vacia.conEsperado(" 7501234567893 ")
-            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
-            .registrarLectura(Ejemplos.evento("7501000000013"), contexto)
-        assertEquals("7501234567893", s.esperado)
+        val s = vacia.conEsperado(" 7509993456786 ")
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto)
+            .registrarLectura(Ejemplos.evento("7509990000013"), contexto)
+        assertEquals("7509993456786", s.esperado)
         assertEquals(true, s.intentos[0].coincide)
         assertEquals(ResultadoIntento.OK, s.intentos[0].resultado)
         assertEquals(false, s.intentos[1].coincide)
         assertEquals(ResultadoIntento.LECTURA_INCORRECTA, s.intentos[1].resultado)
-        assertEquals("7501234567893", s.intentos[1].esperado)
+        assertEquals("7509993456786", s.intentos[1].esperado)
     }
 
     @Test
     fun `un UPC-A coincide con su EAN-13 y un UPC-E con su expansion`() {
-        assertTrue(SesionPrueba.coincide("0036000291452", CodigoLeido("036000291452", "036000291452", Simbologia.UPC_A, emptyList())))
-        assertTrue(SesionPrueba.coincide("036000291452", CodigoLeido("0036000291452", "0036000291452", Simbologia.EAN_13, emptyList())))
-        // UPC-E 01234565 se expande a 012345000065.
-        assertTrue(SesionPrueba.coincide("01234565", CodigoLeido("0012345000065", "0012345000065", Simbologia.UPC_E, emptyList())))
-        assertTrue(SesionPrueba.coincide("012345000065", CodigoLeido("01234565", "0012345000065", Simbologia.UPC_E, emptyList())))
-        assertFalse(SesionPrueba.coincide("7501234567893", CodigoLeido("7501234567899", "7501234567899", Simbologia.EAN_13, emptyList())))
+        assertTrue(SesionPrueba.coincide("0099999291452", CodigoLeido("099999291452", "099999291452", Simbologia.UPC_A, emptyList())))
+        assertTrue(SesionPrueba.coincide("099999291452", CodigoLeido("0099999291452", "0099999291452", Simbologia.EAN_13, emptyList())))
+        // UPC-E 09999961 se expande a 099999000061.
+        assertTrue(SesionPrueba.coincide("09999961", CodigoLeido("0099999000061", "0099999000061", Simbologia.UPC_E, emptyList())))
+        assertTrue(SesionPrueba.coincide("099999000061", CodigoLeido("09999961", "0099999000061", Simbologia.UPC_E, emptyList())))
+        assertFalse(SesionPrueba.coincide("7509993456786", CodigoLeido("7509993456782", "7509993456782", Simbologia.EAN_13, emptyList())))
         // Code 128 se compara tal cual.
-        assertTrue(SesionPrueba.coincide("PAP0042x", CodigoLeido("PAP0042x", "PAP0042x", Simbologia.CODE_128, emptyList())))
-        assertFalse(SesionPrueba.coincide("PAP0042X", CodigoLeido("PAP0042x", "PAP0042x", Simbologia.CODE_128, emptyList())))
+        assertTrue(SesionPrueba.coincide("ZZP0042x", CodigoLeido("ZZP0042x", "ZZP0042x", Simbologia.CODE_128, emptyList())))
+        assertFalse(SesionPrueba.coincide("ZZP0042X", CodigoLeido("ZZP0042x", "ZZP0042x", Simbologia.CODE_128, emptyList())))
     }
 
     @Test
     fun `en un QR solo queda el hash y los ultimos 4, pero la comparacion usa el valor real`() {
-        val qr = "TICKET|folio=000987|total=120.00|7F3A"
+        val qr = "A-000123"
         val s = vacia.conEsperado(qr).registrarLectura(Ejemplos.evento(qr, Simbologia.QR), contexto)
         val i = s.intentos.single()
         assertTrue(i.valor.startsWith("sha256:"))
-        assertTrue(i.valor.endsWith("...7F3A"))
-        assertFalse(i.valor.contains("folio"))
-        assertFalse(i.normalizado.contains("folio"))
-        assertFalse(i.esperado.contains("folio"))
+        assertTrue(i.valor.endsWith("...0123"))
+        assertFalse(i.valor.contains("A-000123"))
+        assertFalse(i.normalizado.contains("A-000123"))
+        assertFalse(i.esperado.contains("A-000123"))
         assertEquals(true, i.coincide)
     }
 
     @Test
     fun `el operador corrige el ultimo intento leido`() {
-        val s = vacia.registrarLectura(Ejemplos.evento("7501234567893"), contexto)
+        val s = vacia.registrarLectura(Ejemplos.evento("7509993456786"), contexto)
         assertEquals(ResultadoIntento.DUPLICADO, s.marcarUltimo(ResultadoIntento.DUPLICADO).ultimo!!.resultado)
         assertEquals(ResultadoIntento.FALSO_POSITIVO, s.marcarUltimo(ResultadoIntento.FALSO_POSITIVO).ultimo!!.resultado)
         // A un intento leído no se le pone TIMEOUT: eso es un intento nuevo.
@@ -100,12 +100,12 @@ class SesionPruebaTest {
 
     @Test
     fun `los intentos fallidos se registran aparte con el contexto del momento`() {
-        val s = vacia.conEsperado("7501234567893").registrarFallo(ResultadoIntento.TIMEOUT, contexto)
+        val s = vacia.conEsperado("7509993456786").registrarFallo(ResultadoIntento.TIMEOUT, contexto)
         val i = s.intentos.single()
         assertEquals(ResultadoIntento.TIMEOUT, i.resultado)
         assertEquals("", i.simbologia)
         assertEquals("", i.valor)
-        assertEquals("7501234567893", i.esperado)
+        assertEquals("7509993456786", i.esperado)
         assertNull(i.coincide)
         assertEquals("ZXING_CPP", i.motor)
         assertEquals(1.5f, i.zoom)
@@ -119,8 +119,8 @@ class SesionPruebaTest {
     @Test
     fun `cada lectura guarda por donde leyo y un fallo no tiene via`() {
         val s = vacia
-            .registrarLectura(Ejemplos.evento("7501234567893", motor = Motor.AUTOMATICO, via = Via.RESPALDO), contexto)
-            .registrarLectura(Ejemplos.evento("7501234567893", motor = Motor.AUTOMATICO, via = Via.UMBRAL), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786", motor = Motor.AUTOMATICO, via = Via.RESPALDO), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786", motor = Motor.AUTOMATICO, via = Via.UMBRAL), contexto)
             .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
         assertEquals(listOf("RESPALDO", "UMBRAL", ""), s.intentos.map { it.via })
     }
@@ -159,7 +159,7 @@ class SesionPruebaTest {
         assertTrue("Después de deshacer cuenta de inmediato", a.permite(11_100))
 
         val s = vacia
-            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto)
             .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
         assertTrue(s.puedeDeshacerFallo)
         val sin = s.quitarUltimoFallo()
@@ -202,9 +202,9 @@ class SesionPruebaTest {
     @Test
     fun `los contadores suman por resultado`() {
         val s = vacia
-            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
-            .registrarLectura(Ejemplos.evento("7501234567893"), contexto).marcarUltimo(ResultadoIntento.DUPLICADO)
-            .registrarLectura(Ejemplos.evento("96385074", Simbologia.EAN_8), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto)
+            .registrarLectura(Ejemplos.evento("7509993456786"), contexto).marcarUltimo(ResultadoIntento.DUPLICADO)
+            .registrarLectura(Ejemplos.evento("75099916", Simbologia.EAN_8), contexto)
             .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
             .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
             .registrarFallo(ResultadoIntento.CANCELADO, contexto)
