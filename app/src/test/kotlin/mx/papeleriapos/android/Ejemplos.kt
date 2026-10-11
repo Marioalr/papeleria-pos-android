@@ -1,5 +1,6 @@
 package mx.papeleriapos.android
 
+import mx.papeleriapos.escaner.ComparacionMotores
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.nucleo.Aceptada
@@ -25,6 +26,7 @@ object Ejemplos {
         via: Via = Via.DIRECTA,
         distanciaCm: Float = 12.5f,
         msCuadro: Float = 8.4f,
+        comparacion: ComparacionMotores? = null,
     ) = EventoLectura(
         aceptada = Aceptada(CodigoLeido(original, normalizado, simbologia, claves), Caja(0.2f, 0.4f, 0.8f, 0.6f), 0L, false),
         msDesdeCandidato = ms,
@@ -36,6 +38,7 @@ object Ejemplos {
         linterna = linterna,
         distanciaCm = distanciaCm,
         msCuadro = msCuadro,
+        comparacion = comparacion,
     )
 
     /** Un UPC-A como lo da ML Kit (12 dígitos), ya normalizado a 13. */

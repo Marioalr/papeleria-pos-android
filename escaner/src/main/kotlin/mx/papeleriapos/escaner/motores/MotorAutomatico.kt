@@ -3,8 +3,6 @@ package mx.papeleriapos.escaner.motores
 import mx.papeleriapos.escaner.CuadroY
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.MotorDeLectura
-import mx.papeleriapos.escaner.nucleo.Confirmador
-import mx.papeleriapos.escaner.nucleo.Lectura
 import mx.papeleriapos.escaner.nucleo.ResultadoMotor
 import mx.papeleriapos.escaner.nucleo.Simbologia
 import mx.papeleriapos.escaner.nucleo.Via
@@ -68,11 +66,6 @@ class MotorAutomatico(simbologias: Set<Simbologia>, cadaCuantos: Int = 2, probar
 
     private fun conNanos(r: ResultadoMotor, nanos: Long) =
         if (r.nanos == nanos) r else ResultadoMotor(r.lecturas, r.potencialesBuffer, nanos, r.via)
-
-    private fun algunaValida(lecturas: List<Lectura>): Boolean {
-        for (i in lecturas.indices) if (Confirmador.normalizar(lecturas[i]) != null) return true
-        return false
-    }
 }
 
 /**

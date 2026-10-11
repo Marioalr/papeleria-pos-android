@@ -119,6 +119,12 @@ fun ContenidoAjustes(
         TituloSeccion("Lectura")
         Etiqueta("Motor")
         Opciones(Motor.entries, config.motor, { it.etiqueta }, { alCambiar(config.copy(motor = it)) })
+        if (config.motor == Motor.LADO_A_LADO) {
+            Nota(
+                "zxing-cpp y ML Kit en cada cuadro sobre la misma franja, para compararlos con productos reales: la sesión " +
+                    "de prueba y el diagnóstico dicen qué leyó cada uno y cuánto tardó. Más lento; solo para medir.",
+            )
+        }
         Etiqueta("Modo")
         Opciones(Modo.entries, config.modo, { it.etiqueta }, { alCambiar(config.copy(modo = it)) })
         Etiqueta("Simbologías")

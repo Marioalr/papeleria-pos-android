@@ -1,6 +1,7 @@
 package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.escaner.LadoMotor
 import java.util.TimeZone
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -12,6 +13,15 @@ data class Conteo(val intentos: Int = 0, val bien: Int = 0) {
     /** «18/20» (bien de intentos). */
     fun texto(): String = "$bien/$intentos"
 }
+
+/**
+ * Un motor en una tanda con «Lado a lado»: en cuántos intentos leyó el código y en cuántos leyó otra cosa, y las
+ * medianas de a los cuántos ms lo leyó por primera vez (de los intentos en que lo leyó) y de lo que costó por cuadro.
+ */
+data class LadoTanda(val leyo: Int = 0, val otras: Int = 0, val msPrimera: Long = -1, val msCuadro: Float = 0f)
+
+/** zxing-cpp y ML Kit en los [intentos] de la tanda que se leyeron con el motor «Lado a lado». */
+data class ResumenLado(val intentos: Int, val zxing: LadoTanda, val mlKit: LadoTanda)
 
 /**
  * El resumen corto de una tanda: un bloque de intentos con la misma condición (docs/plan.md, entrega 8 parte 7). Dice
@@ -46,6 +56,8 @@ data class ResumenTanda(
     val sinLinterna: Conteo = Conteo(),
     /** Todos los intentos, por el lente de Ajustes; «» si el intento no lo trae (un CSV de antes). */
     val porLente: Map<String, Conteo> = emptyMap(),
+    /** Si hubo lecturas con el motor «Lado a lado»: cómo le fue a cada motor; null si no. */
+    val ladoALado: ResumenLado? = null,
 ) {
     /** De uno a tres renglones para la pantalla de la sesión; lo que no se sabe no sale. */
     fun texto(enCurso: Boolean = false): String {
@@ -71,11 +83,23 @@ data class ResumenTanda(
         if (porLente.isNotEmpty()) {
             grupos += "Lente: " + porLente.entries.joinToString(", ") { (l, c) -> "${l.ifEmpty { "sin dato" }} ${c.texto()}" }
         }
-        val renglones = ArrayList<String>(3)
+        val renglones = ArrayList<String>(4)
         renglones += cabeza.toString()
         if (tiempos.isNotEmpty()) renglones += tiempos.joinToString(", ").replaceFirstChar { it.uppercaseChar() } + "."
         if (grupos.isNotEmpty()) renglones += grupos.joinToString(". ") + "."
+        val l = ladoALado
+        if (l != null) {
+            renglones += "Lado a lado (${l.intentos}): zxing-cpp leyó ${l.zxing.leyo}${detalle(l.zxing)}, " +
+                "ML Kit ${l.mlKit.leyo}${detalle(l.mlKit)}; otras lecturas: zxing-cpp ${l.zxing.otras}, ML Kit ${l.mlKit.otras}."
+        }
         return renglones.joinToString("\n")
+    }
+
+    private fun detalle(x: LadoTanda): String {
+        val partes = ArrayList<String>(2)
+        if (x.msPrimera >= 0) partes += "primera a ${x.msPrimera} ms"
+        if (x.msCuadro > 0f) partes += (if (x.msCuadro < 10f) Csv.decimal(x.msCuadro, 2) else x.msCuadro.roundToInt().toString()) + " ms/cuadro"
+        return if (partes.isEmpty()) "" else " (" + partes.joinToString(", ") + ")"
     }
 }
 
@@ -115,6 +139,7 @@ object ResumenTandas {
             porLente[i.lente] = (porLente[i.lente] ?: Conteo()).mas(ok)
             if (i.linterna) con = con.mas(ok) else sin = sin.mas(ok)
         }
+        val comparadas = intentos.mapNotNull { it.comparacion }
         return ResumenTanda(
             condicion = condicion,
             desde = intentos.first().n,
@@ -134,8 +159,20 @@ object ResumenTandas {
             conLinterna = con,
             sinLinterna = sin,
             porLente = porLente,
+            ladoALado = if (comparadas.isEmpty()) null else ResumenLado(
+                comparadas.size,
+                ladoTanda(comparadas.map { it.zxing }),
+                ladoTanda(comparadas.map { it.mlKit }),
+            ),
         )
     }
+
+    private fun ladoTanda(lados: List<LadoMotor>) = LadoTanda(
+        leyo = lados.count { it.leidos > 0 },
+        otras = lados.count { it.otras > 0 },
+        msPrimera = percentil(lados.map { it.msPrimera }.filter { it >= 0 }.sorted(), 0.5) ?: -1,
+        msCuadro = percentil(lados.map { it.msCuadro }.filter { it > 0f }.sorted(), 0.5) ?: 0f,
+    )
 
     /** Rango más cercano: el elemento en la posición ⌈q·n⌉ (desde 1) de la lista ya ordenada; null si está vacía. */
     internal fun <T> percentil(ordenados: List<T>, q: Double): T? {
@@ -150,8 +187,9 @@ object CsvResumen {
     val COLUMNAS = listOf(
         "sesion", "condicion", "desde", "hasta", "intentos", "bien", "falsas", "duplicados", "no_leyo", "cancelados",
         "ms_mediana", "ms_p90", "distancia_cm", "lecturas_por_minuto", "por_simbologia", "con_linterna_intentos",
-        "con_linterna_bien", "sin_linterna_intentos", "sin_linterna_bien", "por_lente", "dispositivo", "sdk",
-        "version_app", "commit",
+        "con_linterna_bien", "sin_linterna_intentos", "sin_linterna_bien", "por_lente", "lado_intentos", "zxing_leyo",
+        "zxing_otras", "zxing_ms_primera", "zxing_ms_cuadro", "mlkit_leyo", "mlkit_otras", "mlkit_ms_primera",
+        "mlkit_ms_cuadro", "dispositivo", "sdk", "version_app", "commit",
     )
 
     fun escribir(
@@ -164,6 +202,7 @@ object CsvResumen {
         val salida = StringBuilder(Csv.BOM)
         Csv.renglon(COLUMNAS, salida)
         for (t in tandas) {
+            val l = t.ladoALado
             Csv.renglon(
                 listOf(
                     clave,
@@ -186,6 +225,15 @@ object CsvResumen {
                     t.sinLinterna.intentos.toString(),
                     t.sinLinterna.bien.toString(),
                     conteos(t.porLente),
+                    l?.intentos?.toString() ?: "",
+                    l?.zxing?.leyo?.toString() ?: "",
+                    l?.zxing?.otras?.toString() ?: "",
+                    l?.zxing?.msPrimera?.let { if (it >= 0) it.toString() else "" } ?: "",
+                    l?.zxing?.msCuadro?.let { if (it > 0f) Csv.decimal(it, 2) else "" } ?: "",
+                    l?.mlKit?.leyo?.toString() ?: "",
+                    l?.mlKit?.otras?.toString() ?: "",
+                    l?.mlKit?.msPrimera?.let { if (it >= 0) it.toString() else "" } ?: "",
+                    l?.mlKit?.msCuadro?.let { if (it > 0f) Csv.decimal(it, 2) else "" } ?: "",
                     Csv.textoSeguro(equipo.dispositivo),
                     equipo.sdk.toString(),
                     equipo.versionApp,

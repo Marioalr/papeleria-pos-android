@@ -114,7 +114,7 @@ fun ContenidoBanco(
                 habilitado = !e.corriendo,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (m in Motor.entries) {
+                for (m in MOTORES_DEL_BANCO) {
                     FilterChip(
                         selected = m in e.motores,
                         onClick = { alAlternarMotor(m) },
