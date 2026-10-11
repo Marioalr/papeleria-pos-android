@@ -96,7 +96,6 @@ internal class Analizador(
     private var ladoLocalizador = 0
     private val guia = Guia()
     private var confirmador = Confirmador()
-    private var msAusencia = -1L
     private val observacion = Observacion()
 
     // Geometría: se recalcula solo si cambia el recorte visible, la rotación, el tamaño o la franja.
@@ -590,9 +589,11 @@ internal class Analizador(
             crear(cfg).calentar()
             forzarDiagnostico = true
         }
-        if (cfg.msAusenciaParaRepetir != msAusencia) {
-            msAusencia = cfg.msAusenciaParaRepetir
-            confirmador = Confirmador(ReglasConfirmacion(msAusenciaParaRepetir = cfg.msAusenciaParaRepetir))
+        val ausencia = cfg.msAusenciaParaRepetir
+        val aVista = cfg.msParaRepetirAVista
+        val reglas = confirmador.reglas
+        if (ausencia != reglas.msAusenciaParaRepetir || aVista != reglas.msParaRepetirAVista) {
+            confirmador = Confirmador(ReglasConfirmacion(msAusenciaParaRepetir = ausencia, msParaRepetirAVista = aVista))
         }
     }
 
@@ -849,6 +850,8 @@ internal class Analizador(
     }
 
     private fun fallo(e: Throwable) {
+        // Un cuadro sin analizar no puede unir dos lecturas como seguidas.
+        confirmador.cortarRacha()
         errores++
         if (errores == 1 || errores % 100 == 0) Log.e(ETIQUETA, "Falló el análisis de un cuadro ($errores seguidos)", e)
         if (!enError) {

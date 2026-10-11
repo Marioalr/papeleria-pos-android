@@ -38,7 +38,8 @@ mientras trabaja (`STRATEGY_KEEP_ONLY_LATEST`), así nunca se atrasa.
    el nivel que separa barras de espacios.
 2. **Leer** la franja de la retícula con el motor automático: zxing-cpp tal cual, zxing-cpp con el umbral del
    localizador y, solo si el localizador ve un código que no sale, ML Kit ([motores](#motores)).
-3. **Validar y confirmar:** dígito verificador, consenso entre cuadros y el filtro de repetidos.
+3. **Validar y confirmar:** dígito verificador, dos lecturas iguales en cuadros seguidos (en 1D) y el filtro de
+   repetidos.
 4. **Guiar:** de lo localizado, lo que vio el motor y el enfoque sale una sola indicación, sin parpadeos.
 5. **Avisar:** el estado nuevo va a la pantalla; una lectura aceptada dispara el bip, la vibración y el verde.
 
@@ -81,8 +82,11 @@ Por eso el motor por defecto es el **automático**, con hasta tres pasadas por c
    umbral** (~1 ms). Rescata la etiqueta blanca sobre cartón o empaque de color, el caso común en la tienda; con un cuadro
    real del emulador, sin esta pasada no se leía y con ella sí.
 3. Si tampoco y hay un código probable (el localizador lo ve, o hubo uno hace menos de 1 s): **ML Kit** (incluido en la
-   app, 17.3.0) sobre **todo lo visible**, a lo más uno de cada dos cuadros para que la guía siga fluida. Con el celular
-   vertical a ML Kit le cuesta menos lo visible que la franja, y le da contexto a un código difícil (borroso, girado).
+   app, 17.3.0) sobre **todo lo visible**, a lo más uno de cada dos cuadros para que la guía siga fluida. Si lee algo en
+   su turno, corre también en el cuadro siguiente, porque la segunda lectura tiene que ser de un cuadro seguido
+   ([consenso](#validación-y-consenso)); esa corrida toma el turno que seguía, así que en promedio sigue en uno de cada
+   dos. Con el celular vertical a ML Kit le cuesta menos lo visible que la franja, y le da contexto a un código difícil
+   (borroso, girado).
 
 En la prueba de punta a punta del emulador, 8 de 10 lecturas salieron por la segunda pasada (150–500 ms desde que
 apareció el código) y 2 por ML Kit (el código girado y el pegado abajo, 270–600 ms). En ajustes se puede fijar un
@@ -117,7 +121,7 @@ Una sola indicación a la vez, en este orden de prioridad:
 | Muévete | El centro del código se desvía > 20 % de la franja (sale < 12 %), o toca un solo borde | «Mueve el celular a la izquierda» (hacia donde se ve el código) |
 | Acércate | < 2 px por módulo (sale > 2.5), o < 30 % de la franja si no se puede medir; solo si el zoom propio ya está al tope | «Acércate» |
 | Mantén firme | Borroso (nitidez < 0.15, sale > 0.22) o movido; si el lente está enfocando, «Enfocando…» | «Mantén firme» |
-| Ya leído | El código a la vista ya se contó y no se ha retirado | «Ya leído: retíralo para leerlo otra vez» |
+| Ya leído | El código a la vista ya se contó: no ha salido de la mira ni han pasado 1.5 s | «Ya leído: retíralo para leerlo otra vez» |
 | Leyendo | Bien colocado | «Leyendo…» |
 | Apunta | Nada a la vista | «Apunta al código de barras» |
 
@@ -136,22 +140,38 @@ toma como desconocida. El ancho del módulo no decide «aléjate» con el códig
 
 ## Validación y consenso
 
+Una lectura falsa es peor que una lenta (decisión del dueño, 2026-10-11): la meta es 0 falsas.
+
 | Simbología | Se acepta si… | Lecturas iguales | Se entrega como |
 |---|---|---|---|
-| EAN-13 (750…, internos 2…) | Dígito verificador | 2 de los últimos 3 cuadros | 13 dígitos |
-| UPC-A | Dígito verificador | 2 de 3 | GTIN-13 con 0 adelante; se busca también con 12 |
-| UPC-E | Su expansión a UPC-A es válida | 2 de 3 | GTIN-13; se busca también con 8 y 12 |
-| EAN-8 | Dígito verificador | 2 de 3 | 8 dígitos |
-| ITF | **Exactamente 14 dígitos** con verificador (ML Kit llega a leer basura de 40 dígitos) | 2 de 3 | 14 dígitos |
-| Code 128 | Sin `]C1` ni caracteres de control | 2 de 3 | Igual |
+| EAN-13 (750…, internos 2…) | Dígito verificador | 2 en cuadros seguidos | 13 dígitos |
+| UPC-A | Dígito verificador | 2 seguidas | GTIN-13 con 0 adelante; se busca también con 12 |
+| UPC-E | Su expansión a UPC-A es válida (con su verificador) | 2 seguidas | GTIN-13; se busca también con 8 y 12 |
+| EAN-8 | Dígito verificador | 2 seguidas | 8 dígitos |
+| ITF | **Exactamente 14 dígitos** con verificador (ML Kit llega a leer basura de 40 dígitos) | 2 seguidas | 14 dígitos |
+| Code 128 | Su símbolo de verificación (lo valida el decodificador); sin `]C1` ni caracteres de control | 2 seguidas | Igual |
 | QR | Su corrección de errores | 1 | Igual (en la sesión de prueba solo un resumen) |
+
+**Dos seguidas** quiere decir en el cuadro analizado actual y en el anterior: un cuadro analizado sin esa lectura
+(vacío, con otro código o con una lectura inválida) rompe la racha, y un cuadro que falló también. Nunca se acepta un
+1D de un solo cuadro para ganar velocidad. Un verificador mal no se lee ni se «corrige», por más cuadros que llegue.
+El confirmador corre en cada cuadro analizado, con cualquier motor, aunque no haya lecturas. El respaldo de ML Kit
+corre uno de cada dos cuadros, salvo la segunda lectura ([motores](#motores)).
 
 Con varios códigos a la vista se toma el que tiene el centro de la franja, o el más cercano a él.
 
-**Repetidos.** Un código distinto entra de inmediato. El mismo código vuelve a contar solo si **desapareció al menos
-500 ms** (ni leído ni visto en el mismo lugar): un parpadeo del motor no duplica, y para sumar otra pieza basta con
-retirarla y volver a pasarla. Mientras siga a la vista, la indicación dice «Ya leído», y el respaldo de ML Kit sigue
-corriendo hasta 1 s después del último indicio: si dejara de verlo, el filtro lo daría por retirado y contaría doble.
+**Repetidos.** Un código distinto entra de inmediato. El mismo código vuelve a contar cuando:
+
+- **Sale de la mira:** desapareció al menos **500 ms** (ni leído ni visto en el mismo lugar). Es el antirrebote: un
+  parpadeo del motor no duplica, y para sumar otra pieza basta con retirarla y volver a pasarla.
+- **Pasan 1.5 s desde que se aceptó**, aunque siga a la vista (`msParaRepetirAVista`; 0 = nunca). Así lo pidió el
+  dueño: **sostener el mismo producto más de 1.5 s lo cuenta otra vez**. En la sesión de prueba se marca «duplicado»
+  para medir cuántas veces pasa.
+
+Mientras no se cumpla ninguna, la indicación dice «Ya leído». Se recuerdan varios aceptados: con dos códigos juntos a
+la vista, el centro de la franja puede caer en uno y luego en el otro, y sin esa memoria se sumarían los dos en cada
+vuelta; así cuenta cada uno a lo más una vez cada 1.5 s. El respaldo de ML Kit sigue corriendo hasta 1 s después del
+último indicio: si dejara de verlo, el filtro lo daría por retirado y contaría doble.
 
 - **Modo venta:** lista de lo leído; el mismo código suma uno a su renglón. Botones +1, −1 y deshacer.
 - **Modo conteo:** contador grande del código actual que crece con cada suma; −1 y deshacer siempre a la vista.

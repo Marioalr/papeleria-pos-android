@@ -19,7 +19,10 @@ export JAVA_HOME=/opt/android-studio/jbr
 - **`nucleo`:** verificación de GTIN, codificadores (comprobados contra zbar), geometría y rotaciones, el localizador
   sobre escenas sintéticas (tamaños, giros, desenfoque, código cortado, escenas sin código), la guía (secuencias de
   cuadros: cada indicación, histéresis y que no parpadee) y la validación y el consenso (normalización, ITF de 14
-  dígitos, dos lecturas iguales, repetidos con ausencia).
+  dígitos, verificador mal que nunca entra, dos lecturas iguales en cuadros seguidos, QR de un cuadro, repetidos al
+  salir de la mira o a los 1.5 s, dos códigos juntos que no se suman sin fin).
+- **`escaner`:** las marcas de la apertura, la máquina de estados y las políticas de la cámara, y el turno del respaldo
+  de ML Kit (si lee en su turno, corre también en el cuadro siguiente para la segunda lectura).
 - **`app`:** la sesión de prueba y su CSV, el banco de pruebas y las listas de venta y conteo.
 
 **Escenas sintéticas.** `Lienzo` (en `nucleo`) dibuja un código en un plano de luminancia como lo vería la cámara:

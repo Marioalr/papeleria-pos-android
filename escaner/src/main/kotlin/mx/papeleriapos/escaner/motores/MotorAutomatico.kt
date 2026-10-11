@@ -18,23 +18,24 @@ import mx.papeleriapos.escaner.nucleo.Via
  * 2. Si no leyó y el localizador midió el nivel entre barras y espacios: zxing-cpp con ese umbral (~1 ms). Rescata la
  *    etiqueta blanca sobre fondo gris, que su binarizador local no lee.
  * 3. Si tampoco y hay un código probable ([CuadroY.codigoProbable]): ML Kit sobre la región visible completa, a lo más
- *    uno de cada [cadaCuantos] cuadros para que la guía siga fluida. Con el celular vertical le cuesta menos lo visible
- *    que la franja (medido) y le da contexto a un código difícil (borroso, con reflejo).
+ *    uno de cada [cadaCuantos] cuadros para que la guía siga fluida; si lee algo en su turno, también en el siguiente,
+ *    para la segunda lectura seguida ([TurnoRespaldo]). Con el celular vertical le cuesta menos lo visible que la
+ *    franja (medido) y le da contexto a un código difícil (borroso, con reflejo).
  *
  * El ITF lo leen solo las pasadas de zxing-cpp: ML Kit no lo lee (da ceros o basura de 40 dígitos).
  */
-class MotorAutomatico(simbologias: Set<Simbologia>, private val cadaCuantos: Int = 2) : MotorDeLectura {
+class MotorAutomatico(simbologias: Set<Simbologia>, cadaCuantos: Int = 2) : MotorDeLectura {
     override val motor = Motor.AUTOMATICO
 
     private val rapido = MotorZxingCpp(simbologias)
     private val respaldo: MotorMlKit? = (simbologias - Simbologia.ITF)
         .takeIf { s -> s.any { aFormatoMlKit(it) != null } }
         ?.let { MotorMlKit(it) }
-    private var desdeRespaldo = 0
+    private val turno = TurnoRespaldo(cadaCuantos)
 
     override fun leer(cuadro: CuadroY): ResultadoMotor {
         val directo = rapido.leer(cuadro)
-        desdeRespaldo++
+        turno.cuadro()
         if (algunaValida(directo.lecturas) || !cuadro.codigoProbable) return directo
 
         val conUmbral = rapido.leerConUmbral(cuadro, cuadro.umbralSugerido)
@@ -42,16 +43,17 @@ class MotorAutomatico(simbologias: Set<Simbologia>, private val cadaCuantos: Int
         if (algunaValida(conUmbral.lecturas)) return ResultadoMotor(conUmbral.lecturas, emptyList(), nanos, Via.UMBRAL)
 
         val ml = respaldo
-        if (ml == null || desdeRespaldo < cadaCuantos) return conNanos(directo, nanos)
-        desdeRespaldo = 0
+        if (ml == null || !turno.toca()) return conNanos(directo, nanos)
         val visible = CuadroY(
             cuadro.y, cuadro.pasoFila, cuadro.ancho, cuadro.alto, cuadro.rotacion, cuadro.regionVisible,
             proxy = null, regionVisible = cuadro.regionVisible,
         )
         val m = ml.leer(visible)
         nanos += m.nanos
+        val leyo = algunaValida(m.lecturas)
+        turno.corrio(leyo)
         val lecturas = if (directo.lecturas.isEmpty()) m.lecturas else directo.lecturas + m.lecturas
-        return ResultadoMotor(lecturas, m.potencialesBuffer, nanos, if (algunaValida(m.lecturas)) Via.RESPALDO else Via.DIRECTA)
+        return ResultadoMotor(lecturas, m.potencialesBuffer, nanos, if (leyo) Via.RESPALDO else Via.DIRECTA)
     }
 
     override fun calentar() {
@@ -70,5 +72,40 @@ class MotorAutomatico(simbologias: Set<Simbologia>, private val cadaCuantos: Int
     private fun algunaValida(lecturas: List<Lectura>): Boolean {
         for (i in lecturas.indices) if (Confirmador.normalizar(lecturas[i]) != null) return true
         return false
+    }
+}
+
+/**
+ * Cuándo le toca al respaldo: a lo más uno de cada [cadaCuantos] cuadros. Si en su turno lee algo válido, corre también
+ * en el cuadro siguiente: en 1D el confirmador pide dos lecturas iguales en cuadros seguidos (docs/escaner.md,
+ * «Validación y consenso»), y con un turno sí y otro no un código que solo lee ML Kit nunca entraría. Esa segunda
+ * corrida toma el turno que seguía, así que en promedio sigue siendo uno de cada [cadaCuantos].
+ */
+internal class TurnoRespaldo(private val cadaCuantos: Int) {
+    init {
+        require(cadaCuantos >= 1) { "El respaldo corre a lo más en cada cuadro." }
+    }
+
+    private var desde = 0
+    /** El respaldo leyó en su turno, en el cuadro anterior. */
+    private var leyoEnTurno = false
+    /** Este cuadro es el siguiente a una lectura del respaldo en su turno. */
+    private var segunda = false
+
+    /** Empieza un cuadro (se llama en todos, haga falta o no el respaldo). */
+    fun cuadro() {
+        if (desde < cadaCuantos) desde++
+        segunda = leyoEnTurno
+        leyoEnTurno = false
+    }
+
+    /** En este cuadro puede correr el respaldo. */
+    fun toca() = desde >= cadaCuantos || segunda
+
+    /** El respaldo corrió en este cuadro y [leyo] algo válido o no. */
+    fun corrio(leyo: Boolean) {
+        // La segunda corrida, adelantada, toma el turno que seguía.
+        desde = if (desde < cadaCuantos) 1 - cadaCuantos else 0
+        leyoEnTurno = leyo && !segunda
     }
 }
