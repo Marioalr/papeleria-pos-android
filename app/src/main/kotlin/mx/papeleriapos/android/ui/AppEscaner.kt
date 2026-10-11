@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,8 @@ import mx.papeleriapos.android.estres.PantallaEstres
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.sesion.PantallaSesion
 import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.ui.LocalAlVisorListo
+import mx.papeleriapos.escaner.ui.LocalSoloVisor
 import java.util.Locale
 
 enum class Pestana(val corta: String, val titulo: String, val icono: ImageVector) {
@@ -79,31 +82,41 @@ fun AppEscaner(
     BackHandler(enabled = pestana != Pestana.ESCANEAR) { pestana = Pestana.ESCANEAR }
     MonitorDeLaSesion(vm, pestana)
 
+    // En el primer cuadro solo el visor (LocalSoloVisor): la barra va vacía, que mide lo mismo, para que el visor quede
+    // ya en su lugar. Si la pestaña no es la del escáner no hay visor que esperar.
+    val soloVisor = LocalSoloVisor.current
+    if (soloVisor && pestana != Pestana.ESCANEAR) {
+        val alVisorListo = LocalAlVisorListo.current
+        LaunchedEffect(Unit) { alVisorListo() }
+    }
     Scaffold(
         topBar = {
-            if (pestana != Pestana.ESCANEAR) TopAppBar(title = { Text(pestana.titulo) })
+            if (pestana != Pestana.ESCANEAR && !soloVisor) TopAppBar(title = { Text(pestana.titulo) })
         },
         bottomBar = {
             NavigationBar {
-                for (p in Pestana.entries) {
-                    NavigationBarItem(
-                        selected = p == pestana,
-                        onClick = { pestana = p },
-                        icon = { Icon(p.icono, contentDescription = null) },
-                        label = { Text(p.corta) },
-                        modifier = Modifier.testTag("pestana-${p.name}"),
-                    )
+                if (!soloVisor) {
+                    for (p in Pestana.entries) {
+                        NavigationBarItem(
+                            selected = p == pestana,
+                            onClick = { pestana = p },
+                            icon = { Icon(p.icono, contentDescription = null) },
+                            label = { Text(p.corta) },
+                            modifier = Modifier.testTag("pestana-${p.name}"),
+                        )
+                    }
                 }
             }
         },
     ) { relleno ->
         Box(Modifier.fillMaxSize().padding(relleno)) {
-            when (pestana) {
-                Pestana.ESCANEAR -> PestanaEscanear(vm)
-                Pestana.SESION -> PantallaSesion(vm)
-                Pestana.BANCO -> PantallaBanco(banco)
-                Pestana.ESTRES -> PantallaEstres(estres)
-                Pestana.AJUSTES -> PantallaAjustes(vm)
+            when {
+                pestana == Pestana.ESCANEAR -> PestanaEscanear(vm)
+                soloVisor -> Unit
+                pestana == Pestana.SESION -> PantallaSesion(vm)
+                pestana == Pestana.BANCO -> PantallaBanco(banco)
+                pestana == Pestana.ESTRES -> PantallaEstres(estres)
+                pestana == Pestana.AJUSTES -> PantallaAjustes(vm)
             }
         }
     }

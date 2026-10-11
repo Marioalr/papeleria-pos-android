@@ -116,11 +116,12 @@ class AperturaAppTest {
             }
             assertEquals(Modo.CONTEO, modo)
             assertEquals(Modo.CONTEO, prefs.leer().modo)
-            assertEquals("Se perdió lo leído en venta", total, enVenta)
+            // Al menos lo que había: la cámara puede leer el cartel del emulador mientras tanto y sumar a la venta.
+            assertTrue("Se perdió lo leído en venta ($enVenta de $total)", enVenta >= total)
             // Y quedó en disco (sobrevive a que Android mate el proceso).
             esperar("La venta no se guardó en disco") {
                 val f = File(File(ctx.filesDir, "listas"), "venta.csv")
-                f.exists() && ListaLecturas.deTexto(f.readText()).total == total
+                f.exists() && ListaLecturas.deTexto(f.readText()).total >= total
             }
         } finally {
             nueva?.let { a -> inst.runOnMainSync { a.finish() } }

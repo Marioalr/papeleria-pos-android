@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -23,6 +24,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.android.ui.AppEscaner
 import mx.papeleriapos.android.ui.Pestana
@@ -31,11 +34,14 @@ import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.camara.ControladorCamara
 import mx.papeleriapos.escaner.nucleo.Modo
+import mx.papeleriapos.escaner.ui.LocalAlVisorListo
+import mx.papeleriapos.escaner.ui.LocalSoloVisor
 
 /**
  * La app de prueba. Para abrir al instante (docs/escaner.md, «Apertura»): marca cada paso, enlaza la cámara en
- * `onCreate` (abre en `onStart`, mientras Compose dibuja), el primer cuadro es solo negro (como la ventana, sin
- * destello) y la interfaz completa llega en el siguiente, y el TTFD es el primer cuadro analizado.
+ * `onCreate` (abre en `onStart`, mientras Compose dibuja), el primer cuadro trae solo el visor sobre negro (como la
+ * ventana, sin destello) y lo demás llega cuando el visor ya entregó su superficie, y el TTFD es el primer cuadro
+ * analizado.
  *
  * Los atajos «Escanear venta» y «Escanear conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea
  * con ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde.
@@ -131,14 +137,20 @@ internal fun enlazarAlCrear(restaurando: Boolean, escanerVisible: Boolean?): Boo
 const val ETIQUETA_ESCANEANDO = "escaneando"
 
 /**
- * El primer cuadro es solo el fondo negro (lo mismo que la ventana): el sistema quita la pantalla de inicio cuanto
- * antes y [contenido] se compone en el cuadro siguiente, mientras la cámara (enlazada en `onCreate`) sigue abriendo.
+ * Primero el visor, luego lo demás. El primer cuadro trae [contenido] con [LocalSoloVisor]: sobre el fondo negro (lo
+ * mismo que la ventana) solo el visor de la cámara, ya en su lugar y su tamaño, y la barra de pestañas vacía. Así el
+ * SurfaceView del visor tiene su superficie enseguida y la sesión de la cámara (enlazada en `onCreate`) no espera a que
+ * se mida y se dibuje toda la interfaz: en el Pixel 8 Pro esa espera era de 160 ms en frío (docs/plan.md, experimento
+ * 1). Lo demás se compone cuando el visor avisa ([LocalAlVisorListo]) o, si algo falla, a los [PLAZO_VISOR_MS].
+ *
  * La caja de fondo lleva la marca [ETIQUETA_ESCANEANDO] y expone los testTags como ids para UiAutomator. La marca va en
  * la caja y no en un punto aparte: Compose no le pasa a UiAutomator un nodo que solo tiene testTag y no dibuja nada.
  */
 @Composable
 internal fun ContenidoEnDosCuadros(controlador: ControladorEscaner, contenido: @Composable () -> Unit) {
     var completo by remember { mutableStateOf(false) }
+    val visorListo = remember { CompletableDeferred<Unit>() }
+    val alVisorListo = remember<() -> Unit> { { visorListo.complete(Unit) } }
     val escaneando = escaneando(controlador)
     Box(
         Modifier
@@ -147,13 +159,19 @@ internal fun ContenidoEnDosCuadros(controlador: ControladorEscaner, contenido: @
             .semantics { testTagsAsResourceId = true }
             .then(if (escaneando) Modifier.testTag(ETIQUETA_ESCANEANDO) else Modifier),
     ) {
-        if (completo) contenido()
+        CompositionLocalProvider(LocalSoloVisor provides !completo, LocalAlVisorListo provides alVisorListo) {
+            contenido()
+        }
     }
     LaunchedEffect(Unit) {
         withFrameNanos { }
+        withTimeoutOrNull(PLAZO_VISOR_MS) { visorListo.await() }
         completo = true
     }
 }
+
+/** Lo más que se espera al visor antes de mostrar lo demás (sin cámara, con un error o si el enlace tarda de más). */
+private const val PLAZO_VISOR_MS = 400L
 
 /** Si se escanea y ya hubo un cuadro analizado en esta apertura (la marca [ETIQUETA_ESCANEANDO]). */
 @Composable
