@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Sin red: la app no manda nada a ningún servidor (ni cuadros, ni códigos, ni estadísticas). ML Kit agrega estos
+         dos permisos para enviar a Google sus estadísticas de uso; sin Internet el proceso no puede abrir conexiones. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
     <!-- Sin cámara la app se instala igual (el banco de pruebas no la necesita). -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
@@ -91,5 +96,22 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/rutas_exportacion" />
         </provider>
+
+        <!-- El envío de estadísticas de ML Kit (datatransport). Sin el servicio que registra el destino, datatransport
+             descarta cada evento antes de guardarlo («Transport backend 'cct' is not registered»): no se acumulan en la
+             base ni se programan trabajos para subirlos. MissingClass: las clases son de una dependencia de ML Kit que la
+             app no compila contra ella (solo está en tiempo de ejecución). -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+        <service
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+        <receiver
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
     </application>
 </manifest>

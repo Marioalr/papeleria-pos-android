@@ -4,8 +4,8 @@ La app Android de [Papelería POS](https://github.com/Marioalr/papeleria-pos): c
 que hoy pasa por el lector de la caja.
 
 > **Alcance: lo máximo en un Pixel 8 Pro.** El escáner lee EAN-13, UPC-A, UPC-E, EAN-8, ITF-14, Code 128 y QR, guía
-> para que el código se lea (muévete, acércate, aléjate, mantén firme, luz, reflejo) y confirma cada lectura con bip,
-> vibración y verde. Aquí se exprime y se mide en un solo celular, el equipo de referencia; con eso se decide cómo se
+> para que el código se lea (muévete, acércate, aléjate, mantén firme, luz, reflejo) y confirma cada lectura con
+> vibración y verde (el bip, si se enciende). No usa la red: sus únicos permisos son la cámara y la vibración. Aquí se exprime y se mide en un solo celular, el equipo de referencia; con eso se decide cómo se
 > une al POS cuando el POS llegue a su fase de Android. Todavía no se conecta al POS. El [plan](docs/plan.md) tiene las
 > decisiones y la línea base.
 

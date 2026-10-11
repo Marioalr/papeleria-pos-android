@@ -74,7 +74,9 @@ class PreferenciasEscaner(private val prefs: SharedPreferences) {
         private const val MOTOR = "motor"
         private const val MODO = "modo"
         private const val SIMBOLOGIAS = "simbologias"
-        private const val SONIDO = "sonido"
+        // Llave nueva desde que el bip viene apagado: lo guardado con la anterior («sonido») era el valor por omisión
+        // de entonces, no algo que alguien eligió.
+        private const val SONIDO = "sonido_al_leer"
         private const val VIBRACION = "vibracion"
         private const val LINTERNA_AUTOMATICA = "linterna_automatica"
         private const val RECORTAR_FRANJA = "recortar_franja"
