@@ -21,7 +21,8 @@ export JAVA_HOME=/opt/android-studio/jbr
 
 | Módulo | Qué tiene |
 |---|---|
-| `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas y geometría |
+| `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso |
+| `escaner` | Android: la cámara (CameraX) y los motores (ML Kit y zxing-cpp) |
 
 ## Documentos
 

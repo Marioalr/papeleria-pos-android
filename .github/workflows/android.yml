@@ -1,4 +1,5 @@
-# Corre las pruebas de la JVM en cada PR y en main. La app y su APK se agregan cuando llegan sus módulos.
+# Corre las pruebas de la JVM y compila el módulo del escáner en cada PR y en main. La app y su APK se agregan cuando
+# llega su módulo.
 name: Android
 
 on:
@@ -26,6 +27,9 @@ jobs:
 
       - name: Pruebas de la JVM
         run: ./gradlew --no-daemon test
+
+      - name: Módulo del escáner
+        run: ./gradlew --no-daemon :escaner:assembleDebug :escaner:assembleDebugAndroidTest
 
       - uses: actions/upload-artifact@v4
         if: always()
