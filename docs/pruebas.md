@@ -1,8 +1,8 @@
 # Pruebas
 
 Cómo se prueba el escáner sin la tienda: en la PC de desarrollo (Linux), en el emulador y con cualquier código de barras
-en un celular. Lo que solo se puede probar en la tienda (los celulares del personal, los productos y la luz de ahí) va
-en [pruebas en tienda](pruebas-en-tienda.md), sábado y domingo.
+en un celular. Las cifras que cuentan se toman en el Pixel 8 Pro ([plan](plan.md)); lo que solo se puede probar en la
+tienda (los productos y la luz de ahí) va en [pruebas en tienda](pruebas-en-tienda.md), sábado y domingo.
 
 Todos los comandos, desde la raíz del repositorio y con el JDK de Android Studio:
 
@@ -116,15 +116,15 @@ adb shell cmd package compile -f -m speed-profile mx.papeleriapos.android
 ```
 
 **Macrobenchmark** (`:benchmark`): arranque frío, tibio y caliente, sin perfil y con perfil, con el TTFD (primer cuadro
-analizado) y las secciones de trace. En celulares de verdad (al menos uno de gama baja), 15 iteraciones:
+analizado) y las secciones de trace. En el Pixel 8 Pro, 15 iteraciones:
 
 ```
 ./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest
 ```
 
 Ojo: la tarea de Gradle **desinstala la app al terminar, con sus datos** (listas, sesiones, ajustes), y corre en todos
-los equipos conectados (`ANDROID_SERIAL=<serie>` para elegir uno). En el celular de alguien de la tienda se instala y se
-corre a mano, y después se reinstala su APK (misma firma: los datos se quedan). Con la pantalla bloqueada no corre: el
+los equipos conectados (`ANDROID_SERIAL=<serie>` para elegir uno). En el Pixel (o en cualquier celular con datos que
+importen) se instala y se corre a mano, y después se reinstala el APK que tenía (misma firma: los datos se quedan). Con la pantalla bloqueada no corre: el
 celular cargando con «Permanecer activo» (Opciones de desarrollador).
 
 ```
@@ -136,8 +136,13 @@ adb pull /sdcard/Android/media/mx.papeleriapos.benchmark/ resultados/    # JSON 
 adb uninstall mx.papeleriapos.benchmark
 ```
 
-**Primera medición en un celular** (2026-10-09, Pixel 8 Pro, Android 17, gama alta, 15 iteraciones, medianas; el
-TTFD es el primer cuadro analizado):
+**Las trazas:** `herramientas/trazas.sh <carpeta-con-las-trazas>` saca de cada traza los hitos de la apertura:
+cámara abierta, sesión, primer cuadro analizado y cuánto espera la cámara a la sesión. Imprime las medianas por caso.
+Usa el trace_processor de Macrobenchmark, que es un binario de Android: corre en el emulador (o en un celular
+conectado) y no toca la app.
+
+**La línea base en el Pixel 8 Pro** (2026-10-09, Android 17, 15 iteraciones, medianas; el TTFD es el primer cuadro
+analizado):
 
 | Arranque | Sin perfil | Con perfil |
 |---|---|---|
@@ -149,8 +154,7 @@ TTFD es el primer cuadro analizado):
 | Por cuadro: total / localizador / lectura | 3.3 / 1.0 / 2.1 ms | 2.4 / 0.6 / 1.8 ms |
 
 El perfil quita ~30 % del arranque frío y hace más parejas las mediciones (TTFD en frío de 583 a 700 ms con perfil, de
-855 a 1162 sin él). En caliente, ~200 ms van de la interfaz al primer cuadro analizado: la cámara vuelve a abrir. Falta un celular de gama
-baja.
+855 a 1162 sin él). En caliente, ~200 ms van de la interfaz al primer cuadro analizado: la cámara vuelve a abrir.
 
 En el emulador solo como prueba de humo (las cifras no valen): agregar `-PconX86
 -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
