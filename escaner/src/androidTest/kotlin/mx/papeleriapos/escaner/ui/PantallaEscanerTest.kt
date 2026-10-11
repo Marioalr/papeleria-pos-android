@@ -312,7 +312,7 @@ class PantallaEscanerTest {
     }
 
     @Test
-    fun mantieneLaPantallaEncendidaYCierraAlSalir() {
+    fun mantieneLaPantallaEncendidaSoloEscaneandoYNoCierraAlSalir() {
         muestra = ControladorDeMuestra(EstadoEscaner(fase = Fase.ESCANEANDO), callado)
         var vista: View? = null
         var visible by mutableStateOf(true)
@@ -322,11 +322,18 @@ class PantallaEscanerTest {
         }
         regla.waitForIdle()
         assertTrue(vista!!.keepScreenOn)
-        assertEquals(0, muestra.cierres)
+        // En pausa (o en error) la pantalla se puede apagar: no gasta batería ni se queda prendida sobre el bloqueo.
+        muestra.cambiar { it.copy(fase = Fase.PAUSADO) }
+        regla.waitForIdle()
+        assertFalse(vista!!.keepScreenOn)
+        muestra.cambiar { it.copy(fase = Fase.ESCANEANDO) }
+        regla.waitForIdle()
+        assertTrue(vista!!.keepScreenOn)
+        // Al dejar de mostrarse no cierra el controlador: lo cierra quien lo creó (el ViewModel), así vuelve a abrir.
         visible = false
         regla.waitForIdle()
         assertFalse(vista!!.keepScreenOn)
-        assertEquals(1, muestra.cierres)
+        assertEquals(0, muestra.cierres)
     }
 
     @Test

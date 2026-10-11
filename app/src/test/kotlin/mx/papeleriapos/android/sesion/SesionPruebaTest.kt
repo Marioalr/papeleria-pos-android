@@ -1,7 +1,11 @@
 package mx.papeleriapos.android.sesion
 
 import mx.papeleriapos.android.Ejemplos
+import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.Motor
+import mx.papeleriapos.escaner.PasoApertura
+import mx.papeleriapos.escaner.TipoArranque
+import mx.papeleriapos.escaner.nucleo.Via
 import mx.papeleriapos.escaner.nucleo.CodigoLeido
 import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.nucleo.Simbologia
@@ -28,6 +32,7 @@ class SesionPruebaTest {
         assertEquals(listOf(1, 2), s.intentos.map { it.n })
         val i = s.intentos[0]
         assertEquals("ML_KIT", i.motor)
+        assertEquals("DIRECTA", i.via)
         assertEquals("VENTA", i.modo)
         assertEquals("30-30", i.rangoFps)
         assertEquals(180L, i.msDesdeCandidato)
@@ -109,6 +114,84 @@ class SesionPruebaTest {
         // Un fallido puede cambiar entre TIMEOUT y CANCELADO, pero no a OK.
         assertEquals(ResultadoIntento.CANCELADO, s.marcarUltimo(ResultadoIntento.CANCELADO).ultimo!!.resultado)
         assertSame(s, s.marcarUltimo(ResultadoIntento.OK))
+    }
+
+    @Test
+    fun `cada lectura guarda por donde leyo y un fallo no tiene via`() {
+        val s = vacia
+            .registrarLectura(Ejemplos.evento("7501234567893", motor = Motor.AUTOMATICO, via = Via.RESPALDO), contexto)
+            .registrarLectura(Ejemplos.evento("7501234567893", motor = Motor.AUTOMATICO, via = Via.UMBRAL), contexto)
+            .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
+        assertEquals(listOf("RESPALDO", "UMBRAL", ""), s.intentos.map { it.via })
+    }
+
+    @Test
+    fun `la CPU va en delta con su ventana y da el porcentaje de un nucleo`() {
+        assertEquals(25.0, Medicion(cpuMs = 250, paredMs = 1_000).cpuPctNucleo, 1e-9)
+        assertTrue(Medicion(cpuMs = -1, paredMs = 1_000).cpuPctNucleo.isNaN())
+        assertTrue(Medicion(cpuMs = 10, paredMs = 0).cpuPctNucleo.isNaN())
+        val d = DeltaCpu()
+        assertEquals(-1L to -1L, d.siguiente(5_000, 100_000))
+        assertEquals(300L to 2_000L, d.siguiente(5_300, 102_000))
+        assertEquals(0L to 500L, d.siguiente(5_300, 102_500))
+        // Si el reloj o la CPU van para atrás (otro proceso), no hay delta.
+        assertEquals(-1L to -1L, d.siguiente(100, 103_000))
+    }
+
+    @Test
+    fun `la ventana del primer intento empieza al iniciar la sesion`() {
+        val d = DeltaCpu()
+        d.siguiente(1_000, 10_000) // Al crearse la pantalla.
+        d.siguiente(4_000, 50_000) // El último intento de la sesión anterior.
+        // Se inicia la sesión: lo de antes no cuenta.
+        d.reiniciar(4_500, 60_000)
+        assertEquals(200L to 1_000L, d.siguiente(4_700, 61_000))
+    }
+
+    @Test
+    fun `un doble toque en No leyo se ignora y el ultimo fallo se puede deshacer`() {
+        val a = Antirrebote(msMinimo = 1_000)
+        assertTrue(a.permite(10_000))
+        assertFalse("Doble toque", a.permite(10_150))
+        assertFalse(a.permite(10_999))
+        assertTrue(a.permite(11_000))
+        a.olvidar()
+        assertTrue("Después de deshacer cuenta de inmediato", a.permite(11_100))
+
+        val s = vacia
+            .registrarLectura(Ejemplos.evento("7501234567893"), contexto)
+            .registrarFallo(ResultadoIntento.TIMEOUT, contexto)
+        assertTrue(s.puedeDeshacerFallo)
+        val sin = s.quitarUltimoFallo()
+        assertEquals(listOf(1), sin.intentos.map { it.n })
+        // Una lectura no se quita (se corrige con su resultado).
+        assertFalse(sin.puedeDeshacerFallo)
+        assertSame(sin, sin.quitarUltimoFallo())
+        assertSame(vacia, vacia.quitarUltimoFallo())
+        // El siguiente fallo vuelve a tomar el número 2.
+        assertEquals(2, sin.registrarFallo(ResultadoIntento.CANCELADO, contexto).ultimo!!.n)
+    }
+
+    @Test
+    fun `las medidas de la apertura salen de sus marcas`() {
+        val ms = 1_000_000L
+        val a = Apertura(
+            TipoArranque.FRIO,
+            mapOf(
+                PasoApertura.PROCESO to 1_000 * ms,
+                PasoApertura.ACTIVIDAD to 1_120 * ms,
+                PasoApertura.ENLACE_INICIO to 1_180 * ms,
+                PasoApertura.ENLACE_FIN to 1_420 * ms,
+                PasoApertura.CAMARA_ABIERTA to 1_510 * ms,
+                PasoApertura.PRIMER_CUADRO_SENSOR to 1_590 * ms,
+                PasoApertura.PRIMER_ANALISIS to 1_640 * ms,
+            ),
+        )
+        assertEquals(
+            MedidasApertura("FRIO", 120, 420, 510, 590, 640, -1),
+            MedidasApertura.de(a),
+        )
+        assertEquals(MedidasApertura(), MedidasApertura.de(Apertura()))
     }
 
     @Test(expected = IllegalArgumentException::class)

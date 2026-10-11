@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- values-night gana sobre values-v31: el modo oscuro necesita su propia copia. -->
+    <style name="Tema.Escaner" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/arranque</item>
+        <item name="android:windowSplashScreenBackground">@color/arranque</item>
+        <item name="android:colorPrimary">@color/primario</item>
+    </style>
+</resources>

@@ -89,4 +89,56 @@ class ListaLecturasTest {
         assertEquals(ListaLecturas.PASOS_PARA_DESHACER, pasos)
         assertEquals(20, l.total)
     }
+
+    @Test
+    fun `se guarda y se recupera igual, sin los pasos de deshacer`() {
+        val l = ListaLecturas()
+            .sumar(ean, Simbologia.EAN_13, 1_000)
+            .sumar("a,b \"c\"", Simbologia.CODE_128, 2_000)
+            .sumar(ean, Simbologia.EAN_13, 3_000)
+        val r = ListaLecturas.deTexto(l.aTexto())
+        assertEquals(l.renglones, r.renglones)
+        assertEquals(l.total, r.total)
+        assertFalse(r.puedeDeshacer)
+        // Un código nuevo después de recuperar no repite id.
+        val nuevo = r.sumar(interno, Simbologia.EAN_13, 4_000)
+        assertEquals(nuevo.renglones.map { it.id }.toSet().size, nuevo.renglones.size)
+        // Lo que no se entiende se salta; un archivo ajeno da la lista vacía.
+        assertTrue(ListaLecturas.deTexto("hola\r\n1,2").renglones.isEmpty())
+        val roto = l.aTexto() + "x,7501,EAN_13,1,0\r\n9,7502,NO_EXISTE,1,0\r\n10,7503,EAN_13,0,0\r\n"
+        assertEquals(l.renglones, ListaLecturas.deTexto(roto).renglones)
+    }
+
+    @Test
+    fun `lo escaneado mientras se leia el disco queda arriba de lo guardado`() {
+        val guardada = ListaLecturas().sumar(ean, Simbologia.EAN_13, 1).sumar(code128, Simbologia.CODE_128, 2)
+        val vacia = ListaLecturas()
+        assertSame(guardada, ListaLecturas.unir(guardada, vacia))
+        val mientras = ListaLecturas().sumar(interno, Simbologia.EAN_13, 5).sumar(ean, Simbologia.EAN_13, 6)
+        val u = ListaLecturas.unir(guardada, mientras)
+        assertEquals(listOf(ean to 2, interno to 1, code128 to 1), u.codigos())
+        assertEquals(4, u.total)
+    }
+
+    @Test
+    fun `el almacen guarda cada modo en su archivo y sobrevive a un proceso nuevo`() {
+        val carpeta = kotlin.io.path.createTempDirectory("listas").toFile()
+        try {
+            val a = AlmacenListas { carpeta }
+            assertTrue(a.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones.isEmpty())
+            val venta = ListaLecturas().sumar(ean, Simbologia.EAN_13, 1).sumar(ean, Simbologia.EAN_13, 2)
+            val conteo = ListaLecturas().sumar(code128, Simbologia.CODE_128, 3)
+            a.guardar(mx.papeleriapos.escaner.nucleo.Modo.VENTA, venta)
+            a.guardar(mx.papeleriapos.escaner.nucleo.Modo.CONTEO, conteo)
+            // Otro almacén (como tras matar el proceso) lee lo mismo.
+            val b = AlmacenListas { carpeta }
+            assertEquals(venta.renglones, b.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones)
+            assertEquals(conteo.renglones, b.leer(mx.papeleriapos.escaner.nucleo.Modo.CONTEO).renglones)
+            // «Nueva venta» también se guarda.
+            b.guardar(mx.papeleriapos.escaner.nucleo.Modo.VENTA, venta.vaciar())
+            assertTrue(AlmacenListas { carpeta }.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones.isEmpty())
+        } finally {
+            carpeta.deleteRecursively()
+        }
+    }
 }

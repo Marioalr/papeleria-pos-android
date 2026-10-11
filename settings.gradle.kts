@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "papeleria-pos-android"
-include(":app", ":escaner", ":nucleo")
+include(":app", ":escaner", ":nucleo", ":baselineprofile", ":benchmark")

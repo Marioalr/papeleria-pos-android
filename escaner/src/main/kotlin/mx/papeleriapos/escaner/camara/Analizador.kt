@@ -9,14 +9,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import mx.papeleriapos.escaner.Apertura
 import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.CuadroY
 import mx.papeleriapos.escaner.Diagnostico
 import mx.papeleriapos.escaner.EstadoEscaner
 import mx.papeleriapos.escaner.EventoLectura
 import mx.papeleriapos.escaner.Fase
+import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.MotorDeLectura
+import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.motores.crearMotor
 import mx.papeleriapos.escaner.nucleo.Caja
 import mx.papeleriapos.escaner.nucleo.Confirmador
@@ -75,6 +78,13 @@ internal class Analizador(
 
     /** La pantalla dejó de verse (hilo principal): los cuadros que sigan llegando se sueltan sin analizar. */
     @Volatile var detenido = false
+
+    /** El estado de la cámara para el diagnóstico (lo escribe el controlador en el hilo principal). */
+    @Volatile var textoEstadoCamara = ""
+
+    /** Cuadros que pasaron por el análisis desde el último enlace (solo los escribe el hilo de análisis). */
+    @Volatile var cuadrosAnalizados = 0L
+        private set
 
     private var cerrado = false
 
@@ -136,6 +146,13 @@ internal class Analizador(
     private var ultimoEnfoque = 0L
     private var lecturas = 0L
     private var ultimoEvento: EventoLectura? = null
+    /** Se puso una marca de la apertura en este cuadro: se publica con el estado. */
+    private var aperturaCambio = false
+    /** Las aperturas en las que ya se intentó marcar el primer análisis y la primera lectura (una vez por apertura). */
+    private var analisisMarcadoEn = 0
+    private var lecturaMarcadaEn = 0
+    /** [SenalesCamara.producidos] al enlazar: el diagnóstico cuenta los producidos desde ahí. */
+    private var baseProducidos = 0L
 
     // Zoom propio.
     private var zoomInicial = 1f
@@ -178,6 +195,7 @@ internal class Analizador(
     private fun procesar(imagen: ImageProxy) {
         val ahora = SystemClock.elapsedRealtimeNanos()
         if (!primerCuadro) {
+            // El primer cuadro tras abrir (o volver). La marca de la apertura se pone al terminar de analizarlo.
             primerCuadro = true
             ultimaActividad = ahora
             if (inicioReanudar == 0L) inicioReanudar = ahora
@@ -195,6 +213,7 @@ internal class Analizador(
             }
             return
         }
+        cuadrosAnalizados++
         Trace.beginSection("escaner.cuadro")
         try {
             analizar(imagen, ahora)
@@ -215,8 +234,8 @@ internal class Analizador(
 
         // 1) El localizador mira el cuadro COMPLETO (~0.2 ms): tiene que poder guiar hacia la franja, y le dice al motor
         // automático si vale la pena su respaldo.
-        Trace.beginSection("escaner.localizar")
         val inicioLocalizar = SystemClock.elapsedRealtimeNanos()
+        Trace.beginSection("escaner.localizar")
         val loc = try {
             localizador(ancho, alto).procesar(y, pasoFila, ancho, alto, preferidoX, preferidoY)
         } finally {
@@ -343,6 +362,11 @@ internal class Analizador(
                 (if (resultado.via != Via.DIRECTA) " (${resultado.via})" else "") + (if (aceptada.repetida) ", repetido" else ""))
             leidoHasta = ahora + NANOS_LEIDO
             cajaLeida = aceptada.caja ?: caja
+            val propia = senales.aperturaPropia
+            if (propia != 0 && propia != lecturaMarcadaEn) {
+                lecturaMarcadaEn = propia
+                if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMERA_LECTURA)) aperturaCambio = true
+            }
             // El siguiente código empieza su propio conteo de tiempo e indicaciones.
             hayCandidato = false
             inicioCandidato = 0L
@@ -361,6 +385,19 @@ internal class Analizador(
         promedioLocalizador.agregar(nanosLocalizar / 1e6f)
         promedioCuadro.agregar(nanosCuadro / 1e6f)
 
+        // El primer cuadro analizado de la apertura: ya escanea (TTFD, fin de «escaner.hastaPrimerCuadro»). Solo en la
+        // apertura propia y con la pantalla al frente: los cuadros en vuelo de otro controlador no marcan la de otro.
+        val propia = senales.aperturaPropia
+        if (propia != 0 && propia != analisisMarcadoEn) {
+            analisisMarcadoEn = propia
+            if (MarcasApertura.marcarSi(propia, PasoApertura.PRIMER_ANALISIS)) aperturaCambio = true
+        }
+        val apertura = if (aperturaCambio) MarcasApertura.apertura else null
+        if (apertura != null) {
+            aperturaCambio = false
+            Log.i(ETIQUETA, "Apertura: " + apertura.resumen())
+        }
+
         val leyendo = ahora < leidoHasta
         val fase = when {
             leyendo -> Fase.LEIDO
@@ -374,13 +411,22 @@ internal class Analizador(
             evento = evento,
             o = o,
             ahora = ahora,
+            apertura = apertura,
         )
 
         if (cfg.segundosParaPausar > 0 && ahora - ultimaActividad >= cfg.segundosParaPausar * NANOS_POR_S) pausar(ahora)
     }
 
     /** Publica el estado solo si cambió algo que se ve (la caja del código sí cambia en cada cuadro). */
-    private fun publicar(fase: Fase, indicacion: Indicacion, caja: Caja?, evento: EventoLectura?, o: Observacion, ahora: Long) {
+    private fun publicar(
+        fase: Fase,
+        indicacion: Indicacion,
+        caja: Caja?,
+        evento: EventoLectura?,
+        o: Observacion,
+        ahora: Long,
+        apertura: Apertura?,
+    ) {
         val diagnostico = if (forzarDiagnostico || ahora - ultimoDiagnostico >= NANOS_DIAGNOSTICO) {
             forzarDiagnostico = false
             ultimoDiagnostico = ahora
@@ -393,7 +439,8 @@ internal class Analizador(
         errores = 0
         val e = estado.value
         if (e.fase == fase && e.indicacion == indicacion && e.cajaCodigo == caja && evento == null &&
-            e.sugerirLinterna == sugerirLinterna && e.zoom == zoomActual && diagnostico == null && !salirDeError
+            e.sugerirLinterna == sugerirLinterna && e.zoom == zoomActual && diagnostico == null && !salirDeError &&
+            apertura == null
         ) return
         estado.update {
             it.copy(
@@ -406,6 +453,7 @@ internal class Analizador(
                 zoom = zoomActual,
                 mensajeError = if (salirDeError) null else it.mensajeError,
                 diagnostico = diagnostico ?: it.diagnostico,
+                apertura = apertura ?: it.apertura,
             )
         }
     }
@@ -427,6 +475,9 @@ internal class Analizador(
             rangoFps = rangoFps,
             camaraFisica = senales.camaraFisica,
             estadoEnfoque = senales.textoAf(),
+            cuadrosProducidos = senales.producidos.get() - baseProducidos,
+            cuadrosAnalizados = cuadrosAnalizados,
+            estadoCamara = textoEstadoCamara,
         )
     }
 
@@ -555,8 +606,10 @@ internal class Analizador(
         apagadoPedido = false
         linternaAutomaticaPedida = false
         ultimoCuadro = 0L
+        cuadrosAnalizados = 0L
         promedioIntervalo.reiniciar()
         senales.reiniciar()
+        baseProducidos = senales.producidos.get()
         ajustarZoomBase(zoomInicial, zoomTope)
         ultimoEnfoque = SystemClock.elapsedRealtimeNanos()
         forzarDiagnostico = true
@@ -600,7 +653,9 @@ internal class Analizador(
     fun alDetenerse() {
         linternaEncendida = false
         olvidarError()
-        if (!pausado) primerCuadro = false
+        // También en pausa: el primer cuadro al volver vuelve a pedir el zoom (la cámara se abre de nuevo); procesar()
+        // no sale de la pausa por eso.
+        primerCuadro = false
         reiniciarSeguimiento()
         if (zoomActual != zoomInicial) zoomActual = zoomInicial
         // Corre después del último cuadro en camino: lo que ese cuadro haya publicado se corrige aquí.
@@ -613,6 +668,21 @@ internal class Analizador(
         cerrado = true
         motor?.close()
         motor = null
+    }
+
+    /** Tras [liberar], para volver a abrir (llega por el mismo ejecutor, así que va después del cierre). */
+    fun revivir() {
+        cerrado = false
+        primerCuadro = false
+        pausado = false
+        apagadoPedido = false
+        reiniciarSeguimiento()
+    }
+
+    /** La cámara se volvió a abrir sola (p. ej. otra app la soltó): el primer cuadro vuelve a pedir el zoom. */
+    fun alReabrir() {
+        primerCuadro = false
+        forzarDiagnostico = true
     }
 
     // ---- Auxiliares ----

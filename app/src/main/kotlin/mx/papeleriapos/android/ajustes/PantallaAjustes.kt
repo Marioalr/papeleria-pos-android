@@ -18,14 +18,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
+import mx.papeleriapos.android.rapido.mensajeMosaico
+import mx.papeleriapos.android.rapido.pedirMosaico
+import mx.papeleriapos.android.rapido.puedePedirMosaico
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
 import mx.papeleriapos.android.ui.FilaInterruptor
 import mx.papeleriapos.android.ui.Opciones
@@ -38,13 +44,36 @@ import kotlin.math.roundToInt
 @Composable
 fun PantallaAjustes(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
-    ContenidoAjustes(config, alCambiar = vm::cambiarConfig, alRestablecer = vm::restablecerAjustes)
+    val contexto = LocalContext.current
+    var mensaje by remember { mutableStateOf<String?>(null) }
+    ContenidoAjustes(
+        config,
+        alCambiar = vm::cambiarConfig,
+        alRestablecer = vm::restablecerAjustes,
+        // Android 13+: el diálogo del sistema; antes no se puede pedir y la pantalla explica cómo agregarlo a mano.
+        alAgregarMosaico = if (!puedePedirMosaico()) null else {
+            {
+                mensaje = null
+                val pedido = pedirMosaico(contexto) { resultado -> mensaje = mensajeMosaico(resultado) }
+                if (!pedido) mensaje = "No se pudo pedir. $COMO_AGREGAR_MOSAICO_A_MANO"
+            }
+        },
+        mensajeMosaico = mensaje,
+    )
 }
 
 /** Los ajustes del escáner; cada cambio se guarda y se aplica en caliente. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ContenidoAjustes(config: ConfigEscaner, alCambiar: (ConfigEscaner) -> Unit, alRestablecer: () -> Unit) {
+fun ContenidoAjustes(
+    config: ConfigEscaner,
+    alCambiar: (ConfigEscaner) -> Unit,
+    alRestablecer: () -> Unit,
+    /** null = el celular no deja pedirlo desde la app (antes de Android 13): se explica cómo agregarlo a mano. */
+    alAgregarMosaico: (() -> Unit)? = null,
+    /** Lo que contestó el sistema la última vez que se pidió. */
+    mensajeMosaico: String? = null,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -116,6 +145,21 @@ fun ContenidoAjustes(config: ConfigEscaner, alCambiar: (ConfigEscaner) -> Unit, 
             texto = { if (it < 1f) "Nunca" else "Después de ${it.roundToInt()} s" },
             alTerminar = { alCambiar(config.copy(segundosParaPausar = it.roundToInt())) },
         )
+
+        TituloSeccion("Abrir rápido")
+        Nota(
+            "Un mosaico en Ajustes rápidos abre el escáner con un toque, aun con el celular bloqueado: desliza desde " +
+                "arriba y tócalo.",
+        )
+        if (alAgregarMosaico != null) {
+            OutlinedButton(
+                onClick = alAgregarMosaico,
+                modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).testTag("agregar-mosaico"),
+            ) { Text("Agregar a Ajustes rápidos") }
+        } else {
+            Nota("Este celular no deja agregarlo desde la app. $COMO_AGREGAR_MOSAICO_A_MANO")
+        }
+        mensajeMosaico?.let { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp).testTag("mensaje-mosaico")) }
 
         TituloSeccion("Pruebas")
         FilaInterruptor(

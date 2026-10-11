@@ -23,8 +23,15 @@ la depuración USB activada):
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Cada PR y cada versión los arma GitHub Actions (flujo «Android»): el APK queda como artefacto de la corrida y, con una
-etiqueta `vX.Y.Z`, adjunto a la versión.
+Para medir rendimiento sirve el de release (el de depuración de Compose es más lento):
+
+```
+./gradlew :app:assembleRelease
+```
+
+Sale firmado si en la PC está la llave del proyecto (`~/.config/papeleria-pos-android/firma.properties`, fuera del
+repo); si no, sin firmar. Cada PR y cada versión los arma GitHub Actions (flujo «Android») con la llave guardada como
+secretos: los APK quedan como artefacto de la corrida y, con una etiqueta `vX.Y.Z`, el firmado se adjunta a la versión.
 
 Cómo probar sin celular (emulador con un código como cámara, pruebas instrumentadas, banco de pruebas) y con cualquier
 código de barras: [pruebas](docs/pruebas.md).
@@ -35,7 +42,9 @@ código de barras: [pruebas](docs/pruebas.md).
 |---|---|
 | `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso |
 | `escaner` | Android: la cámara (CameraX), los motores (ML Kit y zxing-cpp) y la pantalla del escáner con su guía, bip y vibración |
-| `app` | La app de prueba: modo venta y modo conteo, ajustes, sesión de prueba con CSV y banco de pruebas |
+| `app` | La app de prueba: modo venta y modo conteo, escaneo rápido sobre el bloqueo (mosaico y accesos directos), ajustes, sesión de prueba con CSV, banco de pruebas y pruebas de estrés |
+| `baselineprofile` | Genera el perfil de arranque (Baseline Profile y Startup Profile) que precompila la apertura |
+| `benchmark` | Macrobenchmark de la apertura: frío, tibio y caliente hasta el primer cuadro analizado |
 
 ## Documentos
 

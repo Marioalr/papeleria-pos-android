@@ -88,6 +88,110 @@ Sin ir a la tienda: cualquier producto de la casa, las etiquetas del POS impresa
 3. **Banco de pruebas:** compara los dos motores en ese celular con escenas sintéticas, sin depender de la mano.
 4. **Sesión de prueba:** registra cada intento con sus tiempos y exporta un CSV, igual que en la tienda.
 
+## Arranque y perfil
+
+**Un solo enlace y la línea de la apertura** (con la app instalada en el emulador o en un celular):
+
+```
+adb logcat -c
+adb shell am start -S -W -n mx.papeleriapos.android/.MainActivity     # TotalTime = hasta el primer cuadro (TTID)
+adb logcat -d -s Escaner | grep -E "Cámara enlazada|Apertura:"
+adb logcat -d | grep -E "Displayed|Fully drawn"                        # Fully drawn = primer cuadro analizado (TTFD)
+```
+
+Debe salir **una** vez «Cámara enlazada». Para el arranque en caliente: `adb shell input keyevent KEYCODE_HOME` y el
+mismo `am start` sin `-S`.
+
+**El perfil de arranque** (Baseline Profile y Startup Profile) se genera en un emulador o celular con API 33+, sin root,
+y va en git (`app/src/main/generated/baselineProfiles/`):
+
+```
+./gradlew :app:generateBaselineProfile
+```
+
+Fuera de Google Play el perfil se compila hasta la noche, con el celular cargando. Para medir desde el principio:
+
+```
+adb shell cmd package compile -f -m speed-profile mx.papeleriapos.android
+```
+
+**Macrobenchmark** (`:benchmark`): arranque frío, tibio y caliente, sin perfil y con perfil, con el TTFD (primer cuadro
+analizado) y las secciones de trace. En celulares de verdad (al menos uno de gama baja), 15 iteraciones:
+
+```
+./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest
+```
+
+Ojo: la tarea de Gradle **desinstala la app al terminar, con sus datos** (listas, sesiones, ajustes), y corre en todos
+los equipos conectados (`ANDROID_SERIAL=<serie>` para elegir uno). En el celular de alguien de la tienda se instala y se
+corre a mano, y después se reinstala su APK (misma firma: los datos se quedan). Con la pantalla bloqueada no corre: el
+celular cargando con «Permanecer activo» (Opciones de desarrollador).
+
+```
+./gradlew :app:assembleBenchmarkRelease :benchmark:assembleBenchmarkRelease
+adb install -r app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk
+adb install -r -t benchmark/build/outputs/apk/benchmarkRelease/benchmark-benchmarkRelease.apk
+adb shell am instrument -w -r -e iteraciones 15 mx.papeleriapos.benchmark/androidx.test.runner.AndroidJUnitRunner
+adb pull /sdcard/Android/media/mx.papeleriapos.benchmark/ resultados/    # JSON y trazas de Perfetto
+adb uninstall mx.papeleriapos.benchmark
+```
+
+**Primera medición en un celular** (2026-10-09, Pixel 8 Pro, Android 17, gama alta, 15 iteraciones, medianas; el
+TTFD es el primer cuadro analizado):
+
+| Arranque | Sin perfil | Con perfil |
+|---|---|---|
+| Frío: primer cuadro en pantalla (TTID) | 380 ms | 225 ms |
+| Frío: ya escaneando (TTFD) | 913 ms | 629 ms |
+| Frío: espera a CameraX | 107 ms | 32 ms |
+| Tibio: TTID / TTFD | 130 / 431 ms | 137 / 386 ms |
+| Caliente: TTID / ya escaneando | 99 / 407 ms | 75 / 278 ms |
+| Por cuadro: total / localizador / lectura | 3.3 / 1.0 / 2.1 ms | 2.4 / 0.6 / 1.8 ms |
+
+El perfil quita ~30 % del arranque frío y hace más parejas las mediciones (TTFD en frío de 583 a 700 ms con perfil, de
+855 a 1162 sin él). En caliente, ~200 ms van de la interfaz al primer cuadro analizado: la cámara vuelve a abrir. Falta un celular de gama
+baja.
+
+En el emulador solo como prueba de humo (las cifras no valen): agregar `-PconX86
+-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
+-Pandroid.testInstrumentationRunnerArguments.iteraciones=2`. Los resultados (JSON y trazas de Perfetto) quedan en
+`benchmark/build/outputs/connected_android_test_additional_output/`.
+
+La prueba de humo también es la que revisa el APK con R8 (`benchmarkRelease` es el release instalable): falla si la app
+no llega a escanear. Así se encontró que ML Kit no arrancaba con R8 en modo completo (`app/proguard-rules.pro`). Se
+corre antes de cada versión.
+
+**El mosaico sobre el bloqueo** en el emulador:
+
+```
+adb shell locksettings set-pin 1234
+adb shell cmd statusbar add-tile mx.papeleriapos.android/.rapido.MosaicoEscanerService
+adb shell input keyevent KEYCODE_SLEEP; adb shell input keyevent KEYCODE_WAKEUP
+adb shell cmd statusbar expand-settings      # y tocar el mosaico
+adb shell locksettings clear --old 1234      # al terminar
+```
+
+## Estrés
+
+La pestaña **Estrés** de la app corre sobre la cámara real y dice si cada prueba pasa, con su CSV:
+
+- **Ciclos:** abrir → cámara abierta → primer cuadro → cerrar, 200 veces (con un controlador nuevo por ciclo o el mismo
+  yendo y volviendo de segundo plano). Pasa si los ciclos con error son a lo más el 1 %, el p95 del final no pasa de
+  1.2 veces el del inicio (sin el primero, que es frío) y la memoria, los hilos y los descriptores no crecen.
+- **Ráfaga:** zoom alternado cada 30 ms durante 60 s y la linterna 100 veces; termina apagada y la interfaz coincide.
+- **Cambio de motor** en caliente 50 veces.
+- **Escaneo continuo** de 5, 15 o 30 minutos con el monitor de recursos: detecta el estrangulamiento térmico (estado
+  térmico moderado o más, margen ≥ 0.85, cuadros de análisis < 85 % del primer minuto o CPU por cuadro +25 %).
+
+En el emulador también hay pruebas instrumentadas de ciclos (`CiclosCamaraTest`) y de navegación de la app
+(`NavegacionTest`: cada pestaña y de vuelta al escáner, que debe volver a escanear; `ControladorCamaraTest` revisa que
+al volver la cámara abra una sola vez). Las pruebas con UiAutomator, el perfil y Macrobenchmark esperan el id
+`escaneando`, que aparece con el primer cuadro analizado. Monkey para lo inesperado:
+
+```
+adb shell monkey -p mx.papeleriapos.android -s 20261009 --throttle 120 --pct-touch 45 --pct-motion 20 --pct-appswitch 10 -v 20000
+```
+
 ## Rendimiento y batería
 
 En un celular conectado:
@@ -99,4 +203,7 @@ adb shell dumpsys batterystats --charged mx.papeleriapos.android   # después
 ```
 
 Las secciones `escaner.cuadro`, `escaner.localizar` y `escaner.leer` aparecen en un rastreo de Perfetto o del perfilador
-de Android Studio para ver cuánto tarda cada paso.
+de Android Studio para ver cuánto tarda cada paso. Dentro de la app, la sesión de prueba exporta `recursos.csv` (una
+fila por segundo) y el banco de pruebas tiene el modo **Límites**: para cada motor y cada condición (desenfoque,
+movido, reflejo, poca luz, tamaño, giro, perspectiva) sube la dificultad hasta el último grado que todavía lee en el
+80 % de las variantes.
