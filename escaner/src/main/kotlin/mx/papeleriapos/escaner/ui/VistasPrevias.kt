@@ -25,7 +25,7 @@ import mx.papeleriapos.escaner.nucleo.Indicacion
  */
 @Composable
 internal fun EscenaDeMuestra(codigo: Caja?, modifier: Modifier = Modifier, luz: Float = 1f) {
-    val modulos = remember { Barras.ean13("7501234567893") }
+    val modulos = remember { Barras.ean13("7509993456786") }
     Canvas(modifier.fillMaxSize()) {
         drawRect(Brush.verticalGradient(listOf(Color(0xFF9E8A78), Color(0xFF5D4E42))))
         if (codigo != null) {

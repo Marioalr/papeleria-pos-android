@@ -194,11 +194,11 @@ class PantallaEscanerTest {
     fun alSubirLecturasSeConfirmaEnElMismoCuadroYSeQuitaTrasUnos600ms() {
         mostrar(EstadoEscaner(fase = Fase.VIENDO, indicacion = Indicacion.LEYENDO))
         regla.mainClock.autoAdvance = false
-        muestra.emitirLectura("036000291452", Simbologia.UPC_A, normalizado = "0036000291452")
+        muestra.emitirLectura("099999291452", Simbologia.UPC_A, normalizado = "0099999291452")
         regla.mainClock.advanceTimeByFrame()
         regla.mainClock.advanceTimeByFrame()
         regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertIsDisplayed()
-            .assertTextContains("0036000291452")
+            .assertTextContains("0099999291452")
             .assertTextContains("UPC-A · Leído")
         // Leído borra cualquier pista.
         regla.onNodeWithTag(EtiquetasEscaner.INDICACION).assertDoesNotExist()
@@ -213,12 +213,12 @@ class PantallaEscanerTest {
     fun otraLecturaDuranteLaConfirmacionLaAlarga() {
         mostrar(EstadoEscaner(fase = Fase.ESCANEANDO))
         regla.mainClock.autoAdvance = false
-        muestra.emitirLectura("7501234567893")
+        muestra.emitirLectura("7509993456786")
         regla.mainClock.advanceTimeBy(400)
-        muestra.emitirLectura("96385074", Simbologia.EAN_8)
+        muestra.emitirLectura("75099916", Simbologia.EAN_8)
         regla.mainClock.advanceTimeByFrame()
         regla.mainClock.advanceTimeByFrame()
-        regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertTextContains("96385074")
+        regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertTextContains("75099916")
         regla.mainClock.advanceTimeBy(350)
         regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertExists()
         regla.mainClock.advanceTimeBy(400)
@@ -351,9 +351,9 @@ class PantallaEscanerTest {
             .assertTextEquals("Hay reflejo: inclina un poco el celular")
         regla.onNodeWithTag(EtiquetasEscaner.LINTERNA).assertIsDisplayed()
         regla.onNodeWithTag(EtiquetasEscaner.ZOOM).assertIsDisplayed()
-        muestra.emitirLectura("7501234567893")
+        muestra.emitirLectura("7509993456786")
         muestra.cambiar { it.copy(fase = Fase.LEIDO) }
         regla.waitForIdle()
-        regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertIsDisplayed().assertTextContains("7501234567893")
+        regla.onNodeWithTag(EtiquetasEscaner.LEIDO).assertIsDisplayed().assertTextContains("7509993456786")
     }
 }

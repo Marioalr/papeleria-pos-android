@@ -82,7 +82,7 @@ class ControladorDeMuestra(
      * [eventos]. No cambia la fase (el de verdad pasa a LEIDO unos 500 ms; eso se fija aparte si se quiere ver).
      */
     fun emitirLectura(
-        texto: String = "7501234567893",
+        texto: String = "7509993456786",
         simbologia: Simbologia = Simbologia.EAN_13,
         normalizado: String = texto,
         caja: Caja? = Caja(0.25f, 0.42f, 0.75f, 0.58f),

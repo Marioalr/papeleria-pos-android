@@ -26,3 +26,5 @@ Primera versión de prueba: el escáner solo, sin conexión al POS.
 - El APK de release sale firmado con la llave del proyecto: se instala encima de la versión anterior.
 - No usa la red: sin permisos de Internet ni de estado de red y sin las estadísticas de uso que ML Kit manda a Google.
   Cada APK revisa al armarse que solo pide la cámara y la vibración.
+- El banco de pruebas, los carteles del emulador y las pruebas usan solo códigos ficticios (EAN-13 750999…, internos
+  299999…, UPC-A 099999…, Code 128 ZZ…), ninguno de un producto real.

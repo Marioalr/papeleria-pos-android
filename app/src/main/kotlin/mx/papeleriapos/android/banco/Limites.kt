@@ -78,7 +78,7 @@ data class EscenaLimite(val condicion: CondicionLimite, val indiceGrado: Int, va
     companion object {
         /** El código de prueba: el EAN-13 750… de casi todo lo que se vende en la tienda. */
         val SIMBOLOGIA = Simbologia.EAN_13
-        const val CODIGO = "7501234567893"
+        const val CODIGO = "7509993456786"
         const val PX_POR_MODULO_BASE = 3f
         const val RUIDO_BASE = 2f
         private const val SEMILLA_BASE = 20261009

@@ -10,7 +10,7 @@ import java.util.Locale
 class CsvTest {
     @Test
     fun `un campo simple va tal cual`() {
-        assertEquals("7501234567893", Csv.campo("7501234567893"))
+        assertEquals("7509993456786", Csv.campo("7509993456786"))
         assertEquals("", Csv.campo(""))
     }
 
@@ -35,7 +35,7 @@ class CsvTest {
     fun `leer regresa lo mismo que se escribio`() {
         val renglones = listOf(
             listOf("sesion", "valor", "nota"),
-            listOf("Moto G24, Lupita", "PAP\"0042\"x", "uno\r\ndos"),
+            listOf("Moto G24, Lupita", "ZZP\"0042\"x", "uno\r\ndos"),
             listOf("", "", ""),
             listOf("ñandú", "=1+1", "último"),
         )
@@ -57,7 +57,7 @@ class CsvTest {
             assertEquals("'$peligroso", seguro)
             assertEquals(peligroso, Csv.textoOriginal(seguro))
         }
-        assertEquals("7501234567893", Csv.textoSeguro("7501234567893"))
+        assertEquals("7509993456786", Csv.textoSeguro("7509993456786"))
         assertEquals("'hola", Csv.textoOriginal("'hola"))
     }
 
@@ -76,12 +76,12 @@ class CsvTest {
 
     @Test
     fun `ocultar deja un hash corto y los ultimos 4`() {
-        val qr = "https://ticket.ejemplo.mx/v?folio=000123&total=45.50&firma=ABCD"
+        val qr = "A-000123"
         val oculto = Csv.ocultar(qr)
         val esperado = MessageDigest.getInstance("SHA-256").digest(qr.toByteArray()).take(6)
             .joinToString("") { "%02x".format(it.toInt() and 0xFF) }
-        assertEquals("sha256:$esperado...ABCD", oculto)
-        assertFalse(oculto.contains("folio"))
+        assertEquals("sha256:$esperado...0123", oculto)
+        assertFalse(oculto.contains("A-000123"))
         assertTrue(Csv.ocultar("abc").endsWith("...abc"))
         assertEquals("", Csv.ocultar(""))
     }

@@ -36,7 +36,7 @@ object Ejemplos {
 
     /** Un UPC-A como lo da ML Kit (12 dígitos), ya normalizado a 13. */
     val upcA = evento(
-        "036000291452", Simbologia.UPC_A, normalizado = "0036000291452",
-        claves = listOf("036000291452", "0036000291452"),
+        "099999291452", Simbologia.UPC_A, normalizado = "0099999291452",
+        claves = listOf("099999291452", "0099999291452"),
     )
 }

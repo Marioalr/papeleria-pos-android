@@ -11,7 +11,7 @@ class TiempoLocalizadorTest {
     @Test
     fun `mediana y p95 a 1280x720`() {
         val escenas = listOf(
-            "EAN-13 3 px/módulo a 10°" to Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(giroGrados = 10f, ruido = 3f)),
+            "EAN-13 3 px/módulo a 10°" to Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(giroGrados = 10f, ruido = 3f)),
             "sin código (texto)" to Planos.texto(7),
             "plano con ruido σ=6" to Lienzo.dibujar(BooleanArray(1), 0, 1280, 720, Escena(anchoRelativo = 1e-4f, ruido = 6f)),
         )

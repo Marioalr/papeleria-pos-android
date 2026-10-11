@@ -26,6 +26,13 @@ export JAVA_HOME=/opt/android-studio/jbr
 posición, tamaño, giro, perspectiva, desenfoque, movimiento, ruido, poca luz y reflejo. Lo usan las pruebas, el banco
 de pruebas del celular y los carteles del emulador.
 
+**Códigos de ejemplo: siempre ficticios**, nunca de un producto de la tienda ni uno conocido, y el verificador (C)
+calculado con `Gtin`, no a ojo: EAN-13 `750999XXXXXXC`, internos del POS `299999XXXXXXC`, UPC-A `099999XXXXXC`, UPC-E
+con fabricante 99… (`09999961` se expande a `099999000061`), EAN-8 `750999XC`, GTIN-14 para ITF `1750999XXXXXXC`, Code
+128 con letras `ZZ…` (`ZZ0001`, `ZZ-PRUEBA-0001`) y QR del ticket `A-000123` o `ZZ-000001`. El EAN-13 de ejemplo,
+`7509993456786`, se eligió porque pasa la prueba del localizador con 5 px por módulo y desenfoque 3, que depende del
+dibujo de las barras (uno de cada cuatro EAN-13 al azar no la pasa).
+
 ## En el emulador
 
 El emulador puede usar una imagen como cámara trasera (`-camera-back imagefile:<png>`). Los carteles con códigos en

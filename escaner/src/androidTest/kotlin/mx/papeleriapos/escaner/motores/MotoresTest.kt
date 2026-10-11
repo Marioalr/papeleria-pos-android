@@ -36,18 +36,18 @@ class MotoresTest {
     private data class Caso(val simbologia: Simbologia, val texto: String, val rotacion: Int, val moduloPx: Float)
 
     private val casos = listOf(
-        Caso(Simbologia.EAN_13, "7501234567893", 90, 3f),
-        Caso(Simbologia.EAN_13, Gtin.completar("200000000001"), 90, 3f),
-        Caso(Simbologia.UPC_A, "036000291452", 90, 3f),
-        Caso(Simbologia.EAN_8, "96385074", 90, 3f),
-        Caso(Simbologia.ITF, Gtin.completar("1750100000001"), 90, 2.5f),
-        Caso(Simbologia.CODE_128, "PAP0042x", 90, 2.5f),
-        Caso(Simbologia.EAN_13, "7501234567893", 0, 3f),
-        Caso(Simbologia.EAN_13, Gtin.completar("200000000001"), 0, 3f),
-        Caso(Simbologia.UPC_A, "036000291452", 0, 3f),
-        Caso(Simbologia.EAN_8, "96385074", 0, 3f),
-        Caso(Simbologia.ITF, Gtin.completar("1750100000001"), 0, 3f),
-        Caso(Simbologia.CODE_128, "ELEV-00123a", 0, 3f),
+        Caso(Simbologia.EAN_13, "7509993456786", 90, 3f),
+        Caso(Simbologia.EAN_13, Gtin.completar("299999000001"), 90, 3f),
+        Caso(Simbologia.UPC_A, "099999291452", 90, 3f),
+        Caso(Simbologia.EAN_8, "75099916", 90, 3f),
+        Caso(Simbologia.ITF, Gtin.completar("1750999000001"), 90, 2.5f),
+        Caso(Simbologia.CODE_128, "ZZP0042x", 90, 2.5f),
+        Caso(Simbologia.EAN_13, "7509993456786", 0, 3f),
+        Caso(Simbologia.EAN_13, Gtin.completar("299999000001"), 0, 3f),
+        Caso(Simbologia.UPC_A, "099999291452", 0, 3f),
+        Caso(Simbologia.EAN_8, "75099916", 0, 3f),
+        Caso(Simbologia.ITF, Gtin.completar("1750999000001"), 0, 3f),
+        Caso(Simbologia.CODE_128, "ZZEV-00123a", 0, 3f),
     )
 
     @Test
@@ -98,12 +98,12 @@ class MotoresTest {
     fun mlKitDaPotencialesConCodigosChicosOBorrosos() {
         // ML Kit no es monotónico: no da potenciales a 0.45 px/módulo ni siempre a 1.5–2. Se pide en la mayoría.
         val escenas = listOf(
-            "1.2 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", moduloPx = 1.2f),
-            "1.0 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", moduloPx = 1.0f),
-            "0.8 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", moduloPx = 0.8f),
-            "borroso r=4" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", moduloPx = 2f, desenfoque = 4),
-            "borroso r=6" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", moduloPx = 2f, desenfoque = 6),
-            "1.0 px/módulo rot 0" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893", rotacion = 0, moduloPx = 1.0f),
+            "1.2 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", moduloPx = 1.2f),
+            "1.0 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", moduloPx = 1.0f),
+            "0.8 px/módulo" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", moduloPx = 0.8f),
+            "borroso r=4" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", moduloPx = 2f, desenfoque = 4),
+            "borroso r=6" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", moduloPx = 2f, desenfoque = 6),
+            "1.0 px/módulo rot 0" to EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786", rotacion = 0, moduloPx = 1.0f),
         )
         var conPotencial = 0
         val fallas = ArrayList<String>()
@@ -112,7 +112,7 @@ class MotoresTest {
             for ((nombre, escena) in escenas) {
                 val r = motor.leer(escena.cuadro())
                 Log.i(ETIQUETA, "Potenciales $nombre: lecturas=${r.lecturas.map { it.texto }} potenciales=${r.potencialesBuffer.size}")
-                if (r.lecturas.any { comparable(it.texto, it.simbologia) != "7501234567893" }) fallas += "$nombre: lectura falsa ${r.lecturas}"
+                if (r.lecturas.any { comparable(it.texto, it.simbologia) != "7509993456786" }) fallas += "$nombre: lectura falsa ${r.lecturas}"
                 if (r.potencialesBuffer.isNotEmpty() && r.lecturas.isEmpty()) conPotencial++
                 for (p in r.potencialesBuffer) {
                     Log.i(ETIQUETA, "  potencial en el derecho: ${escena.aDerecho(p).joinToString { "%.0f".format(it) }} barras=${escena.barrasDerecho}")
@@ -160,7 +160,7 @@ class MotoresTest {
 
     @Test
     fun latenciasEnFrioYEnCalienteConFranjaYCuadroCompleto() {
-        val conCodigo = EscenaBuffer.conCodigo(Simbologia.EAN_13, "7501234567893")
+        val conCodigo = EscenaBuffer.conCodigo(Simbologia.EAN_13, "7509993456786")
         val vacia = EscenaBuffer.sinCodigo("texto")
         val resumen = StringBuilder()
         for (variante in Variante.entries) {
@@ -171,7 +171,7 @@ class MotoresTest {
                 val motor = nuevo(variante.motor, probarGiros)
                 val msCrear = (SystemClock.elapsedRealtimeNanos() - inicio) / 1e6
                 val frio = motor.leer(conCodigo.cuadro(conProxy = variante.conProxy))
-                assertEquals("$nombre en frío", listOf("7501234567893"), frio.lecturas.map { it.texto })
+                assertEquals("$nombre en frío", listOf("7509993456786"), frio.lecturas.map { it.texto })
                 resumen.append("%-28s crear %6.1f ms, primera lectura %6.1f ms\n".format(nombre, msCrear, frio.nanos / 1e6))
                 motor.use {
                     for ((escenaNombre, escena) in listOf("con código" to conCodigo, "sin código" to vacia)) {
@@ -234,7 +234,7 @@ class MotoresTest {
         repeat(5) { motor.leer(escena.cuadro(region, conProxy)) }
         return DoubleArray(REPETICIONES) {
             val r: ResultadoMotor = motor.leer(escena.cuadro(region, conProxy))
-            if (debeLeer) assertEquals(listOf("7501234567893"), r.lecturas.map { l -> l.texto })
+            if (debeLeer) assertEquals(listOf("7509993456786"), r.lecturas.map { l -> l.texto })
             else assertTrue("lectura falsa ${r.lecturas}", r.lecturas.isEmpty())
             r.nanos / 1e6
         }

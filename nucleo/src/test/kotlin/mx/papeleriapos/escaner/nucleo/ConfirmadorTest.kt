@@ -31,53 +31,53 @@ class ConfirmadorTest {
 
     @Test
     fun `EAN-13 valido e invalido`() {
-        val c = Confirmador.normalizar(lectura("7501234567893"))!!
-        assertEquals("7501234567893", c.normalizado)
-        assertEquals(listOf("7501234567893"), c.clavesDeBusqueda)
-        assertNull(Confirmador.normalizar(lectura("7501234567894")))
-        assertNull(Confirmador.normalizar(lectura("750123456789")))
+        val c = Confirmador.normalizar(lectura("7509993456786"))!!
+        assertEquals("7509993456786", c.normalizado)
+        assertEquals(listOf("7509993456786"), c.clavesDeBusqueda)
+        assertNull(Confirmador.normalizar(lectura("7509993456787")))
+        assertNull(Confirmador.normalizar(lectura("750999345678")))
     }
 
     @Test
     fun `UPC-A de 12 se busca con 12 y 13`() {
-        val c = Confirmador.normalizar(lectura("036000291452", Simbologia.UPC_A))!!
-        assertEquals("0036000291452", c.normalizado)
-        assertEquals("036000291452", c.original)
-        assertTrue(c.clavesDeBusqueda.containsAll(listOf("036000291452", "0036000291452")))
+        val c = Confirmador.normalizar(lectura("099999291452", Simbologia.UPC_A))!!
+        assertEquals("0099999291452", c.normalizado)
+        assertEquals("099999291452", c.original)
+        assertTrue(c.clavesDeBusqueda.containsAll(listOf("099999291452", "0099999291452")))
         // zxing-cpp lo da con 13.
-        assertEquals("0036000291452", Confirmador.normalizar(lectura("0036000291452", Simbologia.UPC_A))!!.normalizado)
-        assertNull(Confirmador.normalizar(lectura("036000291453", Simbologia.UPC_A)))
+        assertEquals("0099999291452", Confirmador.normalizar(lectura("0099999291452", Simbologia.UPC_A))!!.normalizado)
+        assertNull(Confirmador.normalizar(lectura("099999291453", Simbologia.UPC_A)))
     }
 
     @Test
     fun `UPC-E de 8 se expande y se busca con 8, 12 y 13`() {
-        val c = Confirmador.normalizar(lectura("04252614", Simbologia.UPC_E))!!
-        assertEquals("0042100005264", c.normalizado)
-        assertTrue(c.clavesDeBusqueda.containsAll(listOf("04252614", "042100005264", "0042100005264")))
+        val c = Confirmador.normalizar(lectura("09952618", Simbologia.UPC_E))!!
+        assertEquals("0099100005268", c.normalizado)
+        assertTrue(c.clavesDeBusqueda.containsAll(listOf("09952618", "099100005268", "0099100005268")))
         // Expandido por zxing-cpp: la clave corta se recupera.
-        val z = Confirmador.normalizar(lectura("0042100005264", Simbologia.UPC_E))!!
-        assertEquals("0042100005264", z.normalizado)
-        assertTrue(z.clavesDeBusqueda.contains("04252614"))
-        assertNull(Confirmador.normalizar(lectura("04252615", Simbologia.UPC_E)))
+        val z = Confirmador.normalizar(lectura("0099100005268", Simbologia.UPC_E))!!
+        assertEquals("0099100005268", z.normalizado)
+        assertTrue(z.clavesDeBusqueda.contains("09952618"))
+        assertNull(Confirmador.normalizar(lectura("09952619", Simbologia.UPC_E)))
     }
 
     @Test
     fun `ITF solo de 14 digitos con verificador`() {
-        assertEquals("17501000000019", Confirmador.normalizar(lectura("17501000000019", Simbologia.ITF))!!.normalizado)
-        assertNull(Confirmador.normalizar(lectura("17501000000018", Simbologia.ITF)))
-        // La lectura falsa de ML Kit que reprodujo la investigación.
-        assertNull(Confirmador.normalizar(lectura("1750100000000000000000000000000000000000", Simbologia.ITF)))
+        assertEquals("17509990000019", Confirmador.normalizar(lectura("17509990000019", Simbologia.ITF))!!.normalizado)
+        assertNull(Confirmador.normalizar(lectura("17509990000018", Simbologia.ITF)))
+        // Como la lectura falsa de ML Kit que reprodujo la investigación: el principio del ITF y luego ceros.
+        assertNull(Confirmador.normalizar(lectura("1750999000000000000000000000000000000000", Simbologia.ITF)))
         assertNull(Confirmador.normalizar(lectura("123456", Simbologia.ITF)))
         // Un GTIN-14 que empieza con 0 también se busca como GTIN-13.
-        val cero = Gtin.completar("0750123456789")
+        val cero = Gtin.completar("0750999345678")
         assertTrue(Confirmador.normalizar(lectura(cero, Simbologia.ITF))!!.clavesDeBusqueda.contains(cero.substring(1)))
     }
 
     @Test
     fun `Code 128 sin prefijo de simbologia ni caracteres de control`() {
-        assertEquals("PAP0042x", Confirmador.normalizar(lectura("PAP0042x", Simbologia.CODE_128))!!.normalizado)
-        assertEquals("0107501234567893", Confirmador.normalizar(lectura("]C10107501234567893", Simbologia.CODE_128))!!.normalizado)
-        assertEquals("AB12", Confirmador.normalizar(lectura("AB\u001D12", Simbologia.CODE_128))!!.normalizado)
+        assertEquals("ZZP0042x", Confirmador.normalizar(lectura("ZZP0042x", Simbologia.CODE_128))!!.normalizado)
+        assertEquals("0107509993456786", Confirmador.normalizar(lectura("]C10107509993456786", Simbologia.CODE_128))!!.normalizado)
+        assertEquals("ZZ12", Confirmador.normalizar(lectura("ZZ\u001D12", Simbologia.CODE_128))!!.normalizado)
         assertNull(Confirmador.normalizar(lectura("\u001D", Simbologia.CODE_128)))
     }
 
@@ -85,7 +85,7 @@ class ConfirmadorTest {
     fun `simbologias de verificacion debil no se aceptan`() {
         assertNull(Confirmador.normalizar(lectura("ABC123", Simbologia.CODE_39)))
         assertNull(Confirmador.normalizar(lectura("A123B", Simbologia.CODABAR)))
-        assertNotNull(Confirmador.normalizar(lectura("ticket:A-000123", Simbologia.QR)))
+        assertNotNull(Confirmador.normalizar(lectura("A-000123", Simbologia.QR)))
     }
 
     // ---- Consenso ----
@@ -93,41 +93,41 @@ class ConfirmadorTest {
     @Test
     fun `hacen falta dos lecturas iguales y el QR entra a la primera`() {
         val c = Confirmador()
-        assertNull(c.cuadro(lectura("7501234567893") to centro))
-        val a = c.cuadro(lectura("7501234567893") to centro)
+        assertNull(c.cuadro(lectura("7509993456786") to centro))
+        val a = c.cuadro(lectura("7509993456786") to centro)
         assertNotNull(a)
-        assertEquals("7501234567893", a!!.codigo.normalizado)
+        assertEquals("7509993456786", a!!.codigo.normalizado)
         assertFalse(a.repetida)
         assertEquals(centro, a.caja)
 
         val q = Confirmador()
-        assertNotNull(q.cuadro(lectura("ticket:A-1", Simbologia.QR) to centro))
+        assertNotNull(q.cuadro(lectura("ZZ-000001", Simbologia.QR) to centro))
     }
 
     @Test
     fun `las dos lecturas deben caber en la ventana de tres cuadros`() {
         val c = Confirmador()
-        assertNull(c.cuadro(lectura("7501234567893") to centro))
+        assertNull(c.cuadro(lectura("7509993456786") to centro))
         assertNull(c.cuadro())
         assertNull(c.cuadro())
         // La primera ya salió de la ventana.
-        assertNull(c.cuadro(lectura("7501234567893") to centro))
-        assertNotNull(c.cuadro(lectura("7501234567893") to centro))
+        assertNull(c.cuadro(lectura("7509993456786") to centro))
+        assertNotNull(c.cuadro(lectura("7509993456786") to centro))
     }
 
     @Test
     fun `un UPC-A de 12 y su EAN-13 cuentan juntos`() {
         val c = Confirmador()
-        assertNull(c.cuadro(lectura("036000291452", Simbologia.UPC_A) to centro))
-        assertNotNull(c.cuadro(lectura("0036000291452", Simbologia.EAN_13) to centro))
+        assertNull(c.cuadro(lectura("099999291452", Simbologia.UPC_A) to centro))
+        assertNotNull(c.cuadro(lectura("0099999291452", Simbologia.EAN_13) to centro))
     }
 
     @Test
     fun `dos lecturas distintas no hacen consenso y lo invalido nunca entra`() {
         val c = Confirmador()
-        assertNull(c.cuadro(lectura("7501234567893") to centro))
-        assertNull(c.cuadro(lectura("7501000000012") to centro))
-        val malo = lectura("1750100000000000000000000000000000000000", Simbologia.ITF)
+        assertNull(c.cuadro(lectura("7509993456786") to centro))
+        assertNull(c.cuadro(lectura("7509990000012") to centro))
+        val malo = lectura("1750999000000000000000000000000000000000", Simbologia.ITF)
         repeat(10) { assertNull(c.cuadro(malo to centro)) }
     }
 
@@ -136,11 +136,11 @@ class ConfirmadorTest {
     @Test
     fun `con dos codigos se toma el que tiene el centro de la franja`() {
         val c = Confirmador()
-        val otro = lectura("7501000000012") to izquierda
-        val elegido = lectura("7501234567893") to centro
+        val otro = lectura("7509990000012") to izquierda
+        val elegido = lectura("7509993456786") to centro
         assertNull(c.cuadro(otro, elegido))
         val a = c.cuadro(otro, elegido)
-        assertEquals("7501234567893", a!!.codigo.normalizado)
+        assertEquals("7509993456786", a!!.codigo.normalizado)
         // El de un lado tiene consenso, pero no se toma mientras el centro tenga otro código.
         repeat(5) { assertNull(c.cuadro(otro, elegido)) }
     }
@@ -148,8 +148,8 @@ class ConfirmadorTest {
     @Test
     fun `dos codigos que se alternan en el centro no se cuentan una y otra vez`() {
         val c = Confirmador()
-        val a = lectura("7501234567893")
-        val b = lectura("7501000000012")
+        val a = lectura("7509993456786")
+        val b = lectura("7509990000012")
         val cajaA = Caja(0.3f, 0.40f, 0.7f, 0.49f)
         val cajaB = Caja(0.3f, 0.51f, 0.7f, 0.60f)
         var aceptadas = 0
@@ -171,14 +171,14 @@ class ConfirmadorTest {
     fun `el mismo codigo a la vista no se repite`() {
         val c = Confirmador()
         var aceptadas = 0
-        repeat(150) { if (c.cuadro(lectura("7501234567893") to centro) != null) aceptadas++ }
+        repeat(150) { if (c.cuadro(lectura("7509993456786") to centro) != null) aceptadas++ }
         assertEquals(1, aceptadas)
     }
 
     @Test
     fun `vuelve a contar solo despues de medio segundo de ausencia`() {
         val c = Confirmador()
-        val l = lectura("7501234567893") to centro
+        val l = lectura("7509993456786") to centro
         c.cuadro(l); assertNotNull(c.cuadro(l))
         // 400 ms fuera: no basta.
         c.vacios(400)
@@ -194,21 +194,21 @@ class ConfirmadorTest {
     @Test
     fun `un potencial en el mismo lugar cuenta como que sigue ahi`() {
         val c = Confirmador()
-        val l = lectura("7501234567893") to centro
+        val l = lectura("7509993456786") to centro
         c.cuadro(l); assertNotNull(c.cuadro(l))
         // El motor deja de leerlo pero lo sigue viendo (p. ej. se movió y está borroso).
         repeat(30) { c.cuadro(potenciales = listOf(centro.copy(izquierda = 0.32f))) }
         assertNull(c.cuadro(l)); assertNull(c.cuadro(l))
         // Una lectura inválida en el mismo lugar también.
-        repeat(30) { c.cuadro(lectura("7501234567894") to centro) }
+        repeat(30) { c.cuadro(lectura("7509993456787") to centro) }
         assertNull(c.cuadro(l)); assertNull(c.cuadro(l))
     }
 
     @Test
     fun `un codigo distinto entra de inmediato`() {
         val c = Confirmador()
-        val a = lectura("7501234567893") to centro
-        val b = lectura("7501000000012") to centro
+        val a = lectura("7509993456786") to centro
+        val b = lectura("7509990000012") to centro
         c.cuadro(a); assertNotNull(c.cuadro(a))
         c.cuadro(b)
         val otra = c.cuadro(b)
@@ -219,7 +219,7 @@ class ConfirmadorTest {
     @Test
     fun `la ausencia configurable y reiniciar`() {
         val c = Confirmador(ReglasConfirmacion(msAusenciaParaRepetir = 100))
-        val l = lectura("7501234567893") to centro
+        val l = lectura("7509993456786") to centro
         c.cuadro(l); assertNotNull(c.cuadro(l))
         c.vacios(150)
         c.cuadro(l); assertNotNull(c.cuadro(l))
@@ -233,7 +233,7 @@ class ConfirmadorTest {
     @Test
     fun `un cuadro repetido no asigna memoria en el camino normal`() {
         val c = Confirmador()
-        val lecturas = listOf(lectura("7501234567893") to centro)
+        val lecturas = listOf(lectura("7509993456786") to centro)
         val sin = emptyList<Caja>()
         repeat(100) { c.procesar(lecturas, sin, franja, t); t += 33_333_333L }
         val hilo = java.lang.management.ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
@@ -248,7 +248,7 @@ class ConfirmadorTest {
     @Test
     fun `avisa que el codigo a la vista ya se leyo hasta que se retira`() {
         val c = Confirmador()
-        val l = lectura("7501234567893") to centro
+        val l = lectura("7509993456786") to centro
         c.cuadro(l); assertFalse(c.yaLeidoEnCuadro)
         assertNotNull(c.cuadro(l)); assertFalse(c.yaLeidoEnCuadro)
         // Sigue a la vista: ya leído (también si el motor solo lo ve sin leerlo).

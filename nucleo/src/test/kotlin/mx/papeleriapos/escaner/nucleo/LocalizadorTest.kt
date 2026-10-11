@@ -59,7 +59,7 @@ class LocalizadorTest {
         for (m in floatArrayOf(3f, 5f)) {
             val nitidez = FloatArray(4)
             for (b in 0..3) {
-                val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", m, base = Escena(desenfoque = b, ruido = 3f)))
+                val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", m, base = Escena(desenfoque = b, ruido = 3f)))
                 assertTrue("m=$m desenfoque=$b", r.encontrado && r.tipo == 1)
                 if (b <= 1 || m >= 5f) {
                     assertTrue("m=$m desenfoque=$b verificado", r.verificado)
@@ -77,8 +77,8 @@ class LocalizadorTest {
 
     @Test
     fun `el codigo movido se ve borroso`() {
-        val quieto = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 4f, base = Escena(ruido = 3f))).nitidez
-        val movido = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 4f, base = Escena(movido = 4, ruido = 3f)))
+        val quieto = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 4f, base = Escena(ruido = 3f))).nitidez
+        val movido = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 4f, base = Escena(movido = 4, ruido = 3f)))
         assertTrue(movido.encontrado)
         assertTrue("quieto $quieto, movido ${movido.nitidez}", movido.nitidez < 0.2f && quieto > 0.4f)
     }
@@ -86,7 +86,7 @@ class LocalizadorTest {
     @Test
     fun `desplazado, el centro sigue al codigo`() {
         for ((fx, fy) in listOf(0.2f to 0.5f, 0.8f to 0.5f, 0.5f to 0.22f, 0.5f to 0.8f)) {
-            val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(centroX = fx, centroY = fy, ruido = 3f)))
+            val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(centroX = fx, centroY = fy, ruido = 3f)))
             val err = hypot(r.centroX - 1280.0 * fx, r.centroY - 720.0 * fy)
             assertTrue("($fx, $fy): ver=${r.verificado} error=$err", r.verificado && err < 20)
             assertFalse("($fx, $fy) no está cortado", r.cortado)
@@ -97,15 +97,15 @@ class LocalizadorTest {
     fun `cortado por el borde`() {
         // EAN-13 a 4 px/módulo (452 px con zonas): centrado en x = 0.95 queda la mitad fuera.
         for ((fx, giro) in listOf(0.95f to 0f, 0.05f to 0f, 0.95f to 20f)) {
-            val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 4f, base = Escena(centroX = fx, giroGrados = giro, ruido = 3f)))
+            val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 4f, base = Escena(centroX = fx, giroGrados = giro, ruido = 3f)))
             assertTrue("x=$fx giro=$giro encontrado", r.encontrado && r.tipo == 1)
             assertTrue("x=$fx giro=$giro cortado (centro ${r.centroX}, largo ${r.largo})", r.cortado)
         }
         // Barras horizontales (90°) que se salen por abajo.
-        val abajo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 4f, base = Escena(centroY = 0.92f, giroGrados = 90f, ruido = 3f)))
+        val abajo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 4f, base = Escena(centroY = 0.92f, giroGrados = 90f, ruido = 3f)))
         assertTrue("abajo cortado", abajo.encontrado && abajo.cortado)
         // Completo cerca del borde: no.
-        val completo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 4f, base = Escena(centroX = 0.75f, ruido = 3f)))
+        val completo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 4f, base = Escena(centroX = 0.75f, ruido = 3f)))
         assertTrue(completo.verificado)
         assertFalse("completo no está cortado", completo.cortado)
     }
@@ -130,8 +130,8 @@ class LocalizadorTest {
 
     @Test
     fun `prefiere el codigo mas cercano al punto preferido`() {
-        val a = Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(centroX = 0.27f))
-        val b = Planos.codigo(Simbologia.CODE_128, "PAP42", 3f, base = Escena(centroX = 0.73f))
+        val a = Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(centroX = 0.27f))
+        val b = Planos.codigo(Simbologia.CODE_128, "ZZP42", 3f, base = Escena(centroX = 0.73f))
         // Los dos en la misma escena: donde uno es fondo se toma el otro.
         val fondo = Escena().fondo.toByte()
         for (i in a.pixeles.indices) if (a.pixeles[i] == fondo) a.pixeles[i] = b.pixeles[i]
@@ -144,12 +144,12 @@ class LocalizadorTest {
 
     @Test
     fun `mide el reflejo y la luz`() {
-        val normal = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(ruido = 3f)))
+        val normal = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(ruido = 3f)))
         assertTrue("sin reflejo: ${normal.saturados}", normal.saturados < 0.03f)
         assertTrue("con luz: ${normal.brilloCentral}", normal.brilloCentral > 100f)
-        val reflejo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(reflejo = 0.4f, ruido = 3f)))
+        val reflejo = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(reflejo = 0.4f, ruido = 3f)))
         assertTrue("reflejo: ${reflejo.saturados}", reflejo.encontrado && reflejo.saturados > 0.06f)
-        val oscuro = Lienzo.ganancia(Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(ruido = 3f)), 0.2f)
+        val oscuro = Lienzo.ganancia(Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(ruido = 3f)), 0.2f)
         val r = loc.procesar(oscuro)
         assertTrue("oscuro: ${r.brilloCentral}", r.brilloCentral in 0f..45f)
     }
@@ -157,16 +157,16 @@ class LocalizadorTest {
     @Test
     fun `la diferencia entre cuadros mide el movimiento`() {
         val l = Localizador()
-        val quieto = Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(ruido = 3f))
+        val quieto = Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(ruido = 3f))
         assertEquals(-1f, l.procesar(quieto).diferenciaCuadro, 0f)
         assertEquals(0f, l.procesar(quieto).diferenciaCuadro, 0f)
-        val movido = Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(centroX = 0.6f, ruido = 3f))
+        val movido = Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(centroX = 0.6f, ruido = 3f))
         assertTrue(l.procesar(movido).diferenciaCuadro > 1f)
     }
 
     @Test
     fun `respeta el paso de fila y deja la posicion del buffer como estaba`() {
-        val luma = Planos.codigo(Simbologia.ITF, "17501000000019", 3f, base = Escena(giroGrados = 20f, ruido = 3f))
+        val luma = Planos.codigo(Simbologia.ITF, "17509990000019", 3f, base = Escena(giroGrados = 20f, ruido = 3f))
         val (b0, p0) = Planos.buffer(luma)
         val r0 = loc.procesar(b0, p0, 1280, 720)
         val esperado = floatArrayOf(r0.centroX, r0.centroY, r0.largo, r0.moduloPx, r0.nitidez)
@@ -184,7 +184,7 @@ class LocalizadorTest {
     @Test
     fun `un cuadro mas grande que la capacidad inicial amplia los arreglos una vez`() {
         val chico = Localizador(anchoMaximo = 640, altoMaximo = 480)
-        val r = chico.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", 5f, base = Escena(giroGrados = 90f, ruido = 3f)))
+        val r = chico.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", 5f, base = Escena(giroGrados = 90f, ruido = 3f)))
         assertTrue(r.verificado)
         // Y uno diminuto no truena.
         val diminuto = chico.procesar(Luma(16, 16))
@@ -194,7 +194,7 @@ class LocalizadorTest {
     @Test
     fun `las esquinas encierran el codigo`() {
         val m = 3f
-        val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7501234567893", m, base = Escena(centroX = 0.4f, giroGrados = 30f, ruido = 3f)))
+        val r = loc.procesar(Planos.codigo(Simbologia.EAN_13, "7509993456786", m, base = Escena(centroX = 0.4f, giroGrados = 30f, ruido = 3f)))
         assertTrue(r.verificado)
         val caja = Caja.deEsquinas(r.esquinas(FloatArray(8)))
         assertTrue("contiene el centro: $caja", caja.contiene(0.4f * 1280, 360f))
@@ -206,7 +206,7 @@ class LocalizadorTest {
     fun `no asigna memoria por cuadro`() {
         val hilos = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
         val l = Localizador()
-        val (buf, paso) = Planos.buffer(Planos.codigo(Simbologia.EAN_13, "7501234567893", 3f, base = Escena(giroGrados = 10f, ruido = 3f)))
+        val (buf, paso) = Planos.buffer(Planos.codigo(Simbologia.EAN_13, "7509993456786", 3f, base = Escena(giroGrados = 10f, ruido = 3f)))
         repeat(2000) { l.procesar(buf, paso, 1280, 720) }
         val antes = hilos.currentThreadAllocatedBytes
         repeat(1000) { l.procesar(buf, paso, 1280, 720) }
@@ -217,9 +217,9 @@ class LocalizadorTest {
 
     companion object {
         val CODIGOS = listOf(
-            Simbologia.EAN_13 to "7501234567893",
-            Simbologia.CODE_128 to "PAP42",
-            Simbologia.ITF to "17501000000019",
+            Simbologia.EAN_13 to "7509993456786",
+            Simbologia.CODE_128 to "ZZP42",
+            Simbologia.ITF to "17509990000019",
         )
     }
 }

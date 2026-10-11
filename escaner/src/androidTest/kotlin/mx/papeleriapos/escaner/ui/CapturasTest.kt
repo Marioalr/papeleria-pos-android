@@ -96,7 +96,7 @@ class CapturasTest {
     fun c04_leido() {
         val caja = Caja(0.2f, 0.44f, 0.8f, 0.56f)
         mostrar(EstadoEscaner(fase = Fase.VIENDO, indicacion = Indicacion.LEYENDO, cajaCodigo = caja), caja) {
-            it.emitirLectura("7501234567893", caja = caja)
+            it.emitirLectura("7509993456786", caja = caja)
             it.cambiar { e -> e.copy(fase = Fase.LEIDO) }
         }
         capturar("04_leido")
@@ -135,7 +135,7 @@ class CapturasTest {
     fun c08_leidoLetraAlDoble() {
         val caja = Caja(0.2f, 0.44f, 0.8f, 0.56f)
         mostrar(EstadoEscaner(fase = Fase.LEIDO, cajaCodigo = caja), caja, escalaLetra = 2f) {
-            it.emitirLectura("7501234567893", caja = caja)
+            it.emitirLectura("7509993456786", caja = caja)
         }
         capturar("08_leido_letra_al_doble")
     }

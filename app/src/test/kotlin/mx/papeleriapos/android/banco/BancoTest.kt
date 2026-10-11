@@ -19,10 +19,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BancoTest {
-    private val ean = EscenaBanco("ean", Simbologia.EAN_13, "7501234567893", 2f)
-    private val upc = EscenaBanco("upc", Simbologia.UPC_A, "036000291452", 3f)
-    private val code = EscenaBanco("code", Simbologia.CODE_128, "PAP0042x", 3f)
-    private val chico = EscenaBanco("chico", Simbologia.EAN_8, "96385074", 1.5f)
+    private val ean = EscenaBanco("ean", Simbologia.EAN_13, "7509993456786", 2f)
+    private val upc = EscenaBanco("upc", Simbologia.UPC_A, "099999291452", 3f)
+    private val code = EscenaBanco("code", Simbologia.CODE_128, "ZZP0042x", 3f)
+    private val chico = EscenaBanco("chico", Simbologia.EAN_8, "75099916", 1.5f)
     private val liso = EscenaBanco("liso", null, null, 0f, negativo = Negativo.LISO)
     private val texto = EscenaBanco("texto", null, null, 0f, negativo = Negativo.TEXTO)
     private val escenas = listOf(ean, upc, code, chico, liso, texto)
@@ -31,22 +31,22 @@ class BancoTest {
 
     @Test
     fun `el mismo GTIN con distintos ceros es el mismo codigo`() {
-        assertTrue(Clasificador.mismoCodigo("036000291452", "0036000291452"))
-        assertTrue(Clasificador.mismoCodigo("0036000291452", "036000291452"))
-        assertTrue(Clasificador.mismoCodigo("PAP0042x", "PAP0042x"))
-        assertFalse(Clasificador.mismoCodigo("PAP0042x", "PAP0042X"))
-        assertFalse(Clasificador.mismoCodigo("7501234567893", "7501234567899"))
-        assertFalse(Clasificador.mismoCodigo("17501000000019", "1750100000000000000000000000000000000000"))
+        assertTrue(Clasificador.mismoCodigo("099999291452", "0099999291452"))
+        assertTrue(Clasificador.mismoCodigo("0099999291452", "099999291452"))
+        assertTrue(Clasificador.mismoCodigo("ZZP0042x", "ZZP0042x"))
+        assertFalse(Clasificador.mismoCodigo("ZZP0042x", "ZZP0042X"))
+        assertFalse(Clasificador.mismoCodigo("7509993456786", "7509993456782"))
+        assertFalse(Clasificador.mismoCodigo("17509990000019", "1750999000000000000000000000000000000000"))
     }
 
     @Test
     fun `clasifica aciertos, incorrectas, sin lectura, falsos positivos y rechazos`() {
-        assertEquals(Veredicto.ACIERTO, Clasificador.clasificar(upc, listOf(lectura("036000291452", Simbologia.UPC_A))))
-        assertEquals(Veredicto.LECTURA_INCORRECTA, Clasificador.clasificar(ean, listOf(lectura("7501234567899"))))
+        assertEquals(Veredicto.ACIERTO, Clasificador.clasificar(upc, listOf(lectura("099999291452", Simbologia.UPC_A))))
+        assertEquals(Veredicto.LECTURA_INCORRECTA, Clasificador.clasificar(ean, listOf(lectura("7509993456782"))))
         // Si junto a la buena viene una mala, cuenta como incorrecta: en caja podría ganar la mala.
-        assertEquals(Veredicto.LECTURA_INCORRECTA, Clasificador.clasificar(ean, listOf(lectura("7501234567893"), lectura("4006381333931"))))
+        assertEquals(Veredicto.LECTURA_INCORRECTA, Clasificador.clasificar(ean, listOf(lectura("7509993456786"), lectura("7509991333935"))))
         assertEquals(Veredicto.SIN_LECTURA, Clasificador.clasificar(ean, emptyList()))
-        assertEquals(Veredicto.FALSO_POSITIVO, Clasificador.clasificar(liso, listOf(lectura("12345670", Simbologia.EAN_8))))
+        assertEquals(Veredicto.FALSO_POSITIVO, Clasificador.clasificar(liso, listOf(lectura("75099923", Simbologia.EAN_8))))
         assertEquals(Veredicto.RECHAZO_CORRECTO, Clasificador.clasificar(liso, emptyList()))
     }
 
@@ -114,7 +114,7 @@ class BancoTest {
         lateinit var banco: Banco
         banco = Banco(
             crearMotor = { m, _ ->
-                val respuestas = if (m == Motor.ZXING_CPP) mapOf("code" to listOf("PAP0O42x"), "texto" to listOf("12345670")) else emptyMap()
+                val respuestas = if (m == Motor.ZXING_CPP) mapOf("code" to listOf("ZZP0O42x"), "texto" to listOf("75099923")) else emptyMap()
                 MotorFalso(m, { banco }, respuestas, registro).also { creados += it }
             },
             motores = listOf(Motor.ML_KIT, Motor.ZXING_CPP),
@@ -238,7 +238,7 @@ class BancoTest {
     @Test
     fun `el CSV del banco trae un renglon por resultado`() {
         val r = listOf(
-            ResultadoEscena(ean, Motor.ML_KIT, Pasada.CALIENTE, Veredicto.ACIERTO, "7501234567893", 61.234),
+            ResultadoEscena(ean, Motor.ML_KIT, Pasada.CALIENTE, Veredicto.ACIERTO, "7509993456786", 61.234),
             ResultadoEscena(liso, Motor.ZXING_CPP, Pasada.FRIO, Veredicto.FALSO_POSITIVO, "=1+1", 9.5),
             ResultadoEscena(code, Motor.ZXING_CPP, Pasada.CALIENTE, null, "", 1.0, "IllegalStateException: x, y"),
         )
