@@ -102,6 +102,48 @@ Sin ir a la tienda: cualquier producto de la casa, las etiquetas del POS impresa
 4. **Sesión de prueba:** registra cada intento con sus tiempos y si está en el catálogo de prueba, y exporta un CSV,
    igual que en la tienda. Con el catálogo de ejemplo, los códigos de los carteles del emulador salen «si».
 
+## Hoja de etiquetas
+
+Para decidir de qué tamaño imprime el POS sus etiquetas ([plan](plan.md#entrega-8-medir-la-lectura), parte 5): EAN-13
+y Code 128 ficticios con módulos de 0.25, 0.33, 0.40 y 0.50 mm y barras de 15, 10 y 6 mm de alto, más un renglón de
+EAN-8 chicos (10 mm de alto). Son 40 etiquetas en 2 páginas tamaño Carta.
+
+```
+./gradlew :nucleo:hojaEtiquetas      # en nucleo/build/hoja-etiquetas
+```
+
+- `hoja-etiquetas.pdf` para imprimir, `hoja-etiquetas-1.svg` y `-2.svg` para verla en pantalla y
+  `hoja-etiquetas.csv` (`codigo,simbologia,modulo_mm,alto_mm,pagina`).
+- Cada código dice qué etiqueta es. EAN-13: 750999, el módulo en centésimas, el alto, el consecutivo y el verificador
+  (`7509993310132` es la etiqueta 13: 0.33 mm, 10 mm). Code 128: la clave corta `ZZ3310` y la larga
+  `ZZ-M033-A10-015`. EAN-8: 750999, la primera cifra del módulo y el verificador (`75099930`).
+- Las zonas en blanco son las de la norma: EAN-13, 11 módulos a la izquierda y 7 a la derecha; Code 128, 10 y 10;
+  EAN-8, 7 y 7. Debajo de cada código va el texto y «módulo 0.33 mm · alto 10 mm».
+- 0.33 mm es el EAN-13 a su tamaño nominal (100 %). 0.25 mm queda debajo del mínimo de GS1 (0.264 mm): sirve para ver
+  el límite.
+
+**Imprimir:** en láser, a **tamaño real** («100 %» o «Tamaño real»), nunca «Ajustar a la página» ni «Reducir», y sin
+ahorro de tóner. Luego medir la regla de arriba con una regla de verdad: de punta a punta, **100 mm**. Si mide otra
+cosa, la impresión salió escalada y los módulos no son los que dicen: volver a imprimir. Cada borde cae en el punto más
+cercano de la impresora (0.04 mm a 600 ppp): en el módulo de 0.25 mm, si falla, ver con lupa que las barras salieron
+parejas.
+
+**Qué medir,** con la sesión de prueba y cualquier día ([plan](plan.md#entrega-8-medir-la-lectura)):
+
+- Por cada tamaño (módulo y alto), la distancia mínima y la máxima a la que lee: de frente, acercando y alejando
+  despacio. Anotarlas en la nota del intento.
+- El ángulo, a la distancia cómoda: inclinado hacia atrás 15°, 30° y 45°, y girado sobre la hoja.
+- El EAN-8 chico, igual.
+- Para que no lea el de al lado: tapar los vecinos con una hoja en blanco o recortar la etiqueta con sus zonas en
+  blanco.
+
+El CSV sirve de **catálogo de prueba:** la primera columna es el código y las demás dicen qué etiqueta es, para cruzar
+cada lectura de la sesión con su tamaño.
+
+**Comprobada:** `:nucleo:test` vuelve a leer el PDF (por su tabla xref) y los SVG y revisa cada barra contra el
+codificador (± 0.001 mm), las zonas en blanco, los márgenes de 10 mm y la regla. El 2026-10-11, zbarimg leyó las 40
+etiquetas del PDF pasado a imagen a 300 y a 600 ppp, y a 2540 ppp la regla midió 100.00 mm.
+
 ## Arranque y perfil
 
 **Un solo enlace y la línea de la apertura** (con la app instalada en el emulador o en un celular):

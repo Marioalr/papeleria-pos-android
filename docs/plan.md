@@ -200,7 +200,8 @@ resolución, enfoque, motores) siguen aquí, medidos por lo que leen y no por lo
 | 9 | **Lado a lado** | ML Kit (con el modelo incluido en la app) y zxing-cpp sobre los mismos cuadros: velocidad y aciertos de cada uno |
 | 10 | **Enfoque y luz en la mira** | Enfoque continuo, más un disparo de enfoque y medición de la luz en la región de la mira; linterna a mano |
 
-**Qué se mide** (en casa con la hoja de etiquetas, cualquier día; en la tienda, sábado y domingo):
+**Qué se mide** (en casa con la [hoja de etiquetas](pruebas.md#hoja-de-etiquetas), cualquier día; en la tienda, sábado y
+domingo):
 
 - Distancia mínima y máxima por tamaño de código, y ángulo.
 - Plástico brillante y empaques curvos (plumas, marcadores), EAN-8 chico, código arrugado o gastado.

@@ -25,3 +25,12 @@ tasks.register<JavaExec>("carteles") {
     mainClass.set("mx.papeleriapos.escaner.nucleo.Carteles")
     args(layout.buildDirectory.dir("carteles").get().asFile.absolutePath)
 }
+
+// La hoja de etiquetas para imprimir y medir desde qué tamaño lee el celular (docs/pruebas.md).
+tasks.register<JavaExec>("hojaEtiquetas") {
+    group = "verification"
+    description = "Genera la hoja de etiquetas de prueba (PDF, SVG y CSV) en build/hoja-etiquetas."
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("mx.papeleriapos.escaner.nucleo.HojaEtiquetas")
+    args(layout.buildDirectory.dir("hoja-etiquetas").get().asFile.absolutePath)
+}

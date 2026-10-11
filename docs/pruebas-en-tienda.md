@@ -49,7 +49,7 @@ con el nombre de quien escanea.
   | UPC-E | Plumas, gomas y lápices con código chico |
   | EAN-8 | Productos chicos |
   | ITF-14 | Cajas de cartón corrugado de los proveedores |
-  | Code 128 | Las claves con letras: hoy no están impresas; las etiquetas que imprima el POS y la hoja de etiquetas de prueba |
+  | Code 128 | Las claves con letras: hoy no están impresas; las etiquetas que imprima el POS y la [hoja de etiquetas](pruebas.md#hoja-de-etiquetas) de prueba |
   | QR | Un ticket del POS de prueba, si hay |
 
 - **En qué condiciones:** con la luz normal del mostrador; en el rincón más oscuro (con y sin linterna); empaques
