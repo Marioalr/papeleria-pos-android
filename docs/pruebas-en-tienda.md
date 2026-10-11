@@ -15,8 +15,9 @@
   medir desde el primer día, con el cable: `adb shell cmd package compile -f -m speed-profile mx.papeleriapos.android`
   ([pruebas](pruebas.md#arranque-y-perfil)).
 - **Una lista de productos de prueba** que estén en la tienda, por tipo de código (ver abajo), con su código esperado
-  escrito a mano o sacado de la etiqueta. Si se quiere sacar del catálogo, de una copia de solo lectura de la base, nunca
-  de eleventa en uso.
+  escrito a mano o sacado de la etiqueta. Para buscar en el catálogo, el dueño exporta los códigos a un archivo fuera
+  del repositorio y la app lo carga en el celular ([plan](plan.md#entrega-8-medir-la-lectura), parte 4). Nada se conecta
+  a eleventa ni al servicio de la tienda, y los códigos reales no van al repositorio.
 - **La laptop** con el cable, el repositorio y Android Studio, por si hay que ver el registro (`adb logcat -s Escaner`).
 - **Un cronómetro o la cámara lenta de otro celular** (240 cuadros por segundo) para la parte humana de la apertura:
   del bolsillo al bip.
@@ -41,18 +42,20 @@ con el nombre de quien escanea.
   | UPC-E | Plumas, gomas y lápices con código chico |
   | EAN-8 | Productos chicos |
   | ITF-14 | Cajas de cartón corrugado de los proveedores |
-  | Code 128 | Las claves de eleventa con letras (etiquetas viejas) |
+  | Code 128 | Las claves con letras: hoy no están impresas; las etiquetas que imprima el POS y la hoja de etiquetas de prueba |
   | QR | Un ticket del POS de prueba, si hay |
 
 - **En qué condiciones:** con la luz normal del mostrador; en el rincón más oscuro (con y sin linterna); empaques
   brillantes con reflejo; superficies curvas (botes, plumas); códigos chicos o desde lejos; varios códigos juntos (una
   hoja de etiquetas); con la mano movida. Cada condición, unos 10 intentos.
 - **Marcar cada intento** en la sesión: lo normal es OK y no hay que tocar nada. Si leyó otro código, «lectura
-  incorrecta» (es lo más grave: anotar qué producto era y tomar foto del código); si leyó algo donde no había código,
+  incorrecta» (es lo más grave: anotar qué producto era y qué código leyó; fotos, solo si el dueño lo decide y sin que salgan del
+  celular); si leyó algo donde no había código,
   «falso positivo»; si contó dos veces la misma pieza, «duplicado»; si no leyó en unos 5 segundos, «no leyó».
 - **Que escanee también alguien del personal**, unos 20 intentos con el Pixel, y preguntarle (y anotarlo en la sesión):
-  si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si el bip y la
-  vibración se notaban con el ruido de la tienda, y qué cambiaría.
+  si supo de inmediato que ya estaba escaneando, si entendió las indicaciones (¿alguna confundió?), si la vibración se
+  notaba con el ruido de la tienda (el bip viene apagado; si hace falta, se prueba encendiéndolo en Ajustes), y qué
+  cambiaría.
 
 **Apertura (15 min), con el PIN o la huella del Pixel:**
 
@@ -71,7 +74,8 @@ estado térmico, cuadros por segundo) además de los intentos.
 **Estrés (si sobra tiempo):** la pestaña Estrés: 200 ciclos de abrir y cerrar la cámara, la ráfaga de zoom y
 linterna, 50 cambios de motor y 15 minutos de escaneo continuo. Cada prueba dice si pasa y exporta su CSV.
 
-**Al terminar:** exportar los CSV de la sesión y del banco (Compartir → a la laptop o al correo).
+**Al terminar:** exportar los CSV de la sesión y del banco a mano: Compartir → guardar en el celular, y de ahí a la
+laptop con el cable. Ni por correo ni a la nube: llevan códigos de la tienda.
 
 ## Qué se espera
 
