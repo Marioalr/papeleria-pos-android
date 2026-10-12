@@ -112,10 +112,10 @@ con códigos borrosos, con reflejo y con poca luz en grados crecientes, pruebas 
 
 | Medida | Línea base | Mejor | Con qué |
 |---|---|---|---|
-| Frío: ya escaneando | 629 ms | **532 ms** | El visor desde el primer cuadro (2026-10-09) |
-| Tibio: ya escaneando | 386 ms | 386 ms | |
-| Caliente: ya escaneando | 278 ms | 278 ms | |
-| Por cuadro | 2.4 ms | 2.4 ms | |
+| Frío: ya escaneando | 629 ms | **504 ms** | El visor desde el primer cuadro (2026-10-09); [la entrega 8 completa](../mediciones/2026-10-11-entrega-8/LEEME.md) (2026-10-11) no le costó nada y salió un poco mejor |
+| Tibio: ya escaneando | 386 ms | **318 ms** | La entrega 8 completa (2026-10-11) |
+| Caliente: ya escaneando | 278 ms | 271 ms | Igual desde la línea base (ruido) |
+| Por cuadro | 2.4 ms | 2.1 ms | La entrega 8 completa (2026-10-11), motor automático |
 
 En el Pixel queda instalada siempre la versión más rápida medida, con su perfil compilado.
 
