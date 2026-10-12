@@ -1,0 +1,21 @@
+Ficha de la cámara del Pixel 8 Pro (Android 17, CP3A.260905.009), como la muestra Ajustes del APK d99c50a el 2026-10-11.
+Coincide con `adb shell dumpsys media.camera`. Cada lente: nivel, focal, sensor, desde dónde enfoca y si viene
+calibrado, zoom, modos de enfoque, linterna y resolución máxima de análisis; abajo, cuánto abarca donde ya enfoca,
+cuántos píxeles le tocan a un módulo de 0.33 mm ahí y con qué zoom abre la app.
+
+Lógica 0 · FULL · 6.9 mm · sensor 9.8×7.4 mm · enfoca desde 10.5 cm (aproximada) · zoom 0.5–30.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4080×3072
+  a 10.5 cm abarca 8.4 cm: 0.33 mm = 2.8 px; 30 mm al 60 % desde 6.3 cm → zoom 1.7×
+Física 2 (de 0) · FULL · 6.9 mm · sensor 9.8×7.4 mm · enfoca desde 10.5 cm (aproximada) · zoom 1.0–8.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4080×3072
+  a 10.5 cm abarca 8.4 cm: 0.33 mm = 2.8 px; 30 mm al 60 % desde 6.3 cm → zoom 1.7×
+Física 3 (de 0) · FULL · 2.2 mm · sensor 6.4×4.8 mm · enfoca desde 2.0 cm (aproximada) · zoom 1.0–8.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4000×3000
+  a 2.0 cm abarca 3.2 cm: 0.33 mm = 7.4 px; 30 mm al 60 % desde 3.1 cm → zoom 1.0×
+Física 4 (de 0) · FULL · 18.0 mm · sensor 5.6×4.2 mm · enfoca desde 80.0 cm (aproximada) · zoom 1.0–8.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4032×3024
+  a 80.0 cm abarca 14.1 cm: 0.33 mm = 1.7 px; 30 mm al 60 % desde 28.3 cm → zoom 2.0×
+Física 5 (de 0) · FULL · 6.9 mm · sensor 4.9×3.7 mm · enfoca desde 10.5 cm (aproximada) · zoom 1.0–8.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4080×3072
+  a 10.5 cm abarca 4.2 cm: 0.33 mm = 5.7 px; 30 mm al 60 % desde 12.5 cm → zoom 1.0×
+Física 6 (de 0) · FULL · 18.0 mm · sensor 2.8×2.1 mm · enfoca desde 80.0 cm (aproximada) · zoom 1.0–10.0× · AF fijo, auto, macro, continuo video, continuo foto, edof · linterna · análisis hasta 4032×3024
+  a 80.0 cm abarca 7.1 cm: 0.33 mm = 3.4 px; 30 mm al 60 % desde 56.7 cm → zoom 1.4×
+
+De dumpsys, además: una región AE y una AF (`android.control.maxRegions` [1 0 1]) en todas; rangos de cuadros por
+segundo [15,15] [15,24] [24,24] [15,30] [24,30] [30,30] y los de 60 ya medidos; el enfoque mínimo en dioptrías: 9.52
+(principal), 50 (gran angular), 1.25 (tele).
