@@ -261,43 +261,414 @@ Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, par
 
 ### Conteo
 
+Contar tiene su propia sección, más abajo: [contar](#contar). En corto: a ciegas, la pieza suma una y la caja suma la
+caja, el − quita la última lectura, el conteo completo guarda solo lo de cada lugar y el del día se aplica con «Es
+todo». En el piloto no se cuenta.
+
+## Contar
+
+> **Propuesta completa, sin implementar todavía.** El dueño pidió verla (2026-11-03): «quiero ver la propuesta para
+> contar aunque aún no se vaya a implementar». Va en la [entrega 6](#entregas), después del piloto. En el
+> [prototipo](propuesta-interfaz/prototipo.html) se ve con «POS: Sin eleventa», o en el piloto con «Ver cómo se
+> contará».
+
+Lo contado cambia la existencia y no se deshace con un toque: es lo que menos perdona de la app. Por eso la app no
+cambia ninguna regla del POS. Le pone la cámara, las cajas y sueltas, el guardado solo, la bandeja de salida sin red y
+una sola mano.
+
+### Lo que ya hace el POS
+
+Leído en su código (`ConteoDepartamento`, `ConteoCiclico`, `RegistroConteoCompleto`, `RegistroConteoCiclico`,
+`TrastiendaEnElPiloto`) y en sus pantallas (`ConteoCompleto`, `ContarDepartamento`, `RevisarConteo`, `ConteoDelDia`):
+
+| | Conteo del día | Conteo completo |
+|---|---|---|
+| **Qué** | 15 productos al día que elige el POS: primero lo que tiene existencia negativa, luego lo que más vale y se vende, por los días que lleva sin contarse | Un departamento entero. Puede haber varios abiertos, uno de cada uno |
+| **Quién lo abre** | Nadie: el POS lo arma la primera vez que se pide en el día | Quien tiene «Conteo completo de un departamento» (de inicio, el encargado y el dueño) |
+| **Quién cuenta** | Quien tiene «Contar inventario» (de inicio, todos) | Igual |
+| **Qué se escribe** | El total de la tienda: anaquel, mostrador y bodega | Lo de un lugar. Cada captura se suma a las de todos |
+| **Cuándo entra** | Al guardar: la diferencia entra al kardex en ese momento | Al cerrar: lo contado reemplaza la existencia y lo que nadie contó queda en 0 |
+| **Si quedó mal** | No se corrige: una vez por producto al día. Es un ajuste en la caja | Se quita la captura (cada quien las suyas; el encargado, cualquiera) y se cuenta otra vez |
+| **A ciegas** | Antes de contar nadie ve el sistema; ya contado, quien ve costos ve la diferencia | Nadie lo ve. El encargado, solo al revisar |
+| **Dónde, hoy** | Solo en la caja: F4 y «Conteo del día: faltan N» al abrir el turno | La caja y la página `/conteo` en el navegador del celular |
+| **En el piloto** | No hay | No se abre, no se captura ni se cierra. Lo abierto se cancela |
+
+- **El completo ya evita duplicados:** cada captura lleva un número que pone quien captura; si llega dos veces, cuenta
+  una. El del día no lo tiene.
+- **Se vende mientras se cuenta:** cada producto se compara contra lo que decía el sistema en su primera captura. Lo que
+  se vende o llega después sigue moviendo la existencia.
+- **`/conteo`, hoy:** usuario y PIN escritos; se busca por nombre o se lee con un lector (no hay cámara para códigos);
+  una casilla por presentación; se pone al día cada 10 segundos; «Solo lo que falta» y «Lo que capturaste» con
+  «Quitar». No tiene el conteo del día. Lo tecleado se pierde si se escanea otro producto antes de guardar.
+- **Las capturas de otros no se quitan en ninguna pantalla:** el POS se lo permite al encargado, pero `/conteo` solo
+  enseña las propias.
+
+### Quién cuenta con el celular
+
+No todos tendrán la app (dueño, 2026-11-03). Conteo aparece si la persona tiene «Contar inventario» y el POS deja contar.
+
+| Celular | Quién | Modos | En Conteo |
+|---|---|---|---|
+| **De alguien de confianza** (la primera versión: el del dueño; en el prototipo, el de Luis) | Su dueño; entra con su PIN, ya viene elegido | Precio, Ticket y Conteo | Lo que dejen sus permisos. El dueño: el del día, contar, abrir departamentos y quitar capturas de otros |
+| **De la tienda** (a futuro) | Varios, por turnos, cada quien con su ficha y su PIN | Solo Precio y Conteo, aunque la persona pueda más | Contar el del día y los departamentos abiertos. Abrir uno, solo quien tenga el permiso |
+| **Los demás** | Su propio celular, sin la app | — | `/conteo` en el navegador |
+
+- **Qué modos tiene el celular de la tienda lo decide el dueño** al darlo de alta (Configuración › Celulares), no quien
+  lo usa.
+- **Por turnos:**
+  - «Cambiar de persona» guarda lo que se estaba contando a nombre de quien sale. Lo del día sin aplicar, lo aplica o lo
+    descarta quien sale.
+  - Cada captura sube a nombre de quien la contó, aunque suba después de que salió.
+  - Lo contado enseña solo lo de quien está.
+
+### La pantalla
+
 ```
 ┌──────────────────────────────────────────┐
-│ ╭──────────────────────────────────────╮ │
-│ │ Escolar · conteo completo  37 de 120 │ │  se toca: lo que contaste
+│ (L)                                [L]   │  quién entró · la linterna
+│     [ ||| Apunta al código de barras ]   │
+│ ┌──────────────────────────────────────┐ │  ← 32 %
+│ │  ──────────────────────────────────  │ │  la franja: nada la tapa
+│ └──────────────────────────────────────┘ │  ← 68 %
+│ ╭───────────────── ══ ─────────────────╮ │
+│ │ Escolar · este lugar     37 de 120 › │ │  qué se cuenta y cómo va; se toca: lo contado
 │ │ ▬▬▬▬▬▬▬▬▬▬────────────────────────── │ │
-│ │ Lápiz HB No. 2              ┌──────┐ │ │
-│ │ 1 caja de 12 + 1 suelta     │ × 13 │ │ │  el contador: se toca para teclear
-│ │ ya van 24 en otros lugares  └──────┘ │ │
-│ │ [- 1] [Q] [✓ Guardar 13            ] │ │
-│ │   Precio     Ticket    ( Conteo )    │ │
+│ │ Lápiz HB No. 2         ┌───┐┌──────┐ │ │
+│ │ 1 caja + 1 suelta      │ − ││ × 13 │ │ │  − quita la última lectura · el contador: se toca para teclear
+│ │ Ya van 24: Ana 24  +12 └───┘└──────┘ │ │  lo que contaron otros · lo que sumó la lectura
+│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ guardar · ↖ lo contado · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-- **En el piloto no se cuenta.** Mientras el POS lee el inventario de eleventa, no deja abrir, capturar ni cerrar un
-  conteo (`ApiConteos`): el modo lo dice y no ofrece nada. Al dejar eleventa, el conteo físico de arranque es justo
-  para esto.
-- **¿Qué vas a contar?** El **conteo del día** (los 15 que elige el POS cada mañana; hoy solo se hace en la caja), los
-  **departamentos abiertos** del conteo completo (cuenta quien tiene «Contar inventario») y, para quien tiene «Conteo
-  completo», **«Abrir otro departamento»**. Revisar las diferencias y cerrar se queda en la caja (Inventario, F4).
-- **A ciegas:** nunca se ve cuántas debería haber.
-- **La pieza suma una y la caja suma la caja:** el código de la pieza suma una suelta y el de la caja de 12 suma 12, como
-  hoy en `/conteo`. El contador grande dice el total y, abajo, «1 caja de 12 + 1 suelta».
-- **Teclear:** tocar el contador abre una casilla por presentación («Cajas de 12», «Sueltas») con el total al momento, y
-  «Guardar». Para lo que está en cajas cerradas.
-- **Lo de este lugar:** cada captura es lo que hay en un lugar y se suma a lo de los demás. En el conteo completo dice lo
-  que ya contaron otros de ese producto («ya van 24 en otros lugares: Ana 24»), sin decir lo que dice el sistema.
-- **Se guarda solo:** al escanear otro producto, lo contado del anterior queda guardado («Guardado: 13 de Lápiz HB»);
-  «Guardar» lo hace a mano. Así se corrige lo que hoy pasa en `/conteo`, donde lo tecleado se pierde si se escanea otro
-  producto antes de guardar.
-- **Lo que no va:** un producto de otro departamento («es de Oficina: se cuenta con ese departamento»), uno que no está
-  en el conteo del día o que ya se contó hoy. Lo dice en rojo con su vibración de error: la confirmación verde es del
-  escáner, que sí lo leyó; lo rechaza la app.
-- **Lo contado** (tocar el título): mis capturas, con la hora, si ya subieron y «Quitar» (las mías). En el conteo del
-  día, lo que falta; ahí no se quita: se aplica al guardar, una vez al día, y un error se corrige con un ajuste en la caja.
-- **Sin red,** las capturas quedan «por subir» y suben solas al volver la red, sin duplicarse (cada una lleva su número,
-  que el POS ya respeta en el conteo completo).
+- **Arriba, qué se cuenta y cómo va:** «Escolar · este lugar» o «Del día · todo lo que hay», y cuántos van («37 de
+  120»). Se toca, o se jala el asidero, para ver lo contado. Cada conteo lleva su icono y su frase: sus reglas no son las
+  mismas.
+- **El contador grande** (48 sp en el Pixel, 38 en el chico, en violeta): el total del producto, en piezas, metros o
+  kilos. Se toca para teclear. Junto a él, lo que sumó la última lectura: «+1» o «+12 caja».
+- **El −** quita la última lectura; si fue la caja, la caja («−12»). Así se deshace una lectura de más sin pensar cuál
+  fue.
+- **Debajo del nombre:** cuántas cajas y sueltas son y, en el completo, lo que ya contaron otros de ese producto («Ya van
+  24: Ana 24»). Nunca lo que dice el sistema.
+- **Cabe en el chico:** sin fila de botones, bajo la franja quedan unos 180 dp para el encabezado, el producto y el
+  contador (unos 260 en el Pixel).
+- **Muchas iguales: escanear una y teclear.** Pasar 50 lápices uno por uno tarda; escanear uno y teclear «4 cajas y 2»
+  es más rápido y más seguro.
+
+### El botón rápido en Conteo
+
+Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-rápido)):
+
+| | Conteo del día | Conteo completo |
+|---|---|---|
+| **↑** | **Es todo · 37:** pide confirmar y lo aplica | **Guardar 13:** guarda este lugar |
+| **↖** | **Lo contado:** lo mío y lo que falta | Igual |
+| **←** | **Buscar** lo que no tiene código | Igual |
+
+- **↑ en el del día pide confirmar,** como ↑ en Ticket abre «¿A qué caja?»: aplicar no se deshace, y un gesto sin mirar
+  no debe hacer lo que no se corrige. En el completo guarda directo: una captura se quita.
+- **«Guardar» casi no hace falta:** escanear otro producto guarda el anterior. Es para el último de un lugar.
+- **«Contar otra cosa»** (del día a un departamento, o de un departamento a otro) va en lo contado: es de una vez por
+  rato.
+
+```
+┌──────────────────────────────────────────┐
+│ ╭──────────────────────────────────────╮ │
+│ │ Lápiz HB No. 2: 37 en total          │ │
+│ │ Aquí 13 · antes 24                   │ │
+│ │ Se aplica ya. Si quedó mal, es un    │ │
+│ │ ajuste en la caja.                   │ │
+│ │ [✓ Aplicar 37                      ] │ │  a la altura del pulgar
+│ │ [  Seguir contando                 ] │ │
+│ ╰──────────────────────────────────────╯ │
+└──────────────────────────────────────────┘
+```
+
+### El conteo del día
+
+```
+┌──────────────────────────────────────────┐
+│ ╭───────────────── ══ ─────────────────╮ │
+│ │ Del día · todo lo que hay  3 de 15 › │ │
+│ │ Lápiz HB No. 2         ┌───┐┌──────┐ │ │
+│ │ Aquí 13 · antes 24     │ − ││ × 37 │ │ │  el total de todos los lugares
+│ │ 1 sin aplicar: Goma    └───┘└──────┘ │ │  lo contado que falta aplicar
+│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ es todo · ↖ lo contado · ← buscar
+│ ╰──────────────────────────────────────╯ │
+└──────────────────────────────────────────┘
+```
+
+1. **Sin elegir:** si no hay departamentos abiertos (lo de todos los días, después del arranque), Conteo es el conteo del
+   día.
+2. **Escanear uno de los 15:** empieza su contador. Lo contado › «Falta» dice cuáles faltan y de qué departamento son.
+3. **Todo lo que hay:** se sigue escaneando o tecleando en el mostrador y en la bodega. El contador lleva el total
+   («aquí 13 · antes 24»).
+4. **Escanear otro de los 15 no aplica el anterior:** queda «sin aplicar» y, al volver a escanearlo, sigue donde iba.
+5. **↑ «Es todo · 37»** pide confirmar y lo aplica. Quien ve los costos (de inicio, el dueño y el encargado) ve después lo
+   que tenía el sistema y la diferencia, como en la caja.
+6. **Lo que no se encuentra:** en lo contado › «Falta» se toca y se aplica 0: «no hay».
+7. **Lo que no va:** uno que no está en los 15 de hoy, o uno que ya contó alguien («Ya lo contó Carmen a las 11:02»).
+8. **Lo sin aplicar se recuerda:** en el encabezado, al cambiar de persona y con «Terminé mi parte». Lo que quedó de otro
+   día se descarta con aviso: el conteo cambia cada día.
+
+- **Por qué no se aplica solo:** el del día es el total de la tienda, de una vez. Si se aplicara al escanear el
+  siguiente, lo de la bodega ya no se podría sumar.
+- **Hoy se escribe en la caja:** se cuenta en el anaquel y se teclea en F4. Con el celular se cuenta y se aplica ahí
+  mismo; el «faltan N» de la caja baja al momento.
+
+### El conteo completo
+
+```
+┌──────────────────────────────────────────┐
+│ ╭──────────────────────────────────────╮ │
+│ │ ¿Qué vas a contar?                   │ │
+│ │ [R] Conteo del día         3 de 15 › │ │  el total de cada uno, una vez
+│ │ [C] Escolar              37 de 120 › │ │
+│ │     ▬▬▬▬▬▬──────────── Luis, Ana     │ │  quién cuenta, en la app o en /conteo
+│ │ [C] Oficina              12 de 210 › │ │
+│ │     ▬───────────────── Carmen        │ │
+│ │ [C] Papel                  0 de 95 › │ │
+│ │     ────────────────── nadie         │ │
+│ │ [+] Abrir otro departamento        › │ │  solo con «Conteo completo»
+│ ╰──────────────────────────────────────╯ │
+└──────────────────────────────────────────┘
+```
+
+`[R]` el del día · `[C]` un departamento.
+
+1. **Elegir el departamento:** cada uno dice cuántos van y quién cuenta. Quien tiene «Conteo completo» abre otro.
+2. **Contar:** la pieza suma una, la caja suma la caja. Lo que no tiene código: ← Buscar, o la hoja de códigos del
+   mostrador (se escanea una vez y se teclea cuántas).
+3. **Se guarda solo:** al escanear otro producto, lo del anterior queda como una captura de este lugar («Guardado: 13 de
+   Lápiz HB · Quitar», unos segundos). Lo que bajó a 0 con el − no se guarda; un 0 tecleado sí: «no hay».
+4. **El mismo producto en otro lugar** es otra captura: se escanea al llegar ahí y se suma.
+5. **Lo que ya contaron otros:** «Ya van 24: Ana 24». Se toca: las capturas de ese producto, con quién y a qué hora. Las
+   propias se quitan; las de otros, quien tiene «Conteo completo».
+6. **Lo de otro departamento:** «Es de Oficina». Si Oficina también se está contando, «Contarlo para Oficina» lo cuenta
+   ahí, de paso, hasta escanear otro producto; luego se queda donde está hasta que cierren Oficina (si se lleva a su
+   lugar, se contaría dos veces). Si Oficina no está abierto, se lleva a su lugar. En el arranque hay cosas fuera de
+   lugar y, si nadie las cuenta, quedan en 0.
+7. **Lo que no está en el catálogo** o no lleva inventario: en rojo, con la vibración de error. Se aparta para el
+   encargado.
+8. **↖ Lo contado:** «Lo mío», con la hora, si ya subió y «Quitar» (se corrige quitando y contando otra vez, como en el
+   POS); «Falta», lo que nadie ha contado, por nombre. Tocar uno empieza a contarlo: para lo que no tiene código o para
+   decir «no hay».
+9. **«Terminé mi parte»** guarda lo que se contaba, dice cuánto contaste y si queda algo por subir, y regresa a «¿Qué vas
+   a contar?». Se le dice al encargado.
+
+```
+┌──────────────────────────────────────────┐
+│ <  Escolar · lo que contaste             │
+│    12 capturas · 2 por subir             │
+│ Lápiz HB No. 2                      13   │
+│ 14:52 · por subir · 1 caja + 1     [x]   │
+│ ──────────────────────────────────────── │
+│ Cuaderno profesional cuadro…         3   │
+│ 14:50 · subida                     [x]   │
+│ ──────────────────────────────────────── │
+│ Goma blanca chica                    0   │
+│ 14:47 · subida · no hay            [x]   │
+│                                          │
+│ ( Lo mío 12 )  ( Falta 83 )              │  abajo, junto al pulgar
+│ [Terminé mi parte] [Contar otra cosa ]   │
+└──────────────────────────────────────────┘
+```
+
+`[x]` quitar (el bote).
+
+### Cajas y sueltas: el teclado
+
+```
+┌──────────────────────────────────────────┐
+│ x  Lápiz HB No. 2                        │
+│    Lo que hay en este lugar              │
+│ ┌──────────────────────────────────────┐ │
+│ │▌Cajas de 12                        3 │ │  la casilla que se teclea
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Sueltas                            1 │ │
+│ └──────────────────────────────────────┘ │
+│ Total                         37 piezas  │
+│    [  1  ]     [  2  ]     [  3  ]       │
+│    [  4  ]     [  5  ]     [  6  ]       │
+│    [  7  ]     [  8  ]     [  9  ]       │
+│    [  .  ]     [  0  ]     [ <-  ]       │  el punto, solo en metros, kilos o litros
+│ [✓ Guardar 37                         ]  │
+└──────────────────────────────────────────┘
+```
+
+- **Se abre tocando el contador.** Una casilla por presentación, de la más grande a la suelta, como en `/conteo`.
+  Arrancan con lo que ya se leyó.
+- **El total, al momento.** El teclado abajo, junto al pulgar; las casillas encima.
+- **Por metro, kilo o litro,** la suelta acepta el punto («4.5»). Un rollo con su código suma su largo.
+- **«Guardar 0» se puede:** dice «no hay».
+- **En el del día,** «Otro lugar» guarda lo de aquí y deja las casillas en cero para el siguiente; el total suma todos.
+- **Mientras está abierto, las lecturas no cuentan.** Se cierra con el gesto de atrás o deslizándolo hacia abajo: la «x»
+  de arriba no hace falta con una mano.
+- **Cabe en el chico** sin desplazarse, también con tres presentaciones (caja, paquete y suelta).
+
+### A ciegas
+
+- Ninguna pantalla de la app enseña lo que dice el sistema de lo que se está contando.
+- **Tampoco a un toque:** la existencia de lo que se está contando no sale en Precio ni en el «Quedan» del ticket
+  («Existencia: al contarlo»): los 15 del día hasta que se aplican y los del departamento elegido mientras se cuenta. En
+  la caja el F9 sí la enseña; en el celular, que está en la mano mientras se cuenta, sería la tentación.
+- **Lo que contaron otros sí se ve:** lo hace `/conteo` y evita contar dos veces el mismo anaquel.
+
+### Sin red: la bandeja de salida
+
+La red se cae y en la bodega el wifi llega mal. Se sigue contando:
+
+| Estado | Quiere decir |
+|---|---|
+| Contando | En el celular, sin guardar. No se pierde si se cierra la app o se apaga la pantalla |
+| Sin aplicar | Del día: contado, falta «Es todo» |
+| Por subir | Guardado en el celular; sube solo al volver la red |
+| Subida, aplicada | El POS ya la tiene |
+| No entró | El POS no la aceptó (el departamento se cerró o se canceló, ya lo contó otro, cambió de departamento): dice por qué |
+
+- **Cada captura lleva su número:** mandarla dos veces cuenta una. Lo que se quita va en orden, después de su captura;
+  quitar una que todavía no sube la borra del celular: nunca llega.
+- **Arriba,** «Sin red · 3 por subir»; al volver, «Subiendo 3».
+- **«Ya van»** sale de lo último que se supo, con «hace 12 min». Sin red no se abre un departamento.
+- **Lo contado sin red sube con el tiempo que hace que se contó** ([lo que pide](#lo-que-pide-al-pos-para-contar)): así
+  lo vendido en ese rato no corre la diferencia.
+- **Lo que no entró** se queda en lo contado, para decírselo al encargado.
+
+### El encargado y la caja
+
+| En el celular | En la caja (F4 › Conteo completo) |
+|---|---|
+| Abrir un departamento | También; ahí está el QR de `/conteo` |
+| Contar, como todos | — |
+| Ver cuántos van y quién cuenta | También |
+| Quitar una captura equivocada, también de otros | — |
+| — | **Revisar:** lo contado contra el sistema, lo que nadie contó y lo que vale la diferencia |
+| — | **Cerrar** el departamento, o cancelarlo |
+
+Revisar y cerrar se quedan en la caja:
+
+- **Cerrar no se deshace:** reemplaza la existencia de todo el departamento y deja en 0 lo que nadie contó. Se decide con
+  la tabla entera: cientos de renglones, «Con diferencia» y «Sin contar».
+- **En el celular de quien cuenta rompería lo de a ciegas:** la revisión enseña lo que dice el sistema.
+- **«Sin contar»** dice lo que nadie contó y el sistema dice que hay: antes de cerrar, el encargado lo manda a buscar.
+- **En una urgencia,** `/conteo` deja revisar y cerrar desde el navegador a quien tiene el permiso.
+
+### El conteo físico de arranque
+
+El conteo completo de todos los departamentos da las existencias para dejar eleventa: «las de eleventa solo sirven de
+referencia para el conteo; las que valen son las contadas» (plan del POS). Es el uso más grande: miles de productos y
+varios contando a la vez.
+
+**Cuándo.** El plan del POS lo pone en las semanas previas al arranque, pero en el piloto el POS no deja contar. Hay que
+decidirlo:
+
+| | Cómo | A favor | En contra |
+|---|---|---|---|
+| **A. Un fin de semana, ya sin eleventa** | Se deja eleventa, se abren todos los departamentos, cuentan todos a la vez y se cierra cada uno al terminar | Lo más exacto. No pide nada al POS | La tienda para uno o dos días; hace falta mucha gente a la vez |
+| **B. En el piloto, y se cierra al dejar eleventa** | Un departamento a la vez en las semanas previas. El POS guarda lo contado contra lo que dice la lectura de eleventa y lo aplica al cerrar, ya sin eleventa | Es lo que dice el plan. La tienda sigue abierta | Pide al POS abrir y capturar en el piloto. Lo que vende la caja 1 llega con la lectura cada pocos minutos: lo vendido justo antes de contar se descuenta dos veces. Cada departamento se depura antes de contarlo |
+| **C. Arrancar con lo de eleventa y contar después** (lo recomendado) | Se arranca con las existencias de la última lectura. En las semanas siguientes se cuenta un departamento a la vez, con el POS ya sin eleventa | No pide nada al POS. Cuenta contra sus propios movimientos. La tienda sigue abierta. El conteo del día ayuda desde el primer día | Unas semanas con las existencias de eleventa, como hoy. Cambia el orden del plan del POS |
+
+**Cómo se reparte,** con cualquiera de las tres:
+
+1. **El orden:** primero los departamentos que más valen (Inventario › lo que vale el inventario, por departamento).
+2. **El encargado abre los del día,** desde la caja o desde la app: uno por persona.
+3. **Cada quien toma el suyo** en «¿Qué vas a contar?»; ahí se ve quién está en cada uno.
+4. **Cada quien recorre todos los lugares de su departamento:** anaquel, mostrador, exhibidor y bodega. Lo de otro
+   departamento abierto lo cuenta para ese; si no está abierto, lo lleva a su lugar.
+5. **Al terminar,** lo contado › «Falta»: lo que nadie ha contado. Lo que no aparezca, se deja.
+6. **«Terminé mi parte»,** y se le dice al encargado.
+7. **El encargado revisa en la caja:** lo que el sistema dice que hay y nadie contó, lo manda a buscar; luego cierra.
+
+- **Un departamento por persona:** nadie cuenta dos veces el mismo anaquel. Si uno es muy grande, dos se lo reparten por
+  lugares (uno el piso, otro la bodega); «ya van» avisa si alguien ya contó ese producto.
+- **El avance:** «¿Qué vas a contar?» dice de cada departamento cuántos van de cuántos y quién cuenta. La caja, igual.
+- **La app y `/conteo` a la vez:** son las mismas capturas; lo de uno se ve en el otro («ya van»). En `/conteo` no hay
+  cámara para los códigos: se busca por nombre o se usa un lector.
+- **Aquí sirve primero el celular de la tienda:** uno o dos con la app (Precio y Conteo) rinden más que `/conteo` en los
+  celulares de cada quien.
+
+### En el piloto
+
+- El POS no deja contar y no hay conteo del día. **En la app, Conteo no aparece,** como la caja, que no ofrece la tarea.
+  Tampoco el acceso directo «Contar».
+- Con la opción B del arranque, aparece solo el conteo completo, con «Se aplica al dejar eleventa».
+- En el prototipo sí está, con el aviso y «Ver cómo se contará», para revisarlo.
+
+### Agregar inventario, recibir mercancía, ajustes y mermas
+
+| Tarea | En el celular | Por qué |
+|---|---|---|
+| **Agregar inventario** (lo que llegó de un producto, sin proveedor; unas 7 al día) | No, por ahora | Se hace donde llega la mercancía, junto a la caja, de uno en uno. Mueve la existencia y el costo al momento y no tiene deshacer (se corrige con un ajuste). En el celular que cuenta se confundiría con contar, y lo agregado dos veces no se nota |
+| **Recibir mercancía a ciegas** (una compra de un proveedor) | Después, como un conteo más | Es contar lo que llegó: escanear, a ciegas, cajas y sueltas. Hoy no se usa: los proveedores están vacíos y lo que llega entra con «Agregar inventario» |
+| **Ajustes** | No | Cambian la existencia viéndola, con motivo; al cajero le piden autorización y desde $200 avisan al dueño. Lo que se cree mal se cuenta (si es del día o de un departamento abierto) o se ajusta en la caja |
+| **Mermas** | No | Lo dañado se lleva a la caja; ahí se registra con su causa y, arriba de $200 para el cajero, con autorización |
+| **Abrir un paquete** | No | Se hace al abrirlo, en la caja |
+
+- El celular de la tienda es solo para contar y ver precios (dueño, 2026-11-03): ahí nada de esto.
+- Las fotos de los productos, que hoy se toman en `/conteo` › Fotos, no son de contar: quedan para otra entrega.
+
+### Lo que pide al POS para contar
+
+Todo va sobre el punto 1 de [lo que pide al POS](#lo-que-pide-al-pos) (que el celular hable con la API con su llave) y
+detalla sus puntos 8 y 9. El conteo del día (`GET /api/sucursales/{id}/conteo-del-dia`, `POST /api/conteos/{id}/contar`)
+y el completo (`/api/conteos-completos/…`) ya están en la API; con la llave, la app los usa como están.
+
+| # | Qué | Por qué | Para |
+|---|---|---|---|
+| C1 | **Capturar ligero:** que la captura conteste solo esa captura y el producto con sus capturas | Hoy cada captura regresa el departamento entero (sus productos, presentaciones, códigos y todas las capturas). Con cientos de productos y la bandeja subiendo de golpe, pesa | El completo |
+| C2 | **Ponerse al día:** las capturas nuevas y las quitadas de un conteo desde la última vez, y si sigue abierto | «Ya van» sin bajar el departamento cada 10 segundos, como `/conteo`; y saber pronto si se cerró | El completo |
+| C3 | **El número propio en el del día** (`SolicitudContar` con su `Id`, como `SolicitudCaptura`), y quitar dos veces la misma captura sin error | Si se pierde la respuesta, el celular lo vuelve a mandar. Hoy el segundo dice «Ya se contó hoy» y no se sabe si fue el mismo | Sin red |
+| C4 | **Cuándo se contó:** cada captura y cada conteo del día llevan cuánto hace que se contaron, con el reloj interno del celular (no cambia si alguien mueve la hora). El POS compara contra lo que había en ese momento | Lo contado sin red sube después. Hoy se compara contra lo que hay al llegar: lo vendido en ese rato correría la diferencia | Sin red |
+| C5 | **Quién cuenta con la app y qué le falta subir:** el latido del celular dice qué conteo tiene elegido y cuántas capturas tiene por subir; la revisión lo enseña antes de «Cerrar» («Ana · 3 por subir · hace 8 min») | Si se cierra con capturas en un celular sin red (en la bodega), no entran | El completo |
+| C6 | **Que `/conteo` no pierda lo tecleado** al escanear otro producto: que lo guarde o que avise | La usarán quienes no tengan la app, sobre todo en el arranque | El arranque |
+| C7 | **El arranque:** decidir cuándo (A, B o C, arriba). Con B: abrir y capturar en el piloto, y cerrar solo ya sin eleventa | Hoy el piloto no deja contar | El arranque |
+| C8 | **Los modos del celular:** que su alta diga si es de la tienda (solo Precio y Conteo) | Lo decide el dueño, no quien lo usa | La tienda |
+
+### Cómo se entregaría
+
+La entrega 6, en partes y después del piloto:
+
+| Parte | Qué trae | Necesita del POS |
+|---|---|---|
+| 6.1 | **El conteo completo:** elegir y abrir, contar, cajas y sueltas, se guarda solo, lo de otros, lo contado, la bandeja de salida | 1, C1, C2, C4, C5 |
+| 6.2 | **El conteo del día:** el total por lugares, «Es todo», lo sin aplicar | C3 |
+| 6.3 | **El celular de la tienda:** solo Precio y Conteo, por turnos | C8 |
+
+Con la opción C, la 6.1 conviene tenerla el día del arranque; mientras, `/conteo` (con C6).
+
+### Riesgos
+
+- **Cerrar con capturas por subir:** un celular sin red en la bodega y el encargado cierra; esas no entran. El celular
+  avisa «3 por subir» y, con C5, también la caja.
+- **Lo contado sin red, sin C4:** si en ese rato se vendió, la diferencia sale corrida.
+- **Una lectura de más:** el producto de al lado se lee y, en el completo, se guarda solo como captura de 1. El aviso
+  «Guardado · Quitar» y lo contado la dejan quitar.
+- **Sostener el producto 1.5 s lo cuenta otra vez** (lo pidió el dueño para el escáner). A ciegas, una pieza de más no se
+  nota (pregunta abajo).
+- **Dos en el mismo producto del día** (uno en la caja, otro en el celular): vale el primero; al otro se le dice quién y a
+  qué hora, y lo suyo no se aplica.
+- **El celular de la tienda sin cambiar de persona:** lo contado queda a nombre de otro.
+- **«Falta» incluye lo que no hay** (existencia 0): quien cuenta no sabe cuáles; el encargado los separa al revisar.
+- **La bodega:** poca luz y wifi débil. La linterna está arriba, lejos del pulgar en el Pixel: «Linterna automática» en
+  Ajustes. La bandeja aguanta sin red.
+- **Horas de cámara:** la batería. El escáner se pausa a los 20 s sin códigos y, un minuto después, apaga la cámara;
+  para el arranque, cargadores a la mano.
+- **Con la opción B:** lo vendido en la caja 1 justo antes de contar se descuenta dos veces; y depurar (juntar, cambiar
+  la unidad) un producto ya contado deja sus capturas a medias: se depura antes de contar.
+
+### Preguntas de Conteo
+
+- [ ] ¿El conteo de arranque: A, B o C (lo recomendado)?
+- [ ] ¿Quién más cuenta con la app en la primera versión, además del dueño: el encargado?
+- [ ] ¿El celular de la tienda (uno o dos, con la app) para el conteo de arranque, o cada quien con `/conteo` en el suyo?
+- [ ] ¿Un departamento por persona (lo propuesto), o varios en el mismo, repartidos por lugares?
+- [ ] En Conteo, ¿sostener el mismo producto 1.5 s lo cuenta otra vez, como hoy en el escáner, o se apaga ahí? Lo
+  propuesto: apagarlo en Conteo (el escáner ya tiene el ajuste, `msParaRepetirAVista`); a ciegas, una pieza de más no se
+  nota.
+- [ ] En el celular de la tienda, ¿pedir el PIN otra vez tras 10 minutos sin usarlo? Así lo contado queda a nombre de
+  quien contó.
+- [ ] ¿Agregar inventario, ajustes o mermas desde el celular, aunque sea solo el dueño? Lo propuesto: no por ahora.
 
 ## Entrar
 

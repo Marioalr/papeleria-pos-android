@@ -220,38 +220,52 @@ svg.i.ch { width: 20px; height: 20px; }
 .cuerpo { flex: 1; min-height: 0; overflow: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 4px max(16px, env(safe-area-inset-left, 0px)); }
 .acciones { flex: none; display: flex; gap: 8px; padding: 6px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); }
 .modos { flex: none; display: flex; justify-content: center; gap: 4px; padding: 2px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--linea); }
-.modos.con-rapido { justify-content: flex-start; padding-right: calc(max(16px, env(safe-area-inset-right, 0px)) + 72px); }
+.modos { padding-right: calc(max(16px, env(safe-area-inset-right, 0px)) + 68px) !important; justify-content: flex-start; }
+.zurdo .modos { padding-right: max(16px, env(safe-area-inset-right, 0px)) !important; padding-left: calc(max(16px, env(safe-area-inset-left, 0px)) + 68px) !important; justify-content: flex-end; }
+.modos .con-cuenta { position: relative; }
+.modos .cuenta-ic { position: absolute; left: calc(50% - 26px); top: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--pri); color: var(--en-pri); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
 
-/* ——— El botón rápido: abajo a la derecha. Pulsar abre tres botones chicos; pulsar, deslizar y soltar elige uno ——— */
-.rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 4px); width: 60px; height: 60px; }
-.rapido .fab { position: absolute; inset: 0; border-radius: 20px; display: grid; place-items: center; background: var(--m); color: var(--en-m); box-shadow: 0 4px 12px var(--sombra); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; transition: transform .16s ease-out; }
+/* ——— El botón rápido: abajo a la derecha, al final de la barra de modos. Pulsar abre tres botones chicos; pulsar,
+   deslizar y soltar elige uno. Mide 56 dp; las opciones, 48 dp a 88 dp de su centro (↑ 90°, ↖ 135°, ← 180°) ——— */
+.rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 6px); width: 56px; height: 56px; }
+.rapido .fab { position: absolute; inset: 0; border-radius: 16px; display: grid; place-items: center; background: var(--m); color: var(--en-m); box-shadow: 0 4px 12px var(--sombra); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.rapido .fab::before { content: ""; position: absolute; inset: -4px; }
+.rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; transition: transform .15s ease-out; }
 .rapido.abierto .fab svg { transform: rotate(45deg); }
-.rapido .op { position: absolute; left: 6px; top: 6px; width: 48px; height: 48px; opacity: 0; pointer-events: none; transform: translate(0, 0) scale(.5); transition: transform .16s ease-out, opacity .12s; }
+.rapido.cancela .fab { box-shadow: 0 0 0 3px var(--m-c), 0 4px 12px var(--sombra); }
+.rapido .op { position: absolute; left: 4px; top: 4px; width: 48px; height: 48px; opacity: 0; pointer-events: none; transform: translate(0, 0) scale(.5); transition: transform .15s ease-out, opacity .12s; }
 .rapido.abierto .op { opacity: 1; pointer-events: auto; }
-.rapido.abierto .op.arriba { transform: translate(0, -132px); }
-.rapido.abierto .op.diagonal { transform: translate(-94px, -94px); }
-.rapido.abierto .op.izquierda { transform: translate(-132px, 0); }
+.rapido.abierto .op.arriba { transform: translate(0, -88px); }
+.rapido.abierto .op.diagonal { transform: translate(-62px, -62px); }
+.rapido.abierto .op.izquierda { transform: translate(-88px, 0); }
 .rapido .op .circ { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: var(--sup); color: var(--texto); box-shadow: 0 2px 10px var(--sombra), inset 0 0 0 1.5px var(--borde); transition: transform .1s, background .1s; }
-.rapido .op .etq-op { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 6px 12px; border-radius: 14px; background: var(--sup); color: var(--texto); font-size: 14.5px; font-weight: 600; box-shadow: 0 2px 10px var(--sombra); pointer-events: none; }
-.rapido .op.sel .circ, .rapido .op:focus-visible .circ { transform: scale(1.2); background: var(--m); color: var(--en-m); box-shadow: 0 4px 14px var(--sombra); }
+.rapido .op .etq-op { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; height: 32px; display: flex; align-items: center; padding: 0 12px; border-radius: 16px; background: var(--sup); color: var(--texto); font-size: 14.5px; font-weight: 600; box-shadow: 0 2px 10px var(--sombra); pointer-events: none; }
+.rapido .op.arriba .etq-op { right: 0; top: auto; bottom: calc(100% + 8px); transform: none; }
+.rapido .op.sel .circ, .rapido .op:focus-visible .circ { transform: scale(1.17); background: var(--m); color: var(--en-m); box-shadow: 0 4px 14px var(--sombra); }
 .rapido .op.sel .etq-op { background: var(--m); color: var(--en-m); }
-.rapido .op:disabled { opacity: .45; }
 .rapido.abierto .op:disabled { opacity: .45; }
 .rapido .op .cuenta-op { position: absolute; right: -4px; top: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--pri); color: var(--en-pri); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
-.velo-rapido { position: absolute; inset: 0; z-index: 30; background: var(--velo); opacity: 0; pointer-events: none; transition: opacity .12s; }
+/* El velo atenúa solo el panel: la franja y la cámara siguen a la vista. Sobre el visor, una capa invisible cierra el menú */
+.velo-rapido { position: absolute; z-index: 30; left: 0; right: 0; bottom: 0; top: calc(var(--sb) + (100% - var(--sb) - var(--gb) - 80px) * .68 + 10px); border-radius: 24px 24px 0 0; background: var(--velo); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.cierra-visor { position: absolute; z-index: 30; left: 0; right: 0; top: 0; bottom: calc(100% - var(--sb) - (100% - var(--sb) - var(--gb) - 80px) * .68 - 10px); display: none; }
 .app.menu-abierto .velo-rapido { opacity: 1; pointer-events: auto; }
-.pista-rapido { position: absolute; z-index: 29; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 72px); max-width: 230px; padding: 8px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13.5px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); pointer-events: none; }
-.pista-rapido::after { content: ""; position: absolute; right: 24px; bottom: -6px; width: 12px; height: 12px; background: #2b3135; transform: rotate(45deg); }
+.app.menu-abierto .cierra-visor { display: block; }
+.pista-rapido { position: absolute; z-index: 29; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 72px); max-width: 240px; padding: 8px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13.5px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); pointer-events: none; }
+.pista-rapido::after { content: ""; position: absolute; right: 22px; bottom: -6px; width: 12px; height: 12px; background: #2b3135; transform: rotate(45deg); }
 .app.menu-abierto .pista-rapido { display: none; }
-/* Zurdos: el botón a la izquierda y las direcciones en espejo */
+.pista-deslizar { position: absolute; z-index: 32; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 200px); padding: 6px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13px; display: none; pointer-events: none; }
+.app.menu-abierto .pista-deslizar.ver { display: block; }
+/* «Ver el gesto» (prototipo): el círculo de 32 dp y las fronteras de los sectores, desde donde se pulsó */
+.trazo-gesto { position: absolute; z-index: 33; width: 0; height: 0; pointer-events: none; }
+.trazo-gesto svg { position: absolute; left: -120px; top: -120px; width: 240px; height: 240px; overflow: visible; }
+/* Zurdos: el botón al principio de la barra y las direcciones en espejo (↑ ↗ →) */
 .zurdo .rapido { right: auto; left: max(16px, env(safe-area-inset-left, 0px)); }
-.zurdo .rapido.abierto .op.diagonal { transform: translate(94px, -94px); }
-.zurdo .rapido.abierto .op.izquierda { transform: translate(132px, 0); }
+.zurdo .rapido.abierto .op.diagonal { transform: translate(62px, -62px); }
+.zurdo .rapido.abierto .op.izquierda { transform: translate(88px, 0); }
 .zurdo .rapido .op .etq-op { right: auto; left: calc(100% + 8px); }
-.zurdo .pista-rapido { right: auto; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 4px); }
-.zurdo .pista-rapido::after { right: auto; left: 24px; }
-.zurdo .modos.con-rapido { padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-left: calc(max(16px, env(safe-area-inset-left, 0px)) + 72px); justify-content: flex-end; }
+.zurdo .rapido .op.arriba .etq-op { left: 0; right: auto; }
+.zurdo .pista-rapido, .zurdo .pista-deslizar { right: auto; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 4px); }
+.zurdo .pista-rapido::after { right: auto; left: 22px; }
 .modos button { flex: 1; max-width: 140px; height: 52px; margin-top: 4px; border-radius: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--suave); font-size: 15px; font-weight: 500; }
 .modos button.on { background: var(--m-c); color: var(--en-m-c); font-weight: 700; }
 .modos button.on[data-v="ticket"] { --m-c: var(--pri-c); --en-m-c: var(--en-pri-c); }
@@ -360,7 +374,22 @@ svg.i.ch { width: 20px; height: 20px; }
 .contador { grid-row: span 2; min-width: 112px; height: 84px; padding: 0 14px; border-radius: 22px; background: var(--m-c); color: var(--en-m-c); display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 48px; font-weight: 800; line-height: 1; }
 .contador small { font-size: 26px; font-weight: 600; opacity: .7; margin-right: 2px; }
 .cuenta-grande { grid-row: span 2; display: flex; align-items: center; gap: 8px; }
-.menos-uno { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--sup-2); color: var(--texto); flex: none; }
+.menos-uno { min-width: 52px; height: 52px; padding: 0 8px; border-radius: 26px; display: grid; place-items: center; background: var(--sup-2); color: var(--texto); flex: none; font-size: 16px; font-weight: 700; }
+.menos-uno:disabled { opacity: .4; }
+.cuenta-grande { position: relative; }
+.suma { position: absolute; z-index: 1; right: -6px; bottom: -10px; padding: 2px 9px; border-radius: 11px; background: var(--m); color: var(--en-m); font-size: 14px; font-weight: 800; animation: entra .15s ease-out; pointer-events: none; }
+.chip-para { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--aviso-c); color: var(--aviso); font-size: 12.5px; font-weight: 600; vertical-align: middle; }
+.enlace { color: var(--m); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-align: left; font-size: 13.5px; min-height: 32px; padding: 0; }
+.captura.falta { width: 100%; text-align: left; }
+.captura.no-entro .nom, .captura.no-entro .cant { color: var(--error); }
+.nota.pendiente { color: var(--aviso); font-weight: 600; }
+.encabezado .titulo svg { vertical-align: -4px; }
+.guia h3.grupo-contar { color: var(--conteo); }
+.letra-grande .modos button { font-size: 24px; }
+.letra-grande .modos button:not(.on) .nombre-modo { display: none; }
+.letra-grande .rapido .op .etq-op { font-size: 24px; height: 40px; border-radius: 20px; }
+.letra-grande .panel .nom, .letra-grande .panel .titulo { font-size: 22px; }
+.letra-grande .toast { font-size: 22px; }
 .contador.crece { animation: crece .15s ease-out; }
 @keyframes crece { 50% { transform: scale(1.12); } }
 .progreso { height: 6px; border-radius: 3px; background: var(--sup-2); overflow: hidden; margin-top: 4px; }
@@ -534,8 +563,9 @@ svg.i.ch { width: 20px; height: 20px; }
 .candado { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; opacity: .8; }
 
 /* Avisos */
-.toast { position: absolute; z-index: 25; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 4px); display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 8px 8px 16px; border-radius: 14px; background: #2b3135; color: #eef2f5; font-size: 15px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); animation: sube .2s ease-out; }
+.toast { position: absolute; z-index: 25; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 72px); display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 8px 8px 16px; border-radius: 14px; background: #2b3135; color: #eef2f5; font-size: 15px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); animation: sube .2s ease-out; }
 .toast.arriba { bottom: auto; top: calc(var(--sb) + 64px); }
+.app.menu-abierto ~ .toast { visibility: hidden; }
 .toast span { flex: 1; }
 .toast button { min-height: 40px; padding: 0 12px; border-radius: 20px; color: #8ecff0; font-weight: 700; }
 .girando { width: 22px; height: 22px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: gira .8s linear infinite; }
@@ -559,6 +589,9 @@ svg.i.ch { width: 20px; height: 20px; }
   </div>
   <div class="grupo" role="group" aria-label="Tema"><span>Tema</span>
     <button data-p="tema" data-v="sistema" class="on">Sistema</button><button data-p="tema" data-v="claro">Claro</button><button data-p="tema" data-v="oscuro">Oscuro</button>
+  </div>
+  <div class="grupo" role="group" aria-label="Ayudas del prototipo"><span>Ver</span>
+    <button data-p="verGesto" aria-pressed="false">El gesto</button><button data-p="letraGrande" aria-pressed="false">Letra 200 %</button>
   </div>
   <div class="grupo"><span>Leer</span>
     <select id="leer-codigo" aria-label="Qué código leer"></select>
@@ -600,6 +633,12 @@ const CATALOGO = [
   P('7509990100187', 'Bolsa de regalo mediana', 'reg', 1800, 'bolsa', { existencia: 25, vendidos: 30 }),
   P('7509990100200', 'Lápiz HB No. 2 · caja con 12', 'esc', 5400, 'lapiz', { piezas: 12, base: '7509990100026', existencia: 140, vendidos: 25 }),
   P('2999990000016', 'Papel china verde', 'pap', 200, 'china', { existencia: 150, vendidos: 45, cajon: true }),
+  P('7509990100217', 'Listón satinado rojo 1 cm', 'arte', 300, 'liston', { unidad: 'm', existencia: 85.5, vendidos: 50, rollo: { codigo: '7509990100224', metros: 10 } }),
+  P('7509990100224', 'Listón satinado rojo 1 cm · rollo de 10 m', 'arte', 2800, 'liston', { metros: 10, base: '7509990100217', existencia: 85.5, vendidos: 8 }),
+  P('7509990100231', 'Pintura acrílica 20 ml', 'arte', 2200, 'pintura', { existencia: 40, vendidos: 35 }),
+  P('7509990100248', 'Pincel redondo No. 6', 'arte', 1500, 'pincel', { existencia: 22, vendidos: 20 }),
+  P('7509990100255', 'Papel para regalo, pliego', 'reg', 900, 'pliego', { existencia: 70, vendidos: 44 }),
+  P('7509990100262', 'Moño para regalo', 'reg', 600, 'mono', { existencia: 55, vendidos: 38 }),
 ];
 const RAPIDOS = [
   { codigo: 'RAPIDO-COPIA', nombre: 'Copia blanco y negro carta', depto: 'serv', precio: 200, icono: 'copia', rapido: true, sinInventario: true },
@@ -623,23 +662,42 @@ const TRABAJOS = [
 
 const PERSONAS = {
   ana: { nombre: 'Ana', letra: 'A', completo: false, detalle: 'Permisos de defecto' },
-  carmen: { nombre: 'Carmen', letra: 'C', completo: true, detalle: 'Encargada: también el conteo completo' },
-  luis: { nombre: 'Luis', letra: 'L', completo: true, detalle: 'Primera cuenta: todos los permisos' },
+  carmen: { nombre: 'Carmen', letra: 'C', completo: true, costos: true, detalle: 'Encargada: también el conteo completo' },
+  luis: { nombre: 'Luis', letra: 'L', completo: true, costos: true, detalle: 'Primera cuenta: todos los permisos' },
 };
 /* En el piloto, el POS vive en la caja 2 y la caja 1 sigue con eleventa (y Control Print) */
 const CAJAS = [
   { id: 1, nombre: 'Caja 1', principal: true, atiende: 'Luis', esperan: 1 },
   { id: 2, nombre: 'Caja 2', atiende: 'Carmen', esperan: 0 },
 ];
-/* Los conteos: el del día (15 productos que elige el POS) y los departamentos abiertos del conteo completo */
+/* Los conteos. El del día: 15 productos que elige el POS cada mañana; es el total de la tienda y se aplica con «Es todo».
+   El completo: un departamento abierto; cada captura es lo de un lugar y se suman */
 const DEL_DIA = ['7509990100019', '7509990100040', '7509990100118', '7509990100163', '7509990100064', '7509990100057', '7509990100095', '7509990100101', '7509990100125', '7509990100156', '7509990100170', '7509990100187', '7509990100088', '7509990100033', '7509990100026'];
-const CONTEOS_INICIO = () => [
-  { id: 'dia', tipo: 'dia', titulo: 'Conteo del día', detalle: '15 productos que eligió el POS esta mañana', productos: DEL_DIA },
-  { id: 'esc', tipo: 'completo', depto: 'esc', titulo: 'Escolar · conteo completo', detalle: 'Lo abrió Luis a las 9:10 · cuentan Luis y Ana', total: 120, contados: 37 },
-];
-let CONTEOS = CONTEOS_INICIO();
-/* Lo que ya contaron otros en el conteo completo (se ve al escanear: «Ya van 7: tú 2 · Luis 5») */
-const DE_OTROS = { '7509990100019': [['Luis', 5]], '7509990100026': [['Ana', 24]], '7509990100064': [['Luis', 12]] };
+const DIA = () => ({ id: 'dia', tipo: 'dia', titulo: 'Conteo del día', productos: DEL_DIA });
+const DEPTO = (id, quien, contados, total) => ({ id, tipo: 'completo', depto: id, titulo: DEPTOS[id], quien, contados, total });
+const ESCENARIOS_CONTEO = {
+  normal: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120)],
+  soloDia: () => [DIA()],
+  dosDeptos: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210)],
+  conArte: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('arte', 'nadie todavía', 0, 60)],
+  arranque: () => [DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210), DEPTO('pap', 'nadie todavía', 0, 95), DEPTO('arte', 'nadie todavía', 0, 60), DEPTO('reg', 'nadie todavía', 0, 40)],
+};
+let CONTEOS = ESCENARIOS_CONTEO.normal();
+/* Lo que ya contaron otros en el conteo completo: [quién, cuánto, a qué hora]. Beto contó en la página /conteo */
+const DE_OTROS_INICIO = () => ({ '7509990100019': [['Luis', 5, '10:12']], '7509990100026': [['Ana', 24, '10:40']], '7509990100064': [['Luis', 12, '9:58'], ['Beto', 3, '11:20']] });
+let DE_OTROS = DE_OTROS_INICIO();
+/* Del conteo del día, lo que ya aplicó otra persona (en la caja o en su celular) */
+const DIA_DE_OTROS = { '7509990100040': ['Carmen', '11:02'] };
+/* Lo que se «lee» al tocar la franja en Conteo, según lo que se cuenta */
+const SEC_CONTEO = {
+  esc: ['7509990100019', '7509990100019', '7509990100019', '7509990100026', '7509990100200', '7509990100026', '7509990100071', '7509990100163'],
+  ofi: ['7509990100088', '7509990100088', '7509990100095', '7509990100101'],
+  pap: ['7509990100125', '7509990100132', '7509990100149'],
+  arte: ['7509990100224', '7509990100217', '7509990100217', '7509990100231', '7509990100248'],
+  reg: ['7509990100255', '7509990100262', '7509990100187'],
+  dia: ['7509990100026', '7509990100026', '7509990100200', '7509990100033', '7509990100026', '7509990100040', '7509990100132'],
+  noVa: ['7509990100019', '7509990100071', '7509990100125', '7509990100194', '7509990100163'],
+};
 
 /* Lo que se lee al tocar la franja, por modo: así los pasos de «Qué probar» siempre dan lo mismo */
 const SECUENCIAS = {
@@ -667,6 +725,7 @@ const IC = {
   mandar: '<path d="M4 12 20 4l-4 16-4-7z"/><path d="m12 13 8-9"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
   atras: '<path d="M15 5l-7 7 7 7"/>',
+  adelante: '<path d="M9 5l7 7-7 7"/>',
   menos: '<path d="M6 12h12"/>',
   mas: '<path d="M12 6v12M6 12h12"/>',
   bote: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
@@ -717,6 +776,11 @@ function dibujo(p) {
     colores: '<rect x="9" y="18" width="30" height="20" rx="2" fill="#1d5c7a"/><g><rect x="12" y="10" width="3" height="10" fill="#e53935"/><rect x="16.5" y="9" width="3" height="11" fill="#fb8c00"/><rect x="21" y="10" width="3" height="10" fill="#fdd835"/><rect x="25.5" y="9" width="3" height="11" fill="#43a047"/><rect x="30" y="10" width="3" height="10" fill="#1e88e5"/><rect x="34" y="11" width="3" height="9" fill="#8e24aa"/></g>',
     bolsa: '<path d="M12 18h24l-2 22H14z" fill="#d84d7a"/><path d="M18 18v-3a6 6 0 0 1 12 0v3" fill="none" stroke="#7a2443" stroke-width="2.5"/>',
     china: '<path d="M9 12c8-3 22 3 30 0v26c-8 3-22-3-30 0z" fill="#59b36b"/>',
+    liston: p.metros ? '<circle cx="24" cy="24" r="15" fill="#c62f3a"/><circle cx="24" cy="24" r="6" fill="#f4f4f4" stroke="#9aa5ae"/>' : '<path d="M6 30c8-10 14 6 22-4s10-8 14-6" fill="none" stroke="#c62f3a" stroke-width="6" stroke-linecap="round"/>',
+    pintura: '<rect x="17" y="14" width="14" height="26" rx="3" fill="#f4f4f4" stroke="#9aa5ae"/><rect x="17" y="22" width="14" height="10" fill="#2f6fb3"/><rect x="20" y="8" width="8" height="7" rx="1.5" fill="#3b4248"/>',
+    pincel: '<g transform="rotate(-40 24 24)"><rect x="6" y="22" width="22" height="4" rx="2" fill="#b07a3c"/><rect x="27" y="21" width="6" height="6" fill="#a9b2ba"/><path d="M33 21c6 1 8 2 9 3-1 1-3 2-9 3z" fill="#3b2a1a"/></g>',
+    pliego: '<rect x="8" y="10" width="32" height="28" rx="1.5" fill="#f3c6d6"/><g fill="#d84d7a"><circle cx="15" cy="17" r="2.5"/><circle cx="27" cy="17" r="2.5"/><circle cx="21" cy="26" r="2.5"/><circle cx="33" cy="26" r="2.5"/><circle cx="15" cy="33" r="2.5"/><circle cx="27" cy="33" r="2.5"/></g>',
+    mono: '<path d="M24 24l-12-8v16zM24 24l12-8v16z" fill="#2f6fb3"/><circle cx="24" cy="24" r="4" fill="#1d4f8a"/>',
     copia: '<path d="M12 7h18l6 6v28H12z" fill="#fff" stroke="#9aa5ae"/><path d="M16 18h16M16 23h16M16 28h12" stroke="#9aa5ae" stroke-width="2"/>',
     curp: '<rect x="8" y="12" width="32" height="24" rx="3" fill="#fff" stroke="#9aa5ae"/><rect x="11" y="16" width="9" height="11" rx="1" fill="#c9d3da"/><path d="M23 18h13M23 22h13M23 26h9M11 31h25" stroke="#9aa5ae" stroke-width="2"/>',
   }[p.icono] || '';
@@ -782,12 +846,13 @@ const INICIO = () => ({
   pantalla: 'escaner',        // alta | entrada | escaner | bloqueo | ajustes
   dadoDeAlta: true, pasoAlta: 0, permisoCercanos: false, dialogo: null,
   persona: 'luis', fichaElegida: 'luis', pin: '', pinError: '',
-  menuRapido: false, gestoUsado: leerGuardado('gesto') === 'si', verConteo: false, zurdo: leerGuardado('zurdo') === 'si',
+  menuRapido: false, verConteo: false, verGesto: false, letraGrande: false, pistasVistas: (() => { try { return JSON.parse(leerGuardado('pistas') || '{}'); } catch (e) { return {}; } })(), elegidasDeslizando: parseInt(leerGuardado('deslizadas') || '0', 10) || 0, zurdo: leerGuardado('zurdo') === 'si',
   modo: 'ticket',
   hoja: null, hojaDatos: null, precioGrande: false,
   ticket: [], impresiones: [], idLinea: 1, deshacer: [], cajaElegida: 2, enviado: null, qr: null, enviando: false,
   precio: null,
-  conteo: { activo: null, actual: null, capturas: [], porSubir: 0, idCaptura: 1 },
+  conteo: { activo: null, actual: null, capturas: [], dia: {}, porSubir: 0, idCaptura: 1, paraOtro: null, suma: '', sumaHasta: 0 },
+  secuenciaConteo: null, tabContado: 'mio', cierreSinRed: false, despuesDialogo: null,
   escaner: { fase: 'escaneando', codigo: null, linterna: false },
   indices: { ticket: 0, precio: 0, conteo: 0 },
   busqueda: '', filtroPc: 'todas', elegidos: [], toast: null, rapidoBloqueo: false, guia: null,
@@ -811,21 +876,16 @@ function agregarAlTicket(codigo, cant = 1, aviso = false) {
   if (i >= 0) { const l = S.ticket.splice(i, 1)[0]; l.cant += cant; S.ticket.unshift(l); }
   else S.ticket.unshift({ id: S.idLinea++, codigo, cant, desconocido: !POR_CODIGO.has(codigo) });
   S.enviado = null; S.qr = null;
-  if (aviso) toast(`Agregado al ticket · ${piezasTicket()} art. · ${dinero(totalTicket())}`, 'Ver', () => { S.modo = 'ticket'; S.hoja = 'ticket'; pintar(); });
+  if (aviso) toast(`Agregado al ticket · ${piezasTicket()} art. · ${dinero(totalTicket())}`, 'Deshacer', () => A.deshacer());
 }
 
 /* ——— El escáner simulado: viendo (ámbar) → leído (verde, vibración) → escaneando ——— */
 function siguienteCodigo() {
   const m = S.pantalla === 'alta' ? null : (S.rapidoBloqueo ? 'precio' : S.modo);
   if (!m) return QR_ALTA;
-  if (m === 'conteo' && S.conteo.activo && S.conteo.activo.tipo === 'dia') {
-    const c = S.conteo, faltan = c.activo.productos.filter(x => !c.capturas.some(k => k.codigo === x));
-    if (c.actual) return c.actual.codigo;
-    return faltan.length ? faltan[0] : c.activo.productos[0];
-  }
-  if (m === 'conteo' && S.conteo.activo && S.conteo.activo.tipo === 'completo' && S.conteo.activo.depto !== 'esc') {
-    const deDepto = CATALOGO.filter(p => p.depto === S.conteo.activo.depto && !p.base);
-    return deDepto[S.indices.conteo++ % deDepto.length].codigo;
+  if (m === 'conteo' && conteoActivo()) {
+    const t = conteoActivo(), sec = S.secuenciaConteo ? SEC_CONTEO[S.secuenciaConteo] : (SEC_CONTEO[t.id] || SEC_CONTEO.esc);
+    return sec[S.indices.conteo++ % sec.length];
   }
   const sec = SECUENCIAS[m]; return sec[S.indices[m]++ % sec.length];
 }
@@ -846,33 +906,100 @@ function aplicarLectura(codigo) {
   if (S.modo === 'ticket') { agregarAlTicket(codigo); return; }
   if (S.modo === 'conteo') contarLectura(codigo);
 }
-/* Contar: el código de la pieza suma una suelta y el de la caja suma una caja (como la página /conteo de hoy) */
-const piezasDe = a => a.sueltas + a.cajas * (POR_CODIGO.get(a.codigo).caja ? POR_CODIGO.get(a.codigo).caja.piezas : 0);
+/* ——— Contar ———
+   actual: lo que se cuenta ahora de un producto en este lugar (cajas o rollos, y sueltas) con sus lecturas en orden, para
+   que el − quite la última. En el del día, lo de otros lugares del mismo producto queda en dia[código].antes */
+const presentacion = p => p.caja ? { piezas: p.caja.piezas, nombre: `Cajas de ${p.caja.piezas}`, suelta: 'Sueltas', que: 'caja' }
+  : p.rollo ? { piezas: p.rollo.metros, nombre: `Rollos de ${p.rollo.metros} m`, suelta: 'Metros sueltos', que: 'rollo' } : null;
+const redondo = n => Math.round(n * 100) / 100;
+const piezasDe = a => { const pr = presentacion(POR_CODIGO.get(a.codigo)); return redondo(a.sueltas + a.cajas * (pr ? pr.piezas : 0)); };
+const unidad = (p, n) => p.unidad === 'm' ? `${n} m` : `${n} ${n === 1 ? 'pieza' : 'piezas'}`;
+const conteoActivo = () => CONTEOS.find(t => t.id === S.conteo.activo) || null;
 function contarLectura(codigo) {
-  const c = S.conteo, t = c.activo;
+  const c = S.conteo, t = conteoActivo();
   if (!t) { toast('Primero elige qué vas a contar.'); return; }
   const leido = POR_CODIGO.get(codigo);
-  if (!leido || leido.rapido) { toast('Ese código no está en el catálogo: apártalo y avísale al encargado.'); return; }
+  if (!leido || leido.rapido || leido.sinInventario) { rechazar(leido ? `«${leido.nombre}» no lleva inventario.` : 'Ese código no está en el catálogo: apártalo para el encargado.'); return; }
   const base = leido.base || codigo, esCaja = !!leido.base, p = POR_CODIGO.get(base);
-  if (t.tipo === 'completo' && p.depto !== t.depto) { toast(`«${p.nombre}» es de ${DEPTOS[p.depto]}: se cuenta con ese departamento.`); return; }
-  if (t.tipo === 'dia' && !t.productos.includes(base)) { toast(`«${p.nombre}» no está en el conteo de hoy.`); return; }
-  if (t.tipo === 'dia' && c.capturas.some(k => k.codigo === base)) { toast(`«${p.nombre}» ya se contó hoy. Si quedó mal, es un ajuste en la caja.`); return; }
-  if (!(c.actual && c.actual.codigo === base)) { guardarCaptura(); c.actual = { codigo: base, cajas: 0, sueltas: 0 }; }
-  if (esCaja) c.actual.cajas++; else c.actual.sueltas++;
+  const mismo = c.actual && c.actual.codigo === base;
+  if (t.tipo === 'completo' && !mismo && p.depto !== t.depto && c.paraOtro !== p.depto) {
+    const abierto = CONTEOS.find(x => x.tipo === 'completo' && x.depto === p.depto);
+    guardarCaptura();
+    if (abierto) {
+      vibrar([30, 60, 30]);
+      toast(`«${p.nombre}» es de ${DEPTOS[p.depto]}, que también se está contando.`, `Contarlo para ${DEPTOS[p.depto]}`, () => { S.conteo.paraOtro = p.depto; contarLectura(codigo); pintar(); });
+      return;
+    }
+    rechazar(`«${p.nombre}» es de ${DEPTOS[p.depto]}: aquí no se cuenta. Llévalo a su lugar.`);
+    return;
+  }
+  if (t.tipo === 'dia' && !mismo) {
+    if (!t.productos.includes(base)) { rechazar(`«${p.nombre}» no está en el conteo de hoy.`); return; }
+    if (DIA_DE_OTROS[base]) { rechazar(`«${p.nombre}»: ya lo contó ${DIA_DE_OTROS[base][0]} a las ${DIA_DE_OTROS[base][1]}.`); return; }
+    const d = c.dia[base];
+    if (d && d.estado !== 'sin-aplicar') { rechazar(`«${p.nombre}» ya se contó hoy. Si quedó mal, es un ajuste en la caja.`); return; }
+  }
+  if (!mismo) {
+    dejarActual();
+    c.actual = { codigo: base, cajas: 0, sueltas: 0, lecturas: [], para: t.tipo === 'completo' && p.depto !== t.depto ? p.depto : null };
+  }
+  const a = c.actual, pr = presentacion(p);
+  if (esCaja) { a.cajas++; a.lecturas.push('caja'); c.suma = `+${pr.piezas}${p.unidad === 'm' ? ' m' : ''} ${pr.que}`; }
+  else { a.sueltas++; a.lecturas.push('suelta'); c.suma = `+1${p.unidad === 'm' ? ' m' : ''}`; }
+  c.sumaHasta = Date.now() + 2400;
+  despues(2500, () => { if (Date.now() >= S.conteo.sumaHasta) pintar(); });
 }
-/* Guardar: lo contado del producto en este lugar queda como una captura y se sube sola (al escanear otro también) */
-function guardarCaptura() {
-  const c = S.conteo, a = c.actual;
-  c.actual = null;
+function rechazar(texto) { toast(texto); vibrar([40, 60, 40]); }
+/* Al escanear otro producto: en el completo, lo de aquí se guarda solo; en el del día queda «sin aplicar» */
+function dejarActual() {
+  const c = S.conteo, t = conteoActivo(), a = c.actual;
   if (!a) return;
+  if (t && t.tipo === 'dia') {
+    const d = c.dia[a.codigo] || (c.dia[a.codigo] = { antes: 0, estado: 'sin-aplicar' });
+    d.antes = redondo(d.antes + piezasDe(a));
+    c.actual = null;
+    return;
+  }
+  guardarCaptura();
+}
+function guardarCaptura(cero = false) {
+  const c = S.conteo, a = c.actual, t = conteoActivo();
+  c.actual = null; c.paraOtro = null;
+  if (!a || !t) return;
   const cant = piezasDe(a);
-  if (cant <= 0) return;
-  const nuevo = !c.capturas.some(k => k.codigo === a.codigo);
-  const cap = { id: c.idCaptura++, codigo: a.codigo, cant, cajas: a.cajas, sueltas: a.sueltas, hora: horaAhora(), subida: S.red !== 'caida', tipo: c.activo.tipo };
+  if (cant <= 0 && !cero) return;   // lo que bajó a 0 con el − no se guarda; un 0 tecleado sí: «no hay»
+  const destino = a.para ? (CONTEOS.find(x => x.tipo === 'completo' && x.depto === a.para) || t) : t;
+  const cap = { id: c.idCaptura++, conteo: destino.id, codigo: a.codigo, cant, cajas: a.cajas, sueltas: a.sueltas, hora: horaAhora(), estado: S.red === 'caida' ? 'por-subir' : 'subida', quien: PERSONAS[S.persona].nombre };
   c.capturas.unshift(cap);
-  if (!cap.subida) c.porSubir++;
-  if (c.activo.tipo === 'completo' && nuevo && !DE_OTROS[a.codigo]) c.activo.contados = Math.min(c.activo.total, c.activo.contados + 1);
-  toast(`Guardado: ${cant} de «${POR_CODIGO.get(a.codigo).nombre}»${cap.subida ? '' : ' (se sube al volver la red)'}`);
+  if (cap.estado === 'por-subir') c.porSubir++;
+  if (!DE_OTROS[a.codigo] && c.capturas.filter(k => k.codigo === a.codigo && k.conteo === destino.id).length === 1) destino.contados = Math.min(destino.total, destino.contados + 1);
+  const p = POR_CODIGO.get(a.codigo);
+  toast(`Guardado: ${cant === 0 ? 'no hay' : unidad(p, cant)} de «${p.nombre}»${a.para ? `, para ${DEPTOS[a.para]}` : ''}${cap.estado === 'por-subir' ? ' (sube al volver la red)' : ''}`, 'Quitar', () => A.quitarCaptura({ id: cap.id }));
+}
+/* El del día: «Es todo» aplica el total (lo de antes más lo de aquí), una sola vez */
+function totalDia(codigo) {
+  const c = S.conteo, d = c.dia[codigo];
+  return redondo((d ? d.antes : 0) + (c.actual && c.actual.codigo === codigo ? piezasDe(c.actual) : 0));
+}
+function aplicarDia(codigo) {
+  const c = S.conteo, total = totalDia(codigo), p = POR_CODIGO.get(codigo);
+  const d = c.dia[codigo] || (c.dia[codigo] = { antes: 0 });
+  d.antes = total; d.total = total; d.hora = horaAhora(); d.estado = S.red === 'caida' ? 'por-aplicar' : 'aplicada';
+  if (c.actual && c.actual.codigo === codigo) c.actual = null;
+  if (d.estado === 'por-aplicar') c.porSubir++;
+  const dif = redondo(total - p.existencia);
+  toast(d.estado === 'por-aplicar' ? `Listo: ${unidad(p, total)} de «${p.nombre}». Se aplica al volver la red.`
+    : `Aplicado: ${unidad(p, total)} de «${p.nombre}».${PERSONAS[S.persona].costos ? ` El sistema tenía ${p.existencia}: ${dif >= 0 ? '+' : ''}${dif}.` : ''}`);
+}
+const sinAplicar = () => Object.entries(S.conteo.dia).filter(([k, d]) => d.estado === 'sin-aplicar' && d.antes > 0 && !(S.conteo.actual && S.conteo.actual.codigo === k)).map(([k]) => k);
+/* A ciegas: mientras se cuenta, Precio no enseña la existencia de lo que se está contando */
+function existenciaOculta(codigo) {
+  const t = conteoActivo(), p = POR_CODIGO.get(codigo);
+  if (!t || !p) return false;
+  const base = p.base || codigo;
+  if (t.tipo === 'completo') return POR_CODIGO.get(base).depto === t.depto;
+  const d = S.conteo.dia[base];
+  return t.productos.includes(base) && !(d && (d.estado === 'aplicada' || d.estado === 'por-aplicar'));
 }
 /* El reloj del prototipo: empieza a las 14:52, como la barra de estado */
 const ARRANQUE = Date.now();
@@ -888,7 +1015,9 @@ function toast(texto, accion, f) {
 /* ——— Pintar ——— */
 const tel = $('#tel');
 function pintar() {
+  if (gesto) { pintarAlSoltar = true; return; }
   tel.dataset.tam = S.tam;
+  tel.classList.toggle('letra-grande', !!S.letraGrande);
   let h = '';
   if (S.pantalla === 'alta') h = pantallaAlta();
   else if (S.pantalla === 'entrada') h = pantallaEntrada();
@@ -988,8 +1117,9 @@ const modosDelCelular = () => S.celular === 'tienda' ? ['precio', 'conteo'] : ['
 function modos() {
   const n = piezasTicket();
   const nombres = { precio: ['Precio', 'precio'], ticket: ['Ticket', 'ticket'], conteo: ['Conteo', 'conteo'] };
-  const b = v => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}" aria-pressed="${S.modo === v}">${ic(nombres[v][1], 'i ch')}${nombres[v][0]}${v === 'ticket' && n && S.modo !== 'ticket' ? `<span class="cuenta num">${n}</span>` : ''}</button>`;
-  return `<nav class="modos${opcionesRapidas() ? ' con-rapido' : ''}" aria-label="Modo">${modosDelCelular().map(b).join('')}</nav>`;
+  const cuenta = v => v === 'ticket' && n && S.modo !== 'ticket';
+  const b = v => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}${cuenta(v) ? ' con-cuenta' : ''}" aria-pressed="${S.modo === v}" aria-label="${nombres[v][0]}${cuenta(v) ? `, ${n} artículos` : ''}">${ic(nombres[v][1], 'i ch')}<span class="nombre-modo">${nombres[v][0]}</span>${cuenta(v) ? `<span class="cuenta-ic num">${n}</span>` : ''}</button>`;
+  return `<nav class="modos" aria-label="Modo">${modosDelCelular().map(b).join('')}</nav>`;
 }
 
 /* ——— El botón rápido: las tres opciones de cada modo, siempre en las mismas direcciones ———
@@ -1002,45 +1132,51 @@ function opcionesRapidas() {
     const n = piezasTicket(), caja = CAJAS.find(x => x.id === S.cajaElegida);
     const hayImp = S.red === 'caida' ? 0 : TRABAJOS.filter(t => !S.impresiones.includes(t.id) && !t.revisar).length;
     return {
-      arriba: { accion: 'mandar', icono: 'mandar', etiqueta: `Mandar a ${caja.nombre}`, apagada: !n },
-      diagonal: { accion: 'impresiones', icono: 'imprimir', etiqueta: 'Impresiones', cuenta: hayImp },
+      arriba: { accion: 'mandar', icono: 'mandar', etiqueta: `Mandar a ${caja.nombre}`, apagada: !n, razon: 'Mandar: el ticket está vacío' },
+      diagonal: { accion: 'impresiones', icono: 'imprimir', etiqueta: 'Impresiones', cuenta: hayImp, apagada: S.red === 'caida', razon: 'Impresiones: sin red no se ven; se agregan en la caja con F2' },
       izquierda: buscar,
     };
   }
   if (m === 'precio') {
     const hay = S.precio && POR_CODIGO.has(S.precio);
     return {
-      arriba: S.celular === 'tienda' ? null : { accion: 'agregarDePrecio', icono: 'mas', etiqueta: 'Al ticket', apagada: !hay },
-      diagonal: { accion: 'agrandar', icono: 'agrandar', etiqueta: 'Enseñar al cliente', apagada: !hay },
+      arriba: S.celular === 'tienda' ? null : { accion: 'agregarDePrecio', icono: 'mas', etiqueta: 'Al ticket', apagada: !hay, razon: 'Al ticket: primero escanea un producto' },
+      diagonal: { accion: 'agrandar', icono: 'agrandar', etiqueta: 'Enseñar al cliente', apagada: !hay, razon: 'Enseñar: primero escanea un producto' },
       izquierda: buscar,
     };
   }
   if (m === 'conteo') {
-    const c = S.conteo;
-    if (S.pos === 'piloto' && !S.verConteo || !c.activo) return null;
+    const c = S.conteo, t = conteoActivo();
+    if (S.pos === 'piloto' && !S.verConteo || !t) return null;
+    const dia = t.tipo === 'dia';
+    const n = dia ? (c.actual ? totalDia(c.actual.codigo) : (sinAplicar()[0] ? totalDia(sinAplicar()[0]) : 0)) : (c.actual ? piezasDe(c.actual) : 0);
     return {
-      arriba: { accion: 'guardarConteo', icono: 'check', etiqueta: c.actual ? `Guardar ${piezasDe(c.actual)}` : 'Guardar', apagada: !c.actual },
-      diagonal: { accion: 'verContado', icono: 'lista', etiqueta: 'Lo contado', cuenta: c.capturas.length },
-      izquierda: { ...buscar, etiqueta: 'Buscar sin código' },
+      arriba: dia ? { accion: 'guardarConteo', icono: 'check', etiqueta: `Es todo · ${n}`, apagada: !c.actual && !sinAplicar().length, razon: 'Es todo: todavía no cuentas nada' }
+        : { accion: 'guardarConteo', icono: 'check', etiqueta: c.actual ? `Guardar ${n}` : 'Guardar', apagada: !c.actual, razon: 'Guardar: todavía no cuentas nada' },
+      diagonal: { accion: 'verContado', icono: 'lista', etiqueta: 'Lo contado', cuenta: dia ? Object.keys(c.dia).length : c.capturas.length },
+      izquierda: buscar,
     };
   }
   return null;
 }
 const FLECHAS_DIESTRO = { arriba: '↑', diagonal: '↖', izquierda: '←' }, FLECHAS_ZURDO = { arriba: '↑', diagonal: '↗', izquierda: '→' };
 const flecha = dir => (S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO)[dir];
+const PISTAS = { ticket: d => `Pulsa y desliza: ${d.arriba} mandar · ${d.diagonal} impresiones · ${d.izquierda} buscar`, precio: d => `Pulsa y desliza: ${d.arriba} al ticket · ${d.diagonal} enseñar · ${d.izquierda} buscar`, conteo: d => `Pulsa y desliza: ${d.arriba} guardar · ${d.diagonal} lo contado · ${d.izquierda} buscar` };
 function botonRapido() {
   const o = opcionesRapidas();
   const nombreModo = { ticket: 'del ticket', precio: 'del precio', conteo: 'del conteo' }[S.modo];
   const op = dir => {
     const x = o[dir];
     if (!x) return '';
-    return `<button class="op ${dir}" data-a="${x.accion}" data-dir="${dir}" role="menuitem" ${x.apagada ? 'disabled' : ''} tabindex="${S.menuRapido ? 0 : -1}" aria-label="${esc(x.etiqueta)}"><span class="circ">${ic(x.icono)}</span>${x.cuenta ? `<span class="cuenta-op num">${x.cuenta}</span>` : ''}<span class="etq-op">${flecha(dir)} ${esc(x.etiqueta)}</span></button>`;
+    return `<button class="op ${dir}" data-a="${x.accion}" data-dir="${dir}" role="menuitem" ${x.apagada ? 'disabled' : ''} ${x.razon ? `data-razon="${esc(x.razon)}"` : ''} tabindex="${S.menuRapido ? 0 : -1}" aria-label="${esc(x.etiqueta)}${x.apagada && x.razon ? `. ${esc(x.razon)}` : ''}"><span class="circ">${ic(x.icono)}</span>${x.cuenta ? `<span class="cuenta-op num">${x.cuenta}</span>` : ''}<span class="etq-op">${flecha(dir)} ${esc(x.etiqueta)}</span></button>`;
   };
-  const pista = !S.gestoUsado && S.modo === 'ticket' && piezasTicket() ? `<div class="pista-rapido" aria-hidden="true">Pulsa y desliza: ${flecha('arriba')} mandar · ${flecha('diagonal')} impresiones · ${flecha('izquierda')} buscar</div>` : '';
-  return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div>${pista}
-    <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido" role="group" aria-label="Opciones ${nombreModo}">
-      ${op('arriba')}${op('diagonal')}${op('izquierda')}
-      <button class="fab" id="fab" type="button" aria-haspopup="menu" aria-expanded="${!!S.menuRapido}" aria-label="Opciones ${nombreModo}">${ic('mas')}</button>
+  const d = S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO;
+  const pista = !(S.pistasVistas || {})[S.modo] && PISTAS[S.modo] ? `<div class="pista-rapido" aria-hidden="true">${PISTAS[S.modo](d)}</div>` : '';
+  const deslizar = (S.elegidasDeslizando || 0) < 3 ? `<div class="pista-deslizar ver" aria-hidden="true">Pulsa y desliza sin soltar</div>` : '';
+  return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div><button class="cierra-visor" data-a="cerrarMenuRapido" aria-label="Cerrar las opciones" tabindex="-1"></button>${pista}${deslizar}
+    <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido">
+      <div role="menu" id="menu-rapido" aria-label="Opciones ${nombreModo}">${op('arriba')}${op('diagonal')}${op('izquierda')}</div>
+      <button class="fab" id="fab" type="button" aria-haspopup="menu" aria-controls="menu-rapido" aria-expanded="${!!S.menuRapido}" aria-label="Opciones ${nombreModo}">${ic('mas')}</button>
     </div>`;
 }
 /* modo: 'actual' (el último, resaltado), 'quieta' (en el ticket completo: con − y + pero sin resaltar) o 'compacta' */
@@ -1066,7 +1202,7 @@ function panelTicket() {
     c += `<div class="enviado" role="status"><span class="ic">${ic('check')}</span><div><strong>Enviado a ${esc(S.enviado.caja)}</strong>${S.enviado.n} art. · ${dinero(S.enviado.total)} · llega como «${esc(PERSONAS[S.persona].nombre)} · ${dinero(S.enviado.total)}» en espera</div></div>`;
     c += `<p class="nota" style="margin:8px 2px 0">Escanea para empezar el siguiente ticket.</p>`;
   } else if (!n) {
-    c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno; al terminar, se manda a una caja.</div>`;
+    c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno. El botón + de abajo: mandar, impresiones y buscar.</div>`;
   } else {
     c += `<div class="encabezado"><span class="titulo">Ticket · <b class="num">${n}</b> art.</span><span class="espacio"></span><span class="total num">${dinero(totalTicket())}</span></div>`;
     c += `<div class="lineas">`;
@@ -1087,7 +1223,7 @@ function datosPrecio(p, publico) {
   if (p.promo) d += `<span class="dato promo">Promoción «${esc(p.promo)}»</span>`;
   if (p.mayoreo) d += `<span class="dato mayoreo">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>`;
   if (p.piezas) d += `<span class="dato">${dinero(Math.round(p.precio / p.piezas))} c/u</span>`;
-  if (!publico && !p.sinInventario) d += p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
+  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato">Existencia: al contarlo</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
   return d;
 }
 function tarjetaPrecio(publico) {
@@ -1097,37 +1233,61 @@ function tarjetaPrecio(publico) {
   return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}</div></div></div>`;
 }
 function panelPrecio() {
-  if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>Aquí nada se agrega${S.celular === 'tienda' ? '' : ' al ticket'}: es el verificador (F9) de la caja.</div>`;
+  if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>Aquí nada se agrega${S.celular === 'tienda' ? '' : ' al ticket'}: es el verificador (F9) de la caja. El botón + de abajo: ${S.celular === 'tienda' ? 'enseñar y buscar' : 'al ticket, enseñar y buscar'}.</div>`;
   return tarjetaPrecio(false);
 }
 function panelConteo() {
   const c = S.conteo, per = PERSONAS[S.persona];
   if (S.pos === 'piloto' && !S.verConteo) {
-    return `<div class="no-esta"><span class="ic">${ic('candado')}</span><div><strong>En el piloto no se cuenta</strong><div class="nota">Mientras dure el piloto con eleventa, el inventario se lleva en eleventa: las existencias llegan al POS con su lectura. Al dejar eleventa, aquí se hace el conteo físico de arranque.</div></div></div>
+    return `<div class="no-esta"><span class="ic">${ic('candado')}</span><div><strong>En el piloto no se cuenta</strong><div class="nota">Mientras el POS lea el inventario de eleventa, no deja contar. En la app, Conteo no aparecerá hasta dejar eleventa, como en la caja; aquí se enseña para revisarlo.</div></div></div>
       <button class="btn tonal ancho" style="margin-top:8px" data-a="verConteoPrototipo">${ic('conteo')}Ver cómo se contará (prototipo)</button>`;
   }
-  if (!c.activo) {
+  const t = conteoActivo();
+  if (!t) {
     let h = `<div class="encabezado"><span class="titulo">¿Qué vas a contar?</span>${S.pos === 'piloto' ? '<span class="espacio"></span><span class="nota">Así será al dejar eleventa</span>' : ''}</div><div class="tareas">`;
-    for (const t of CONTEOS) h += `<button class="tarea" data-a="abrirConteo" data-id="${t.id}"><span class="ic">${ic(t.tipo === 'dia' ? 'reloj' : 'conteo')}</span><span><strong>${esc(t.titulo)}</strong><small>${esc(t.detalle)}</small></span>${ic('atras', 'i ch')}</button>`;
-    if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Para el conteo completo: lo que nadie cuente queda en cero al cerrarlo</small></span>${ic('atras', 'i ch')}</button>`;
-    h += `</div>`;
-    if (!per.completo) h += `<p class="nota" style="margin:6px 2px">${esc(per.nombre)} cuenta en lo que ya está abierto; abrir y cerrar un departamento pide el permiso del conteo completo.</p>`;
+    for (const x of CONTEOS) {
+      if (x.tipo === 'dia') {
+        const hechos = DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length;
+        h += `<button class="tarea" data-a="abrirConteo" data-id="dia"><span class="ic">${ic('reloj')}</span><span><strong>Conteo del día</strong><small>Todo lo que hay de 15 productos · ${hechos} de 15</small></span>${ic('adelante', 'i ch')}</button>`;
+      } else {
+        h += `<button class="tarea" data-a="abrirConteo" data-id="${x.id}"><span class="ic">${ic('conteo')}</span><span><strong>${esc(x.titulo)}</strong><small>Conteo completo · ${x.contados} de ${x.total} · ${esc(x.quien || 'nadie todavía')}</small><span class="progreso" style="display:block;margin-top:4px"><i style="width:${Math.round(100 * x.contados / x.total)}%"></i></span></span>${ic('adelante', 'i ch')}</button>`;
+      }
+    }
+    if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Lo que nadie cuente queda en 0 al cerrarlo</small></span>${ic('adelante', 'i ch')}</button>`;
+    h += `</div><p class="nota" style="margin:6px 2px">${per.completo ? '' : `${esc(per.nombre)} cuenta en lo que ya está abierto; abrir un departamento pide «Conteo completo». `}Revisar y cerrar: en la caja (Inventario, F4).</p>`;
     return h;
   }
-  const t = c.activo;
-  let h = `<button class="encabezado" data-a="verContado" style="width:100%;text-align:left"><span class="titulo"><b>${esc(t.titulo)}</b></span><span class="espacio"></span>`;
-  if (t.tipo === 'completo') h += `<span class="nota num">${t.contados} de ${t.total} ›</span>`;
-  else { const hechos = new Set(c.capturas.map(x => x.codigo)).size; h += `<span class="nota num">${hechos} de ${t.productos.length} ›</span>`; }
+  const dia = t.tipo === 'dia';
+  let h = `<button class="encabezado" data-a="verContado" style="width:100%;text-align:left"><span class="titulo">${dia ? `${ic('reloj', 'i ch')} <b>Del día</b> · todo lo que hay` : `${ic('conteo', 'i ch')} <b>${esc(t.titulo)}</b> · este lugar`}</span><span class="espacio"></span>`;
+  if (dia) { const hechos = DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length; h += `<span class="nota num">${hechos} de 15 ›</span>`; }
+  else h += `<span class="nota num">${t.contados} de ${t.total} ›</span>`;
   h += `</button>`;
-  if (t.tipo === 'completo') h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
-  if (c.actual) {
-    const p = POR_CODIGO.get(c.actual.codigo), a = c.actual, total = piezasDe(a);
-    const desglose = a.cajas ? `${a.cajas} ${a.cajas === 1 ? 'caja' : 'cajas'} de ${p.caja.piezas} + ${a.sueltas} ${a.sueltas === 1 ? 'suelta' : 'sueltas'}` : 'Cada pieza suma una';
-    const otros = t.tipo === 'completo' ? (DE_OTROS[a.codigo] || []).concat(c.capturas.filter(k => k.codigo === a.codigo).length ? [['tú', c.capturas.filter(k => k.codigo === a.codigo).reduce((s, k) => s + k.cant, 0)]] : []) : [];
-    const yaVan = otros.length ? `Ya van ${otros.reduce((s, o) => s + o[1], 0)} en otros lugares: ${otros.map(o => `${o[0]} ${o[1]}`).join(' · ')}` : (t.tipo === 'dia' ? 'El total de la tienda: si está en dos lugares, cuenta los dos' : 'Lo de este lugar; se suma a lo que cuenten los demás');
-    h += `<div class="contando" style="margin-top:8px"><div class="nom">${esc(p.nombre)}</div><div class="cuenta-grande"><button class="menos-uno" data-a="menosConteo" aria-label="Una menos">${ic('menos')}</button><button class="contador num crece" data-a="teclearConteo" aria-label="Contadas: ${total}. Tocar para teclear"><small>×</small>${total}</button></div><div class="det">${desglose} · ${yaVan}</div></div>`;
+  if (!dia) h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
+  const a = c.actual;
+  if (a) {
+    const p = POR_CODIGO.get(a.codigo), pr = presentacion(p), total = piezasDe(a);
+    const desglose = a.cajas ? `${a.cajas} ${pr.que}${a.cajas === 1 ? '' : 's'} + ${a.sueltas} ${p.unidad === 'm' ? 'm' : a.sueltas === 1 ? 'suelta' : 'sueltas'}` : (p.unidad === 'm' ? 'Cada lectura, un metro' : 'Cada pieza suma una');
+    let linea2 = '';
+    if (dia) {
+      const d = c.dia[a.codigo], antes = d ? d.antes : 0;
+      linea2 = antes ? `Aquí ${total} · antes ${antes}` : 'El total de la tienda: cuenta todos los lugares';
+    } else {
+      const otros = (DE_OTROS[a.codigo] || []).concat(c.capturas.filter(k => k.codigo === a.codigo && k.estado !== 'no-entro').map(k => ['tú', k.cant]));
+      linea2 = otros.length ? `<button class="enlace" data-a="verCapturasProducto" data-c="${a.codigo}">Ya van ${redondo(otros.reduce((s, o) => s + o[1], 0))}: ${otros.map(o => `${o[0]} ${o[1]}`).join(' · ')}${S.red === 'caida' ? ' (hace 12 min)' : ''}</button>` : 'Nadie más lo ha contado';
+    }
+    const muestra = dia ? totalDia(a.codigo) : total;
+    const suma = c.sumaHasta && Date.now() < c.sumaHasta ? `<span class="suma num" aria-live="polite">${esc(c.suma)}</span>` : '';
+    const ultima = a.lecturas[a.lecturas.length - 1];
+    const menos = ultima === 'caja' ? `−${pr.piezas}` : '−1';
+    h += `<div class="contando" style="margin-top:6px"><div class="nom">${esc(p.nombre)}${a.para ? ` <span class="chip-para">para ${DEPTOS[a.para]}, de paso</span>` : ''}</div>
+      <div class="cuenta-grande">${suma}<button class="menos-uno num" data-a="menosConteo" aria-label="Quitar la última lectura" ${a.lecturas.length ? '' : 'disabled'}>${menos}</button><button class="contador num crece" data-a="teclearConteo" aria-label="${muestra}. Tocar para teclear"><small>×</small>${muestra}</button></div>
+      <div class="det">${desglose}</div><div class="det">${linea2}</div></div>`;
   } else {
-    h += `<div class="vacio" style="margin-top:4px"><strong>Escanea el primer producto</strong>Cada pieza suma una y el código de la caja suma la caja. No se ve cuántas debería haber: es a ciegas.</div>`;
+    h += `<div class="vacio" style="margin-top:4px"><strong>Escanea ${dia ? 'uno de los 15' : 'el primer producto'}</strong>${dia ? 'Es el total de la tienda: anaquel, mostrador y bodega. Se aplica con «Es todo».' : 'Cada pieza suma una y el código de la caja suma la caja. No se ve cuántas debería haber: es a ciegas.'}</div>`;
+  }
+  if (dia) {
+    const pend = sinAplicar();
+    if (pend.length) h += `<p class="nota pendiente" style="margin:6px 2px 0">${pend.length} sin aplicar: ${pend.map(k => esc(POR_CODIGO.get(k).nombre)).join(', ')}</p>`;
   }
   return h;
 }
@@ -1142,7 +1302,7 @@ function panelBloqueo() {
 
 /* ——— Hojas ——— */
 function hoja() {
-  const fn = { ticket: hojaTicket, buscar: hojaBuscar, impresiones: hojaImpresiones, verImpresiones: hojaVerImpresiones, mandar: hojaMandar, cantidad: hojaCantidad, contado: hojaContado, menu: hojaMenu, abrirDepto: hojaAbrirDepto }[S.hoja];
+  const fn = { ticket: hojaTicket, buscar: hojaBuscar, impresiones: hojaImpresiones, verImpresiones: hojaVerImpresiones, mandar: hojaMandar, cantidad: hojaCantidad, contado: hojaContado, menu: hojaMenu, abrirDepto: hojaAbrirDepto, aplicarDia: hojaAplicarDia, capturasProducto: hojaCapturasProducto }[S.hoja];
   return fn ? fn() : '';
 }
 const barraHoja = (titulo, sub, cerrar = 'cerrarHoja', icono = 'cerrar') => `<div class="barra"><button class="btn-ic" data-a="${cerrar}" aria-label="Cerrar">${ic(icono)}</button><h2>${titulo}${sub ? `<small>${sub}</small>` : ''}</h2></div>`;
@@ -1274,56 +1434,97 @@ function pantallaQr() {
     <div class="botones"><button class="btn lleno ancho" data-a="qrLeido">${ic('check')}Ya lo leyeron: empezar otro</button><button class="btn tonal ancho" data-a="qrCerrar">Regresar al ticket</button></div></div>`;
 }
 
-/* La cantidad tecleada. En el ticket, cuántas lleva (20 copias). En el conteo, una casilla por presentación, como la
-   página /conteo de hoy: «Cajas de 12» y «Sueltas», con el total al momento */
+/* La cantidad tecleada. En el ticket, cuántas lleva (20 copias). En el conteo, una casilla por presentación, de la más
+   grande a la suelta, como la página /conteo de hoy, con el total al momento; el punto solo para metros */
 function hojaCantidad() {
   const d = S.hojaDatos;
   const p = POR_CODIGO.get(d.codigo);
-  const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
-  const teclado = `<div class="numerico">${teclas.map(k => k ? `<button class="${k === '⌫' ? 'op' : ''}" data-a="cifra" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k}">${k}</button>` : '<span></span>').join('')}</div>`;
+  const conPunto = d.conConteo && p.unidad === 'm' && d.fila === 'sueltas';
+  const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', conPunto ? '.' : '', '0', '⌫'];
+  const teclado = `<div class="numerico">${teclas.map(k => k ? `<button class="${k === '⌫' ? 'op' : ''}" data-a="cifra" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k === '.' ? 'Punto' : k}">${k}</button>` : '<span></span>').join('')}</div>`;
   if (!d.conConteo) {
     const v = parseInt(d.texto || '0', 10);
     return `<div class="hoja modo-${S.modo}"><div class="contenido">${barraHoja(esc(p ? p.nombre : d.codigo), 'Cuántas lleva')}<div class="desliza"><div class="cifra"><div class="valor num">${d.texto ? esc(d.texto) : '<small>0</small>'}</div></div>${teclado}</div>
       <div class="pie"><button class="btn lleno ancho" data-a="cifraLista" ${v > 0 ? '' : 'disabled'}>Dejar ${v || ''}</button></div></div></div>`;
   }
-  const filas = p.caja ? [['cajas', `Cajas de ${p.caja.piezas}`], ['sueltas', 'Sueltas']] : [['sueltas', 'Piezas']];
-  const total = (parseInt(d.cajas || '0', 10) * (p.caja ? p.caja.piezas : 0)) + parseInt(d.sueltas || '0', 10);
-  const casillas = filas.map(([k, t]) => `<button class="caja${d.fila === k ? ' on' : ''}" style="min-height:60px" data-a="filaCifra" data-k="${k}"><span class="radio"></span><span><strong>${t}</strong></span><span class="valor num" style="font-size:26px;font-weight:800">${d[k] || '0'}</span></button>`).join('');
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), 'Lo que hay en este lugar')}<div class="desliza">
-    <div class="cajas" style="margin-bottom:10px">${casillas}</div><div class="fila-total" style="margin:0 4px 10px"><span>Total</span><b class="num">${total} ${total === 1 ? 'pieza' : 'piezas'}</b></div>${teclado}</div>
-    <div class="pie"><button class="btn lleno ancho" data-a="cifraLista" ${total > 0 ? '' : 'disabled'}>${ic('check')}Guardar ${total || ''}</button></div></div></div>`;
+  const pr = presentacion(p), dia = conteoActivo() && conteoActivo().tipo === 'dia';
+  const filas = pr ? [['cajas', pr.nombre], ['sueltas', pr.suelta]] : [['sueltas', p.unidad === 'm' ? 'Metros' : 'Piezas']];
+  const num = v => parseFloat(v || '0') || 0;
+  const aqui = redondo(num(d.cajas) * (pr ? pr.piezas : 0) + num(d.sueltas));
+  const antes = dia && S.conteo.dia[d.codigo] ? S.conteo.dia[d.codigo].antes : 0;
+  const casillas = filas.map(([k, t]) => `<button class="caja${d.fila === k ? ' on' : ''}" style="min-height:56px" data-a="filaCifra" data-k="${k}"><span class="radio"></span><span><strong>${t}</strong></span><span class="valor num" style="font-size:26px;font-weight:800">${esc(d[k] || '0')}</span></button>`).join('');
+  const pie = dia
+    ? `<div style="display:flex;gap:8px"><button class="btn borde crece" data-a="otroLugar" ${aqui > 0 ? '' : 'disabled'}>Otro lugar</button><button class="btn lleno crece" data-a="cifraLista">${ic('check')}Es todo · ${redondo(antes + aqui)}</button></div>`
+    : `<button class="btn lleno ancho" data-a="cifraLista">${ic('check')}${aqui === 0 ? 'Guardar 0 · no hay' : `Guardar ${aqui}`}</button>`;
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), dia ? (antes ? `Lo de este lugar · antes ${antes}` : 'Lo de este lugar') : 'Lo que hay en este lugar')}<div class="desliza">
+    <div class="cajas" style="margin-bottom:8px">${casillas}</div><div class="fila-total" style="margin:0 4px 8px"><span>${dia && antes ? `Aquí ${aqui} · en total` : 'Total'}</span><b class="num">${unidad(p, redondo(antes + aqui))}</b></div>${teclado}</div>
+    <div class="pie">${pie}</div></div></div>`;
 }
 function hojaAbrirDepto() {
   const abiertos = CONTEOS.filter(t => t.tipo === 'completo').map(t => t.depto);
   const lista = Object.entries(DEPTOS).filter(([k]) => !abiertos.includes(k));
   return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja('Abrir un departamento', 'Para el conteo completo')}<div class="desliza"><div class="tareas">
-    ${lista.map(([k, n]) => `<button class="tarea" data-a="abrirDeptoElegido" data-id="${k}"><span class="ic">${ic('conteo')}</span><span><strong>${n}</strong><small>${CATALOGO.filter(p => p.depto === k && !p.base).length * 14} productos · nadie lo está contando</small></span>${ic('atras', 'i ch')}</button>`).join('')}
-    </div><p class="nota" style="margin-top:10px">Cuentan todos los que estén en el wifi de la tienda; las capturas se suman. Revisar las diferencias y cerrarlo es en la caja (Inventario, F4).</p></div></div></div>`;
+    ${lista.length ? lista.map(([k, n]) => `<button class="tarea" data-a="abrirDeptoElegido" data-id="${k}"><span class="ic">${ic('conteo')}</span><span><strong>${n}</strong><small>${CATALOGO.filter(p => p.depto === k && !p.base).length * 14} productos · nadie lo está contando</small></span>${ic('adelante', 'i ch')}</button>`).join('') : '<div class="vacio">Todos los departamentos están abiertos.</div>'}
+    </div><p class="nota" style="margin-top:10px">Cuentan todos los que estén en el wifi de la tienda, con la app o con la página /conteo; las capturas se suman. Revisar las diferencias y cerrarlo es en la caja (Inventario, F4).</p></div></div></div>`;
 }
-
+/* Lo contado: «Lo mío» y «Falta», con las pestañas abajo, junto al pulgar */
 function hojaContado() {
-  const c = S.conteo;
-  if (!c.activo) return '';
-  const dia = c.activo.tipo === 'dia';
-  const todas = (c.actual ? [{ id: 0, codigo: c.actual.codigo, cant: piezasDe(c.actual), hora: 'ahora', actual: true }] : []).concat(c.capturas);
-  let h = `<div class="hoja completa modo-conteo"><div class="contenido">${barraHoja(esc(c.activo.titulo), `Lo que contaste tú · ${todas.length} ${todas.length === 1 ? 'captura' : 'capturas'}`, 'cerrarHoja', 'atras')}<div class="desliza"><div class="capturas">`;
-  if (!todas.length) h += `<div class="vacio"><strong>Todavía no cuentas nada</strong>Regresa al escáner y escanea el primer producto.</div>`;
-  for (const k of todas) {
-    const p = POR_CODIGO.get(k.codigo);
-    const estado = k.actual ? 'contando, sin guardar' : k.subida ? `${ic('check', 'i ch')}${dia ? 'aplicada' : 'subida'}` : `${ic('subir', 'i ch')}por subir`;
-    const quitar = k.actual || dia ? '<span></span>' : `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar esta captura">${ic('bote')}</button>`;
-    h += `<div class="captura"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${k.hora} · <span class="subida">${estado}</span>${k.cajas ? ` · ${k.cajas} ${k.cajas === 1 ? 'caja' : 'cajas'} + ${k.sueltas}` : ''}</div></div><span class="cant num">${k.cant}</span>${quitar}</div>`;
-  }
-  h += `</div>`;
-  if (dia) {
-    const faltan = c.activo.productos.filter(x => !todas.some(k => k.codigo === x));
-    if (faltan.length) h += `<div class="seccion">Faltan ${faltan.length}</div><div class="capturas">${faltan.map(x => `<div class="captura"><div><div class="nom">${esc(POR_CODIGO.get(x).nombre)}</div><div class="det">${DEPTOS[POR_CODIGO.get(x).depto]}</div></div><span></span><span></span></div>`).join('')}</div>`;
-    h += `<p class="nota" style="margin-top:12px">Cada producto se cuenta una vez al día y se aplica al guardarlo; si quedó mal, se corrige con un ajuste en la caja.</p></div>`;
+  const c = S.conteo, t = conteoActivo();
+  if (!t) return '';
+  const dia = t.tipo === 'dia', tab = S.tabContado || 'mio';
+  let filas = '';
+  if (tab === 'mio') {
+    const items = [];
+    if (c.actual) items.push({ codigo: c.actual.codigo, cant: dia ? totalDia(c.actual.codigo) : piezasDe(c.actual), hora: 'ahora', estado: 'contando' });
+    if (dia) {
+      for (const [k, d] of Object.entries(c.dia)) if (!(c.actual && c.actual.codigo === k)) items.push({ codigo: k, cant: d.antes, hora: d.hora || 'ahora', estado: d.estado });
+    } else {
+      for (const k of c.capturas.filter(k => k.conteo === t.id || CONTEOS.some(x => x.id === k.conteo))) items.push({ ...k });
+    }
+    const nombreEstado = { contando: 'contando, sin guardar', 'sin-aplicar': 'sin aplicar', 'por-subir': 'por subir', subida: 'subida', 'por-aplicar': 'por aplicar', aplicada: 'aplicada', 'no-entro': 'no entró' };
+    const icEstado = { subida: 'check', aplicada: 'check', 'por-subir': 'subir', 'por-aplicar': 'subir' };
+    filas = items.length ? items.map(k => {
+      const p = POR_CODIGO.get(k.codigo);
+      const otroDepto = !dia && k.conteo && k.conteo !== t.id ? ` · para ${esc(CONTEOS.find(x => x.id === k.conteo).titulo)}` : '';
+      const quitar = !dia && k.id && k.estado !== 'no-entro' ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar esta captura">${ic('bote')}</button>` : (dia && k.estado === 'sin-aplicar' ? `<button class="btn tonal" style="min-height:40px;padding:0 12px;font-size:14px" data-a="esTodoDe" data-c="${k.codigo}">Es todo</button>` : '<span></span>');
+      return `<div class="captura${k.estado === 'no-entro' ? ' no-entro' : ''}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${k.hora} · <span class="subida">${icEstado[k.estado] ? ic(icEstado[k.estado], 'i ch') : ''}${nombreEstado[k.estado] || k.estado}</span>${k.cajas ? ` · ${k.cajas} + ${k.sueltas}` : ''}${otroDepto}</div></div><span class="cant num">${k.cant === 0 ? 'no hay' : k.cant}</span>${quitar}</div>`;
+    }).join('') : `<div class="vacio"><strong>Todavía no cuentas nada</strong>Regresa al escáner y escanea el primer producto.</div>`;
   } else {
-    h += `<p class="nota" style="margin-top:12px">Si el mismo producto está en dos lugares, se cuenta en cada uno: las capturas se suman. Quitar una tuya se puede aquí; revisar las diferencias y cerrar el conteo es en la caja (Inventario, F4).</p></div>`;
+    const lista = dia ? DEL_DIA.filter(k => !DIA_DE_OTROS[k] && !(c.dia[k] && c.dia[k].estado !== 'sin-aplicar'))
+      : CATALOGO.filter(p => p.depto === t.depto && !p.base && !DE_OTROS[p.codigo] && !c.capturas.some(k => k.codigo === p.codigo)).map(p => p.codigo);
+    filas = lista.length ? lista.map(k => { const p = POR_CODIGO.get(k); return `<button class="captura falta" data-a="faltaContar" data-c="${k}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${DEPTOS[p.depto]} · tocar para contarlo o decir «no hay»</div></div><span></span>${ic('adelante', 'i ch')}</button>`; }).join('')
+      : `<div class="vacio"><strong>No falta nada</strong>Avísale al encargado: revisa y cierra en la caja.</div>`;
+    if (!dia && lista.length) filas += `<p class="nota" style="margin-top:8px">En el prototipo, ${lista.length} de muestra; en la tienda son todos los del departamento que nadie ha contado.</p>`;
   }
-  h += `<div class="pie"><button class="btn borde ancho" data-a="salirConteo">Terminé mi parte</button></div></div></div>`;
-  return h;
+  const nMio = dia ? Object.keys(c.dia).length + (c.actual && !c.dia[c.actual.codigo] ? 1 : 0) : c.capturas.length + (c.actual ? 1 : 0);
+  const sub = dia ? `${DEL_DIA.length} productos · ${sinAplicar().length} sin aplicar` : `${c.capturas.length} ${c.capturas.length === 1 ? 'captura' : 'capturas'}${c.porSubir ? ` · ${c.porSubir} por subir` : ''}`;
+  return `<div class="hoja completa modo-conteo"><div class="contenido">${barraHoja(`${esc(dia ? 'Conteo del día' : t.titulo)} · lo contado`, sub, 'cerrarHoja', 'atras')}
+    <div class="desliza" style="display:flex;flex-direction:column;justify-content:flex-end"><div class="capturas">${filas}</div></div>
+    <div class="pie">
+      <div class="chips" role="tablist" style="padding:0"><button class="chip${tab === 'mio' ? ' on' : ''}" role="tab" aria-selected="${tab === 'mio'}" data-a="tabContado" data-v="mio">Lo mío (${nMio})</button><button class="chip${tab === 'falta' ? ' on' : ''}" role="tab" aria-selected="${tab === 'falta'}" data-a="tabContado" data-v="falta">Falta</button></div>
+      <div style="display:flex;gap:8px"><button class="btn borde crece" data-a="contarOtraCosa">Contar otra cosa</button><button class="btn lleno crece" data-a="salirConteo">Terminé mi parte</button></div>
+      <p class="nota centro" style="margin:0">Revisar y cerrar: en la caja (Inventario, F4).</p>
+    </div></div></div>`;
+}
+/* «Es todo»: el total del día pide confirmar, porque se aplica ya y no se corrige */
+function hojaAplicarDia() {
+  const codigo = S.hojaDatos && S.hojaDatos.codigo, p = POR_CODIGO.get(codigo);
+  if (!p) return '';
+  const total = totalDia(codigo), d = S.conteo.dia[codigo], antes = d ? d.antes : 0, aqui = redondo(total - antes);
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(`${esc(p.nombre)}: ${unidad(p, total)}`, antes ? `Aquí ${aqui} · antes ${antes}` : 'El total de la tienda')}<div class="desliza">
+    <p style="margin:0 0 8px;font-size:16px">Se aplica ya, a ciegas: el POS compara con lo que dice el sistema. Si quedó mal, es un ajuste en la caja.</p>
+    ${total === 0 ? '<p class="nota" style="margin:0">Dice «no hay»: no se encontró en ningún lugar.</p>' : ''}</div>
+    <div class="pie"><button class="btn lleno ancho" data-a="aplicarDiaOk">${ic('check')}Aplicar ${unidad(p, total)}</button><button class="btn borde ancho" data-a="cerrarHoja">Seguir contando</button></div></div></div>`;
+}
+/* «Ya van»: quién contó ese producto, cuánto y a qué hora */
+function hojaCapturasProducto() {
+  const codigo = S.hojaDatos && S.hojaDatos.codigo, p = POR_CODIGO.get(codigo), per = PERSONAS[S.persona];
+  const otras = (DE_OTROS[codigo] || []).map((o, i) => ({ quien: o[0], cant: o[1], hora: o[2], i, deOtro: true }));
+  const mias = S.conteo.capturas.filter(k => k.codigo === codigo).map(k => ({ quien: 'Tú', cant: k.cant, hora: k.hora, id: k.id }));
+  const todas = mias.concat(otras);
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), `Ya van ${redondo(todas.reduce((s, k) => s + k.cant, 0))} en ${todas.length} ${todas.length === 1 ? 'lugar' : 'lugares'}`)}<div class="desliza"><div class="capturas">
+    ${todas.map(k => `<div class="captura"><div><div class="nom">${esc(k.quien)}${k.quien === 'Beto' ? ' <small class="nota">(en /conteo)</small>' : ''}</div><div class="det">${k.hora}</div></div><span class="cant num">${k.cant}</span>${k.id ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar">${ic('bote')}</button>` : per.completo ? `<button class="btn-ic" data-a="quitarDeOtro" data-c="${codigo}" data-i="${k.i}" aria-label="Quitar la captura de ${esc(k.quien)}">${ic('bote')}</button>` : '<span></span>'}</div>`).join('')}
+    </div><p class="nota" style="margin-top:10px">${per.completo ? 'Con «Conteo completo» se quitan también las de otros (la captura equivocada se quita y se cuenta otra vez).' : 'Cada quien quita las suyas; las de otros, el encargado.'} Nunca sale lo que dice el sistema.</p></div></div></div>`;
 }
 
 function hojaMenu() {
@@ -1380,17 +1581,18 @@ function pantallaBloqueo() {
     <p class="aviso-bloqueo">El celular sigue bloqueado: toca el mosaico «Precio».</p></div><div class="barra-gestos sobre-negro"></div>`;
 }
 function pantallaAjustes() {
-  const fila = (t, sub, on, accion) => `<${accion ? `button data-a="${accion}" role="switch" aria-checked="${!!on}"` : 'div'} class="ajuste"${accion ? ' style="width:100%;text-align:left"' : ''}><div><strong>${t}</strong><small>${sub}</small></div>${on == null ? ic('atras', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</${accion ? 'button' : 'div'}>`;
+  const fila = (t, sub, on, accion) => `<${accion ? `button data-a="${accion}" role="switch" aria-checked="${!!on}"` : 'div'} class="ajuste"${accion ? ' style="width:100%;text-align:left"' : ''}><div><strong>${t}</strong><small>${sub}</small></div>${on == null ? ic('adelante', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</${accion ? 'button' : 'div'}>`;
   const nombre = S.celular === 'tienda' ? 'Celular de la tienda' : 'Celular de Luis';
   return barraEstado(true) + `<div class="pantalla" style="padding-top:calc(var(--sb) + 4px)"><div class="barra" style="display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -12px"><button class="btn-ic" data-a="cerrarAjustes" aria-label="Regresar">${ic('atras')}</button><h2 style="margin:0;font-size:22px;font-weight:600">Ajustes</h2></div>
     <div class="seccion">Al leer</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
-    <div class="seccion">Una mano</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}
+    <div class="seccion">Una mano</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}<button class="ajuste" data-a="verPistas" style="width:100%;text-align:left"><div><strong>Volver a ver las pistas</strong><small>Las burbujas del botón rápido en cada modo</small></div>${ic('adelante', 'i ch')}</button>
     <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', '5,832 productos · al día (hace 1 min)', null)}${fila('Nombre', nombre + (S.celular === 'tienda' ? ' · precio y conteo' : ' · lo que Luis puede'), null)}
     <div class="seccion">Herramientas de medición</div>${fila('Sesión de prueba, banco y estrés', 'Las de hoy, para medir el escáner en la tienda', null)}${fila('El escáner', 'Motor, lente, resolución y cuadros por segundo', null)}
     <p class="nota" style="margin-top:12px">Lo de la cámara y los motores no cambia: está como se midió.</p></div><div class="barra-gestos"></div>`;
 }
 function dialogo() {
   if (S.dialogo === 'cercanos') return `<div class="dialogo"><div><div class="ic">${ic('cercanos')}</div><h3>¿Permitir que Papelería POS encuentre dispositivos cercanos, se conecte a ellos y determine su posición relativa?</h3><div class="opciones"><button data-a="permitir">Permitir</button><button data-a="noPermitir">No permitir</button></div></div></div>`;
+  if (S.dialogo === 'sinAplicar') { const pend = sinAplicar(); return `<div class="dialogo"><div><div class="ic">${ic('reloj')}</div><h3>Del conteo del día, ${pend.length} sin aplicar</h3><p>${pend.map(k => `${esc(POR_CODIGO.get(k).nombre)}: ${totalDia(k)}`).join(' · ')}. Lo contado sube a nombre de ${esc(PERSONAS[S.persona].nombre)}.</p><div class="opciones"><button data-a="aplicarPendientes">Aplicar ${pend.length === 1 ? 'lo contado' : 'todo'}</button><button data-a="descartarPendientes">Descartar</button><button data-a="cerrarDialogo">Seguir contando</button></div></div></div>`; }
   if (S.dialogo === 'abrir') return `<div class="dialogo"><div><div class="ic">${ic('candado')}</div><h3>Desbloquea para abrir la app</h3><p>Con la huella, el rostro o el PIN del celular (no el del POS).</p><div class="opciones"><button data-a="desbloquear">Desbloquear (prototipo)</button><button data-a="cerrarDialogo">Cancelar</button></div></div></div>`;
   return '';
 }
@@ -1411,6 +1613,7 @@ const A = {
   modo(d) {
     if (S.modo === d.v) return;
     S.modo = d.v; S.hoja = null;
+    if (d.v === 'conteo' && !S.conteo.activo && CONTEOS.length === 1 && CONTEOS[0].tipo === 'dia' && (S.pos !== 'piloto' || S.verConteo)) S.conteo.activo = 'dia';
     if (d.v !== 'conteo') { /* lo que se contaba se queda: al volver sigue ahí */ }
     pintar();
   },
@@ -1424,7 +1627,7 @@ const A = {
   teclearConteo() {
     const a = S.conteo.actual, p = POR_CODIGO.get(a.codigo);
     S.hoja = 'cantidad';
-    S.hojaDatos = { codigo: a.codigo, conConteo: true, cajas: a.cajas ? String(a.cajas) : '', sueltas: a.sueltas ? String(a.sueltas) : '', fila: p.caja ? 'cajas' : 'sueltas', nuevo: true };
+    S.hojaDatos = { codigo: a.codigo, conConteo: true, cajas: a.cajas ? String(a.cajas) : '', sueltas: a.sueltas ? String(a.sueltas) : '', fila: presentacion(p) ? 'cajas' : 'sueltas', nuevo: true };
     pintar();
   },
   filaCifra(d) { S.hojaDatos.fila = d.k; S.hojaDatos.nuevo = true; pintar(); },
@@ -1434,7 +1637,9 @@ const A = {
       const k = h.fila;
       if (h.nuevo && d.k !== '⌫') h[k] = '';
       h.nuevo = false;
-      if (d.k === '⌫') h[k] = (h[k] || '').slice(0, -1); else if ((h[k] || '').length < 5) h[k] = (h[k] || '') + d.k;
+      if (d.k === '⌫') h[k] = (h[k] || '').slice(0, -1);
+      else if (d.k === '.') { if (!(h[k] || '').includes('.')) h[k] = (h[k] || '0') + '.'; }
+      else if ((h[k] || '').length < 6) h[k] = (h[k] || '') + d.k;
     } else if (d.k === '⌫') h.texto = h.texto.slice(0, -1);
     else if (h.texto.length < 5) h.texto += d.k;
     pintar();
@@ -1442,12 +1647,24 @@ const A = {
   cifraLista() {
     const h = S.hojaDatos;
     if (h.conConteo) {
-      const a = S.conteo.actual; a.cajas = parseInt(h.cajas || '0', 10); a.sueltas = parseInt(h.sueltas || '0', 10);
-      S.hoja = null; S.hojaDatos = null; guardarCaptura(); pintar(); return;
+      const a = S.conteo.actual, t = conteoActivo();
+      a.cajas = parseInt(h.cajas || '0', 10) || 0; a.sueltas = parseFloat(h.sueltas || '0') || 0; a.lecturas = [];
+      if (t.tipo === 'dia') { S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: a.codigo }; pintar(); return; }
+      S.hoja = null; S.hojaDatos = null; guardarCaptura(true); pintar(); return;
     }
     const v = parseInt(h.texto || '0', 10); if (!(v > 0)) return;
     recordar(); const l = lineaPorId(h.id); if (l) l.cant = v; S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null;
     S.hojaDatos = null; pintar();
+  },
+  otroLugar() {
+    const h = S.hojaDatos, c = S.conteo, a = c.actual;
+    a.cajas = parseInt(h.cajas || '0', 10) || 0; a.sueltas = parseFloat(h.sueltas || '0') || 0;
+    const d = c.dia[a.codigo] || (c.dia[a.codigo] = { antes: 0, estado: 'sin-aplicar' });
+    d.antes = redondo(d.antes + piezasDe(a));
+    c.actual = { codigo: a.codigo, cajas: 0, sueltas: 0, lecturas: [] };
+    S.hojaDatos = { ...h, cajas: '', sueltas: '', nuevo: true };
+    toast(`Lo de aquí quedó: van ${d.antes}. Ve al otro lugar y cuenta.`);
+    pintar();
   },
   buscar() { S.hojaAnterior = S.hoja; S.hoja = 'buscar'; S.busqueda = ''; pintar(); },
   limpiarBusqueda() { S.busqueda = ''; pintar(); },
@@ -1490,30 +1707,92 @@ const A = {
   cerrarGrande() { S.precioGrande = false; pintar(); },
   abrirConteo(d) {
     const t = CONTEOS.find(x => x.id === d.id);
-    if (S.conteo.activo !== t) { S.conteo.capturas = []; S.conteo.porSubir = 0; }
-    S.conteo.activo = t; S.conteo.actual = null; S.indices.conteo = 0; pintar();
-    if (t.tipo === 'dia') toast('Escanea los de la lista; arriba dice cuántos van y «›» enseña cuáles faltan.');
+    if (!t) return;
+    if (S.conteo.activo && S.conteo.activo !== t.id) dejarActual();
+    S.conteo.activo = t.id; S.conteo.paraOtro = null; S.indices.conteo = 0; S.hoja = null;
+    pintar();
+    if (t.tipo === 'dia') toast('Escanea los de la lista: es el total de la tienda; «Es todo» lo aplica.');
   },
   abrirDepto() { S.hoja = 'abrirDepto'; pintar(); },
   abrirDeptoElegido(d) {
-    const t = { id: d.id, tipo: 'completo', depto: d.id, titulo: `${DEPTOS[d.id]} · conteo completo`, detalle: `Lo abrió ${PERSONAS[S.persona].nombre} a las ${horaAhora()}`, total: CATALOGO.filter(p => p.depto === d.id && !p.base).length * 14, contados: 0 };
+    const t = DEPTO(d.id, PERSONAS[S.persona].nombre, 0, CATALOGO.filter(p => p.depto === d.id && !p.base).length * 14);
     CONTEOS.push(t); S.hoja = null; A.abrirConteo({ id: t.id });
   },
-  menosConteo() { const a = S.conteo.actual; if (!a) return; if (a.sueltas > 0) a.sueltas--; else if (a.cajas > 0) a.cajas--; if (piezasDe(a) <= 0) S.conteo.actual = null; pintar(); },
-  guardarConteo() { guardarCaptura(); pintar(); },
-  verContado() { if (!S.conteo.activo) return; S.hoja = 'contado'; pintar(); },
-  quitarCaptura(d) { const c = S.conteo; const k = c.capturas.find(x => x.id === Number(d.id)); if (!k) return; c.capturas = c.capturas.filter(x => x !== k); if (!k.subida) c.porSubir = Math.max(0, c.porSubir - 1); toast('Captura quitada: ya no se suma'); pintar(); },
-  salirConteo() { guardarCaptura(); S.conteo.activo = null; S.hoja = null; toast('Tu parte quedó guardada. El encargado revisa y cierra en la caja.'); pintar(); },
+  menosConteo() {
+    const a = S.conteo.actual; if (!a || !a.lecturas.length) return;
+    const ultima = a.lecturas.pop();
+    if (ultima === 'caja') a.cajas = Math.max(0, a.cajas - 1); else a.sueltas = Math.max(0, redondo(a.sueltas - 1));
+    S.conteo.suma = ''; S.conteo.sumaHasta = 0;
+    if (piezasDe(a) <= 0 && !a.lecturas.length) { const t = conteoActivo(); if (!(t && t.tipo === 'dia' && S.conteo.dia[a.codigo])) S.conteo.actual = null; }
+    pintar();
+  },
+  guardarConteo() {
+    const t = conteoActivo(), a = S.conteo.actual;
+    if (t && t.tipo === 'dia') {
+      const codigo = a ? a.codigo : sinAplicar()[0];
+      if (!codigo) return;
+      S.hoja = 'aplicarDia'; S.hojaDatos = { codigo }; pintar(); return;
+    }
+    guardarCaptura(); pintar();
+  },
+  esTodoDe(d) { S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: d.c }; pintar(); },
+  aplicarDiaOk() { const codigo = S.hojaDatos.codigo; S.hoja = null; S.hojaDatos = null; aplicarDia(codigo); pintar(); },
+  verContado() { if (!conteoActivo()) return; S.hoja = 'contado'; S.tabContado = S.tabContado || 'mio'; pintar(); },
+  tabContado(d) { S.tabContado = d.v; pintar(); },
+  faltaContar(d) {
+    const t = conteoActivo(); if (!t) return;
+    dejarActual();
+    S.conteo.actual = { codigo: d.c, cajas: 0, sueltas: 0, lecturas: [] };
+    S.hoja = null; A.teclearConteo();
+  },
+  verCapturasProducto(d) { S.hoja = 'capturasProducto'; S.hojaDatos = { codigo: d.c }; pintar(); },
+  quitarDeOtro(d) {
+    const lista = DE_OTROS[d.c]; if (!lista) return;
+    const [quien] = lista.splice(Number(d.i), 1)[0];
+    if (!lista.length) delete DE_OTROS[d.c];
+    toast(`Quitada la captura de ${quien}: ya no se suma.`); pintar();
+  },
+  quitarCaptura(d) {
+    const c = S.conteo, k = c.capturas.find(x => x.id === Number(d.id)); if (!k) return;
+    c.capturas = c.capturas.filter(x => x !== k);
+    if (k.estado === 'por-subir') { c.porSubir = Math.max(0, c.porSubir - 1); toast('Quitada: no había subido, así que nunca llega.'); }
+    else toast('Captura quitada: ya no se suma.');
+    if (S.hoja === 'capturasProducto' && !c.capturas.some(x => x.codigo === k.codigo) && !DE_OTROS[k.codigo]) S.hoja = null;
+    pintar();
+  },
+  contarOtraCosa() { dejarActual(); S.conteo.activo = null; S.hoja = null; pintar(); },
+  salirConteo() {
+    const t = conteoActivo(); dejarActual();
+    const pend = t && t.tipo === 'dia' ? sinAplicar() : [];
+    if (pend.length) { S.hoja = null; S.dialogo = 'sinAplicar'; S.despuesDialogo = 'terminar'; pintar(); return; }
+    const n = S.conteo.capturas.length, sube = S.conteo.porSubir;
+    S.conteo.activo = null; S.hoja = null;
+    toast(`Tu parte: ${n} ${n === 1 ? 'captura' : 'capturas'}${sube ? `, ${sube} por subir` : ''}. Avísale al encargado: revisa y cierra en la caja.`);
+    pintar();
+  },
+  aplicarPendientes() { sinAplicar().forEach(aplicarDia); A.seguirTrasDialogo(); },
+  descartarPendientes() { sinAplicar().forEach(k => { delete S.conteo.dia[k]; }); toast('Lo sin aplicar se descartó.'); A.seguirTrasDialogo(); },
+  seguirTrasDialogo() {
+    const que = S.despuesDialogo; S.dialogo = null; S.despuesDialogo = null;
+    if (que === 'terminar') { S.conteo.activo = null; }
+    if (que === 'salir') { S.conteo = { ...S.conteo, activo: null, actual: null }; S.pantalla = 'entrada'; S.pin = ''; S.pinError = ''; S.fichaElegida = S.celular === 'tienda' ? S.fichaElegida : S.persona; }
+    pintar();
+  },
   menu() { S.hoja = 'menu'; pintar(); },
   cambiarPersona() { S.hoja = null; S.pantalla = 'entrada'; S.pin = ''; S.pinError = ''; S.fichaElegida = S.persona; pintar(); },
-  salir() { A.cambiarPersona(); },
+  salir() {
+    const t = conteoActivo();
+    if (t && S.conteo.actual) { const p = POR_CODIGO.get(S.conteo.actual.codigo); dejarActual(); if (t.tipo !== 'dia') toast(`Lo de «${p.nombre}» quedó a nombre de ${PERSONAS[S.persona].nombre}.`); }
+    if (t && t.tipo === 'dia' && sinAplicar().length) { S.hoja = null; S.dialogo = 'sinAplicar'; S.despuesDialogo = 'salir'; pintar(); return; }
+    A.cambiarPersona();
+  },
   ficha(d) { S.fichaElegida = d.id; S.pin = ''; S.pinError = ''; pintar(); },
   pin(d) {
     if (d.k === '⌫') S.pin = S.pin.slice(0, -1); else if (S.pin.length < 4) S.pin += d.k;
     if (S.pin.length === 4) {
       const nuevo = S.fichaElegida;
       despues(160, () => {
-        if (nuevo !== S.persona && S.conteo.activo) { guardarCaptura(); S.conteo = { ...S.conteo, activo: null, actual: null, capturas: [] }; }
+        if (nuevo !== S.persona && S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null, capturas: [], dia: {}, porSubir: 0 }; }
         S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.toast = null; pintar();
       });
     }
@@ -1522,6 +1801,7 @@ const A = {
   ajustes() { S.hoja = null; S.pantalla = 'ajustes'; pintar(); },
   cerrarAjustes() { S.pantalla = 'escaner'; pintar(); },
   zurdo() { S.zurdo = !S.zurdo; guardar('zurdo', S.zurdo ? 'si' : 'no'); pintar(); },
+  verPistas() { S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas', '{}'); guardar('deslizadas', '0'); toast('Las pistas salen otra vez en cada modo.'); pintar(); },
   bloqueo() { S.hoja = null; S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; pintar(); },
   rapidoPrecio() { S.rapidoBloqueo = true; S.precioAntes = S.precio; S.precio = null; S.indices.precio = 0; pintar(); },
   cerrarRapido() { S.rapidoBloqueo = false; S.precio = S.precioAntes || null; pintar(); },
@@ -1545,52 +1825,67 @@ tel.addEventListener('click', e => {
 });
 
 /* ——— El botón rápido: pulsar abre los tres; deslizar y soltar elige; soltar sin deslizar los deja abiertos para tocar.
-   Durante el gesto no se vuelve a pintar la pantalla (se perdería el dedo): solo cambian clases. ——— */
-const UMBRAL = 28;            // dp que hay que deslizar para que cuente una dirección
-let gesto = null;
-function sectorDe(dx, dy) {
-  // 0° a la derecha, 90° arriba, 180° a la izquierda (y crece hacia abajo en la pantalla)
-  let a = Math.atan2(-dy, dx) * 180 / Math.PI;
-  if (a < -90) a += 360;
-  if (a >= 60 && a < 112.5) return 'arriba';
-  if (a >= 112.5 && a < 157.5) return 'diagonal';
-  if (a >= 157.5 && a < 215) return 'izquierda';
-  return null;                // abajo o a la derecha: cancela
+   Se mide desde donde se pulsó (no desde el centro del botón): se arma a 32 dp y se desarma bajo 24 dp; las fronteras de
+   los sectores llevan 4° de histéresis. Durante el gesto no se vuelve a pintar la pantalla: solo cambian clases. ——— */
+const ARMA = 32, DESARMA = 24, HISTERESIS = 4;
+const SECTORES = [['arriba', 45, 112.5], ['diagonal', 112.5, 157.5], ['izquierda', 157.5, 225]];
+let gesto = null, pintarAlSoltar = false;
+function anguloDe(dx, dy) { let a = Math.atan2(-dy, dx) * 180 / Math.PI; if (a < -90) a += 360; return a; }
+function sectorDe(a, actual) {
+  for (const [dir, de, a2] of SECTORES) {
+    const h = dir === actual ? HISTERESIS : 0;
+    if (a >= de - h && a < a2 + h) return dir;
+  }
+  return 'cancela';
 }
 function abrirMenuRapido() {
   S.menuRapido = true;
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
   if (r) { r.classList.add('abierto'); r.querySelectorAll('.op').forEach(o => o.tabIndex = 0); r.querySelector('#fab').setAttribute('aria-expanded', 'true'); }
   if (app) app.classList.add('menu-abierto');
+  if (!(S.pistasVistas || {})[S.modo]) { S.pistasVistas = { ...(S.pistasVistas || {}), [S.modo]: true }; guardar('pistas', JSON.stringify(S.pistasVistas)); const p = tel.querySelector('.pista-rapido'); if (p) p.remove(); }
 }
 function cerrarMenuRapido(repintar = true) {
   S.menuRapido = false;
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
-  if (r) { r.classList.remove('abierto'); r.querySelectorAll('.op').forEach(o => { o.classList.remove('sel'); o.tabIndex = -1; }); const f = r.querySelector('#fab'); if (f) f.setAttribute('aria-expanded', 'false'); }
+  if (r) { r.classList.remove('abierto', 'cancela'); r.querySelectorAll('.op').forEach(o => { o.classList.remove('sel'); o.tabIndex = -1; }); const f = r.querySelector('#fab'); if (f) f.setAttribute('aria-expanded', 'false'); }
   if (app) app.classList.remove('menu-abierto');
   if (repintar) pintar();
 }
 function marcarSector(dir) {
   tel.querySelectorAll('#rapido .op').forEach(o => o.classList.toggle('sel', o.dataset.dir === dir && !o.disabled));
+  const r = tel.querySelector('#rapido'); if (r) r.classList.toggle('cancela', dir === 'cancela');
 }
-function usarGesto() { if (!S.gestoUsado) { S.gestoUsado = true; guardar('gesto', 'si'); } }
+function usarGesto() {}
+function dibujarTrazo(g) {
+  if (!S.verGesto) return;
+  const caja = tel.getBoundingClientRect(), k = g.k;
+  const x = (g.x0 - caja.left) / k, y = (g.y0 - caja.top) / k;
+  const linea = ang => { const r = ang * Math.PI / 180; return `<line x1="120" y1="120" x2="${120 + 118 * Math.cos(r)}" y2="${120 - 118 * Math.sin(r)}" stroke="#ffc107" stroke-width="1.5" stroke-dasharray="4 4"/>`; };
+  const angs = S.zurdo ? [135, 67.5, 22.5, -45] : [45, 112.5, 157.5, 225];
+  const t = document.createElement('div'); t.className = 'trazo-gesto'; t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.innerHTML = `<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="${ARMA}" fill="rgba(255,193,7,.15)" stroke="#ffc107" stroke-width="2"/><circle cx="120" cy="120" r="${DESARMA}" fill="none" stroke="#ffc107" stroke-width="1" stroke-dasharray="2 3"/>${angs.map(linea).join('')}</svg>`;
+  tel.appendChild(t); g.trazo = t;
+}
 tel.addEventListener('pointerdown', e => {
   const fab = e.target.closest('#fab');
   if (!fab) return;
   e.preventDefault();
   const r = fab.getBoundingClientRect();
-  gesto = { id: e.pointerId, cx: r.left + r.width / 2, cy: r.top + r.height / 2, k: r.width / fab.offsetWidth || 1, dir: null, movio: false, yaAbierto: S.menuRapido };
+  gesto = { id: e.pointerId, x0: e.clientX, y0: e.clientY, k: r.width / fab.offsetWidth || 1, dir: null, armado: false, yaAbierto: S.menuRapido };
   try { fab.setPointerCapture(e.pointerId); } catch (err) { /* sin captura: se sigue con los eventos del documento */ }
   abrirMenuRapido();
-  vibrar(10);
+  dibujarTrazo(gesto);
 });
 document.addEventListener('pointermove', e => {
   if (!gesto || e.pointerId !== gesto.id) return;
-  const dx = (e.clientX - gesto.cx) / gesto.k * (S.zurdo ? -1 : 1), dy = (e.clientY - gesto.cy) / gesto.k;
-  let dir = null;
-  if (Math.hypot(dx, dy) >= UMBRAL) { gesto.movio = true; dir = sectorDe(dx, dy); }
+  const dx = (e.clientX - gesto.x0) / gesto.k * (S.zurdo ? -1 : 1), dy = (e.clientY - gesto.y0) / gesto.k;
+  const dist = Math.hypot(dx, dy);
+  let dir = gesto.dir;
+  if (dist >= ARMA) { gesto.armado = true; dir = sectorDe(anguloDe(dx, dy), gesto.dir); }
+  else if (dist < DESARMA) dir = gesto.armado ? 'centro' : null;
   if (dir !== gesto.dir) {
-    gesto.dir = dir; marcarSector(dir);
+    gesto.dir = dir; marcarSector(dir === 'centro' ? null : dir);
     const op = dir && tel.querySelector(`#rapido .op[data-dir="${dir}"]`);
     if (op && !op.disabled) vibrar(8);
   }
@@ -1598,18 +1893,20 @@ document.addEventListener('pointermove', e => {
 function soltarGesto(e, cancelado) {
   if (!gesto || e.pointerId !== gesto.id) return;
   const g = gesto; gesto = null;
+  if (g.trazo) g.trazo.remove();
   const op = g.dir && tel.querySelector(`#rapido .op[data-dir="${g.dir}"]`);
-  if (!cancelado && op && !op.disabled) {
-    vibrar(18); usarGesto();
-    const accion = op.dataset.a;
+  if (!cancelado && g.armado && op) {
+    if (op.disabled) { vibrar([20, 40, 20]); cerrarMenuRapido(false); toast(op.dataset.razon || 'Esa opción no está disponible ahora.'); pintar(); return; }
+    vibrar(15);
+    S.elegidasDeslizando = (S.elegidasDeslizando || 0) + 1; guardar('deslizadas', String(S.elegidasDeslizando));
     cerrarMenuRapido(false);
-    A[accion]({});
+    A[op.dataset.a]({});
+    if (pintarAlSoltar) { pintarAlSoltar = false; pintar(); }
     return;
   }
-  if (cancelado || g.movio || g.yaAbierto) { cerrarMenuRapido(); return; }
-  // Un toque: los tres se quedan abiertos para tocar uno (o tocar fuera para cerrar).
-  const primero = tel.querySelector('#rapido .op:not(:disabled)');
-  if (primero && e.pointerType !== 'mouse' && e.pointerType !== 'touch') primero.focus();
+  // Se armó y se soltó en el centro, abajo o a la derecha: se cierra sin hacer nada. Un toque: se queda abierto.
+  if (cancelado || g.armado || g.yaAbierto) { pintarAlSoltar = false; cerrarMenuRapido(); return; }
+  if (pintarAlSoltar) { pintarAlSoltar = false; pintar(); }
 }
 document.addEventListener('pointerup', e => soltarGesto(e, false));
 document.addEventListener('pointercancel', e => soltarGesto(e, true));
@@ -1617,6 +1914,11 @@ tel.addEventListener('keydown', e => {
   if (e.target.id === 'fab' && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
     if (S.menuRapido) cerrarMenuRapido(); else { abrirMenuRapido(); const p = tel.querySelector('#rapido .op:not(:disabled)'); if (p) p.focus(); }
+  }
+  if (S.menuRapido && e.target.closest && e.target.closest('#rapido .op') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+    const ops = [...tel.querySelectorAll('#rapido .op:not(:disabled)')], i = ops.indexOf(e.target);
+    const sig = ops[(i + (e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1) + ops.length) % ops.length]; if (sig) sig.focus();
   }
   if (e.key === 'Escape' && S.menuRapido) { cerrarMenuRapido(); const f = tel.querySelector('#fab'); if (f) f.focus(); }
 });
@@ -1636,7 +1938,20 @@ document.addEventListener('keydown', e => {
 const sel = $('#leer-codigo');
 sel.innerHTML = TODOS.filter(p => !p.rapido).map(p => `<option value="${p.codigo}">${esc(p.nombre)}</option>`).join('') + `<option value="${SIN_REGISTRAR}">Código que no está en el catálogo</option>`;
 const PROTO = {
-  red(v) { S.red = v; if (v !== 'caida' && S.conteo.porSubir) { despues(900, () => { S.conteo.capturas.forEach(k => k.subida = true); S.conteo.porSubir = 0; pintar(); }); } pintar(); },
+  red(v) {
+    S.red = v;
+    if (v !== 'caida' && S.conteo.porSubir) {
+      despues(900, () => {
+        const c = S.conteo; let fuera = 0;
+        c.capturas.forEach(k => { if (k.estado === 'por-subir') { if (S.cierreSinRed && k.conteo === 'esc') { k.estado = 'no-entro'; fuera++; } else k.estado = 'subida'; } });
+        Object.values(c.dia).forEach(d => { if (d.estado === 'por-aplicar') d.estado = 'aplicada'; });
+        c.porSubir = 0;
+        if (fuera) toast(`No entraron ${fuera}: Carmen cerró Escolar a las 15:10. Díselo para que lo revise.`);
+        pintar();
+      });
+    }
+    pintar();
+  },
   pos(v) { S.pos = v; S.verConteo = false; if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null }; } } pintar(); },
   celular(v) {
     if (S.celular === v) return;
@@ -1648,9 +1963,11 @@ const PROTO = {
     pintar();
   },
   tam(v) { S.tam = v; pintar(); ajustarEscala(); },
+  verGesto() { S.verGesto = !S.verGesto; pintar(); },
+  letraGrande() { S.letraGrande = !S.letraGrande; pintar(); },
   tema(v) { S.tema = v; guardar('tema', v); const r = document.documentElement; if (v === 'sistema') delete r.dataset.theme; else r.dataset.theme = v === 'oscuro' ? 'dark' : 'light'; pintar(); },
   leer() { if (S.pantalla === 'escaner' || S.rapidoBloqueo) leer(sel.value); },
-  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = CONTEOS_INICIO(); pintar(); pintarGuia($('#guia')); },
+  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); pintar(); pintarGuia($('#guia')); },
 };
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-p]');
@@ -1659,6 +1976,8 @@ document.addEventListener('click', e => {
   pintarProto();
 });
 function pintarProto() {
+  document.querySelectorAll('[data-p="verGesto"]').forEach(b => { b.classList.toggle('on', !!S.verGesto); b.setAttribute('aria-pressed', !!S.verGesto); });
+  document.querySelectorAll('[data-p="letraGrande"]').forEach(b => { b.classList.toggle('on', !!S.letraGrande); b.setAttribute('aria-pressed', !!S.letraGrande); });
   document.querySelectorAll('[data-p][data-v]').forEach(b => {
     const k = b.dataset.p; const on = (k === 'red' && S.red === b.dataset.v) || (k === 'tam' && S.tam === b.dataset.v) || (k === 'tema' && S.tema === b.dataset.v) || (k === 'pos' && S.pos === b.dataset.v) || (k === 'celular' && S.celular === b.dataset.v);
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
@@ -1668,15 +1987,21 @@ function pintarProto() {
 
 /* Lo que se puede probar: cada tarea deja la app lista para empezar */
 const GUIA = [
-  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Desliza hacia abajo o a la derecha y suelta: no pasa nada. Con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.gestoUsado = false; } },
+  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Para arrepentirse: desliza y regresa al botón, o suelta hacia abajo o a la derecha. Nada se elige.', 'Arriba, «Ver el gesto» dibuja el círculo de 32 dp y las fronteras mientras pulsas; con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas', '{}'); guardar('deslizadas', '0'); } },
   { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido en diagonal (↖): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', 'Botón rápido hacia arriba (↑): «Al ticket», sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
   { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', 'Botón rápido hacia arriba (↑): «Mandar a Caja 2» y «Mandar»; llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
   { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
   { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['Botón rápido en diagonal (↖): «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
-  { id: 'conteo', titulo: 'Contar', texto: 'La propuesta completa, aunque todavía no se implemente: a ciegas, cajas y sueltas, se guarda solo.', pasos: ['Es el celular de la tienda con Ana. Elige «Escolar · conteo completo».', 'Toca la franja tres veces: el mismo cuaderno suma ×3, y dice lo que ya contó Luis en otro lugar. El − de al lado quita una.', 'Sigue: el lápiz suma sueltas y el código de su caja suma 12. Toca el número para teclear cajas y sueltas.', 'El folder es de Oficina: no entra en Escolar. Al escanear otro producto, lo anterior se guarda solo; botón rápido ↑ «Guardar».', 'Botón rápido ↖ «Lo contado»: tus capturas, «Quitar» y «Terminé mi parte». Prueba también «Conteo del día».'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; } },
+  { id: 'conteo', grupo: 'contar', titulo: 'Contar un departamento', texto: 'El conteo completo: lo de cada lugar se guarda solo y se suma a lo de los demás.', pasos: ['Es el celular de la tienda con Ana. Elige «Escolar».', 'Toca la franja tres veces: el cuaderno suma ×3 y junto al contador sale «+1»; «Ya van 5: Luis 5» se toca y dice quién contó.', 'Sigue: el lápiz suma una suelta y el código de su caja «+12 caja»; el − quita la última lectura, la caja entera («−12»).', 'Escanea otro: lo anterior se guarda solo y el aviso ofrece «Quitar». Botón rápido ↑ «Guardar» para el último.', 'Botón rápido ↖ «Lo contado»: «Lo mío» y «Falta» abajo; «Terminé mi parte».'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); } },
+  { id: 'conteo-dia', grupo: 'contar', titulo: 'El conteo del día', texto: 'El total de la tienda de 15 productos; se aplica con «Es todo», una vez.', pasos: ['Conteo entra directo: hoy no hay departamentos abiertos.', 'Toca la franja: el lápiz suma 1, 1 y la caja 12. Luego la goma: el lápiz queda «sin aplicar», no se aplica solo.', 'Vuelve el lápiz: «Aquí 1 · antes 14». Toca el contador: «Otro lugar» y «Es todo · N».', 'Botón rápido ↑ «Es todo» pide confirmar y aplica. Con Luis o Carmen dice lo que tenía el sistema.', 'El sacapuntas ya lo contó Carmen; el papel lustre no está en el conteo de hoy.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; } },
+  { id: 'conteo-cajas', grupo: 'contar', titulo: 'Cajas, rollos y «no hay»', texto: 'Teclear lo que hay: una casilla por presentación, con el total al momento.', pasos: ['Es Arte, con Luis. Toca la franja: el rollo de listón suma 10 m, y cada metro suelto 1.', 'Toca el contador: «Rollos de 10 m» y «Metros sueltos»; ahí sí hay punto (4.5).', 'Desde «Lo contado» › «Falta», toca uno y «Guardar 0 · no hay».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.conArte(); S.conteo.activo = 'arte'; } },
+  { id: 'conteo-no-va', grupo: 'contar', titulo: 'Lo que no va', texto: 'Otro departamento, lo que no está en el catálogo: lo dice y vibra distinto.', pasos: ['Escolar y Oficina están abiertos. Toca la franja: el cuaderno, y luego el folder (es de Oficina).', 'El aviso ofrece «Contarlo para Oficina»: cuenta de paso y regresa a Escolar con el siguiente.', 'La cartulina es de Papel, que no está abierto: «Llévalo a su lugar». El siguiente no está en el catálogo.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.dosDeptos(); S.conteo.activo = 'esc'; S.secuenciaConteo = 'noVa'; } },
+  { id: 'conteo-sinred', grupo: 'contar', titulo: 'Sin red: la bandeja', texto: 'Se sigue contando; lo guardado espera y sube solo.', pasos: ['Ya está «Red: Caída». Cuenta y escanea otro: queda «por subir»; arriba, «Sin red · 1 por subir».', '«Ya van» dice «hace 12 min»: es lo último que se supo.', 'Mientras, Carmen cerró Escolar en la caja. Arriba, «Red: Buena»: lo que no alcanzó a subir sale «no entró».'], prep() { S.pos = 'normal'; S.red = 'caida'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); S.conteo.activo = 'esc'; S.cierreSinRed = true; } },
+  { id: 'conteo-arranque', grupo: 'contar', titulo: 'El conteo de arranque', texto: 'Todos los departamentos abiertos; cada quien toma uno.', pasos: ['Con Luis: cinco departamentos, cada uno con su avance y quién cuenta.', 'Elige uno sin nadie (Papel o Regalos) y cuenta; «Ya van» incluye lo que capturan otros, también en /conteo (Beto, en las tijeras de Escolar).', 'Con «Celular: De la tienda» y Ana no sale «Abrir otro departamento».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.arranque(); } },
+  { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano.', pasos: ['Con Ana, en el conteo del día, cuenta un producto y escanea otro sin «Es todo».', 'La ficha de arriba › «Salir»: pregunta qué hacer con lo sin aplicar (aplicarlo a su nombre o descartarlo).', 'Entra Carmen con su ficha: Conteo empieza limpio.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; } },
   { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: solo Precio y Conteo, para varias personas por turnos.', pasos: ['Entra con la ficha de Ana y cualquier PIN de 4 cifras.', 'Abajo solo hay Precio y Conteo: sin Ticket ni impresiones.', 'En Precio, el botón rápido no tiene «Al ticket».', 'La ficha de arriba a la izquierda: «Salir», y entra la siguiente persona.'], prep() { S.celular = 'tienda'; S.pantalla = 'entrada'; S.fichaElegida = 'ana'; S.persona = 'ana'; S.modo = 'precio'; } },
   { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket, botón rápido ↑: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
-  { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
+  { id: 'piloto', grupo: 'contar', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
   { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
   { id: 'entrada', titulo: 'Entrar', texto: 'En el celular de Luis, solo su PIN; en el de la tienda, la ficha y el PIN.', pasos: ['Teclea 4 cifras: entra sola con la cuarta.', 'Arriba, «Celular: De la tienda»: salen las fichas de quienes cuentan.', 'Con Ana, en Conteo no sale «Abrir otro departamento»: no tiene el permiso del conteo completo.'], prep() { S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; } },
   { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez: el código de la caja, el permiso de Android y el catálogo.', pasos: ['«Escanear el código de la caja» y toca la franja.', '«Continuar»: Android pide «Dispositivos cercanos».', 'Mientras baja el catálogo ya se puede entrar.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
@@ -1684,7 +2009,10 @@ const GUIA = [
 function pintarGuia(dest) {
   const g = GUIA.find(x => x.id === S.guia);
   let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, la tecla Espacio o la franja «leen» un código; arriba se elige cuál, la red, de quién es el celular y el tamaño de la pantalla.</p><h3>Tareas</h3><ol>`;
-  for (const t of GUIA) h += `<li><button data-g="${t.id}" class="${S.guia === t.id ? 'on' : ''}"><strong>${t.titulo}</strong><small>${t.texto}</small></button>${S.guia === t.id && g ? `<div class="pasos"><ol>${g.pasos.map(p => `<li>${p}</li>`).join('')}</ol></div>` : ''}</li>`;
+  const item = t => `<li><button data-g="${t.id}" class="${S.guia === t.id ? 'on' : ''}"><strong>${t.titulo}</strong><small>${t.texto}</small></button>${S.guia === t.id && g ? `<div class="pasos"><ol>${g.pasos.map(p => `<li>${p}</li>`).join('')}</ol></div>` : ''}</li>`;
+  h += GUIA.filter(t => t.grupo !== 'contar').map(item).join('');
+  h += `</ol><h3 class="grupo-contar">Contar · la propuesta, todavía sin implementar</h3><ol>`;
+  h += GUIA.filter(t => t.grupo === 'contar').map(item).join('');
   h += `</ol><p class="pie">La cámara, la franja, la guía y la confirmación verde son las de hoy: el núcleo de reconocimiento no cambia. Propuesta: docs/propuesta-interfaz.md.</p>`;
   dest.innerHTML = h;
 }
@@ -1693,7 +2021,7 @@ function elegirGuia(id) {
   temporizadores.forEach(clearTimeout); temporizadores = [];
   const keep = { tam: S.tam, tema: S.tema };
   S = { ...INICIO(), ...keep, guia: id };
-  CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = CONTEOS_INICIO();
+  CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO();
   t.prep();
   pintar(); pintarGuia($('#guia')); const c = $('#cortina'); if (!c.hidden) pintarCortina();
 }
