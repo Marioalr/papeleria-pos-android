@@ -220,6 +220,38 @@ svg.i.ch { width: 20px; height: 20px; }
 .cuerpo { flex: 1; min-height: 0; overflow: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 4px max(16px, env(safe-area-inset-left, 0px)); }
 .acciones { flex: none; display: flex; gap: 8px; padding: 6px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); }
 .modos { flex: none; display: flex; justify-content: center; gap: 4px; padding: 2px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--linea); }
+.modos.con-rapido { justify-content: flex-start; padding-right: calc(max(16px, env(safe-area-inset-right, 0px)) + 72px); }
+
+/* ——— El botón rápido: abajo a la derecha. Pulsar abre tres botones chicos; pulsar, deslizar y soltar elige uno ——— */
+.rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 4px); width: 60px; height: 60px; }
+.rapido .fab { position: absolute; inset: 0; border-radius: 20px; display: grid; place-items: center; background: var(--m); color: var(--en-m); box-shadow: 0 4px 12px var(--sombra); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; transition: transform .16s ease-out; }
+.rapido.abierto .fab svg { transform: rotate(45deg); }
+.rapido .op { position: absolute; left: 6px; top: 6px; width: 48px; height: 48px; opacity: 0; pointer-events: none; transform: translate(0, 0) scale(.5); transition: transform .16s ease-out, opacity .12s; }
+.rapido.abierto .op { opacity: 1; pointer-events: auto; }
+.rapido.abierto .op.arriba { transform: translate(0, -132px); }
+.rapido.abierto .op.diagonal { transform: translate(-94px, -94px); }
+.rapido.abierto .op.izquierda { transform: translate(-132px, 0); }
+.rapido .op .circ { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: var(--sup); color: var(--texto); box-shadow: 0 2px 10px var(--sombra), inset 0 0 0 1.5px var(--borde); transition: transform .1s, background .1s; }
+.rapido .op .etq-op { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 6px 12px; border-radius: 14px; background: var(--sup); color: var(--texto); font-size: 14.5px; font-weight: 600; box-shadow: 0 2px 10px var(--sombra); pointer-events: none; }
+.rapido .op.sel .circ, .rapido .op:focus-visible .circ { transform: scale(1.2); background: var(--m); color: var(--en-m); box-shadow: 0 4px 14px var(--sombra); }
+.rapido .op.sel .etq-op { background: var(--m); color: var(--en-m); }
+.rapido .op:disabled { opacity: .45; }
+.rapido.abierto .op:disabled { opacity: .45; }
+.rapido .op .cuenta-op { position: absolute; right: -4px; top: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--pri); color: var(--en-pri); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.velo-rapido { position: absolute; inset: 0; z-index: 30; background: var(--velo); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.app.menu-abierto .velo-rapido { opacity: 1; pointer-events: auto; }
+.pista-rapido { position: absolute; z-index: 29; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 72px); max-width: 230px; padding: 8px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13.5px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); pointer-events: none; }
+.pista-rapido::after { content: ""; position: absolute; right: 24px; bottom: -6px; width: 12px; height: 12px; background: #2b3135; transform: rotate(45deg); }
+.app.menu-abierto .pista-rapido { display: none; }
+/* Zurdos: el botón a la izquierda y las direcciones en espejo */
+.zurdo .rapido { right: auto; left: max(16px, env(safe-area-inset-left, 0px)); }
+.zurdo .rapido.abierto .op.diagonal { transform: translate(94px, -94px); }
+.zurdo .rapido.abierto .op.izquierda { transform: translate(132px, 0); }
+.zurdo .rapido .op .etq-op { right: auto; left: calc(100% + 8px); }
+.zurdo .pista-rapido { right: auto; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 4px); }
+.zurdo .pista-rapido::after { right: auto; left: 24px; }
+.zurdo .modos.con-rapido { padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-left: calc(max(16px, env(safe-area-inset-left, 0px)) + 72px); justify-content: flex-end; }
 .modos button { flex: 1; max-width: 140px; height: 52px; margin-top: 4px; border-radius: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--suave); font-size: 15px; font-weight: 500; }
 .modos button.on { background: var(--m-c); color: var(--en-m-c); font-weight: 700; }
 .modos button.on[data-v="ticket"] { --m-c: var(--pri-c); --en-m-c: var(--en-pri-c); }
@@ -327,6 +359,8 @@ svg.i.ch { width: 20px; height: 20px; }
 .contando .det { font-size: 13.5px; color: var(--suave); }
 .contador { grid-row: span 2; min-width: 112px; height: 84px; padding: 0 14px; border-radius: 22px; background: var(--m-c); color: var(--en-m-c); display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 48px; font-weight: 800; line-height: 1; }
 .contador small { font-size: 26px; font-weight: 600; opacity: .7; margin-right: 2px; }
+.cuenta-grande { grid-row: span 2; display: flex; align-items: center; gap: 8px; }
+.menos-uno { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--sup-2); color: var(--texto); flex: none; }
 .contador.crece { animation: crece .15s ease-out; }
 @keyframes crece { 50% { transform: scale(1.12); } }
 .progreso { height: 6px; border-radius: 3px; background: var(--sup-2); overflow: hidden; margin-top: 4px; }
@@ -517,8 +551,11 @@ svg.i.ch { width: 20px; height: 20px; }
   <div class="grupo" role="group" aria-label="El POS"><span>POS</span>
     <button data-p="pos" data-v="piloto" class="on">En el piloto</button><button data-p="pos" data-v="normal">Sin eleventa</button>
   </div>
-  <div class="grupo" role="group" aria-label="Celular"><span>Celular</span>
-    <button data-p="tam" data-v="pixel" class="on">Pixel 8 Pro</button><button data-p="tam" data-v="mediano">Mediano</button><button data-p="tam" data-v="chico">Chico</button>
+  <div class="grupo" role="group" aria-label="De quién es el celular"><span>Celular</span>
+    <button data-p="celular" data-v="luis" class="on">De Luis (dueño)</button><button data-p="celular" data-v="tienda">De la tienda</button>
+  </div>
+  <div class="grupo" role="group" aria-label="Tamaño de la pantalla"><span>Pantalla</span>
+    <button data-p="tam" data-v="pixel" class="on">Pixel 8 Pro</button><button data-p="tam" data-v="mediano">Mediana</button><button data-p="tam" data-v="chico">Chica</button>
   </div>
   <div class="grupo" role="group" aria-label="Tema"><span>Tema</span>
     <button data-p="tema" data-v="sistema" class="on">Sistema</button><button data-p="tema" data-v="claro">Claro</button><button data-p="tema" data-v="oscuro">Oscuro</button>
@@ -741,9 +778,11 @@ function qrDibujo(semilla, n = 37) {
 /* ——— El estado del prototipo ——— */
 const INICIO = () => ({
   red: 'buena', tam: 'pixel', tema: 'sistema', pos: 'piloto',
+  celular: 'luis',            // luis: el celular de alguien de confianza · tienda: el de la tienda, solo precio y conteo
   pantalla: 'escaner',        // alta | entrada | escaner | bloqueo | ajustes
   dadoDeAlta: true, pasoAlta: 0, permisoCercanos: false, dialogo: null,
-  persona: 'ana', fichaElegida: 'ana', pin: '', pinError: '',
+  persona: 'luis', fichaElegida: 'luis', pin: '', pinError: '',
+  menuRapido: false, gestoUsado: leerGuardado('gesto') === 'si', verConteo: false, zurdo: leerGuardado('zurdo') === 'si',
   modo: 'ticket',
   hoja: null, hojaDatos: null, precioGrande: false,
   ticket: [], impresiones: [], idLinea: 1, deshacer: [], cajaElegida: 2, enviado: null, qr: null, enviando: false,
@@ -920,8 +959,9 @@ function estadoRed() {
 
 function pantallaEscaner() {
   const rapido = S.rapidoBloqueo;
-  let h = barraEstado(false) + `<div class="app">` + visor();
+  let h = barraEstado(false) + `<div class="app${S.menuRapido ? ' menu-abierto' : ''}${S.zurdo ? ' zurdo' : ''}">` + visor();
   h += rapido ? panelBloqueo() : panel();
+  if (!rapido && !S.hoja && opcionesRapidas()) h += botonRapido();
   h += `</div>`;
   if (!rapido && S.hoja) h += hoja();
   if (S.precioGrande) h += precioGrande();
@@ -933,21 +973,75 @@ function pantallaEscaner() {
 /* ——— El panel de abajo, según el modo ——— */
 function panel() {
   const m = S.modo;
-  let cuerpo = '', acciones = '';
-  if (m === 'ticket') [cuerpo, acciones] = panelTicket();
-  if (m === 'precio') [cuerpo, acciones] = panelPrecio();
-  if (m === 'conteo') [cuerpo, acciones] = panelConteo();
+  let cuerpo = '';
+  if (m === 'ticket') cuerpo = panelTicket();
+  if (m === 'precio') cuerpo = panelPrecio();
+  if (m === 'conteo') cuerpo = panelConteo();
   return `<section class="panel modo-${m}" aria-label="Modo ${m}">
     <button class="asidero" data-a="${m === 'ticket' ? 'verTicket' : m === 'conteo' && S.conteo.activo ? 'verContado' : 'nada'}" aria-label="Ver todo"></button>
     <div class="cuerpo">${cuerpo}</div>
-    ${acciones ? `<div class="acciones">${acciones}</div>` : ''}
     ${modos()}
   </section>`;
 }
+/* Los modos que deja este celular: el de la tienda, solo Precio y Conteo */
+const modosDelCelular = () => S.celular === 'tienda' ? ['precio', 'conteo'] : ['precio', 'ticket', 'conteo'];
 function modos() {
   const n = piezasTicket();
-  const b = (v, txt, icono, extra = '') => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}" aria-pressed="${S.modo === v}">${ic(icono, 'i ch')}${txt}${extra}</button>`;
-  return `<nav class="modos" aria-label="Modo">${b('precio', 'Precio', 'precio')}${b('ticket', 'Ticket', 'ticket', n && S.modo !== 'ticket' ? `<span class="cuenta num">${n}</span>` : '')}${b('conteo', 'Conteo', 'conteo')}</nav>`;
+  const nombres = { precio: ['Precio', 'precio'], ticket: ['Ticket', 'ticket'], conteo: ['Conteo', 'conteo'] };
+  const b = v => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}" aria-pressed="${S.modo === v}">${ic(nombres[v][1], 'i ch')}${nombres[v][0]}${v === 'ticket' && n && S.modo !== 'ticket' ? `<span class="cuenta num">${n}</span>` : ''}</button>`;
+  return `<nav class="modos${opcionesRapidas() ? ' con-rapido' : ''}" aria-label="Modo">${modosDelCelular().map(b).join('')}</nav>`;
+}
+
+/* ——— El botón rápido: las tres opciones de cada modo, siempre en las mismas direcciones ———
+   ↑ arriba: lo principal del modo · ↖ diagonal: lo segundo · ← izquierda: buscar */
+function opcionesRapidas() {
+  const m = S.modo;
+  if (S.pantalla !== 'escaner' || S.rapidoBloqueo) return null;
+  const buscar = { accion: 'buscar', icono: 'buscar', etiqueta: 'Buscar' };
+  if (m === 'ticket') {
+    const n = piezasTicket(), caja = CAJAS.find(x => x.id === S.cajaElegida);
+    const hayImp = S.red === 'caida' ? 0 : TRABAJOS.filter(t => !S.impresiones.includes(t.id) && !t.revisar).length;
+    return {
+      arriba: { accion: 'mandar', icono: 'mandar', etiqueta: `Mandar a ${caja.nombre}`, apagada: !n },
+      diagonal: { accion: 'impresiones', icono: 'imprimir', etiqueta: 'Impresiones', cuenta: hayImp },
+      izquierda: buscar,
+    };
+  }
+  if (m === 'precio') {
+    const hay = S.precio && POR_CODIGO.has(S.precio);
+    return {
+      arriba: S.celular === 'tienda' ? null : { accion: 'agregarDePrecio', icono: 'mas', etiqueta: 'Al ticket', apagada: !hay },
+      diagonal: { accion: 'agrandar', icono: 'agrandar', etiqueta: 'Enseñar al cliente', apagada: !hay },
+      izquierda: buscar,
+    };
+  }
+  if (m === 'conteo') {
+    const c = S.conteo;
+    if (S.pos === 'piloto' && !S.verConteo || !c.activo) return null;
+    return {
+      arriba: { accion: 'guardarConteo', icono: 'check', etiqueta: c.actual ? `Guardar ${piezasDe(c.actual)}` : 'Guardar', apagada: !c.actual },
+      diagonal: { accion: 'verContado', icono: 'lista', etiqueta: 'Lo contado', cuenta: c.capturas.length },
+      izquierda: { ...buscar, etiqueta: 'Buscar sin código' },
+    };
+  }
+  return null;
+}
+const FLECHAS_DIESTRO = { arriba: '↑', diagonal: '↖', izquierda: '←' }, FLECHAS_ZURDO = { arriba: '↑', diagonal: '↗', izquierda: '→' };
+const flecha = dir => (S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO)[dir];
+function botonRapido() {
+  const o = opcionesRapidas();
+  const nombreModo = { ticket: 'del ticket', precio: 'del precio', conteo: 'del conteo' }[S.modo];
+  const op = dir => {
+    const x = o[dir];
+    if (!x) return '';
+    return `<button class="op ${dir}" data-a="${x.accion}" data-dir="${dir}" role="menuitem" ${x.apagada ? 'disabled' : ''} tabindex="${S.menuRapido ? 0 : -1}" aria-label="${esc(x.etiqueta)}"><span class="circ">${ic(x.icono)}</span>${x.cuenta ? `<span class="cuenta-op num">${x.cuenta}</span>` : ''}<span class="etq-op">${flecha(dir)} ${esc(x.etiqueta)}</span></button>`;
+  };
+  const pista = !S.gestoUsado && S.modo === 'ticket' && piezasTicket() ? `<div class="pista-rapido" aria-hidden="true">Pulsa y desliza: ${flecha('arriba')} mandar · ${flecha('diagonal')} impresiones · ${flecha('izquierda')} buscar</div>` : '';
+  return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div>${pista}
+    <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido" role="group" aria-label="Opciones ${nombreModo}">
+      ${op('arriba')}${op('diagonal')}${op('izquierda')}
+      <button class="fab" id="fab" type="button" aria-haspopup="menu" aria-expanded="${!!S.menuRapido}" aria-label="Opciones ${nombreModo}">${ic('mas')}</button>
+    </div>`;
 }
 /* modo: 'actual' (el último, resaltado), 'quieta' (en el ticket completo: con − y + pero sin resaltar) o 'compacta' */
 function lineaTicket(l, modo) {
@@ -980,12 +1074,7 @@ function panelTicket() {
     if (S.impresiones.length) c += lineaImpresiones(false);
     c += `</div>`;
   }
-  const hayImp = TRABAJOS.filter(t => !S.impresiones.includes(t.id) && !t.revisar).length;
-  const caja = CAJAS.find(x => x.id === S.cajaElegida);
-  const a = `<button class="btn tonal" data-a="buscar" aria-label="Buscar lo que no se escanea">${ic('buscar')}</button>
-    <button class="btn tonal" data-a="impresiones" aria-label="Impresiones por cobrar${S.red !== 'caida' && hayImp ? `: ${hayImp}` : ''}">${ic('imprimir')}<span class="etq">Impresiones</span>${S.red !== 'caida' && hayImp ? ` <span class="burbuja num">${hayImp}</span>` : ''}</button>
-    <button class="btn lleno crece" data-a="mandar" ${n ? '' : 'disabled'}>${ic('mandar')}A ${esc(caja.nombre)}</button>`;
-  return [c, a];
+  return c;
 }
 function lineaImpresiones(conQuitar) {
   const ts = trabajosElegidos();
@@ -1008,31 +1097,22 @@ function tarjetaPrecio(publico) {
   return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}</div></div></div>`;
 }
 function panelPrecio() {
-  let c, a;
-  if (!S.precio) {
-    c = `<div class="vacio"><strong>Escanea para ver el precio</strong>Aquí nada se agrega al ticket: es el verificador (F9) de la caja.</div>`;
-    a = `<button class="btn tonal crece" data-a="buscar">${ic('buscar')}Buscar por nombre</button>`;
-  } else {
-    const hay = POR_CODIGO.has(S.precio);
-    c = tarjetaPrecio(false);
-    const n = piezasTicket();
-    a = `<button class="btn tonal" data-a="buscar" aria-label="Buscar por nombre">${ic('buscar')}</button>` +
-      (hay ? `<button class="btn tonal" data-a="agrandar" aria-label="Enseñar el precio al cliente">${ic('agrandar')}</button><button class="btn lleno crece" data-a="agregarDePrecio">${ic('mas')}Al ticket${n ? ` <span class="sub num">(${n})</span>` : ''}</button>` : '');
-  }
-  return [c, a];
+  if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>Aquí nada se agrega${S.celular === 'tienda' ? '' : ' al ticket'}: es el verificador (F9) de la caja.</div>`;
+  return tarjetaPrecio(false);
 }
 function panelConteo() {
   const c = S.conteo, per = PERSONAS[S.persona];
-  if (S.pos === 'piloto') {
-    return [`<div class="no-esta"><span class="ic">${ic('candado')}</span><div><strong>En el piloto no se cuenta</strong><div class="nota">Mientras dure el piloto con eleventa, el inventario se lleva en eleventa: las existencias llegan al POS con su lectura. Al dejar eleventa, aquí se hace el conteo físico de arranque.</div></div></div>`, ''];
+  if (S.pos === 'piloto' && !S.verConteo) {
+    return `<div class="no-esta"><span class="ic">${ic('candado')}</span><div><strong>En el piloto no se cuenta</strong><div class="nota">Mientras dure el piloto con eleventa, el inventario se lleva en eleventa: las existencias llegan al POS con su lectura. Al dejar eleventa, aquí se hace el conteo físico de arranque.</div></div></div>
+      <button class="btn tonal ancho" style="margin-top:8px" data-a="verConteoPrototipo">${ic('conteo')}Ver cómo se contará (prototipo)</button>`;
   }
   if (!c.activo) {
-    let h = `<div class="encabezado"><span class="titulo">¿Qué vas a contar?</span></div><div class="tareas">`;
+    let h = `<div class="encabezado"><span class="titulo">¿Qué vas a contar?</span>${S.pos === 'piloto' ? '<span class="espacio"></span><span class="nota">Así será al dejar eleventa</span>' : ''}</div><div class="tareas">`;
     for (const t of CONTEOS) h += `<button class="tarea" data-a="abrirConteo" data-id="${t.id}"><span class="ic">${ic(t.tipo === 'dia' ? 'reloj' : 'conteo')}</span><span><strong>${esc(t.titulo)}</strong><small>${esc(t.detalle)}</small></span>${ic('atras', 'i ch')}</button>`;
     if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Para el conteo completo: lo que nadie cuente queda en cero al cerrarlo</small></span>${ic('atras', 'i ch')}</button>`;
     h += `</div>`;
     if (!per.completo) h += `<p class="nota" style="margin:6px 2px">${esc(per.nombre)} cuenta en lo que ya está abierto; abrir y cerrar un departamento pide el permiso del conteo completo.</p>`;
-    return [h, ''];
+    return h;
   }
   const t = c.activo;
   let h = `<button class="encabezado" data-a="verContado" style="width:100%;text-align:left"><span class="titulo"><b>${esc(t.titulo)}</b></span><span class="espacio"></span>`;
@@ -1045,14 +1125,11 @@ function panelConteo() {
     const desglose = a.cajas ? `${a.cajas} ${a.cajas === 1 ? 'caja' : 'cajas'} de ${p.caja.piezas} + ${a.sueltas} ${a.sueltas === 1 ? 'suelta' : 'sueltas'}` : 'Cada pieza suma una';
     const otros = t.tipo === 'completo' ? (DE_OTROS[a.codigo] || []).concat(c.capturas.filter(k => k.codigo === a.codigo).length ? [['tú', c.capturas.filter(k => k.codigo === a.codigo).reduce((s, k) => s + k.cant, 0)]] : []) : [];
     const yaVan = otros.length ? `Ya van ${otros.reduce((s, o) => s + o[1], 0)} en otros lugares: ${otros.map(o => `${o[0]} ${o[1]}`).join(' · ')}` : (t.tipo === 'dia' ? 'El total de la tienda: si está en dos lugares, cuenta los dos' : 'Lo de este lugar; se suma a lo que cuenten los demás');
-    h += `<div class="contando" style="margin-top:8px"><div class="nom">${esc(p.nombre)}</div><button class="contador num crece" data-a="teclearConteo" aria-label="Contadas: ${total}. Tocar para teclear"><small>×</small>${total}</button><div class="det">${desglose} · ${yaVan}</div></div>`;
+    h += `<div class="contando" style="margin-top:8px"><div class="nom">${esc(p.nombre)}</div><div class="cuenta-grande"><button class="menos-uno" data-a="menosConteo" aria-label="Una menos">${ic('menos')}</button><button class="contador num crece" data-a="teclearConteo" aria-label="Contadas: ${total}. Tocar para teclear"><small>×</small>${total}</button></div><div class="det">${desglose} · ${yaVan}</div></div>`;
   } else {
     h += `<div class="vacio" style="margin-top:4px"><strong>Escanea el primer producto</strong>Cada pieza suma una y el código de la caja suma la caja. No se ve cuántas debería haber: es a ciegas.</div>`;
   }
-  const a = `<button class="btn tonal" data-a="menosConteo" ${c.actual ? '' : 'disabled'} aria-label="Una menos">${ic('menos')}1</button>
-    <button class="btn tonal" data-a="buscar" aria-label="Buscar lo que no tiene código">${ic('buscar')}</button>
-    <button class="btn lleno crece" data-a="guardarConteo" ${c.actual ? '' : 'disabled'}>${ic('check')}Guardar${c.actual ? ` <span class="sub num">${piezasDe(c.actual)}</span>` : ''}</button>`;
-  return [h, a];
+  return h;
 }
 
 /* ——— Sobre el bloqueo: solo el precio, sin existencia ——— */
@@ -1253,22 +1330,29 @@ function hojaMenu() {
   const per = PERSONAS[S.persona];
   const red = S.red === 'buena' ? 'Conectado a la caja principal · 12 ms' : S.red === 'lenta' ? 'Red lenta: el ticket y el conteo esperan su turno' : 'Sin red: el precio y la búsqueda siguen con la copia';
   return `<div class="hoja"><div class="contenido"><div class="barra"><button class="btn-ic" data-a="cerrarHoja" aria-label="Cerrar">${ic('cerrar')}</button><h2>Este celular</h2></div><div class="desliza">
-    <div class="yo"><span class="letra">${per.letra}</span><div><strong>${per.nombre}</strong><small>${esc(per.detalle)} · entró a las 9:02</small></div></div>
+    <div class="yo"><span class="letra">${per.letra}</span><div><strong>${per.nombre}</strong><small>${S.celular === 'tienda' ? 'Celular de la tienda: precio y conteo' : `Celular de ${per.nombre}: ${esc(per.detalle.toLowerCase())}`} · entró a las 9:02</small></div></div>
     <div class="menu-lista">
-      <button data-a="cambiarPersona">${ic('cambiar')}<span>Cambiar de persona<small>La ficha y el PIN, como en la caja</small></span></button>
+      ${S.celular === 'tienda' ? `<button data-a="salir">${ic('salir')}<span>Salir<small>La siguiente persona entra con su ficha y su PIN</small></span></button>` : ''}
       <button data-a="ajustes">${ic('ajustes')}<span>Ajustes<small>Bip, vibración, linterna, la caja principal y el catálogo</small></span></button>
       <button data-a="nada">${ic('wifi')}<span>La red<small>${red}</small></span></button>
       <button data-a="bloqueo">${ic('celular')}<span>Del bolsillo al precio<small>El mosaico «Precio» sobre el bloqueo</small></span></button>
-      <button data-a="salir">${ic('salir')}<span>Salir<small>La siguiente persona entra con su ficha</small></span></button>
+      ${S.celular === 'tienda' ? '' : `<button data-a="salir">${ic('candado')}<span>Cerrar la sesión<small>La próxima vez pide tu PIN aunque no acabe el turno</small></span></button>`}
     </div></div></div></div>`;
 }
 
 /* ——— Pantallas completas ——— */
 function pantallaEntrada() {
   const elegida = PERSONAS[S.fichaElegida];
-  let h = barraEstado(true) + `<div class="pantalla"><h1>¿Quién atiende?</h1><p class="lead">Toca tu ficha y escribe tu PIN: entra sola con la cuarta cifra.</p><div class="fichas">`;
-  for (const [id, p] of Object.entries(PERSONAS)) h += `<button class="ficha${S.fichaElegida === id ? ' on' : ''}" data-a="ficha" data-id="${id}" aria-pressed="${S.fichaElegida === id}"><span class="letra">${p.letra}</span>${p.nombre}</button>`;
-  h += `</div><div class="puntos" aria-label="${S.pin.length} de 4 cifras">${[0, 1, 2, 3].map(i => `<i class="${i < S.pin.length ? 'on' : ''}"></i>`).join('')}</div><div class="pin-error" role="alert">${esc(S.pinError)}</div>`;
+  let h = barraEstado(true);
+  if (S.celular === 'luis') {
+    /* El celular de alguien de confianza: es suyo, así que no hay fichas; solo su PIN del POS */
+    h += `<div class="pantalla"><div class="fichas" style="margin-top:28px"><span class="ficha on" style="width:auto;padding:12px 22px"><span class="letra">L</span>Luis</span></div><h1 style="text-align:center">Hola, Luis</h1><p class="lead" style="text-align:center">Tu PIN del POS. Entra solo con la cuarta cifra y dura el turno.</p>`;
+  } else {
+    h += `<div class="pantalla"><h1>¿Quién cuenta?</h1><p class="lead">Celular de la tienda: precio y conteo. Toca tu ficha y escribe tu PIN; entra sola con la cuarta cifra.</p><div class="fichas">`;
+    for (const [id, p] of Object.entries(PERSONAS)) h += `<button class="ficha${S.fichaElegida === id ? ' on' : ''}" data-a="ficha" data-id="${id}" aria-pressed="${S.fichaElegida === id}"><span class="letra">${p.letra}</span>${p.nombre}</button>`;
+    h += `</div>`;
+  }
+  h += `<div class="puntos" aria-label="${S.pin.length} de 4 cifras">${[0, 1, 2, 3].map(i => `<i class="${i < S.pin.length ? 'on' : ''}"></i>`).join('')}</div><div class="pin-error" role="alert">${esc(S.pinError)}</div>`;
   h += `<p class="nota centro">PIN de ${elegida.nombre}. En el prototipo entra cualquiera de 4 cifras.</p>`;
   h += `<div class="numerico">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map(k => k ? `<button data-a="pin" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k}">${k}</button>` : '<span></span>').join('')}</div></div><div class="barra-gestos"></div>`;
   return h;
@@ -1296,10 +1380,12 @@ function pantallaBloqueo() {
     <p class="aviso-bloqueo">El celular sigue bloqueado: toca el mosaico «Precio».</p></div><div class="barra-gestos sobre-negro"></div>`;
 }
 function pantallaAjustes() {
-  const fila = (t, s, on) => `<div class="ajuste"><div><strong>${t}</strong><small>${s}</small></div>${on == null ? ic('atras', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</div>`;
+  const fila = (t, sub, on, accion) => `<${accion ? `button data-a="${accion}" role="switch" aria-checked="${!!on}"` : 'div'} class="ajuste"${accion ? ' style="width:100%;text-align:left"' : ''}><div><strong>${t}</strong><small>${sub}</small></div>${on == null ? ic('atras', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</${accion ? 'button' : 'div'}>`;
+  const nombre = S.celular === 'tienda' ? 'Celular de la tienda' : 'Celular de Luis';
   return barraEstado(true) + `<div class="pantalla" style="padding-top:calc(var(--sb) + 4px)"><div class="barra" style="display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -12px"><button class="btn-ic" data-a="cerrarAjustes" aria-label="Regresar">${ic('atras')}</button><h2 style="margin:0;font-size:22px;font-weight:600">Ajustes</h2></div>
     <div class="seccion">Al leer</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
-    <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', '5,832 productos · al día (hace 1 min)', null)}${fila('Nombre del celular', 'Celular de Ana', null)}
+    <div class="seccion">Una mano</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}
+    <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', '5,832 productos · al día (hace 1 min)', null)}${fila('Nombre', nombre + (S.celular === 'tienda' ? ' · precio y conteo' : ' · lo que Luis puede'), null)}
     <div class="seccion">Herramientas de medición</div>${fila('Sesión de prueba, banco y estrés', 'Las de hoy, para medir el escáner en la tienda', null)}${fila('El escáner', 'Motor, lente, resolución y cuadros por segundo', null)}
     <p class="nota" style="margin-top:12px">Lo de la cámara y los motores no cambia: está como se midió.</p></div><div class="barra-gestos"></div>`;
 }
@@ -1318,6 +1404,8 @@ function precioGrande() {
 function lineaPorId(id) { return S.ticket.find(l => l.id === Number(id)); }
 const A = {
   nada() {},
+  cerrarMenuRapido() { cerrarMenuRapido(); },
+  verConteoPrototipo() { S.verConteo = true; toast('Así será al dejar eleventa: en el piloto, la app no deja contar.'); pintar(); },
   leer() { leer(); },
   linterna() { S.escaner.linterna = !S.escaner.linterna; pintarEscaner(); },
   modo(d) {
@@ -1433,6 +1521,7 @@ const A = {
   },
   ajustes() { S.hoja = null; S.pantalla = 'ajustes'; pintar(); },
   cerrarAjustes() { S.pantalla = 'escaner'; pintar(); },
+  zurdo() { S.zurdo = !S.zurdo; guardar('zurdo', S.zurdo ? 'si' : 'no'); pintar(); },
   bloqueo() { S.hoja = null; S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; pintar(); },
   rapidoPrecio() { S.rapidoBloqueo = true; S.precioAntes = S.precio; S.precio = null; S.indices.precio = 0; pintar(); },
   cerrarRapido() { S.rapidoBloqueo = false; S.precio = S.precioAntes || null; pintar(); },
@@ -1450,8 +1539,86 @@ const A = {
 tel.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
   if (!b || b.disabled) return;
+  if (b.closest('.rapido')) { cerrarMenuRapido(false); usarGesto(); }
   const f = A[b.dataset.a];
   if (f) f(b.dataset);
+});
+
+/* ——— El botón rápido: pulsar abre los tres; deslizar y soltar elige; soltar sin deslizar los deja abiertos para tocar.
+   Durante el gesto no se vuelve a pintar la pantalla (se perdería el dedo): solo cambian clases. ——— */
+const UMBRAL = 28;            // dp que hay que deslizar para que cuente una dirección
+let gesto = null;
+function sectorDe(dx, dy) {
+  // 0° a la derecha, 90° arriba, 180° a la izquierda (y crece hacia abajo en la pantalla)
+  let a = Math.atan2(-dy, dx) * 180 / Math.PI;
+  if (a < -90) a += 360;
+  if (a >= 60 && a < 112.5) return 'arriba';
+  if (a >= 112.5 && a < 157.5) return 'diagonal';
+  if (a >= 157.5 && a < 215) return 'izquierda';
+  return null;                // abajo o a la derecha: cancela
+}
+function abrirMenuRapido() {
+  S.menuRapido = true;
+  const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
+  if (r) { r.classList.add('abierto'); r.querySelectorAll('.op').forEach(o => o.tabIndex = 0); r.querySelector('#fab').setAttribute('aria-expanded', 'true'); }
+  if (app) app.classList.add('menu-abierto');
+}
+function cerrarMenuRapido(repintar = true) {
+  S.menuRapido = false;
+  const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
+  if (r) { r.classList.remove('abierto'); r.querySelectorAll('.op').forEach(o => { o.classList.remove('sel'); o.tabIndex = -1; }); const f = r.querySelector('#fab'); if (f) f.setAttribute('aria-expanded', 'false'); }
+  if (app) app.classList.remove('menu-abierto');
+  if (repintar) pintar();
+}
+function marcarSector(dir) {
+  tel.querySelectorAll('#rapido .op').forEach(o => o.classList.toggle('sel', o.dataset.dir === dir && !o.disabled));
+}
+function usarGesto() { if (!S.gestoUsado) { S.gestoUsado = true; guardar('gesto', 'si'); } }
+tel.addEventListener('pointerdown', e => {
+  const fab = e.target.closest('#fab');
+  if (!fab) return;
+  e.preventDefault();
+  const r = fab.getBoundingClientRect();
+  gesto = { id: e.pointerId, cx: r.left + r.width / 2, cy: r.top + r.height / 2, k: r.width / fab.offsetWidth || 1, dir: null, movio: false, yaAbierto: S.menuRapido };
+  try { fab.setPointerCapture(e.pointerId); } catch (err) { /* sin captura: se sigue con los eventos del documento */ }
+  abrirMenuRapido();
+  vibrar(10);
+});
+document.addEventListener('pointermove', e => {
+  if (!gesto || e.pointerId !== gesto.id) return;
+  const dx = (e.clientX - gesto.cx) / gesto.k * (S.zurdo ? -1 : 1), dy = (e.clientY - gesto.cy) / gesto.k;
+  let dir = null;
+  if (Math.hypot(dx, dy) >= UMBRAL) { gesto.movio = true; dir = sectorDe(dx, dy); }
+  if (dir !== gesto.dir) {
+    gesto.dir = dir; marcarSector(dir);
+    const op = dir && tel.querySelector(`#rapido .op[data-dir="${dir}"]`);
+    if (op && !op.disabled) vibrar(8);
+  }
+});
+function soltarGesto(e, cancelado) {
+  if (!gesto || e.pointerId !== gesto.id) return;
+  const g = gesto; gesto = null;
+  const op = g.dir && tel.querySelector(`#rapido .op[data-dir="${g.dir}"]`);
+  if (!cancelado && op && !op.disabled) {
+    vibrar(18); usarGesto();
+    const accion = op.dataset.a;
+    cerrarMenuRapido(false);
+    A[accion]({});
+    return;
+  }
+  if (cancelado || g.movio || g.yaAbierto) { cerrarMenuRapido(); return; }
+  // Un toque: los tres se quedan abiertos para tocar uno (o tocar fuera para cerrar).
+  const primero = tel.querySelector('#rapido .op:not(:disabled)');
+  if (primero && e.pointerType !== 'mouse' && e.pointerType !== 'touch') primero.focus();
+}
+document.addEventListener('pointerup', e => soltarGesto(e, false));
+document.addEventListener('pointercancel', e => soltarGesto(e, true));
+tel.addEventListener('keydown', e => {
+  if (e.target.id === 'fab' && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    if (S.menuRapido) cerrarMenuRapido(); else { abrirMenuRapido(); const p = tel.querySelector('#rapido .op:not(:disabled)'); if (p) p.focus(); }
+  }
+  if (e.key === 'Escape' && S.menuRapido) { cerrarMenuRapido(); const f = tel.querySelector('#fab'); if (f) f.focus(); }
 });
 tel.addEventListener('input', e => { if (e.target.id === 'busqueda') { S.busqueda = e.target.value; const pos = e.target.selectionStart; pintar(); const q = tel.querySelector('#busqueda'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } } });
 tel.addEventListener('keydown', e => {
@@ -1470,7 +1637,16 @@ const sel = $('#leer-codigo');
 sel.innerHTML = TODOS.filter(p => !p.rapido).map(p => `<option value="${p.codigo}">${esc(p.nombre)}</option>`).join('') + `<option value="${SIN_REGISTRAR}">Código que no está en el catálogo</option>`;
 const PROTO = {
   red(v) { S.red = v; if (v !== 'caida' && S.conteo.porSubir) { despues(900, () => { S.conteo.capturas.forEach(k => k.subida = true); S.conteo.porSubir = 0; pintar(); }); } pintar(); },
-  pos(v) { S.pos = v; if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null }; } } S.hoja = S.hoja === 'mandar' ? 'mandar' : S.hoja; pintar(); },
+  pos(v) { S.pos = v; S.verConteo = false; if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null }; } } pintar(); },
+  celular(v) {
+    if (S.celular === v) return;
+    S.celular = v; S.hoja = null; S.menuRapido = false;
+    if (v === 'tienda') { if (S.modo === 'ticket') S.modo = 'precio'; S.pantalla = 'entrada'; S.fichaElegida = 'ana'; }
+    else { S.pantalla = 'entrada'; S.fichaElegida = 'luis'; }
+    if (S.conteo.activo) { guardarCaptura(); S.conteo = { ...S.conteo, activo: null, actual: null, capturas: [] }; }
+    S.pin = ''; S.pinError = ''; S.toast = null;
+    pintar();
+  },
   tam(v) { S.tam = v; pintar(); ajustarEscala(); },
   tema(v) { S.tema = v; guardar('tema', v); const r = document.documentElement; if (v === 'sistema') delete r.dataset.theme; else r.dataset.theme = v === 'oscuro' ? 'dark' : 'light'; pintar(); },
   leer() { if (S.pantalla === 'escaner' || S.rapidoBloqueo) leer(sel.value); },
@@ -1484,7 +1660,7 @@ document.addEventListener('click', e => {
 });
 function pintarProto() {
   document.querySelectorAll('[data-p][data-v]').forEach(b => {
-    const k = b.dataset.p; const on = (k === 'red' && S.red === b.dataset.v) || (k === 'tam' && S.tam === b.dataset.v) || (k === 'tema' && S.tema === b.dataset.v) || (k === 'pos' && S.pos === b.dataset.v);
+    const k = b.dataset.p; const on = (k === 'red' && S.red === b.dataset.v) || (k === 'tam' && S.tam === b.dataset.v) || (k === 'tema' && S.tema === b.dataset.v) || (k === 'pos' && S.pos === b.dataset.v) || (k === 'celular' && S.celular === b.dataset.v);
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
   });
   document.querySelectorAll('[data-g]').forEach(b => b.classList.toggle('on', b.dataset.g === S.guia));
@@ -1492,20 +1668,22 @@ function pintarProto() {
 
 /* Lo que se puede probar: cada tarea deja la app lista para empezar */
 const GUIA = [
-  { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Toca el botón de las esquinas para enseñárselo grande al cliente.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', '«Al ticket» lo agrega sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
-  { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', '«A Caja 2» y «Mandar»: llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
-  { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['En Ticket, la lupa.', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
-  { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['En Ticket, «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
-  { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket arma uno y «Mandar»: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
-  { id: 'conteo', titulo: 'Contar', texto: 'A ciegas, con el contador grande, las cajas y las sueltas. (Ya con «POS: Sin eleventa».)', pasos: ['Elige «Escolar · conteo completo».', 'Toca la franja tres veces: el mismo cuaderno suma ×3, y dice lo que ya contó Luis en otro lugar.', 'Sigue: el lápiz suma sueltas y el código de su caja suma 12. Toca el número para teclear cajas y sueltas.', 'El folder es de Oficina: no entra en Escolar. Al escanear otro producto, lo anterior se guarda solo.', 'Toca el título del conteo: lo que contaste, con «Quitar», y «Terminé mi parte». También prueba «Conteo del día».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; S.persona = 'ana'; } },
-  { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, «A Caja 2»: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta (el inventario está en eleventa).', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
+  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Desliza hacia abajo o a la derecha y suelta: no pasa nada. Con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.gestoUsado = false; } },
+  { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido en diagonal (↖): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', 'Botón rápido hacia arriba (↑): «Al ticket», sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
+  { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', 'Botón rápido hacia arriba (↑): «Mandar a Caja 2» y «Mandar»; llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
+  { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
+  { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['Botón rápido en diagonal (↖): «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
+  { id: 'conteo', titulo: 'Contar', texto: 'La propuesta completa, aunque todavía no se implemente: a ciegas, cajas y sueltas, se guarda solo.', pasos: ['Es el celular de la tienda con Ana. Elige «Escolar · conteo completo».', 'Toca la franja tres veces: el mismo cuaderno suma ×3, y dice lo que ya contó Luis en otro lugar. El − de al lado quita una.', 'Sigue: el lápiz suma sueltas y el código de su caja suma 12. Toca el número para teclear cajas y sueltas.', 'El folder es de Oficina: no entra en Escolar. Al escanear otro producto, lo anterior se guarda solo; botón rápido ↑ «Guardar».', 'Botón rápido ↖ «Lo contado»: tus capturas, «Quitar» y «Terminé mi parte». Prueba también «Conteo del día».'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; } },
+  { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: solo Precio y Conteo, para varias personas por turnos.', pasos: ['Entra con la ficha de Ana y cualquier PIN de 4 cifras.', 'Abajo solo hay Precio y Conteo: sin Ticket ni impresiones.', 'En Precio, el botón rápido no tiene «Al ticket».', 'La ficha de arriba a la izquierda: «Salir», y entra la siguiente persona.'], prep() { S.celular = 'tienda'; S.pantalla = 'entrada'; S.fichaElegida = 'ana'; S.persona = 'ana'; S.modo = 'precio'; } },
+  { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket, botón rápido ↑: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
+  { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
   { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
-  { id: 'entrada', titulo: 'Entrar y cambiar de persona', texto: 'La ficha y el PIN de 4 cifras, como en la caja.', pasos: ['Toca la ficha de Ana, Carmen o Luis.', 'Teclea 4 cifras: entra sola con la cuarta.', 'Con Ana, en Conteo no sale el conteo completo: no tiene ese permiso.'], prep() { S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; } },
+  { id: 'entrada', titulo: 'Entrar', texto: 'En el celular de Luis, solo su PIN; en el de la tienda, la ficha y el PIN.', pasos: ['Teclea 4 cifras: entra sola con la cuarta.', 'Arriba, «Celular: De la tienda»: salen las fichas de quienes cuentan.', 'Con Ana, en Conteo no sale «Abrir otro departamento»: no tiene el permiso del conteo completo.'], prep() { S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; } },
   { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez: el código de la caja, el permiso de Android y el catálogo.', pasos: ['«Escanear el código de la caja» y toca la franja.', '«Continuar»: Android pide «Dispositivos cercanos».', 'Mientras baja el catálogo ya se puede entrar.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
 ];
 function pintarGuia(dest) {
   const g = GUIA.find(x => x.id === S.guia);
-  let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, la tecla Espacio o la franja «leen» un código; arriba se elige cuál, la red y el tamaño del celular.</p><h3>Tareas</h3><ol>`;
+  let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, la tecla Espacio o la franja «leen» un código; arriba se elige cuál, la red, de quién es el celular y el tamaño de la pantalla.</p><h3>Tareas</h3><ol>`;
   for (const t of GUIA) h += `<li><button data-g="${t.id}" class="${S.guia === t.id ? 'on' : ''}"><strong>${t.titulo}</strong><small>${t.texto}</small></button>${S.guia === t.id && g ? `<div class="pasos"><ol>${g.pasos.map(p => `<li>${p}</li>`).join('')}</ol></div>` : ''}</li>`;
   h += `</ol><p class="pie">La cámara, la franja, la guía y la confirmación verde son las de hoy: el núcleo de reconocimiento no cambia. Propuesta: docs/propuesta-interfaz.md.</p>`;
   dest.innerHTML = h;

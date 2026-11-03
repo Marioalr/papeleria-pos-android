@@ -37,8 +37,9 @@ Lo que se averiguó del POS para esta propuesta (la API, el verificador, las imp
 - **Lo que se pueda, sin red.** La red de la tienda se cae (cuando se va el internet, el wifi de los celulares también):
   el precio, la búsqueda y el ticket siguen; el conteo espera para subirse.
 - **Lo que la persona no puede hacer, no aparece,** como en la caja nueva.
-- Se diseñó y se probó a **360 × 740 dp** (un celular chico) y a **448 × 997 dp** (el Pixel 8 Pro). En los angostos, los
-  botones de al lado se quedan con su icono.
+- **Un solo botón para lo demás,** abajo a la derecha, donde descansa el pulgar: un toque abre tres opciones y pulsar,
+  deslizar y soltar elige una sin mirar ([el botón rápido](#el-botón-rápido)).
+- Se diseñó y se probó a **360 × 740 dp** (un celular chico) y a **448 × 997 dp** (el Pixel 8 Pro).
 
 ## Lo que necesita el piso, de lo más a lo menos seguido
 
@@ -46,11 +47,11 @@ Las frecuencias son estimadas; se confirman en la tienda.
 
 | # | Necesidad | Qué tan seguido | Cómo queda |
 |---|---|---|---|
-| 1 | Contestar «¿cuánto cuesta?» | Muy seguido | **Precio**: escanear y ver precio, mayoreo, promoción y existencia; «Enseñar al cliente» lo pone en grande |
+| 1 | Contestar «¿cuánto cuesta?» | Muy seguido | **Precio**: escanear y ver precio, mayoreo, promoción y existencia; ↖ «Enseñar al cliente» lo pone en grande |
 | 2 | Pasar lo que lleva el cliente | En cada preventa | **Ticket**: cada código suma uno; lo último arriba, con − y + |
-| 3 | Lo que no se escanea | Seguido | La lupa: dos pedazos de palabra, con el campo junto al pulgar |
-| 4 | Las impresiones que trae en la mano | Muchas veces al día | «Impresiones»: las miniaturas en lotes; se tocan las que trae |
-| 5 | Mandarlo a la caja | Al terminar cada ticket | «A Caja 2»: la última caja usada ya viene elegida |
+| 3 | Lo que no se escanea | Seguido | ← «Buscar»: dos pedazos de palabra, con el campo junto al pulgar |
+| 4 | Las impresiones que trae en la mano | Muchas veces al día | ↖ «Impresiones»: las miniaturas en lotes; se tocan las que trae |
+| 5 | Mandarlo a la caja | Al terminar cada ticket | ↑ «Mandar a Caja 2»: la última caja usada ya viene elegida |
 | 6 | Sin red | Unas veces al año, por horas | El ticket como QR para el lector de la caja |
 | 7 | Contar | El conteo del día; el completo, al arrancar y una vez al año | **Conteo**: a ciegas, cajas y sueltas, se guarda solo |
 | 8 | Cambiar de persona | Al cambiar de turno | La ficha y el PIN, como en la caja |
@@ -60,7 +61,7 @@ Las frecuencias son estimadas; se confirman en la tienda.
 
 ```
 ┌──────────────────────────────────────────┐
-│ (A) · Sin red                      [L]   │  quién entró (su menú) · la red, solo si falla · la linterna
+│ (L) · Sin red                      [L]   │  quién entró (su menú) · la red, solo si falla · la linterna
 │                                          │
 │     [ ||| Apunta al código de barras ]   │  la indicación del escáner (la de hoy)
 │ ┌──────────────────────────────────────┐ │  ← 32 %
@@ -73,13 +74,13 @@ Las frecuencias son estimadas; se confirman en la tienda.
 │ │▌Pegamento blanco 250 g        $32.00 │ │  lo último, resaltado
 │ │▌$32.00 c/u               [x  1  +]   │ │
 │ │ Cuaderno profesional…  ×2    $92.00  │ │
-│ │ [Q] [Impresiones 6] [>  A Caja 2   ] │ │
-│ │   Precio    ( Ticket )    Conteo     │ │  los modos
+│ │ Lápiz HB No. 2         ×1     $5.50  │ │
+│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  los modos y el botón rápido
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-`[Q]` buscar · `[L]` la linterna · `[x]` quitar (el bote) · `[>]` mandar · `[<>]` enseñar al cliente.
+`[L]` la linterna · `[x]` quitar (el bote) · `[ + ]` el botón rápido.
 
 - **Arriba a la izquierda,** la ficha de quien entró: abre «Este celular» (cambiar de persona, ajustes, la red, salir). A
   su lado, el estado de la red **solo si algo falla** («Red lenta», «Sin red · 3 por subir»), como los chips de la caja.
@@ -87,12 +88,60 @@ Las frecuencias son estimadas; se confirman en la tienda.
 - **Abajo, el panel del modo** y la barra de modos: **Precio · Ticket · Conteo**. Se cambia tocando el nombre; deslizar
   sobre la cámara no cambia de modo, para no cambiarlo sin querer al apuntar. Si hay un ticket armado, «Ticket» lleva
   cuántos artículos trae.
+- **Al final de esa barra, el botón rápido:** lo demás de cada modo (buscar, impresiones, mandar…), con un toque o con
+  el gesto ([abajo](#el-botón-rápido)).
 - **El asidero** (o tocar el encabezado) abre el modo completo: el ticket entero o lo contado. Mientras está abierto, las
   lecturas no cuentan.
 - **La app abre en el último modo usado.** El mosaico y los accesos directos abren uno en particular
   ([del bolsillo al precio](#del-bolsillo-al-precio)).
 - **El panel cabe en el espacio bajo la franja** (unos 280 dp en un celular chico y 360 en el Pixel): el encabezado, lo
-  último leído, los botones y los modos. Lo demás se ve al jalar.
+  último leído y los modos con el botón rápido. Sin una fila de botones, ese espacio es para la lista. Lo demás se ve
+  al jalar.
+
+### El botón rápido
+
+Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, para usarlo con una mano.
+
+```
+┌──────────────────────────────────────────┐
+│ ╭──────────────────────────────────────╮ │
+│ │ Ticket · 4 art. ░░░░░░░░░░░ $129.50  │ │  lo de atrás se atenúa
+│ │░░░░░░░░░░░░░ ↑ Mandar a Caja 2  (>)  │ │  ↑ lo principal del modo
+│ │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ │
+│ │░░░░░░░ ↖ Impresiones  (▤)⁶░░░░░░░░░  │ │  ↖ lo segundo
+│ │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ │
+│ │░░░ ← Buscar  (Q)░░░░░░░░░░░░  [ × ]  │ │  ← siempre buscar
+│ ╰──────────────────────────────────────╯ │
+└──────────────────────────────────────────┘
+```
+
+- **Uno solo, abajo a la derecha,** donde descansa el pulgar, al final de la barra de modos. Reemplaza la fila de botones
+  que iba bajo la lista.
+- **Un toque abre tres opciones,** cada una con su nombre y su flecha. Se toca una; tocar fuera o el botón otra vez
+  cierra.
+- **Pulsar y deslizar elige sin mirar:** se pulsa el botón, se desliza hacia una opción y se suelta. Cuenta la
+  dirección, no llegar hasta el botoncito: bastan unos 28 dp, y cada dirección acepta un abanico ancho (arriba, la
+  diagonal o la izquierda), así que el gesto no tiene que ser exacto. Una vibración corta al pasar por una opción y otra
+  al elegirla. Es el gesto que se aprende: pulsar y deslizar hacia arriba es «mandar», sin buscar nada con la vista.
+- **Siempre lo mismo en cada dirección:** ← es buscar en los tres modos, ↑ lo principal del modo y ↖ lo segundo.
+
+| Modo | ↑ arriba | ↖ diagonal | ← izquierda |
+|---|---|---|---|
+| Ticket | Mandar a Caja 2 | Impresiones (con cuántas hay por cobrar) | Buscar |
+| Precio | Al ticket (no en el celular de la tienda) | Enseñar al cliente | Buscar |
+| Conteo | Guardar | Lo contado | Buscar lo que no tiene código |
+
+- **Cancelar:** soltar hacia abajo o a la derecha, o regresar al botón antes de soltar.
+- **Nada se manda solo:** ↑ en Ticket abre «¿A qué caja?», donde se confirma.
+- **Mientras está abierto,** lo de atrás se atenúa y las lecturas del escáner no cuentan.
+- **Se enseña solo:** la primera vez sale una pista sobre el botón («Pulsa y desliza: ↑ mandar · ↖ impresiones ·
+  ← buscar») y las etiquetas llevan su flecha.
+- **Con TalkBack o con teclado,** el botón abre las tres como botones normales; atrás o Esc lo cierran.
+- **Zurdos:** en Ajustes, «Botón rápido a la izquierda»: el botón pasa a la esquina izquierda y las direcciones van en
+  espejo (↑, ↗, →).
+- **En Compose:** un `pointerInput` con `awaitEachGesture` sobre el botón: el primer toque abre las opciones, cada
+  movimiento calcula el ángulo desde el centro y el sector, y al soltar se elige o se cancela; la vibración con
+  `HapticFeedback`. Como el menú ya está dibujado y solo cambia de estado, el gesto no se corta.
 
 ### Precio: el verificador (F9) en el celular
 
@@ -104,8 +153,7 @@ Las frecuencias son estimadas; se confirman en la tienda.
 │ │         Escolar · 7509990100019      │ │
 │ │         $46.00                       │ │  el precio en grande
 │ │ (Desde 12: $41.00 c/u) (Exist.: 8)   │ │  mayoreo y existencia
-│ │ [Q] [<>] [+ Al ticket (3)          ] │ │  buscar · enseñar al cliente · agregar
-│ │  ( Precio )    Ticket     Conteo     │ │
+│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ al ticket · ↖ enseñar al cliente · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
@@ -117,9 +165,10 @@ Las frecuencias son estimadas; se confirman en la tienda.
   cada pieza. Sin redondeo: el redondeo al peso solo se aplica al cobrar en efectivo.
 - **El mayoreo** no lo enseña todavía el F9 de la caja, aunque su propuesta lo pide; en el piso es lo primero que se
   pregunta después del precio («¿y si llevo 12?»).
-- **«Enseñar al cliente»** pone el nombre y el precio a pantalla completa, para voltear el celular. Se toca para
+- **↖ «Enseñar al cliente»** pone el nombre y el precio a pantalla completa, para voltear el celular. Se toca para
   regresar.
-- **«Al ticket»** agrega uno sin salir de Precio; el aviso dice cuántos lleva el ticket y ofrece verlo.
+- **↑ «Al ticket»** agrega uno sin salir de Precio; el aviso dice cuántos lleva el ticket y ofrece verlo. En el celular
+  de la tienda no está: ahí no hay tickets.
 - **Lo que no está en el catálogo** lo dice en rojo, con el código, y ofrece buscar por nombre.
 - **Cada consulta cuenta** para «lo más preguntado» de Productos, como en la caja (`POST /api/consultas`).
 
@@ -134,8 +183,8 @@ Las frecuencias son estimadas; se confirman en la tienda.
   como artículo común. No se pierde.
 - **Los precios los pone la caja** al recibirlo, con su catálogo; el celular los enseña para que el cliente sepa cuánto
   lleva. Desde el celular no se cambian precios ni se hacen descuentos (la propuesta del POS lo decidió así).
-- **El ticket completo** (jalar el asidero): todos los renglones con − y +, el renglón de impresiones, «Buscar»,
-  «Impresiones», deshacer, el total y «Mandar a Caja 2». «Empezar otro ticket» lo vacía (se puede deshacer).
+- **El ticket completo** (jalar el asidero): todos los renglones con − y + e importe, el renglón de impresiones,
+  «Buscar», «Impresiones», deshacer, el total y «Mandar a Caja 2». «Empezar otro ticket» lo vacía (se puede deshacer).
 - **Se guarda en el celular** mientras se arma: cerrar la app o que se apague la pantalla no lo pierde.
 
 #### Lo que no se escanea: buscar
@@ -192,8 +241,9 @@ Las frecuencias son estimadas; se confirman en la tienda.
 
 #### Mandar a una caja
 
-- **«A Caja 2»** abre «¿A qué caja?»: cada caja con quién atiende y cuántos tickets esperan; la apagada no se puede
-  elegir. La última usada ya viene elegida, así que casi siempre es tocar «Mandar».
+- **↑ «Mandar a Caja 2»** (el botón rápido hacia arriba) abre «¿A qué caja?»: cada caja con quién atiende y cuántos
+  tickets esperan; la apagada no se puede elegir. La última usada ya viene elegida, así que casi siempre es tocar
+  «Mandar»: el gesto nunca manda solo.
 - **Llega en espera**, con quien lo mandó en lugar de la hora («Ana · $97.50»), entra con su efecto y no interrumpe el
   cobro de la caja (la propuesta del POS, «Desde el celular»).
 - **Al mandarlo,** el panel dice «Enviado a Caja 2 · 4 art. · $129.50» en verde y el siguiente escaneo empieza otro
@@ -323,8 +373,7 @@ puede dar de alta cajas.
   en la pestaña del modo, el botón principal y el renglón resaltado; nunca en la retícula, donde el verde de «leído» y
   el ámbar de «viendo» son del escáner.
 - **Las letras del sistema** (Roboto) y cifras tabulares: el precio a 40 sp, el total a 24 sp, el contador a 48 sp.
-- **56 dp** para lo que se toca, como hoy; en los celulares de 360 dp los botones de al lado quedan solo con su icono y
-  su número.
+- **56 dp** para lo que se toca, como hoy; el botón rápido mide 60 dp y sus opciones 48 dp, con su nombre al lado.
 
 ## Lo que cambia por dentro
 
