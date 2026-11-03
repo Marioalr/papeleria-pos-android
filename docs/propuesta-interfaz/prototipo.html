@@ -211,9 +211,23 @@ svg.i.ch { width: 20px; height: 20px; }
 .estado-red.subir i { background: #8ecff0; }
 .quien { flex-wrap: wrap; row-gap: 6px; }
 .ficha-yo.tienda svg.i { width: 24px; height: 24px; }
-.pastilla { height: 48px; display: flex; align-items: center; flex: none; border-radius: 24px; background: var(--chip); border: 2px solid rgba(255, 255, 255, .85); }
-.pastilla .ficha-yo { width: 44px; height: 44px; border: 0; background: transparent; }
-.pastilla .salir { height: 44px; display: flex; align-items: center; padding: 0 16px 0 12px; border-left: 1px solid rgba(255, 255, 255, .4); border-radius: 0 22px 22px 0; color: #fff; font-size: 16px; font-weight: 700; }
+.pastilla { display: flex; align-items: center; gap: 8px; flex: none; }
+.pastilla .salir { height: 48px; min-width: 72px; display: flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 24px; background: var(--chip); border: 2px solid rgba(255, 255, 255, .85); color: #fff; font-size: 16px; font-weight: 700; }
+.letra-grande .pastilla .salir { font-size: 26px; }
+.letra-grande .estado-red { font-size: 24px; height: auto; min-height: 40px; }
+.letra-grande .estado-red .det { display: none; }
+.letra-grande .pantalla h1 { font-size: 34px; }
+.letra-grande .pantalla .lead, .letra-grande .ficha { font-size: 22px; }
+.aviso-cierre { position: absolute; z-index: 35; left: 12px; right: 12px; bottom: calc(var(--gb) + 72px); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 18px; background: #2b2f33; color: #fff; font-size: 16px; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
+.aviso-cierre span { flex: 1; min-width: 0; }
+.aviso-cierre .btn { flex: none; }
+.aviso-fijo { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 4px 4px 4px 12px; min-height: 48px; border-radius: 14px; background: var(--sup-2); font-size: 14px; }
+.aviso-fijo span { flex: 1; min-width: 0; }
+.aviso-fijo .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.fichas.rejilla { display: grid; grid-template-columns: repeat(3, 1fr); justify-items: center; gap: 12px 8px; }
+.ficha-sola { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 4px; }
+.ficha-sola .letra { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--pri); color: var(--en-pri); font-size: 21px; font-weight: 700; }
+.ficha-sola .btn { min-height: 48px; }
 
 /* ——— El panel de abajo ——— */
 .panel { position: absolute; z-index: 10; left: 0; right: 0; bottom: 0; top: calc(var(--sb) + (100% - var(--sb) - var(--gb) - 80px) * .68 + 10px); display: flex; flex-direction: column; background: var(--sup); color: var(--texto); border-radius: 24px 24px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .3); padding-bottom: var(--gb); }
@@ -235,8 +249,12 @@ svg.i.ch { width: 20px; height: 20px; }
 .rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 6px); width: 56px; height: 56px; }
 .rapido .fab { position: absolute; inset: 0; border-radius: 16px; display: grid; place-items: center; background: var(--m); color: var(--en-m); box-shadow: 0 4px 12px var(--sombra); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .rapido .fab::before { content: ""; position: absolute; inset: -4px; }
-.rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; transition: transform .15s ease-out; }
-.rapido.abierto .fab svg { transform: rotate(45deg); }
+.rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; }
+.hoja.recien .pie .btn.lleno { animation: enciende .3s steps(1, end) both; }
+@keyframes enciende { from { opacity: .45; } to { opacity: 1; } }
+.rapido .fab .i-cerrar, .rapido.abierto .fab .i-abanico { display: none; }
+.rapido.abierto .fab .i-cerrar { display: block; }
+.zurdo .rapido .fab .i-abanico { transform: scaleX(-1); }
 .rapido.cancela .fab { box-shadow: 0 0 0 3px var(--m-c), 0 4px 12px var(--sombra); }
 .rapido .op { position: absolute; left: 4px; top: 4px; width: 48px; height: 48px; opacity: 0; pointer-events: none; transform: translate(0, 0) scale(.5); transition: transform .15s ease-out, opacity .12s; }
 .rapido.abierto .op { opacity: 1; pointer-events: auto; }
@@ -683,7 +701,10 @@ const TRABAJOS = [
 
 const PERSONAS = {
   ana: { nombre: 'Ana', letra: 'A', completo: false, detalle: 'Permisos de defecto' },
+  beto: { nombre: 'Beto', letra: 'B', completo: false, detalle: 'Permisos de defecto' },
   carmen: { nombre: 'Carmen', letra: 'C', completo: true, costos: true, detalle: 'Encargada: también el conteo completo' },
+  dani: { nombre: 'Dani', letra: 'D', completo: false, detalle: 'Permisos de defecto' },
+  elena: { nombre: 'Elena', letra: 'E', completo: false, detalle: 'Permisos de defecto' },
   luis: { nombre: 'Luis', letra: 'L', completo: true, costos: true, detalle: 'Primera cuenta: todos los permisos' },
 };
 /* En el piloto, el POS vive en la caja 2 y la caja 1 sigue con eleventa (y Control Print) */
@@ -736,6 +757,11 @@ const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 const vibrar = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* sin vibración en este navegador */ } };
 function guardar(k, v) { try { localStorage.setItem('papeleria-android-' + k, v); } catch (e) { /* sin almacenamiento */ } }
 function leerGuardado(k) { try { return localStorage.getItem('papeleria-android-' + k); } catch (e) { return null; } }
+/* Las pistas del botón rápido van por persona, como «Botón rápido a la izquierda» */
+function pistasDe(quien) { try { return JSON.parse(leerGuardado('pistas-' + quien) || '{}'); } catch (e) { return {}; } }
+function deslizadasDe(quien) { return parseInt(leerGuardado('deslizadas-' + quien) || '0', 10) || 0; }
+const quienPistas = () => S.persona || 'tienda';
+function cargarPistas() { S.pistasVistas = pistasDe(quienPistas()); S.elegidasDeslizando = deslizadasDe(quienPistas()); S.zurdo = leerGuardado('zurdo-' + quienPistas()) === 'si'; }
 
 /* Iconos (trazos de 24 px, al estilo de Material Symbols redondeados) */
 const IC = {
@@ -750,6 +776,7 @@ const IC = {
   adelante: '<path d="M9 5l7 7-7 7"/>',
   menos: '<path d="M6 12h12"/>',
   mas: '<path d="M12 6v12M6 12h12"/>',
+  abanico: '<circle cx="17" cy="5" r="2.6" fill="currentColor" stroke="none"/><circle cx="8.5" cy="8.5" r="2.6" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="2.6" fill="currentColor" stroke="none"/><path d="M17 11a6 6 0 0 0-6 6" stroke-width="2"/><circle cx="17" cy="17" r="2" fill="currentColor" stroke="none"/>',
   bote: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
   deshacer: '<path d="M9 7 5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',
   linterna: '<path d="M8 3h8l-1 6H9z"/><path d="M9 9h6l-1 12h-4z"/><path d="M12 13v2"/>',
@@ -871,12 +898,12 @@ const INICIO = () => ({
   pantalla: 'escaner',        // alta | entrada | escaner | bloqueo | ajustes | revocado
   dadoDeAlta: true, pasoAlta: 0, permisoCercanos: false, dialogo: null,
   persona: 'luis',            // quién está adentro; en el de la tienda, null mientras nadie entra (Precio no lo pide)
-  fichaElegida: 'ana', pin: '', pinError: '', conPin: false,
+  fichaElegida: null, pin: '', pinError: '', conPin: false,
   conteosDe: {},              // en el de la tienda, lo que contaba cada quien al salir: al volver sigue ahí
   avisoCierre: false, accesoQuitado: false, perdidas: 0,
-  menuRapido: false, verConteo: false, verGesto: false, letraGrande: false, pistasVistas: (() => { try { return JSON.parse(leerGuardado('pistas') || '{}'); } catch (e) { return {}; } })(), elegidasDeslizando: parseInt(leerGuardado('deslizadas') || '0', 10) || 0, zurdo: leerGuardado('zurdo') === 'si',
+  menuRapido: false, verConteo: false, verGesto: false, letraGrande: false, pistasVistas: pistasDe('luis'), elegidasDeslizando: deslizadasDe('luis'), zurdo: leerGuardado('zurdo-luis') === 'si',
   modo: 'ticket',
-  hoja: null, hojaDatos: null, precioGrande: false,
+  hoja: null, hojaDatos: null, precioGrande: false, hojaDesdeGesto: 0,
   ticket: [], impresiones: [], idLinea: 1, deshacer: [], cajaElegida: 2, enviado: null, qr: null, enviando: false,
   precio: null,
   conteo: conteoVacio(),
@@ -919,6 +946,7 @@ function siguienteCodigo() {
 }
 function leer(codigo) {
   if (S.escaner.fase !== 'escaneando') return;
+  S.cierrePendiente = null;
   codigo = codigo || siguienteCodigo();
   S.escaner.fase = 'viendo'; S.escaner.codigo = codigo; pintarEscaner();
   despues(280, () => {
@@ -930,7 +958,11 @@ function leer(codigo) {
 }
 function aplicarLectura(codigo) {
   if (S.pantalla === 'alta') { S.pasoAlta = 1; return; }
-  if (S.rapidoBloqueo || S.modo === 'precio') { S.precio = codigo; return; }
+  if (S.rapidoBloqueo || S.modo === 'precio') {
+    S.precio = codigo;
+    if (S.cerradaSola && S.cerradaSola.primera && !S.rapidoBloqueo) { S.cerradaSola.primera = false; toast('No se contó: estás en Precio.'); }
+    return;
+  }
   if (S.modo === 'ticket') { agregarAlTicket(codigo); return; }
   if (S.modo === 'conteo') contarLectura(codigo);
 }
@@ -1017,7 +1049,7 @@ function aplicarDia(codigo) {
   if (d.estado === 'por-aplicar') c.porSubir++;
   const dif = redondo(total - p.existencia);
   toast(d.estado === 'por-aplicar' ? `Listo: ${unidad(p, total)} de «${p.nombre}». Se aplica al volver la red.`
-    : `Aplicado: ${unidad(p, total)} de «${p.nombre}».${PERSONAS[S.persona].costos ? ` El sistema tenía ${p.existencia}: ${dif >= 0 ? '+' : ''}${dif}.` : ''}`);
+    : `Aplicado: ${unidad(p, total)} de «${p.nombre}».${PERSONAS[S.persona].costos && S.celular !== 'tienda' ? ` El sistema tenía ${p.existencia}: ${dif >= 0 ? '+' : ''}${dif}.` : ''}`);
 }
 const sinAplicar = () => Object.entries(S.conteo.dia).filter(([k, d]) => d.estado === 'sin-aplicar' && d.antes > 0 && !(S.conteo.actual && S.conteo.actual.codigo === k)).map(([k]) => k);
 /* A ciegas: mientras se cuenta, Precio no enseña la existencia de lo que se está contando */
@@ -1034,10 +1066,14 @@ const ARRANQUE = Date.now();
 function horaAhora() { const m = 14 * 60 + 52 + Math.floor((Date.now() - ARRANQUE) / 60000); return `${Math.floor(m / 60) % 24}:${String(m % 60).padStart(2, '0')}`; }
 
 let toastTimer = null;
-function toast(texto, accion, f) {
-  S.toast = { texto, accion, f };
+function toast(texto, accion, f, ms = 4200) {
+  S.toast = { texto, accion, f, ms };
+  correrAviso();
+}
+/* Con el botón rápido abierto el aviso no se ve (taparía las opciones) y su tiempo no corre: empieza al cerrarlo */
+function correrAviso() {
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { S.toast = null; pintar(); }, 4200);
+  if (S.toast && !S.menuRapido) toastTimer = setTimeout(() => { S.toast = null; pintar(); }, S.toast.ms || 4200);
 }
 
 /* ——— Pintar ——— */
@@ -1103,7 +1139,7 @@ function fichaArriba() {
   const per = PERSONAS[S.persona];
   if (S.celular === 'tienda' && !per) return `<button class="ficha-yo tienda" data-a="menu" aria-label="Celular de la tienda: menú">${ic('tienda')}</button>`;
   const ficha = `<button class="ficha-yo" data-a="menu" aria-label="${esc(per.nombre)}: menú">${per.letra}</button>`;
-  return S.celular === 'tienda' ? `<div class="pastilla">${ficha}<button class="salir" data-a="salir" aria-label="Salir: termina la sesión de ${esc(per.nombre)}">Salir</button></div>` : ficha;
+  return S.celular === 'tienda' ? `<div class="pastilla">${ficha}<button class="salir" data-a="salir" aria-label="Salir: cierra la sesión de ${esc(per.nombre)}">Salir</button></div>` : ficha;
 }
 function manchas() {
   const colores = ['#b5482f', '#d9a441', '#2f6fb3', '#3d8b5a', '#c9c3b6', '#7a4a8c', '#e07b39', '#4f7c8a'];
@@ -1116,7 +1152,7 @@ function manchas() {
 }
 function estadoRed() {
   const sube = S.conteo.porSubir + Object.values(S.conteosDe).reduce((n, c) => n + c.porSubir, 0);
-  if (S.red === 'caida') return `<span class="estado-red caida"><i></i>Sin red${sube ? ` · ${sube} por subir` : ''}</span>`;
+  if (S.red === 'caida') return `<span class="estado-red caida"><i></i>Sin red${sube ? ` · ${sube}<span class="det"> por subir</span>` : ''}</span>`;
   if (S.red === 'lenta') return `<span class="estado-red"><i></i>Red lenta</span>`;
   if (sube) return `<span class="estado-red subir"><i></i>Subiendo ${sube}</span>`;
   return '';
@@ -1128,7 +1164,8 @@ function pantallaEscaner() {
   h += rapido ? panelBloqueo() : panel();
   if (!rapido && !S.hoja && opcionesRapidas()) h += botonRapido();
   h += `</div>`;
-  if (!rapido && S.hoja) h += hoja();
+  if (!rapido && S.hoja) { const recien = S.hojaDesdeGesto && performance.now() - S.hojaDesdeGesto < 300; h += recien ? hoja().replace('class="hoja', 'class="hoja recien') : hoja(); }
+  if (S.avisoCierre && S.persona) h += `<div class="aviso-cierre" role="alert"><span>La sesión de ${esc(PERSONAS[S.persona].nombre)} se cierra en 1 minuto <small class="nota" style="color:#c8ccd0">(prototipo: 4 s)</small></span><button class="btn lleno" data-a="seguirSesion">Seguir</button></div>`;
   if (S.precioGrande) h += precioGrande();
   if (S.qr) h += pantallaQr();
   h += `<div class="barra-gestos"></div>`;
@@ -1212,7 +1249,7 @@ function botonRapido() {
   return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div><button class="cierra-visor" data-a="cerrarMenuRapido" aria-label="Cerrar las opciones" tabindex="-1"></button>${pista}${deslizar}
     <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido">
       <div role="menu" id="menu-rapido" aria-label="Opciones ${nombreModo}">${op('arriba')}${op('diagonal')}${op('izquierda')}</div>
-      <button class="fab" id="fab" type="button" aria-haspopup="menu" aria-controls="menu-rapido" aria-expanded="${!!S.menuRapido}" aria-label="Opciones ${nombreModo}">${ic('mas')}</button>
+      <button class="fab" id="fab" type="button" aria-haspopup="menu" aria-controls="menu-rapido" aria-expanded="${!!S.menuRapido}" aria-label="Opciones ${nombreModo}">${ic('abanico', 'i i-abanico')}${ic('cerrar', 'i i-cerrar')}</button>
     </div>`;
 }
 /* modo: 'actual' (el último, resaltado), 'quieta' (en el ticket completo: con − y + pero sin resaltar) o 'compacta' */
@@ -1225,7 +1262,7 @@ function lineaTicket(l, modo) {
   if (modo === 'compacta') return `<div class="linea compacta"><span class="foto">${dibujo(p)}</span><div class="txt"><div class="nom">${esc(p.nombre)}</div></div><div class="der"><span class="x num">×${l.cant}</span><span class="imp num">${dinero(importe(l))}</span></div></div>`;
   const pu = precioUnitario(p, l.cant);
   const may = p.mayoreo && l.cant >= p.mayoreo[0];
-  const quedan = p.existencia != null && !p.sinInventario && p.existencia <= 2 ? `<span class="marca-quedan">Quedan ${p.existencia}</span>` : '';
+  const quedan = p.existencia != null && !p.sinInventario && p.existencia <= 2 && !existenciaOculta(p.codigo) ? `<span class="marca-quedan">Quedan ${p.existencia}</span>` : '';
   return `<div class="linea doble${modo === 'actual' ? ' actual' : ''}"><span class="foto">${dibujo(p)}</span><div class="fila1"><div class="nom">${esc(p.nombre)}</div><span class="imp num">${dinero(importe(l))}</span></div><div class="fila2"><span class="det"><span class="num">${dinero(pu)} c/u</span>${may ? '<span class="marca-mayoreo">Mayoreo</span>' : ''}${quedan}</span>${paso(l)}</div></div>`;
 }
 function paso(l) {
@@ -1259,7 +1296,7 @@ function datosPrecio(p, publico) {
   if (p.promo) d += `<span class="dato promo">Promoción «${esc(p.promo)}»</span>`;
   if (p.mayoreo) d += `<span class="dato mayoreo">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>`;
   if (p.piezas) d += `<span class="dato">${dinero(Math.round(p.precio / p.piezas))} c/u</span>`;
-  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato">Existencia: al contarlo</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
+  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato">Existencia oculta mientras cuentas</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
   return d;
 }
 function tarjetaPrecio(publico) {
@@ -1270,6 +1307,8 @@ function tarjetaPrecio(publico) {
 }
 function panelPrecio() {
   const tienda = S.celular === 'tienda';
+  const cerrada = tienda && !S.persona && S.cerradaSola ? `<div class="aviso-fijo" role="status"><span>Se cerró la sesión de ${esc(S.cerradaSola.nombre)}: lo contado quedó a su nombre.</span><button class="btn tonal" data-a="entrarParaContar">Entrar</button><button class="btn-ic" data-a="quitarAvisoSesion" aria-label="Quitar el aviso">${ic('cerrar')}</button></div>` : '';
+  if (cerrada) return cerrada + (S.precio ? tarjetaPrecio(true) : '<div class="nota">Escanea para ver el precio: lo que ve el cliente.</div>');
   if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>${tienda ? 'El precio, el mayoreo y las promociones: lo que ve el cliente, sin entrar. El botón + de abajo: enseñar y buscar.' : 'Aquí nada se agrega al ticket: es el verificador (F9) de la caja. El botón + de abajo: al ticket, enseñar y buscar.'}</div>`;
   return tarjetaPrecio(tienda);
 }
@@ -1293,6 +1332,7 @@ function panelConteo() {
     }
     if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Lo que nadie cuente queda en 0 al cerrarlo</small></span>${ic('adelante', 'i ch')}</button>`;
     h += `</div><p class="nota" style="margin:6px 2px">${per.completo ? '' : `${esc(per.nombre)} cuenta en lo que ya está abierto; abrir un departamento pide «Conteo completo». `}Revisar y cerrar: en la caja (Inventario, F4).</p>`;
+    if (S.celular === 'tienda') h += `<button class="btn borde ancho" data-a="salir">${ic('salir')}Salir (${esc(per.nombre)})</button>`;
     return h;
   }
   const dia = t.tipo === 'dia';
@@ -1389,7 +1429,7 @@ function hojaBuscar() {
   } else if (!res.length) {
     lista = `<div class="vacio"><strong>Nada con «${esc(S.busqueda)}»</strong>Prueba con el principio de dos palabras, o escanea el código.</div>`;
   } else {
-    lista = `<div class="resultados">` + res.map(p => `<button class="resultado" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span><span class="nom">${marcarPiezas(p.nombre, S.busqueda)}</span><span class="det">${DEPTOS[p.depto] || 'Servicios'}${p.sinInventario || S.celular === 'tienda' ? '' : existenciaOculta(p.codigo) ? ' · existencia: al contarlo' : ` · existencia ${p.existencia}`}</span></span><span class="pre num">${dinero(p.precio)}${p.mayoreo ? `<small>desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])}</small>` : ''}</span></button>`).join('') + `</div>`;
+    lista = `<div class="resultados">` + res.map(p => `<button class="resultado" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span><span class="nom">${marcarPiezas(p.nombre, S.busqueda)}</span><span class="det">${DEPTOS[p.depto] || 'Servicios'}${p.sinInventario || S.celular === 'tienda' || S.modo === 'conteo' ? '' : existenciaOculta(p.codigo) ? ' · existencia oculta mientras cuentas' : ` · existencia ${p.existencia}`}</span></span><span class="pre num">${dinero(p.precio)}${p.mayoreo ? `<small>desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])}</small>` : ''}</span></button>`).join('') + `</div>`;
   }
   const filas = ['qwertyuiop', 'asdfghjklñ', 'zxcvbnm'];
   const teclado = esCelular() ? '' : `<div class="teclado" aria-label="Teclado (prototipo)">${filas.map((f, i) => `<div class="fila">${f.split('').map(k => `<button data-a="tecla" data-k="${k}" tabindex="-1">${k}</button>`).join('')}${i === 2 ? `<button class="media" data-a="tecla" data-k="borrar" tabindex="-1" aria-label="Borrar">⌫</button>` : ''}</div>`).join('')}<div class="fila"><button class="ancha" data-a="tecla" data-k=" " tabindex="-1">espacio</button></div></div>`;
@@ -1594,18 +1634,24 @@ function pantallaEntrada() {
     /* El de Luis es suyo: no hay fichas. Entrar es desbloquear el celular (la huella); su PIN del POS queda de respaldo */
     h += `<div class="pantalla"><div class="fichas" style="margin-top:28px"><span class="ficha on" style="width:auto;padding:12px 22px"><span class="letra">L</span>Luis</span></div><h1 style="text-align:center">Hola, Luis</h1>`;
     if (!S.conPin) {
-      return h + `<p class="lead" style="text-align:center">Celular de Luis: Precio, Ticket y Conteo. Entras con el desbloqueo de tu celular y dura el turno.</p>
+      return h + `<p class="lead" style="text-align:center">Celular de Luis: Precio, Ticket y Conteo. Entras con tu huella y dura el turno.</p>
         <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><button class="btn lleno ancho" data-a="pedirHuella">${ic('huella')}Entrar con tu huella</button><button class="btn borde ancho" data-a="usarPin">Usar mi PIN del POS</button></div>
-        <p class="nota centro" style="margin:12px 0 0">La huella no sale del celular: Android solo le dice a la app que eres tú. Sin red, entras igual.</p></div><div class="barra-gestos"></div>`;
+        <p class="nota centro" style="margin:12px 0 0">La huella no sale del celular. Si alguien registra otra huella en él, la app vuelve a pedir tu PIN del POS. Sin red, entras igual.</p></div><div class="barra-gestos"></div>`;
     }
     h += `<p class="lead" style="text-align:center">Tu PIN del POS, de respaldo. Entras con la cuarta cifra.</p>` + puntosPin();
     h += `<p class="nota centro"><button class="btn tonal" style="min-height:40px;font-size:14px" data-a="pedirHuella">${ic('huella')}Mejor con la huella</button></p>`;
+  } else if (!S.fichaElegida) {
+    /* El de la tienda, paso 1: la ficha. Ninguna viene elegida, para que nadie le gaste los intentos a otra persona */
+    h += `<div class="pantalla"><div class="cabeza-entrada"><button class="btn-ic" data-a="regresarDeEntrada" aria-label="Regresar a Precio">${ic('atras')}</button><h1>¿Quién cuenta?</h1></div><p class="lead">Toca tu ficha.</p><div class="fichas rejilla">`;
+    for (const [id, p] of Object.entries(PERSONAS)) h += `<button class="ficha" data-a="ficha" data-id="${id}"><span class="letra">${p.letra}</span>${p.nombre}</button>`;
+    h += `</div><p class="nota centro" style="margin-top:auto">${S.red === 'caida' ? 'Sin red no se entra: el PIN lo revisa la caja principal. Precio sigue funcionando.' : 'Salen quienes tienen «Contar inventario». Precio no pide entrar.'}</p></div><div class="barra-gestos"></div>`;
+    return h;
   } else {
-    /* El de la tienda: para contar, la ficha y el PIN del POS, junto al pulgar; «Regresar» vuelve a Precio */
-    h += `<div class="pantalla"><div class="cabeza-entrada"><button class="btn-ic" data-a="regresarDeEntrada" aria-label="Regresar a Precio">${ic('atras')}</button><h1>¿Quién cuenta?</h1></div><p class="lead">Toca tu ficha y escribe tu PIN del POS; entras con la cuarta cifra.</p><div class="fichas">`;
-    for (const [id, p] of Object.entries(PERSONAS)) h += `<button class="ficha${S.fichaElegida === id ? ' on' : ''}" data-a="ficha" data-id="${id}" aria-pressed="${S.fichaElegida === id}"><span class="letra">${p.letra}</span>${p.nombre}</button>`;
-    h += `</div>` + puntosPin();
-    h += `<p class="nota centro">${S.red === 'caida' ? 'Sin red no se entra: el PIN lo revisa la caja principal. Precio sigue funcionando.' : `PIN de ${PERSONAS[S.fichaElegida].nombre}: 5 intentos, como en la caja. En el prototipo entra cualquiera de 4 cifras.`}</p>`;
+    /* Paso 2: su PIN del POS, con el teclado junto al pulgar; los intentos se cuentan por celular y persona */
+    const per = PERSONAS[S.fichaElegida];
+    h += `<div class="pantalla"><div class="cabeza-entrada"><button class="btn-ic" data-a="otraFicha" aria-label="Otra ficha">${ic('atras')}</button><h1>PIN de ${esc(per.nombre)}</h1></div>
+      <div class="ficha-sola"><span class="letra">${per.letra}</span><button class="btn tonal" data-a="otraFicha">Otra ficha</button></div>` + puntosPin();
+    h += `<p class="nota centro">${S.red === 'caida' ? 'Sin red no se entra: el PIN lo revisa la caja principal. Precio sigue funcionando.' : 'Entras con la cuarta cifra. 5 intentos en este celular; luego espera 5 minutos. En el prototipo entra cualquier PIN.'}</p>`;
   }
   return h + tecladoPin() + `</div><div class="barra-gestos"></div>`;
 }
@@ -1621,18 +1667,18 @@ function pantallaAlta() {
   const qr = 'Lo enseña la caja en Configuración › Celulares, con un permiso de un solo uso que vence en 10 minutos.';
   const cercanos = 'Android 17 lo pide para hablar con la caja principal por el wifi de la tienda. La app no sale a internet.';
   const pasos = tienda ? [
-    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Será el celular de la tienda: Precio y Conteo.' : qr],
+    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Será el celular de la tienda: Precio y Conteo. En la caja, «Sí, es este».' : qr],
     ['Permitir «Dispositivos cercanos»', cercanos],
     ['Bajar el catálogo', 'Precios, promociones y fotos (unos 9 MB), sin existencias: lo que ve el cliente.'],
   ] : [
     ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Será el celular de Luis: Precio, Ticket y Conteo.' : qr],
     ['Permitir «Dispositivos cercanos»', cercanos],
     ['Confirmar que es tuyo', 'Tu PIN del POS, una sola vez.'],
-    ['Entrar con tu huella', 'Desde ahí, entrar es desbloquear el celular. Sin bloqueo de pantalla no se puede.'],
+    ['Entrar con tu huella', 'Desde ahí, entras con tu huella. Si alguien registra otra en el celular, vuelve a pedir tu PIN del POS.'],
     ['Bajar el catálogo', 'Con las existencias y las fotos (unos 9 MB).'],
   ];
   const fin = pasos.length - 1;
-  let h = barraEstado(true) + `<div class="pantalla"><h1>Conectar con la tienda</h1><p class="lead">${tienda ? 'Una sola vez. Precio no pide entrar; para contar, cada quien entra con su ficha y su PIN.' : 'Una sola vez. Después, entrar es desbloquear tu celular.'}</p>`;
+  let h = barraEstado(true) + `<div class="pantalla"><h1>Conectar con la tienda</h1><p class="lead">${tienda ? 'Una sola vez. Precio no pide entrar; para contar, cada quien entra con su ficha y su PIN.' : 'Una sola vez. Después entras con tu huella.'}</p>`;
   h += pasos.map(([t, sub], i) => `<div class="paso-alta${S.pasoAlta > i ? ' hecho' : ''}"><span class="n">${S.pasoAlta > i ? ic('check', 'i ch') : i + 1}</span><div><strong>${t}</strong><span>${sub}</span></div></div>`).join('');
   h += `<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:16px">`;
   if (S.pasoAlta === 0) h += `<button class="btn lleno ancho" data-a="altaEscanear">${ic('qr')}Escanear el código de la caja</button><button class="btn borde ancho" data-a="altaSinQr">Escribir la dirección y el PIN</button>`;
@@ -1657,7 +1703,7 @@ function pantallaAjustes() {
   const tienda = S.celular === 'tienda';
   return barraEstado(true) + `<div class="pantalla" style="padding-top:calc(var(--sb) + 4px)"><div class="barra" style="display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -12px"><button class="btn-ic" data-a="cerrarAjustes" aria-label="Regresar">${ic('atras')}</button><h2 style="margin:0;font-size:22px;font-weight:600">Ajustes</h2></div>
     <div class="seccion">Al leer</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
-    <div class="seccion">Una mano</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}<button class="ajuste" data-a="verPistas" style="width:100%;text-align:left"><div><strong>Volver a ver las pistas</strong><small>Las burbujas del botón rápido en cada modo</small></div>${ic('adelante', 'i ch')}</button>
+    <div class="seccion">Una mano${tienda ? ` · ${S.persona ? 'de ' + esc(PERSONAS[S.persona].nombre) : 'sin nadie adentro'}` : ''}</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}<button class="ajuste" data-a="verPistas" style="width:100%;text-align:left"><div><strong>Volver a ver las pistas</strong><small>Las burbujas del botón rápido en cada modo</small></div>${ic('adelante', 'i ch')}</button>
     <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', `5,832 productos${tienda ? ', sin existencias' : ''} · al día (hace 1 min)`, null)}${fila('De quién es', tienda ? 'De la tienda · Precio y Conteo · la sesión se cierra a los 10 minutos sin usarse' : 'De Luis · Precio, Ticket y Conteo', null)}
     <div class="seccion">Herramientas de medición</div>${fila('Sesión de prueba, banco y estrés', tienda ? 'Piden la ficha y el PIN de alguien con «Configuración de la tienda»' : 'Las de hoy, para medir el escáner en la tienda', null)}${fila('El escáner', tienda ? 'Motor, lente y resolución: también con esa ficha' : 'Motor, lente, resolución y cuadros por segundo', null)}
     <p class="nota" style="margin-top:12px">Lo de la cámara y los motores no cambia: está como se midió.</p></div><div class="barra-gestos"></div>`;
@@ -1667,7 +1713,7 @@ function dialogo() {
   if (S.dialogo === 'sinAplicar') { const pend = sinAplicar(); return `<div class="dialogo"><div><div class="ic">${ic('reloj')}</div><h3>Del conteo del día, ${pend.length} sin aplicar</h3><p>${pend.map(k => `${esc(POR_CODIGO.get(k).nombre)}: ${totalDia(k)}`).join(' · ')}. Lo contado sube a nombre de ${esc(PERSONAS[S.persona].nombre)}.</p><div class="opciones"><button data-a="aplicarPendientes">Aplicar ${pend.length === 1 ? 'lo contado' : 'todo'}</button><button data-a="descartarPendientes">Descartar</button><button data-a="cerrarDialogo">Seguir contando</button></div></div></div>`; }
   if (S.dialogo === 'huella') {
     const alta = S.pantalla === 'alta';
-    return `<div class="dialogo abajo"><div class="sistema" role="dialog" aria-label="Huella"><div class="app-sis">${ic('precio')}<span>Papelería POS</span></div><h3>${alta ? 'Activa la huella' : 'Entra con tu huella'}</h3><p>${alta ? 'Desde ahora, entrar a la app es desbloquear tu celular.' : 'Celular de Luis'}</p><button class="sensor" data-a="huellaOk" aria-label="Tocar el sensor (prototipo)">${ic('huella')}</button><p class="nota" style="margin:0 0 6px">Prototipo: toca la huella</p><div class="opciones"><button data-a="${alta ? 'cerrarDialogo' : 'usarPin'}">${alta ? 'Cancelar' : 'Usar mi PIN del POS'}</button></div></div></div>`;
+    return `<div class="dialogo abajo"><div class="sistema" role="dialog" aria-label="Huella"><div class="app-sis">${ic('precio')}<span>Papelería POS</span></div><h3>${alta ? 'Activa la huella' : 'Entra con tu huella'}</h3><p>${alta ? 'Desde ahora entras a la app con tu huella.' : 'Celular de Luis'}</p><button class="sensor" data-a="huellaOk" aria-label="Tocar el sensor (prototipo)">${ic('huella')}</button><p class="nota" style="margin:0 0 6px">Prototipo: toca la huella</p><div class="opciones"><button data-a="${alta ? 'cerrarDialogo' : 'usarPin'}">${alta ? 'Cancelar' : 'Usar mi PIN del POS'}</button></div></div></div>`;
   }
   if (S.dialogo === 'abrir') return `<div class="dialogo"><div><div class="ic">${ic('candado')}</div><h3>Desbloquea para abrir la app</h3><p>Con la huella, el rostro o el PIN del celular (no el del POS).</p><div class="opciones"><button data-a="desbloquear">Desbloquear (prototipo)</button><button data-a="cerrarDialogo">Cancelar</button></div></div></div>`;
   return '';
@@ -1681,7 +1727,7 @@ function precioGrande() {
 /* ——— La sesión ———
    En el de Luis: entra con el desbloqueo del celular y dura el turno. En el de la tienda: la ficha y el PIN para contar,
    se cierra a los 10 minutos sin usarse y lo de cada quien se queda a su nombre */
-function pedirFicha() { S.pantalla = 'entrada'; S.pin = ''; S.pinError = ''; S.fichaElegida = S.fichaElegida || 'ana'; }
+function pedirFicha() { S.pantalla = 'entrada'; S.pin = ''; S.pinError = ''; S.fichaElegida = null; }
 function entrarComo(nuevo) {
   if (S.celular === 'tienda') {
     const c = S.conteosDe[nuevo] || conteoVacio();
@@ -1697,7 +1743,8 @@ function entrarComo(nuevo) {
     S.conteo = c; S.modo = 'conteo';
     if (!c.activo && CONTEOS.length === 1 && CONTEOS[0].tipo === 'dia' && (S.pos !== 'piloto' || S.verConteo)) c.activo = 'dia';
   }
-  S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.pinError = ''; S.conPin = false; S.toast = null;
+  S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.pinError = ''; S.conPin = false; S.toast = null; S.cerradaSola = null; S.cierrePendiente = null;
+  cargarPistas();
   /* Lo del día que quedó sin aplicar al cerrarse sola la sesión, se recuerda al volver */
   const t = conteoActivo();
   if (S.celular === 'tienda' && t && t.tipo === 'dia' && sinAplicar().length) { S.dialogo = 'sinAplicar'; S.despuesDialogo = null; }
@@ -1715,7 +1762,10 @@ function cerrarSesion(sola, texto) {
   S.conteosDe[quien] = c;
   S.conteo = conteoVacio();
   S.persona = null; S.modo = 'precio'; S.pantalla = 'escaner'; S.precio = null;
-  toast(texto || (sola ? `La sesión de ${per.nombre} se cerró: 10 minutos sin usarse. Lo que contaba sigue a su nombre.` : `Salió ${per.nombre}.${hubo ? ' Lo que contaba queda a su nombre.' : ''}`));
+  cargarPistas();
+  if (sola) { S.cerradaSola = { nombre: per.nombre, primera: true }; toast(`La sesión de ${per.nombre} se cerró: 10 minutos sin usarse.`); return; }
+  S.cerradaSola = null;
+  toast(texto || `Salió ${per.nombre}.${hubo ? ' Lo que contaba queda a su nombre.' : ''}`, 'Deshacer', () => { entrarComo(quien); S.dialogo = null; pintar(); }, 6000);
 }
 /* «Terminé mi parte»: en el de la tienda, además sale */
 function terminarParte(t) {
@@ -1920,7 +1970,10 @@ const A = {
     cerrarSesion(false); pintar();
   },
   entrarParaContar() { S.hoja = null; if (S.pos === 'piloto' && !S.verConteo) { S.modo = 'conteo'; pintar(); return; } pedirFicha(); pintar(); },
-  regresarDeEntrada() { S.pantalla = 'escaner'; S.modo = 'precio'; S.pin = ''; S.pinError = ''; pintar(); },
+  regresarDeEntrada() { S.pantalla = 'escaner'; S.modo = 'precio'; S.pin = ''; S.pinError = ''; S.fichaElegida = null; pintar(); },
+  seguirSesion() { S.avisoCierre = false; toast('Sigues adentro.'); pintar(); },
+  quitarAvisoSesion() { S.cerradaSola = null; pintar(); },
+  otraFicha() { S.fichaElegida = null; S.pin = ''; S.pinError = ''; pintar(); },
   ficha(d) { S.fichaElegida = d.id; S.pin = ''; S.pinError = ''; pintar(); },
   pedirHuella() { S.dialogo = 'huella'; pintar(); },
   huellaOk() { vibrar(30); S.dialogo = null; if (S.pantalla === 'alta') { S.pasoAlta = 4; pintar(); return; } entrarComo('luis'); pintar(); },
@@ -1940,8 +1993,8 @@ const A = {
   },
   ajustes() { S.hoja = null; S.pantalla = 'ajustes'; pintar(); },
   cerrarAjustes() { S.pantalla = 'escaner'; pintar(); },
-  zurdo() { S.zurdo = !S.zurdo; guardar('zurdo', S.zurdo ? 'si' : 'no'); pintar(); },
-  verPistas() { S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas', '{}'); guardar('deslizadas', '0'); toast('Las pistas salen otra vez en cada modo.'); pintar(); },
+  zurdo() { S.zurdo = !S.zurdo; guardar('zurdo-' + quienPistas(), S.zurdo ? 'si' : 'no'); pintar(); },
+  verPistas() { S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-' + quienPistas(), '{}'); guardar('deslizadas-' + quienPistas(), '0'); toast('Las pistas salen otra vez en cada modo.'); pintar(); },
   bloqueo() { S.hoja = null; S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; pintar(); },
   rapidoPrecio() { S.rapidoBloqueo = true; S.precioAntes = S.precio; S.precio = null; S.indices.precio = 0; pintar(); },
   cerrarRapido() { S.rapidoBloqueo = false; S.precio = S.precioAntes || null; pintar(); },
@@ -1965,6 +2018,8 @@ const A = {
 tel.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
   if (!b || b.disabled) return;
+  if (S.hojaDesdeGesto && performance.now() - S.hojaDesdeGesto < 300 && b.closest('.hoja') && !b.closest('.barra')) return;   // salvo cerrar, arriba
+  S.cierrePendiente = null;   // tocar es usarlo
   if (b.closest('.rapido')) { cerrarMenuRapido(false); usarGesto(); }
   const f = A[b.dataset.a];
   if (f) f(b.dataset);
@@ -1973,7 +2028,9 @@ tel.addEventListener('click', e => {
 /* ——— El botón rápido: pulsar abre los tres; deslizar y soltar elige; soltar sin deslizar los deja abiertos para tocar.
    Se mide desde donde se pulsó (no desde el centro del botón): se arma a 32 dp y se desarma bajo 24 dp; las fronteras de
    los sectores llevan 4° de histéresis. Durante el gesto no se vuelve a pintar la pantalla: solo cambian clases. ——— */
-const ARMA = 32, DESARMA = 24, HISTERESIS = 4;
+const ARMA = 32, DESARMA = 24, HISTERESIS = 4, SLOP = 8, TOQUE_MS = 400, ZONA = 28;
+/* Dónde quedan las opciones respecto al centro del botón (dp); en zurdo, en espejo */
+const LUGARES = { arriba: [0, -88], diagonal: [-62, -62], izquierda: [-88, 0] };
 const SECTORES = [['arriba', 45, 112.5], ['diagonal', 112.5, 157.5], ['izquierda', 157.5, 225]];
 let gesto = null, pintarAlSoltar = false;
 function anguloDe(dx, dy) { let a = Math.atan2(-dy, dx) * 180 / Math.PI; if (a < -90) a += 360; return a; }
@@ -1985,17 +2042,18 @@ function sectorDe(a, actual) {
   return 'cancela';
 }
 function abrirMenuRapido() {
-  S.menuRapido = true;
+  S.menuRapido = true; clearTimeout(toastTimer);
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
   if (r) { r.classList.add('abierto'); r.querySelectorAll('.op').forEach(o => o.tabIndex = 0); r.querySelector('#fab').setAttribute('aria-expanded', 'true'); }
   if (app) app.classList.add('menu-abierto');
-  if (!(S.pistasVistas || {})[S.modo]) { S.pistasVistas = { ...(S.pistasVistas || {}), [S.modo]: true }; guardar('pistas', JSON.stringify(S.pistasVistas)); const p = tel.querySelector('.pista-rapido'); if (p) p.remove(); }
+  if (!(S.pistasVistas || {})[S.modo]) { S.pistasVistas = { ...(S.pistasVistas || {}), [S.modo]: true }; guardar('pistas-' + quienPistas(), JSON.stringify(S.pistasVistas)); const p = tel.querySelector('.pista-rapido'); if (p) p.remove(); }
 }
 function cerrarMenuRapido(repintar = true) {
   S.menuRapido = false;
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
   if (r) { r.classList.remove('abierto', 'cancela'); r.querySelectorAll('.op').forEach(o => { o.classList.remove('sel'); o.tabIndex = -1; }); const f = r.querySelector('#fab'); if (f) f.setAttribute('aria-expanded', 'false'); }
   if (app) app.classList.remove('menu-abierto');
+  correrAviso();
   if (repintar) pintar();
 }
 function marcarSector(dir) {
@@ -2018,7 +2076,7 @@ tel.addEventListener('pointerdown', e => {
   if (!fab) return;
   e.preventDefault();
   const r = fab.getBoundingClientRect();
-  gesto = { id: e.pointerId, x0: e.clientX, y0: e.clientY, k: r.width / fab.offsetWidth || 1, dir: null, armado: false, yaAbierto: S.menuRapido };
+  gesto = { id: e.pointerId, x0: e.clientX, y0: e.clientY, cx: r.left + r.width / 2, cy: r.top + r.height / 2, k: r.width / fab.offsetWidth || 1, dir: null, armado: false, yaAbierto: S.menuRapido, t0: performance.now(), lejos: 0 };
   try { fab.setPointerCapture(e.pointerId); } catch (err) { /* sin captura: se sigue con los eventos del documento */ }
   abrirMenuRapido();
   dibujarTrazo(gesto);
@@ -2027,9 +2085,13 @@ document.addEventListener('pointermove', e => {
   if (!gesto || e.pointerId !== gesto.id) return;
   const dx = (e.clientX - gesto.x0) / gesto.k * (S.zurdo ? -1 : 1), dy = (e.clientY - gesto.y0) / gesto.k;
   const dist = Math.hypot(dx, dy);
+  gesto.lejos = Math.max(gesto.lejos, dist);
   let dir = gesto.dir;
   if (dist >= ARMA) { gesto.armado = true; dir = sectorDe(anguloDe(dx, dy), gesto.dir); }
   else if (dist < DESARMA) dir = gesto.armado ? 'centro' : null;
+  /* Si el dedo está sobre una opción (28 dp de su centro), gana esa, aunque el ángulo desde donde se pulsó diga otra */
+  const ox = (e.clientX - gesto.cx) / gesto.k * (S.zurdo ? -1 : 1), oy = (e.clientY - gesto.cy) / gesto.k;
+  for (const [d, [lx, ly]] of Object.entries(LUGARES)) if (Math.hypot(ox - lx, oy - ly) <= ZONA) { gesto.armado = true; dir = d; }
   if (dir !== gesto.dir) {
     gesto.dir = dir; marcarSector(dir === 'centro' ? null : dir);
     const op = dir && tel.querySelector(`#rapido .op[data-dir="${dir}"]`);
@@ -2044,14 +2106,17 @@ function soltarGesto(e, cancelado) {
   if (!cancelado && g.armado && op) {
     if (op.disabled) { vibrar([20, 40, 20]); cerrarMenuRapido(false); toast(op.dataset.razon || 'Esa opción no está disponible ahora.'); pintar(); return; }
     vibrar(15);
-    S.elegidasDeslizando = (S.elegidasDeslizando || 0) + 1; guardar('deslizadas', String(S.elegidasDeslizando));
+    S.elegidasDeslizando = (S.elegidasDeslizando || 0) + 1; guardar('deslizadas-' + quienPistas(), String(S.elegidasDeslizando));
     cerrarMenuRapido(false);
     A[op.dataset.a]({});
+    S.hojaDesdeGesto = performance.now();   // la hoja que abrió el gesto no acepta el toque de rebote
     if (pintarAlSoltar) { pintarAlSoltar = false; pintar(); }
     return;
   }
-  // Se armó y se soltó en el centro, abajo o a la derecha: se cierra sin hacer nada. Un toque: se queda abierto.
-  if (cancelado || g.armado || g.yaAbierto) { pintarAlSoltar = false; cerrarMenuRapido(); return; }
+  // Se armó y se soltó en el centro, abajo o a la derecha: se cierra sin hacer nada. Solo un toque (menos de 8 dp y
+  // antes de 400 ms) lo deja abierto; sostenerlo o moverse y soltar sin elegir lo cierra.
+  const toque = g.lejos < SLOP && performance.now() - g.t0 < TOQUE_MS;
+  if (cancelado || g.armado || g.yaAbierto || !toque) { pintarAlSoltar = false; cerrarMenuRapido(); return; }
   if (pintarAlSoltar) { pintarAlSoltar = false; pintar(); }
 }
 document.addEventListener('pointerup', e => soltarGesto(e, false));
@@ -2088,6 +2153,7 @@ const PROTO = {
   red(v) {
     S.red = v;
     if (v !== 'caida' && S.accesoQuitado) { despues(700, revocar); pintar(); return; }
+    if (v !== 'caida' && S.cierrePendiente && S.cierrePendiente === S.persona) { const q = S.cierrePendiente; despues(700, () => { if (S.cierrePendiente === q && S.persona === q) { S.cierrePendiente = null; cerrarSesion(true); pintar(); } }); }
     const todos = () => [S.conteo, ...Object.values(S.conteosDe)];
     if (v !== 'caida' && todos().some(c => c.porSubir)) {
       despues(900, () => {
@@ -2114,7 +2180,7 @@ const PROTO = {
     if (S.celular === v) return;
     S.celular = v; S.hoja = null; S.menuRapido = false; S.dialogo = null; S.conPin = false; S.avisoCierre = false; S.accesoQuitado = false; S.precioGrande = false; S.qr = null;
     S.conteo = conteoVacio(); S.conteosDe = {}; DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO();
-    S.persona = v === 'tienda' ? null : 'luis'; S.fichaElegida = 'ana';
+    S.persona = v === 'tienda' ? null : 'luis'; S.fichaElegida = null; cargarPistas();
     if (v === 'tienda' && S.modo !== 'precio') S.modo = 'precio';
     if (S.pantalla === 'alta') { S.pasoAlta = 0; S.escanerAlta = false; }
     else if (S.pantalla !== 'bloqueo') S.pantalla = 'escaner';
@@ -2127,9 +2193,9 @@ const PROTO = {
     if (S.celular !== 'tienda') { toast('En el celular de Luis la sesión dura el turno (8 h): no se cierra por no usarse.'); pintar(); return; }
     if (!S.persona) { toast('Sin nadie adentro no hay sesión: Precio no la pide.'); pintar(); return; }
     const quien = S.persona;
-    S.avisoCierre = true; vibrar([60, 80, 60]);
-    toast(`La sesión de ${PERSONAS[quien].nombre} se cierra en 1 minuto.`, 'Seguir', () => { S.avisoCierre = false; toast('Sigues adentro.'); pintar(); });
-    despues(3800, () => { if (S.avisoCierre && S.persona === quien) { cerrarSesion(true); pintar(); } });
+    if (S.red === 'caida') { S.cierrePendiente = quien; toast(`Sin red, la sesión de ${PERSONAS[quien].nombre} no se cierra: nadie podría volver a entrar. Si al volver la red sigue sin usarse, se cierra.`); pintar(); return; }
+    S.avisoCierre = true; vibrar([60, 80, 60]); S.toast = null;
+    despues(4000, () => { if (S.avisoCierre && S.persona === quien) { cerrarSesion(true); pintar(); } });
     pintar();
   },
   /* Desde una caja: Configuración › Celulares › «Quitar el acceso». Sin red, el celular se entera al volver a verla */
@@ -2163,7 +2229,7 @@ function pintarProto() {
 
 /* Lo que se puede probar: cada tarea deja la app lista para empezar */
 const GUIA = [
-  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Para arrepentirse: desliza y regresa al botón, o suelta hacia abajo o a la derecha. Nada se elige.', 'Arriba, «Ver el gesto» dibuja el círculo de 32 dp y las fronteras mientras pulsas; con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas', '{}'); guardar('deslizadas', '0'); } },
+  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Para arrepentirse: desliza y regresa al botón, o suelta hacia abajo o a la derecha. Nada se elige.', 'Arriba, «Ver el gesto» dibuja el círculo de 32 dp y las fronteras mientras pulsas; con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-luis', '{}'); guardar('deslizadas-luis', '0'); } },
   { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido en diagonal (↖): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', 'Botón rápido hacia arriba (↑): «Al ticket», sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
   { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', 'Botón rápido hacia arriba (↑): «Mandar a Caja 2» y «Mandar»; llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
   { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
