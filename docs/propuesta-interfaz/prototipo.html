@@ -216,6 +216,8 @@ svg.i.ch { width: 20px; height: 20px; }
 .letra-grande .pastilla .salir { font-size: 26px; }
 .letra-grande .estado-red { font-size: 24px; height: auto; min-height: 40px; }
 .letra-grande .estado-red .det { display: none; }
+[data-tam="chico"].letra-grande .quien { flex-wrap: nowrap; }
+[data-tam="chico"].letra-grande .estado-red .que { display: none; }
 .letra-grande .pantalla h1 { font-size: 34px; }
 .letra-grande .pantalla .lead, .letra-grande .ficha { font-size: 22px; }
 .aviso-cierre { position: absolute; z-index: 35; left: 12px; right: 12px; bottom: calc(var(--gb) + 72px); display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 18px; background: #2b2f33; color: #fff; font-size: 16px; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
@@ -246,7 +248,7 @@ svg.i.ch { width: 20px; height: 20px; }
 
 /* ——— El botón rápido: abajo a la derecha, al final de la barra de modos. Pulsar abre tres botones chicos; pulsar,
    deslizar y soltar elige uno. Mide 56 dp; las opciones, 48 dp a 88 dp de su centro (↑ 90°, ↖ 135°, ← 180°) ——— */
-.rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 6px); width: 56px; height: 56px; }
+.rapido { position: absolute; z-index: 31; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 4px); width: 56px; height: 56px; }
 .rapido .fab { position: absolute; inset: 0; border-radius: 16px; display: grid; place-items: center; background: var(--m); color: var(--en-m); box-shadow: 0 4px 12px var(--sombra); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .rapido .fab::before { content: ""; position: absolute; inset: -4px; }
 .rapido .fab svg { width: 28px; height: 28px; stroke-width: 2.4; }
@@ -371,7 +373,8 @@ svg.i.ch { width: 20px; height: 20px; }
 .mini.bn svg { filter: grayscale(1); }
 
 /* Precio */
-.tarjeta-precio { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: start; padding: 4px 0 6px; }
+.tarjeta-precio { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: start; padding: 4px 0 0; }
+.datos-precio .al-ticket { margin-left: auto; min-height: 48px; padding: 0 16px 0 12px; font-size: 15px; }
 .tarjeta-precio .nombre { font-size: 18px; font-weight: 600; line-height: 1.25; }
 .tarjeta-precio .debajo { font-size: 13.5px; color: var(--suave); margin-top: 2px; }
 .tarjeta-precio .monto { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
@@ -400,10 +403,79 @@ svg.i.ch { width: 20px; height: 20px; }
 .menos-uno { min-width: 52px; height: 52px; padding: 0 8px; border-radius: 26px; display: grid; place-items: center; background: var(--sup-2); color: var(--texto); flex: none; font-size: 16px; font-weight: 700; }
 .menos-uno:disabled { opacity: .4; }
 .cuenta-grande { position: relative; }
+/* Conteo: el encabezado con el lugar, el producto que se toca entero, el aviso en su lugar y el renglón de lo último */
+.encabezado.conteo { align-items: center; gap: 6px; }
+.encabezado .lugar { display: inline-flex; align-items: center; gap: 2px; min-height: 40px; padding: 0 6px 0 12px; border-radius: 20px; background: var(--m-c); color: var(--en-m-c); font-size: 14px; font-weight: 700; flex: none; }
+.encabezado .lugar svg.i { width: 18px; height: 18px; }
+.encabezado .avance { min-height: 40px; color: var(--suave); font-size: 13.5px; white-space: nowrap; }
+.encabezado .corto { display: none; min-height: 40px; }
+.contando > .producto-toca { grid-column: 1; grid-row: 1; }
+.contando > .cuenta-grande { grid-column: 2; grid-row: 1; }
+.producto-toca { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; min-height: 48px; padding: 2px 0; text-align: left; }
+.producto-toca .nom { max-width: 100%; font-size: 17px; font-weight: 600; line-height: 1.25; }
+.producto-toca .det { max-width: 100%; font-size: 13.5px; color: var(--suave); line-height: 1.3; }
+.producto-toca .suma { position: static; display: inline-block; margin-left: 6px; vertical-align: 1px; }
 .zurdo .contando { grid-template-columns: auto minmax(0, 1fr); }
-.zurdo .contando .cuenta-grande { grid-column: 1; grid-row: 1 / span 2; flex-direction: row-reverse; }
-.zurdo .contando > .nom, .zurdo .contando > .det { grid-column: 2; }
-.zurdo .suma { right: auto; left: -6px; }
+.zurdo .contando > .cuenta-grande { grid-column: 1; flex-direction: row-reverse; }
+.zurdo .contando > .producto-toca { grid-column: 2; }
+.aviso-conteo { margin-top: 6px; padding: 8px 6px 8px 12px; border-radius: 16px; }
+.aviso-conteo.error { background: var(--error-c); color: var(--en-error-c); }
+.aviso-conteo.otro { background: var(--aviso-c); color: var(--aviso); }
+.aviso-conteo .fila-aviso { display: flex; align-items: flex-start; gap: 8px; }
+.aviso-conteo .ic { flex: none; padding-top: 3px; }
+.aviso-conteo .txt { flex: 1; min-width: 0; padding-top: 2px; font-size: 14.5px; line-height: 1.3; }
+.aviso-conteo .txt b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aviso-conteo .txt.una { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+.aviso-conteo .txt.una b { display: inline; font-size: 15px; }
+.aviso-conteo.otro { margin-top: 2px; padding: 4px 4px 4px 12px; }
+.aviso-conteo.otro .ic { display: none; }
+.aviso-conteo.otro .acciones-aviso { margin-top: 4px; }
+.encabezado .lugar, .encabezado .avance, .encabezado .corto { position: relative; }
+.encabezado .lugar::before, .encabezado .avance::before, .encabezado .corto::before { content: ""; position: absolute; inset: -4px 0; }
+.aviso-conteo .acciones-aviso { display: flex; gap: 8px; margin-top: 8px; }
+.aviso-conteo .acciones-aviso .btn { min-height: 48px; padding: 0 10px; font-size: 14.5px; white-space: normal; line-height: 1.15; }
+.renglon-ultimo { flex: none; display: flex; align-items: center; gap: 8px; min-height: 48px; margin: 0 max(12px, env(safe-area-inset-right, 0px)) 4px max(12px, env(safe-area-inset-left, 0px)); padding: 0 4px 0 12px; border-radius: 14px; background: var(--sup-1); font-size: 14.5px; }
+.renglon-ultimo .txt { flex: 1; min-width: 0; display: flex; white-space: nowrap; }
+.renglon-ultimo .txt .nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.renglon-ultimo .txt .fijo { flex: none; }
+.renglon-ultimo .btn { flex: none; min-height: 40px; padding: 0 14px; font-size: 14px; }
+.renglon-ultimo.regla { color: var(--suave); }
+.renglon-ultimo.pregunta, .renglon-ultimo.vencido { background: var(--aviso-c); color: var(--aviso); font-weight: 600; }
+.renglon-ultimo.aplicado { background: var(--exito-c); color: var(--en-exito-c); font-weight: 600; }
+.zurdo .renglon-ultimo { flex-direction: row-reverse; padding: 0 12px 0 4px; }
+.modos .cuenta-ic.aviso { background: var(--aviso); color: #fff; }
+.dato.oculta { flex-wrap: wrap; }
+.dato.oculta .enlace { min-height: 30px; font-size: 14px; }
+/* El teclado de contar: casillas en dos columnas y teclas de 52 dp; se cierra jalando su barra */
+.cajas.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cajas.dos .caja { grid-template-columns: minmax(0, 1fr) auto; min-height: 56px; padding: 6px 12px; }
+.cajas.dos .caja strong { font-size: 14.5px; line-height: 1.2; }
+.cajas.dos .valor { font-size: 24px; font-weight: 800; }
+.numerico.chico button { height: 52px; }
+.teclado-conteo .fila-total { margin: 8px 4px; }
+.jalar { display: block; flex: none; width: 100%; height: 22px; position: relative; }
+.jalar::after { content: ""; position: absolute; left: 50%; top: 9px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--borde); }
+/* Lo contado y «¿Qué vas a contar?» */
+.pestanas { display: flex; gap: 8px; }
+.pestanas button { flex: 1; min-width: 0; min-height: 48px; padding: 0 8px; border-radius: 24px; box-shadow: inset 0 0 0 1.5px var(--borde); font-size: 14px; font-weight: 600; }
+.pestanas button.on { background: var(--m-c); color: var(--en-m-c); box-shadow: inset 0 0 0 1.5px var(--m); }
+.cant.no-hay { color: var(--aviso); font-size: 15px; }
+.captura.gris { opacity: .55; }
+.tareas.compactas { gap: 6px; }
+.tareas.compactas .tarea { min-height: 56px; padding: 6px 12px; }
+.tarea .avance { font-size: 13.5px; color: var(--suave); white-space: nowrap; }
+.resumen { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--exito-c); color: var(--en-exito-c); font-weight: 600; }
+.lead-hoja { margin: 0 0 12px; color: var(--suave); font-size: 15px; }
+.lugares { display: flex; flex-direction: column; gap: 8px; }
+.solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+[data-tam="chico"] .contador { font-size: 38px; height: 72px; min-width: 96px; }
+/* Letra grande en Conteo: primero la barra y la pista; luego el encabezado corto; al último el desglose y «Ya van» */
+.letra-grande .panel.modo-conteo .progreso, .letra-grande .panel.modo-conteo .pista-conteo { display: none; }
+.letra-grande .encabezado.conteo .titulo, .letra-grande .encabezado.conteo .avance { display: none; }
+.letra-grande .encabezado.conteo .corto { display: inline-flex; align-items: center; font-size: 20px; font-weight: 700; color: var(--texto); }
+.letra-grande .producto-toca .det { display: none; }
+.letra-grande .producto-toca .nom { font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.letra-grande .renglon-ultimo { font-size: 22px; }
 .suma { position: absolute; z-index: 1; right: -6px; bottom: -10px; padding: 2px 9px; border-radius: 11px; background: var(--m); color: var(--en-m); font-size: 14px; font-weight: 800; animation: entra .15s ease-out; pointer-events: none; }
 .chip-para { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--aviso-c); color: var(--aviso); font-size: 12.5px; font-weight: 600; vertical-align: middle; }
 .enlace { color: var(--m); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-align: left; font-size: 13.5px; min-height: 32px; padding: 0; }
@@ -625,7 +697,7 @@ svg.i.ch { width: 20px; height: 20px; }
     <button data-p="celular" data-v="luis" class="on">De Luis</button><button data-p="celular" data-v="tienda">De la tienda</button>
   </div>
   <div class="grupo" role="group" aria-label="Lo que pasa con el celular"><span>Pasa</span>
-    <button data-p="sinUso">10 min sin uso</button><button data-p="quitarAcceso">Quitar el acceso</button>
+    <button data-p="sinUso">10 min sin uso</button><button data-p="pausa">20 s sin códigos</button><button data-p="quitarAcceso">Quitar el acceso</button>
   </div>
   <div class="grupo" role="group" aria-label="Tamaño de la pantalla"><span>Pantalla</span>
     <button data-p="tam" data-v="pixel" class="on">Pixel 8 Pro</button><button data-p="tam" data-v="mediano">Mediana</button><button data-p="tam" data-v="chico">Chica</button>
@@ -675,6 +747,9 @@ const CATALOGO = [
   P('7509990100170', 'Colores largos 12 piezas', 'arte', 4500, 'colores', { existencia: 14, vendidos: 85 }),
   P('7509990100187', 'Bolsa de regalo mediana', 'reg', 1800, 'bolsa', { existencia: 25, vendidos: 30 }),
   P('7509990100200', 'Lápiz HB No. 2 · caja con 12', 'esc', 5400, 'lapiz', { piezas: 12, base: '7509990100026', existencia: 140, vendidos: 25 }),
+  P('7509990100279', 'Pluma azul punto mediano', 'esc', 600, 'lapicero', { existencia: 180, vendidos: 220, presentaciones: [{ k: 'caja', nombre: 'Cajas de 50', corto: 'caja', piezas: 50, codigo: '7509990100293' }, { k: 'paquete', nombre: 'Paquetes de 10', corto: 'paquete', piezas: 10, codigo: '7509990100286' }] }),
+  P('7509990100286', 'Pluma azul punto mediano · paquete de 10', 'esc', 5500, 'lapicero', { piezas: 10, base: '7509990100279', existencia: 180, vendidos: 30 }),
+  P('7509990100293', 'Pluma azul punto mediano · caja de 50', 'esc', 26000, 'lapicero', { piezas: 50, base: '7509990100279', existencia: 180, vendidos: 6 }),
   P('2999990000016', 'Papel china verde', 'pap', 200, 'china', { existencia: 150, vendidos: 45, cajon: true }),
   P('7509990100217', 'Listón satinado rojo 1 cm', 'arte', 300, 'liston', { unidad: 'm', existencia: 85.5, vendidos: 50, rollo: { codigo: '7509990100224', metros: 10 } }),
   P('7509990100224', 'Listón satinado rojo 1 cm · rollo de 10 m', 'arte', 2800, 'liston', { metros: 10, base: '7509990100217', existencia: 85.5, vendidos: 8 }),
@@ -720,30 +795,40 @@ const CAJAS = [
    El completo: un departamento abierto; cada captura es lo de un lugar y se suman */
 const DEL_DIA = ['7509990100019', '7509990100040', '7509990100118', '7509990100163', '7509990100064', '7509990100057', '7509990100095', '7509990100101', '7509990100125', '7509990100156', '7509990100170', '7509990100187', '7509990100088', '7509990100033', '7509990100026'];
 const DIA = () => ({ id: 'dia', tipo: 'dia', titulo: 'Conteo del día', productos: DEL_DIA });
-const DEPTO = (id, quien, contados, total) => ({ id, tipo: 'completo', depto: id, titulo: DEPTOS[id], quien, contados, total });
+/* ahora: quién está contando ese departamento en este momento, en la app o en /conteo (C5) */
+const DEPTO = (id, ahora, contados, total) => ({ id, tipo: 'completo', depto: id, titulo: DEPTOS[id], ahora, contados, total });
 const ESCENARIOS_CONTEO = {
-  normal: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120)],
+  normal: () => [DIA(), DEPTO('esc', 'Luis, Ana', 37, 120)],
   soloDia: () => [DIA()],
-  dosDeptos: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210)],
-  conArte: () => [DIA(), DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('arte', 'nadie todavía', 0, 60)],
-  arranque: () => [DEPTO('esc', 'Luis y Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210), DEPTO('pap', 'nadie todavía', 0, 95), DEPTO('arte', 'nadie todavía', 0, 60), DEPTO('reg', 'nadie todavía', 0, 40)],
+  dosDeptos: () => [DIA(), DEPTO('esc', 'Luis, Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210)],
+  conArte: () => [DIA(), DEPTO('esc', 'Luis, Ana', 37, 120), DEPTO('arte', '', 0, 60)],
+  arranque: () => [DEPTO('esc', 'Luis, Ana', 37, 120), DEPTO('ofi', 'Carmen', 12, 210), DEPTO('pap', '', 0, 95), DEPTO('arte', '', 0, 60), DEPTO('reg', '', 0, 40)],
 };
 let CONTEOS = ESCENARIOS_CONTEO.normal();
-/* Lo que ya contaron otros en el conteo completo: [quién, cuánto, a qué hora]. Beto contó en la página /conteo */
-const DE_OTROS_INICIO = () => ({ '7509990100019': [['Luis', 5, '10:12']], '7509990100026': [['Ana', 24, '10:40']], '7509990100064': [['Luis', 12, '9:58'], ['Beto', 3, '11:20']] });
+/* Los departamentos ya cerrados (el POS dice cuándo): lo suyo que aparece en otro lado es un ajuste */
+const CERRADOS = { reg: '12/11' };
+/* Lo que ya contaron otros en el conteo completo, con el lugar (C11). Beto contó en la página /conteo */
+const DE_OTROS_INICIO = () => ({
+  '7509990100019': [{ quien: 'Luis', cant: 5, hora: '10:12', lugar: 'Anaquel' }],
+  '7509990100026': [{ quien: 'Ana', cant: 24, hora: '10:40', lugar: 'Bodega' }],
+  '7509990100064': [{ quien: 'Luis', cant: 12, hora: '9:58', lugar: 'Anaquel' }, { quien: 'Beto', cant: 3, hora: '11:20', lugar: 'Bodega', enConteo: true }],
+});
 let DE_OTROS = DE_OTROS_INICIO();
 /* Del conteo del día, lo que ya aplicó otra persona (en la caja o en su celular) */
-const DIA_DE_OTROS_INICIO = () => ({ '7509990100040': ['Carmen', '11:02'] });
+const DIA_DE_OTROS_INICIO = () => ({ '7509990100040': { quien: 'Carmen', hora: '11:02' } });
 let DIA_DE_OTROS = DIA_DE_OTROS_INICIO();
-/* Lo que se «lee» al tocar la franja en Conteo, según lo que se cuenta */
+/* Lo que se «lee» al tocar la franja en Conteo: la de cada conteo, o la de una tarea de «Qué probar» */
 const SEC_CONTEO = {
-  esc: ['7509990100019', '7509990100019', '7509990100019', '7509990100026', '7509990100200', '7509990100026', '7509990100071', '7509990100163'],
+  esc: ['7509990100019', '7509990100019', '7509990100019', '7509990100026', '7509990100200', '7509990100033', '7509990100026', '7509990100125'],
+  lugar: ['7509990100026', '7509990100026', '7509990100026', '7509990100019', '7509990100026'],
+  cajas: ['7509990100279', '7509990100286', '7509990100293', '7509990100279', '7509990100279'],
   ofi: ['7509990100088', '7509990100088', '7509990100095', '7509990100101'],
   pap: ['7509990100125', '7509990100132', '7509990100149'],
   arte: ['7509990100224', '7509990100217', '7509990100217', '7509990100231', '7509990100248'],
   reg: ['7509990100255', '7509990100262', '7509990100187'],
   dia: ['7509990100026', '7509990100026', '7509990100200', '7509990100033', '7509990100026', '7509990100040', '7509990100132'],
-  noVa: ['7509990100019', '7509990100071', '7509990100125', '7509990100194', '7509990100163'],
+  encima: ['7509990100026', '7509990100088', '7509990100088', '7509990100033', '7509990100118'],
+  noVa: ['7509990100019', '7509990100071', '7509990100125', '7509990100187', '7509990100194', '7509990100163'],
 };
 
 /* Lo que se lee al tocar la franja, por modo: así los pasos de «Qué probar» siempre dan lo mismo */
@@ -777,6 +862,7 @@ const IC = {
   mandar: '<path d="M4 12 20 4l-4 16-4-7z"/><path d="m12 13 8-9"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
   atras: '<path d="M15 5l-7 7 7 7"/>',
+  abajo: '<path d="M6 9l6 6 6-6"/>',
   adelante: '<path d="M9 5l7 7-7 7"/>',
   menos: '<path d="M6 12h12"/>',
   mas: '<path d="M12 6v12M6 12h12"/>',
@@ -895,7 +981,10 @@ function qrDibujo(semilla, n = 37) {
 }
 
 /* ——— El estado del prototipo ——— */
-const conteoVacio = () => ({ activo: null, actual: null, capturas: [], dia: {}, porSubir: 0, idCaptura: 1, paraOtro: null, suma: '', sumaHasta: 0 });
+/* Lo de contar de una persona: lo que cuenta ahora (actual), sus capturas, lo del día por lugares, el lugar, el aviso en el
+   lugar del producto, lo fuera de lugar y lo que dice el renglón de lo último */
+const conteoVacio = () => ({ activo: null, actual: null, capturas: [], dia: {}, porSubir: 0, idCaptura: 1, paraOtro: null, suma: '', sumaHasta: 0,
+  lugar: null, lugarDia: false, aviso: null, fuera: [], pregunta: null, ultimaGuardada: null, ultimoAplicado: null, quitada: null, ultimaQuitada: null, ultimaLectura: 0 });
 const INICIO = () => ({
   red: 'buena', tam: 'pixel', tema: 'sistema', pos: 'piloto',
   celular: 'luis',            // luis: el de una persona de confianza (el dueño) · tienda: el de la tienda, solo Precio y Conteo
@@ -907,11 +996,11 @@ const INICIO = () => ({
   avisoCierre: false, accesoQuitado: false, perdidas: 0,
   menuRapido: false, verConteo: false, verGesto: false, letraGrande: false, pistasVistas: pistasDe('luis'), elegidasDeslizando: deslizadasDe('luis'), zurdo: leerGuardado('zurdo-luis') === 'si',
   modo: 'ticket',
-  hoja: null, hojaDatos: null, precioGrande: false, hojaDesdeGesto: 0,
+  hoja: null, hojaDatos: null, precioGrande: false, precioGrandeCodigo: null, rebote: 0,
   ticket: [], impresiones: [], idLinea: 1, deshacer: [], cajaElegida: 2, enviado: null, qr: null, enviando: false,
   precio: null,
   conteo: conteoVacio(),
-  secuenciaConteo: null, tabContado: 'mio', cierreSinRed: false, despuesDialogo: null,
+  secuenciaConteo: null, tabContado: 'mio', cierreSinRed: false, despuesDialogo: null, minutosExtra: 0, anuncio: '', pistaYaVan: null,
   escaner: { fase: 'escaneando', codigo: null, linterna: false },
   indices: { ticket: 0, precio: 0, conteo: 0 },
   busqueda: '', filtroPc: 'todas', elegidos: [], toast: null, rapidoBloqueo: false, guia: null,
@@ -935,7 +1024,10 @@ function agregarAlTicket(codigo, cant = 1, aviso = false) {
   if (i >= 0) { const l = S.ticket.splice(i, 1)[0]; l.cant += cant; S.ticket.unshift(l); }
   else S.ticket.unshift({ id: S.idLinea++, codigo, cant, desconocido: !POR_CODIGO.has(codigo) });
   S.enviado = null; S.qr = null;
-  if (aviso) toast(`Agregado al ticket · ${piezasTicket()} art. · ${dinero(totalTicket())}`, 'Deshacer', () => A.deshacer());
+  if (aviso) {
+    const p = POR_CODIGO.get(codigo), l = S.ticket.find(x => x.codigo === codigo), nom = p ? (p.nombre.length > 26 ? p.nombre.slice(0, 25).trimEnd() + '…' : p.nombre) : codigo;
+    toast(`${nom} al ticket${l && l.cant > 1 ? ` (van ${l.cant})` : ''} · ${piezasTicket()} art. · ${dinero(totalTicket())}`, 'Deshacer', () => A.deshacer(), 4200, true);   // arriba: el botón queda libre
+  }
 }
 
 /* ——— El escáner simulado: viendo (ámbar) → leído (verde, vibración) → escaneando ——— */
@@ -943,7 +1035,7 @@ function siguienteCodigo() {
   const m = S.pantalla === 'alta' ? null : (S.rapidoBloqueo ? 'precio' : S.modo);
   if (!m) return QR_ALTA;
   if (m === 'conteo' && conteoActivo()) {
-    const t = conteoActivo(), sec = S.secuenciaConteo ? SEC_CONTEO[S.secuenciaConteo] : (SEC_CONTEO[t.id] || SEC_CONTEO.esc);
+    const t = conteoActivo(), o = S.secuenciaConteo, sec = o && o.para === t.id ? SEC_CONTEO[o.sec] : (SEC_CONTEO[t.id] || SEC_CONTEO.esc);
     return sec[S.indices.conteo++ % sec.length];
   }
   const sec = SECUENCIAS[m]; return sec[S.indices[m]++ % sec.length];
@@ -954,8 +1046,9 @@ function leer(codigo) {
   codigo = codigo || siguienteCodigo();
   S.escaner.fase = 'viendo'; S.escaner.codigo = codigo; pintarEscaner();
   despues(280, () => {
-    S.escaner.fase = 'leido'; vibrar(35);
-    aplicarLectura(codigo);
+    S.escaner.fase = 'leido';
+    const tapado = !!(S.hoja || S.precioGrande || S.qr) && !S.rapidoBloqueo && S.pantalla !== 'alta';
+    if (!tapado) { vibrar(35); aplicarLectura(codigo); }
     pintar();
     despues(550, () => { S.escaner.fase = 'escaneando'; S.escaner.codigo = null; pintarEscaner(); });
   });
@@ -971,107 +1064,207 @@ function aplicarLectura(codigo) {
   if (S.modo === 'conteo') contarLectura(codigo);
 }
 /* ——— Contar ———
-   actual: lo que se cuenta ahora de un producto en este lugar (cajas o rollos, y sueltas) con sus lecturas en orden, para
-   que el − quite la última. En el del día, lo de otros lugares del mismo producto queda en dia[código].antes */
-const presentacion = p => p.caja ? { piezas: p.caja.piezas, nombre: `Cajas de ${p.caja.piezas}`, suelta: 'Sueltas', que: 'caja' }
-  : p.rollo ? { piezas: p.rollo.metros, nombre: `Rollos de ${p.rollo.metros} m`, suelta: 'Metros sueltos', que: 'rollo' } : null;
+   actual: lo que se cuenta ahora de un producto en este lugar, por presentación, con sus lecturas en orden para que el −
+   quite la última. base: lo que ya se guardó de ese producto en este lugar, así la cuenta sigue al volver. En el del día,
+   lo de cada lugar queda en dia[código].lugares hasta «Es todo» */
+const LUGARES_CONTEO = ['Anaquel', 'Mostrador', 'Bodega'];
 const redondo = n => Math.round(n * 100) / 100;
-const piezasDe = a => { const pr = presentacion(POR_CODIGO.get(a.codigo)); return redondo(a.sueltas + a.cajas * (pr ? pr.piezas : 0)); };
+/* Las presentaciones de un producto, de la más grande a la suelta */
+function presentaciones(p) {
+  const l = [];
+  if (p.presentaciones) l.push(...p.presentaciones);
+  else if (p.caja) l.push({ k: 'caja', nombre: `Cajas de ${p.caja.piezas}`, corto: 'caja', piezas: p.caja.piezas, codigo: p.caja.codigo });
+  else if (p.rollo) l.push({ k: 'rollo', nombre: `Rollos de ${p.rollo.metros} m`, corto: 'rollo', piezas: p.rollo.metros, codigo: p.rollo.codigo });
+  l.push({ k: 'suelta', nombre: p.unidad === 'm' ? 'Metros sueltos' : 'Sueltas', corto: p.unidad === 'm' ? 'm' : 'suelta', piezas: 1 });
+  return l;
+}
+const cuentasVacias = p => Object.fromEntries(presentaciones(p).map(x => [x.k, 0]));
+const sumarCuentas = (a, b) => { const r = { ...(a || {}) }; for (const [k, v] of Object.entries(b || {})) r[k] = redondo((r[k] || 0) + v); return r; };
+const piezasDeCuentas = (p, cu) => redondo(presentaciones(p).reduce((s, x) => s + ((cu && cu[x.k]) || 0) * x.piezas, 0));
+const nuevasDe = a => piezasDeCuentas(POR_CODIGO.get(a.codigo), a.cuentas);
+const piezasDe = a => redondo(a.base + nuevasDe(a));
 const unidad = (p, n) => p.unidad === 'm' ? `${n} m` : `${n} ${n === 1 ? 'pieza' : 'piezas'}`;
+function desglose(p, cu) {
+  return presentaciones(p).filter(x => cu && cu[x.k]).map(x => x.k === 'suelta'
+    ? (p.unidad === 'm' ? `${cu[x.k]} m sueltos` : `${cu[x.k]} ${cu[x.k] === 1 ? 'suelta' : 'sueltas'}`)
+    : `${cu[x.k]} ${x.corto}${cu[x.k] === 1 ? '' : 's'}`).join(' + ');
+}
 const conteoActivo = () => CONTEOS.find(t => t.id === S.conteo.activo) || null;
+const abiertoDe = depto => CONTEOS.find(x => x.tipo === 'completo' && x.depto === depto) || null;
+const quienDice = q => PERSONAS[S.persona] && q === PERSONAS[S.persona].nombre ? 'tú' : q;
+/* El reloj del prototipo: empieza a las 14:52, como la barra de estado; «Pasa: 10 min sin uso» lo adelanta */
+const ARRANQUE = Date.now();
+const ahoraMs = () => Date.now() + (S.minutosExtra || 0) * 60000;
+const minutosDesde = t => Math.max(0, Math.floor((ahoraMs() - t) / 60000));
+function horaAhora() { const m = 14 * 60 + 52 + Math.floor((ahoraMs() - ARRANQUE) / 60000); return `${Math.floor(m / 60) % 24}:${String(m % 60).padStart(2, '0')}`; }
+const anunciar = t => { S.anuncio = t; };   // TalkBack: la región que se anuncia sola
+
+/* Lo que no se cuenta, o lo de otro departamento, sale en el lugar del producto: nada flota sobre el panel de Conteo */
+function avisar(tipo, texto, datos = {}) {
+  S.conteo.aviso = { tipo, texto, ...datos };
+  vibrar(tipo === 'otro' ? [30, 60, 30] : [40, 60, 40]);
+  anunciar(`${datos.nombre ? datos.nombre + ': ' : ''}${texto}`);
+}
+/* Lo de otro departamento que se dejó sin decidir no se pierde: pasa a lo contado › «Fuera de lugar» */
+function moverAFuera() {
+  const c = S.conteo, v = c.aviso;
+  if (!v || v.tipo !== 'otro') return;
+  if (!c.fuera.some(f => f.codigo === v.codigo)) c.fuera.push({ codigo: v.codigo, depto: v.depto, hora: horaAhora() });
+  c.aviso = null;
+}
 function contarLectura(codigo) {
   const c = S.conteo, t = conteoActivo();
-  if (!t) { toast('Primero elige qué vas a contar.'); return; }
+  if (!t) return;
+  c.ultimaLectura = ahoraMs(); c.ultimoAplicado = null; c.quitada = null;
   const leido = POR_CODIGO.get(codigo);
-  if (!leido || leido.rapido || leido.sinInventario) { rechazar(leido ? `«${leido.nombre}» no lleva inventario.` : 'Ese código no está en el catálogo: apártalo para el encargado.'); return; }
-  const base = leido.base || codigo, esCaja = !!leido.base, p = POR_CODIGO.get(base);
+  if (!leido || leido.rapido || leido.sinInventario) {
+    moverAFuera();
+    avisar('error', leido ? 'No lleva inventario: no se cuenta.' : 'No está en el catálogo: apártalo para el encargado.', { nombre: leido ? leido.nombre : codigo, desconocido: !leido });
+    return;
+  }
+  const base = leido.base || codigo, p = POR_CODIGO.get(base);
+  const pres = presentaciones(p).find(x => x.codigo === codigo) || presentaciones(p).find(x => x.k === 'suelta');
   const mismo = c.actual && c.actual.codigo === base;
+  if (c.aviso && c.aviso.tipo === 'otro' && c.aviso.codigo !== base) moverAFuera();
+  if (c.aviso && c.aviso.tipo === 'retomar' && c.aviso.codigo === base && !c.actual) { c.aviso = null; empezarProducto(base); }
   if (t.tipo === 'completo' && !mismo && p.depto !== t.depto && c.paraOtro !== p.depto) {
-    const abierto = CONTEOS.find(x => x.tipo === 'completo' && x.depto === p.depto);
-    guardarCaptura();
-    if (abierto) {
-      vibrar([30, 60, 30]);
-      toast(`«${p.nombre}» es de ${DEPTOS[p.depto]}, que también se está contando.`, `Contarlo para ${DEPTOS[p.depto]}`, () => { S.conteo.paraOtro = p.depto; contarLectura(codigo); pintar(); });
-      return;
-    }
-    rechazar(`«${p.nombre}» es de ${DEPTOS[p.depto]}: aquí no se cuenta. Llévalo a su lugar.`);
+    dejarActual();
+    if (abiertoDe(p.depto)) { avisar('otro', `Es de ${DEPTOS[p.depto]}, que también se está contando.`, { nombre: p.nombre, codigo: base, depto: p.depto, corto: `Es de ${DEPTOS[p.depto]}:` }); return; }
+    if (CERRADOS[p.depto]) { avisar('error', `${DEPTOS[p.depto]} se contó el ${CERRADOS[p.depto]}: llévalo y avísale al encargado; es un ajuste.`, { nombre: p.nombre, codigo: base }); return; }
+    avisar('error', `Es de ${DEPTOS[p.depto]}, que no se está contando. Llévalo a su lugar.`, { nombre: p.nombre, codigo: base });
     return;
   }
   if (t.tipo === 'dia' && !mismo) {
-    if (!t.productos.includes(base)) { rechazar(`«${p.nombre}» no está en el conteo de hoy.`); return; }
-    if (DIA_DE_OTROS[base]) { rechazar(`«${p.nombre}»: ya lo contó ${DIA_DE_OTROS[base][0]} a las ${DIA_DE_OTROS[base][1]}.`); return; }
-    const d = c.dia[base];
-    if (d && d.estado !== 'sin-aplicar') { rechazar(`«${p.nombre}» ya se contó hoy. Si quedó mal, es un ajuste en la caja.`); return; }
+    const abierto = abiertoDe(p.depto), otro = DIA_DE_OTROS[base], d = c.dia[base];
+    let no = '';
+    if (!t.productos.includes(base)) no = 'No está en el conteo de hoy.';
+    else if (abierto) no = `${abierto.titulo} se está contando completo; se cuenta ahí.`;
+    else if (otro) no = `Ya lo contó ${quienDice(otro.quien)} a las ${otro.hora}.`;
+    else if (d && d.estado !== 'sin-aplicar') no = 'Ya se contó hoy. Si quedó mal, es un ajuste en la caja.';
+    if (no) { avisar('error', no, { nombre: p.nombre, codigo: base }); return; }
   }
-  if (!mismo) {
-    dejarActual();
-    c.actual = { codigo: base, cajas: 0, sueltas: 0, lecturas: [], para: t.tipo === 'completo' && p.depto !== t.depto ? p.depto : null };
-  }
-  const a = c.actual, pr = presentacion(p);
-  if (esCaja) { a.cajas++; a.lecturas.push('caja'); c.suma = `+${pr.piezas}${p.unidad === 'm' ? ' m' : ''} ${pr.que}`; }
-  else { a.sueltas++; a.lecturas.push('suelta'); c.suma = `+1${p.unidad === 'm' ? ' m' : ''}`; }
+  c.aviso = null;
+  if (!mismo) empezarProducto(base);
+  const a = c.actual;
+  a.cuentas[pres.k] = redondo((a.cuentas[pres.k] || 0) + 1); a.lecturas.push(pres.k);
+  c.suma = pres.k === 'suelta' ? `+1${p.unidad === 'm' ? ' m' : ''}` : `+${pres.piezas}${p.unidad === 'm' ? ' m' : ''} ${pres.corto}`;
   c.sumaHasta = Date.now() + 2400;
   despues(2500, () => { if (Date.now() >= S.conteo.sumaHasta) pintar(); });
+  anunciar(`${p.nombre}, ${t.tipo === 'dia' ? totalDia(base) : piezasDe(a)}, ${c.suma.replace('+', 'más ')}`);
 }
-function rechazar(texto) { toast(texto); vibrar([40, 60, 40]); }
-/* Al escanear otro producto: en el completo, lo de aquí se guarda solo; en el del día queda «sin aplicar» */
+/* Empezar a contar un producto en este lugar. Lo de antes se guarda solo (completo) o queda sin aplicar (del día). Si ya se
+   había guardado algo de ese producto en este lugar, la cuenta sigue desde ahí: «14 · 13 guardadas + 1» */
+function empezarProducto(codigo) {
+  const c = S.conteo, t = conteoActivo(), p = POR_CODIGO.get(codigo);
+  const antes = c.capturas[0];
+  dejarActual();
+  const recien = c.capturas[0] !== antes ? c.capturas[0] : null;
+  const para = t.tipo === 'completo' && p.depto !== t.depto ? p.depto : null;
+  const destino = para ? (abiertoDe(para) || t) : t;
+  let base = 0, baseIds = [], baseCuentas = {};
+  if (t.tipo === 'completo') {
+    const mias = c.capturas.filter(k => k.codigo === codigo && k.conteo === destino.id && k.lugar === c.lugar && k.estado !== 'no-entro');
+    base = redondo(mias.reduce((s, k) => s + k.cant, 0)); baseIds = mias.map(k => k.id);
+    mias.forEach(k => { baseCuentas = sumarCuentas(baseCuentas, k.cuentas); });
+    /* Una lectura de más en medio: el mismo producto vuelve antes de 30 s y en medio hubo una sola lectura de otro */
+    const previa = recien && c.capturas[1];
+    if (recien && recien.lecturas === 1 && recien.codigo !== codigo && previa && previa.codigo === codigo && ahoraMs() - previa.t < 30000) c.pregunta = recien.id;
+  } else {
+    const d = c.dia[codigo];
+    base = d && d.lugares[c.lugar] ? d.lugares[c.lugar] : 0;
+    baseCuentas = d && d.cuentasDe && d.cuentasDe[c.lugar] ? { ...d.cuentasDe[c.lugar] } : {};
+  }
+  c.actual = { codigo, cuentas: cuentasVacias(p), lecturas: [], base, baseIds, baseCuentas, lugar: c.lugar, para, desde: ahoraMs(), tecleado: false };
+}
+/* Al escanear otro producto, cambiar de lugar o salir de Conteo: en el completo, lo de aquí se guarda solo; en el del día
+   queda sin aplicar, con lo de este lugar */
 function dejarActual() {
   const c = S.conteo, t = conteoActivo(), a = c.actual;
   if (!a) return;
+  c.actual = null; c.suma = ''; c.sumaHasta = 0;
   if (t && t.tipo === 'dia') {
-    const d = c.dia[a.codigo] || (c.dia[a.codigo] = { antes: 0, estado: 'sin-aplicar' });
-    d.antes = redondo(d.antes + piezasDe(a));
-    c.actual = null;
+    const aqui = piezasDe(a);
+    let d = c.dia[a.codigo];
+    if (!d) { if (aqui <= 0 && !a.tecleado) return; d = c.dia[a.codigo] = { lugares: {}, cuentasDe: {}, estado: 'sin-aplicar', desde: a.desde }; }
+    if (aqui > 0 || a.tecleado) { d.lugares[a.lugar] = aqui; d.cuentasDe[a.lugar] = sumarCuentas(a.baseCuentas, a.cuentas); }
+    else { delete d.lugares[a.lugar]; delete d.cuentasDe[a.lugar]; }
+    if (!Object.keys(d.lugares).length && d.estado === 'sin-aplicar') delete c.dia[a.codigo];
     return;
   }
-  guardarCaptura();
+  guardarCaptura(a);
 }
-function guardarCaptura(cero = false) {
-  const c = S.conteo, a = c.actual, t = conteoActivo();
-  c.actual = null; c.paraOtro = null;
-  if (!a || !t) return;
-  const cant = piezasDe(a);
-  if (cant <= 0 && !cero) return;   // lo que bajó a 0 con el − no se guarda; un 0 tecleado sí: «no hay»
-  const destino = a.para ? (CONTEOS.find(x => x.tipo === 'completo' && x.depto === a.para) || t) : t;
-  const cap = { id: c.idCaptura++, conteo: destino.id, codigo: a.codigo, cant, cajas: a.cajas, sueltas: a.sueltas, hora: horaAhora(), estado: S.red === 'caida' ? 'por-subir' : 'subida', quien: PERSONAS[S.persona].nombre };
+/* Una captura: lo de un lugar. reemplaza: lo tecleado es todo lo de este lugar (se quitan las guardadas y sube una) */
+function guardarCaptura(a, reemplaza = false) {
+  const c = S.conteo, t = conteoActivo();
+  c.paraOtro = null;
+  if (!a || !t) return null;
+  const destino = a.para ? (abiertoDe(a.para) || t) : t, p = POR_CODIGO.get(a.codigo);
+  if (reemplaza) for (const id of a.baseIds || []) {
+    const k = c.capturas.find(x => x.id === id);
+    if (k) { c.capturas = c.capturas.filter(x => x !== k); if (k.estado === 'por-subir') c.porSubir = Math.max(0, c.porSubir - 1); }
+  }
+  const cant = nuevasDe(a);
+  if (cant <= 0 && !(reemplaza && a.tecleado)) return null;   // lo que bajó a 0 con el − no se guarda; un 0 tecleado sí: «no hay»
+  const nadie = !DE_OTROS[a.codigo] && !c.capturas.some(k => k.codigo === a.codigo && k.conteo === destino.id);
+  const cap = { id: c.idCaptura++, conteo: destino.id, codigo: a.codigo, cant, cuentas: { ...a.cuentas }, lugar: a.lugar, hora: horaAhora(), t: ahoraMs(), lecturas: a.lecturas.length,
+    suma: !reemplaza && a.base > 0 ? a.base : 0, estado: S.red === 'caida' ? 'por-subir' : 'subida', quien: PERSONAS[S.persona].nombre };
   c.capturas.unshift(cap);
   if (cap.estado === 'por-subir') c.porSubir++;
-  if (!DE_OTROS[a.codigo] && c.capturas.filter(k => k.codigo === a.codigo && k.conteo === destino.id).length === 1) destino.contados = Math.min(destino.total, destino.contados + 1);
-  const p = POR_CODIGO.get(a.codigo);
-  toast(`Guardado: ${cant === 0 ? 'no hay' : unidad(p, cant)} de «${p.nombre}»${a.para ? `, para ${DEPTOS[a.para]}` : ''}${cap.estado === 'por-subir' ? ' (sube al volver la red)' : ''}`, 'Quitar', () => A.quitarCaptura({ id: cap.id }));
+  if (nadie) destino.contados = Math.min(destino.total, destino.contados + 1);
+  c.ultimaGuardada = cap.id; c.pregunta = null; c.quitada = null;
+  anunciar(`Guardado: ${p.nombre}, ${cant === 0 ? 'no hay' : cant}${a.para ? `, para ${DEPTOS[a.para]}` : ''}`);
+  return cap;
 }
-/* El del día: «Es todo» aplica el total (lo de antes más lo de aquí), una sola vez */
+/* El del día: el total de la tienda es lo de cada lugar; «Es todo» lo aplica, una sola vez */
 function totalDia(codigo) {
-  const c = S.conteo, d = c.dia[codigo];
-  return redondo((d ? d.antes : 0) + (c.actual && c.actual.codigo === codigo ? piezasDe(c.actual) : 0));
+  const c = S.conteo, d = c.dia[codigo], a = c.actual && c.actual.codigo === codigo ? c.actual : null;
+  let s = a ? piezasDe(a) : 0;
+  if (d) for (const [l, v] of Object.entries(d.lugares)) if (!(a && l === a.lugar)) s += v;
+  return redondo(s);
 }
+function otrosLugaresDia(codigo) {
+  const c = S.conteo, d = c.dia[codigo], a = c.actual && c.actual.codigo === codigo ? c.actual : null;
+  return d ? Object.entries(d.lugares).filter(([l]) => !(a && l === a.lugar)) : [];
+}
+const textoLugares = l => l.map(([lu, v]) => `${v} en ${lu.toLowerCase()}`).join(' + ');
 function aplicarDia(codigo) {
-  const c = S.conteo, total = totalDia(codigo), p = POR_CODIGO.get(codigo);
-  const d = c.dia[codigo] || (c.dia[codigo] = { antes: 0 });
-  d.antes = total; d.total = total; d.hora = horaAhora(); d.estado = S.red === 'caida' ? 'por-aplicar' : 'aplicada';
-  if (c.actual && c.actual.codigo === codigo) c.actual = null;
+  const c = S.conteo, p = POR_CODIGO.get(codigo);
+  const total = totalDia(codigo);
+  if (c.actual && c.actual.codigo === codigo) dejarActual();
+  const d = c.dia[codigo] || (c.dia[codigo] = { lugares: {}, cuentasDe: {}, desde: ahoraMs() });
+  d.total = total; d.hora = horaAhora(); d.estado = S.red === 'caida' ? 'por-aplicar' : 'aplicada';
   if (d.estado === 'por-aplicar') c.porSubir++;
-  const dif = redondo(total - p.existencia);
-  toast(d.estado === 'por-aplicar' ? `Listo: ${unidad(p, total)} de «${p.nombre}». Se aplica al volver la red.`
-    : `Aplicado: ${unidad(p, total)} de «${p.nombre}».${PERSONAS[S.persona].costos && S.celular !== 'tienda' ? ` El sistema tenía ${p.existencia}: ${dif >= 0 ? '+' : ''}${dif}.` : ''}`);
+  c.ultimoAplicado = { codigo, total, dif: redondo(total - p.existencia), sistema: p.existencia, porAplicar: d.estado === 'por-aplicar' };
+  anunciar(`${d.estado === 'por-aplicar' ? 'Listo' : 'Aplicado'}: ${p.nombre}, ${total === 0 ? 'no hay' : total}`);
 }
-const sinAplicar = () => Object.entries(S.conteo.dia).filter(([k, d]) => d.estado === 'sin-aplicar' && d.antes > 0 && !(S.conteo.actual && S.conteo.actual.codigo === k)).map(([k]) => k);
-/* A ciegas: mientras se cuenta, Precio no enseña la existencia de lo que se está contando */
+/* Lo del día sin aplicar, lo más viejo primero (lo que se cuenta ahora no cuenta como pendiente) */
+const sinAplicar = () => Object.entries(S.conteo.dia).filter(([k, d]) => d.estado === 'sin-aplicar' && !(S.conteo.actual && S.conteo.actual.codigo === k)).sort((x, y) => x[1].desde - y[1].desde).map(([k]) => k);
+/* A ciegas: mientras se cuenta de verdad (en Conteo, o hasta 10 min después de la última lectura), lo que se está contando
+   no enseña la existencia en ninguna parte; lo del día sin aplicar, hasta aplicarlo o descartarlo */
 function existenciaOculta(codigo) {
-  const t = conteoActivo(), p = POR_CODIGO.get(codigo);
-  if (!t || !p) return false;
-  const base = p.base || codigo;
+  const t = conteoActivo(), p = POR_CODIGO.get(codigo), c = S.conteo;
+  if (!p) return false;
+  const base = p.base || codigo, d = c.dia[base];
+  if (d && d.estado === 'sin-aplicar') return true;
+  if (!t) return false;
+  const contando = S.modo === 'conteo' || (c.ultimaLectura && minutosDesde(c.ultimaLectura) < 10);
+  if (!contando) return false;
   if (t.tipo === 'completo') return POR_CODIGO.get(base).depto === t.depto;
-  const d = S.conteo.dia[base];
   return t.productos.includes(base) && !(d && (d.estado === 'aplicada' || d.estado === 'por-aplicar'));
 }
-/* El reloj del prototipo: empieza a las 14:52, como la barra de estado */
-const ARRANQUE = Date.now();
-function horaAhora() { const m = 14 * 60 + 52 + Math.floor((Date.now() - ARRANQUE) / 60000); return `${Math.floor(m / 60) % 24}:${String(m % 60).padStart(2, '0')}`; }
+const queCuentas = () => { const t = conteoActivo(); return !t || t.tipo === 'dia' ? 'el del día' : t.titulo; };
+/* Al entrar a Conteo: el del día solo si no hay departamentos abiertos; si no, «¿Qué vas a contar?». El lugar, la primera vez */
+function entrarAConteo() {
+  const c = S.conteo;
+  if ((S.pos === 'piloto' && !S.verConteo) || !PERSONAS[S.persona]) return;
+  if (!c.activo && CONTEOS.length === 1 && CONTEOS[0].tipo === 'dia') c.activo = 'dia';
+  if (!c.activo) { S.hoja = 'elegirConteo'; S.hojaDatos = null; return; }
+  if (conteoActivo() && conteoActivo().tipo === 'dia' && !c.lugarDia) { S.hoja = 'lugar'; S.hojaDatos = {}; }
+}
 
 let toastTimer = null;
-function toast(texto, accion, f, ms = 4200) {
-  S.toast = { texto, accion, f, ms };
+function toast(texto, accion, f, ms = 4200, arriba = false) {
+  S.toast = { texto, accion, f, ms, arriba };
   correrAviso();
 }
 /* Con el botón rápido abierto el aviso no se ve (taparía las opciones) y su tiempo no corre: empieza al cerrarlo */
@@ -1083,7 +1276,7 @@ function correrAviso() {
 /* ——— Pintar ——— */
 const tel = $('#tel');
 function pintar() {
-  if (gesto) { pintarAlSoltar = true; return; }
+  if (gesto) { pintarAlSoltar = true; ponerAlDiaOpciones(); return; }
   tel.dataset.tam = S.tam;
   tel.classList.toggle('letra-grande', !!S.letraGrande);
   let h = '';
@@ -1095,7 +1288,7 @@ function pintar() {
   else h = pantallaEscaner();
   if (S.dialogo) h += dialogo();
   const arriba = S.pantalla !== 'escaner' || (S.hoja && S.hoja !== 'menu');
-  if (S.toast) h += `<div class="toast${arriba ? ' arriba' : ''}" role="status"><span>${esc(S.toast.texto)}</span>${S.toast.accion ? `<button data-a="toast">${esc(S.toast.accion)}</button>` : ''}</div>`;
+  if (S.toast) h += `<div class="toast${arriba || S.toast.arriba ? ' arriba' : ''}" role="status"><span>${esc(S.toast.texto)}</span>${S.toast.accion ? `<button data-a="toast">${esc(S.toast.accion)}</button>` : ''}</div>`;
   tel.innerHTML = h;
   const q = tel.querySelector('#busqueda');
   if (q && document.activeElement !== q && !esCelular()) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
@@ -1156,7 +1349,7 @@ function manchas() {
 }
 function estadoRed() {
   const sube = S.conteo.porSubir + Object.values(S.conteosDe).reduce((n, c) => n + c.porSubir, 0);
-  if (S.red === 'caida') return `<span class="estado-red caida"><i></i>Sin red${sube ? ` · ${sube}<span class="det"> por subir</span>` : ''}</span>`;
+  if (S.red === 'caida') return `<span class="estado-red caida" aria-label="Sin red${sube ? `, ${sube} por subir` : ''}"><i></i><span class="que">Sin red</span>${sube ? `<span class="que"> · </span>${sube}<span class="det"> por subir</span>` : ''}</span>`;
   if (S.red === 'lenta') return `<span class="estado-red"><i></i>Red lenta</span>`;
   if (sube) return `<span class="estado-red subir"><i></i>Subiendo ${sube}</span>`;
   return '';
@@ -1168,10 +1361,11 @@ function pantallaEscaner() {
   h += rapido ? panelBloqueo() : panel();
   if (!rapido && !S.hoja && opcionesRapidas()) h += botonRapido();
   h += `</div>`;
-  if (!rapido && S.hoja) { const recien = S.hojaDesdeGesto && performance.now() - S.hojaDesdeGesto < 300; h += recien ? hoja().replace('class="hoja', 'class="hoja recien') : hoja(); }
-  if (S.avisoCierre && S.persona) h += `<div class="aviso-cierre" role="alert"><span>La sesión de ${esc(PERSONAS[S.persona].nombre)} se cierra en 1 minuto <small class="nota" style="color:#c8ccd0">(prototipo: 4 s)</small></span><button class="btn lleno" data-a="seguirSesion">Seguir</button></div>`;
+  if (!rapido && S.hoja) { const recien = S.rebote && performance.now() - S.rebote < 300; h += recien ? hoja().replace('class="hoja', 'class="hoja recien') : hoja(); }
+  if (S.avisoCierre && S.persona) { const seg = Math.max(0, Math.ceil((S.avisoCierre.hasta - Date.now()) / 1000)); h += `<div class="aviso-cierre" role="alert"><span>La sesión de ${esc(PERSONAS[S.persona].nombre)} se cierra en <b class="num">0:${String(seg).padStart(2, '0')}</b> <small class="nota" style="color:#c8ccd0">(en la app, un minuto)</small></span><button class="btn lleno" data-a="seguirSesion">Seguir</button></div>`; }
   if (S.precioGrande) h += precioGrande();
   if (S.qr) h += pantallaQr();
+  h += `<div class="solo-lector" role="status" aria-live="polite">${esc(S.anuncio || '')}</div>`;
   h += `<div class="barra-gestos"></div>`;
   return h;
 }
@@ -1183,19 +1377,20 @@ function panel() {
   if (m === 'ticket') cuerpo = panelTicket();
   if (m === 'precio') cuerpo = panelPrecio();
   if (m === 'conteo') cuerpo = panelConteo();
-  return `<section class="panel modo-${m}" aria-label="Modo ${m}">
-    <button class="asidero" data-a="${m === 'ticket' ? 'verTicket' : m === 'conteo' && S.conteo.activo ? 'verContado' : 'nada'}" aria-label="Ver todo"></button>
+  return `<section class="panel modo-${m}" aria-label="Modo ${m}"${S.menuRapido ? ' inert' : ''}>
+    <button class="asidero" data-a="${m === 'ticket' ? 'verTicket' : m === 'conteo' && S.conteo.activo ? 'verContado' : 'nada'}" aria-label="${m === 'conteo' ? 'Lo contado' : 'Ver todo'}"></button>
     <div class="cuerpo">${cuerpo}</div>
+    ${m === 'conteo' ? renglonConteo() : ''}
     ${modos()}
   </section>`;
 }
 /* Los modos que deja este celular: el de la tienda, solo Precio y Conteo */
 const modosDelCelular = () => S.celular === 'tienda' ? ['precio', 'conteo'] : ['precio', 'ticket', 'conteo'];
 function modos() {
-  const n = piezasTicket();
+  const n = piezasTicket(), pend = PERSONAS[S.persona] ? sinAplicar().length : 0;
   const nombres = { precio: ['Precio', 'precio'], ticket: ['Ticket', 'ticket'], conteo: ['Conteo', 'conteo'] };
-  const cuenta = v => v === 'ticket' && n && S.modo !== 'ticket';
-  const b = v => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}${cuenta(v) ? ' con-cuenta' : ''}" aria-pressed="${S.modo === v}" aria-label="${nombres[v][0]}${cuenta(v) ? `, ${n} artículos` : ''}">${ic(nombres[v][1], 'i ch')}<span class="nombre-modo">${nombres[v][0]}</span>${cuenta(v) ? `<span class="cuenta-ic num">${n}</span>` : ''}</button>`;
+  const num = v => v === 'ticket' && n && S.modo !== 'ticket' ? [n, `${n} artículos`] : v === 'conteo' && pend && S.modo !== 'conteo' ? [pend, `${pend} sin aplicar`] : null;
+  const b = v => { const x = num(v); return `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}${x ? ' con-cuenta' : ''}" aria-pressed="${S.modo === v}" aria-label="${nombres[v][0]}${x ? `, ${x[1]}` : ''}">${ic(nombres[v][1], 'i ch')}<span class="nombre-modo">${nombres[v][0]}</span>${x ? `<span class="cuenta-ic num${v === 'conteo' ? ' aviso' : ''}">${x[0]}</span>` : ''}</button>`; };
   return `<nav class="modos" aria-label="Modo">${modosDelCelular().map(b).join('')}</nav>`;
 }
 
@@ -1215,22 +1410,25 @@ function opcionesRapidas() {
     };
   }
   if (m === 'precio') {
+    /* En Precio el gesto no cambia nada: «Al ticket» va a la vista, en la tarjeta, como en el F9 de la caja */
     const hay = S.precio && POR_CODIGO.has(S.precio);
     return {
-      arriba: S.celular === 'tienda' ? null : { accion: 'agregarDePrecio', icono: 'mas', etiqueta: 'Al ticket', apagada: !hay, razon: 'Al ticket: primero escanea un producto' },
-      diagonal: { accion: 'agrandar', icono: 'agrandar', etiqueta: 'Enseñar al cliente', apagada: !hay, razon: 'Enseñar: primero escanea un producto' },
+      arriba: { accion: 'agrandar', icono: 'agrandar', etiqueta: 'Enseñar al cliente', apagada: !hay, razon: 'Enseñar: primero escanea un producto' },
+      diagonal: null,
       izquierda: buscar,
     };
   }
   if (m === 'conteo') {
     const c = S.conteo, t = conteoActivo();
-    if (S.pos === 'piloto' && !S.verConteo || !t) return null;
+    if (S.pos === 'piloto' && !S.verConteo || !t || !PERSONAS[S.persona]) return null;
     const dia = t.tipo === 'dia';
-    const n = dia ? (c.actual ? totalDia(c.actual.codigo) : (sinAplicar()[0] ? totalDia(sinAplicar()[0]) : 0)) : (c.actual ? piezasDe(c.actual) : 0);
+    const codigoDia = dia ? (c.actual ? c.actual.codigo : sinAplicar()[0]) : null;
+    const n = dia ? (codigoDia ? totalDia(codigoDia) : 0) : (c.actual ? piezasDe(c.actual) : 0);
+    const sinNuevo = !c.actual || (nuevasDe(c.actual) <= 0 && !c.actual.tecleado);
     return {
-      arriba: dia ? { accion: 'guardarConteo', icono: 'check', etiqueta: `Es todo · ${n}`, apagada: !c.actual && !sinAplicar().length, razon: 'Es todo: todavía no cuentas nada' }
-        : { accion: 'guardarConteo', icono: 'check', etiqueta: c.actual ? `Guardar ${n}` : 'Guardar', apagada: !c.actual, razon: 'Guardar: todavía no cuentas nada' },
-      diagonal: { accion: 'verContado', icono: 'lista', etiqueta: 'Lo contado', cuenta: dia ? Object.keys(c.dia).length : c.capturas.length },
+      arriba: dia ? { accion: 'guardarConteo', icono: 'check', etiqueta: `Es todo · ${n}`, apagada: !codigoDia, razon: 'Es todo: todavía no cuentas nada' }
+        : { accion: 'guardarConteo', icono: 'check', etiqueta: c.actual ? `Guardar ${n}` : 'Guardar', apagada: sinNuevo, razon: c.actual && c.actual.base ? 'Guardar: ya está guardado' : 'Guardar: todavía no cuentas nada' },
+      diagonal: { accion: 'verContado', icono: 'lista', etiqueta: 'Lo contado', cuenta: dia ? sinAplicar().length : c.fuera.length },
       izquierda: buscar,
     };
   }
@@ -1238,7 +1436,7 @@ function opcionesRapidas() {
 }
 const FLECHAS_DIESTRO = { arriba: '↑', diagonal: '↖', izquierda: '←' }, FLECHAS_ZURDO = { arriba: '↑', diagonal: '↗', izquierda: '→' };
 const flecha = dir => (S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO)[dir];
-const PISTAS = { ticket: d => `Pulsa y desliza: ${d.arriba} mandar · ${d.diagonal} impresiones · ${d.izquierda} buscar`, precio: d => `Pulsa y desliza: ${S.celular === 'tienda' ? '' : `${d.arriba} al ticket · `}${d.diagonal} enseñar · ${d.izquierda} buscar`, conteo: d => `Pulsa y desliza: ${d.arriba} guardar · ${d.diagonal} lo contado · ${d.izquierda} buscar` };
+const PISTAS = { ticket: d => `Pulsa y desliza: ${d.arriba} mandar · ${d.diagonal} impresiones · ${d.izquierda} buscar`, precio: d => `Pulsa y desliza: ${d.arriba} enseñar · ${d.izquierda} buscar`, conteo: d => `Pulsa y desliza: ${d.arriba} ${conteoActivo() && conteoActivo().tipo === 'dia' ? 'es todo' : 'guardar'} · ${d.diagonal} lo contado · ${d.izquierda} buscar` };
 function botonRapido() {
   const o = opcionesRapidas();
   const nombreModo = { ticket: 'del ticket', precio: 'del precio', conteo: 'del conteo' }[S.modo];
@@ -1248,7 +1446,8 @@ function botonRapido() {
     return `<button class="op ${dir}" data-a="${x.accion}" data-dir="${dir}" role="menuitem" ${x.apagada ? 'disabled' : ''} ${x.razon ? `data-razon="${esc(x.razon)}"` : ''} tabindex="${S.menuRapido ? 0 : -1}" aria-label="${esc(x.etiqueta)}${x.apagada && x.razon ? `. ${esc(x.razon)}` : ''}"><span class="circ">${ic(x.icono)}</span>${x.cuenta ? `<span class="cuenta-op num">${x.cuenta}</span>` : ''}<span class="etq-op">${flecha(dir)} ${esc(x.etiqueta)}</span></button>`;
   };
   const d = S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO;
-  const pista = !(S.pistasVistas || {})[S.modo] && PISTAS[S.modo] ? `<div class="pista-rapido" aria-hidden="true">${PISTAS[S.modo](d)}</div>` : '';
+  const c = S.conteo, vacio = S.modo === 'ticket' ? !piezasTicket() && !S.enviado : S.modo === 'precio' ? !S.precio : !(c.actual || c.aviso || c.ultimaGuardada || Object.keys(c.dia).length);
+  const pista = vacio && !(S.pistasVistas || {})[S.modo] && PISTAS[S.modo] ? `<div class="pista-rapido" aria-hidden="true">${PISTAS[S.modo](d)}</div>` : '';
   const deslizar = (S.elegidasDeslizando || 0) < 3 ? `<div class="pista-deslizar ver" aria-hidden="true">Pulsa y desliza sin soltar</div>` : '';
   return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div><button class="cierra-visor" data-a="cerrarMenuRapido" aria-label="Cerrar las opciones" tabindex="-1"></button>${pista}${deslizar}
     <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido">
@@ -1279,7 +1478,7 @@ function panelTicket() {
     c += `<div class="enviado" role="status"><span class="ic">${ic('check')}</span><div><strong>Enviado a ${esc(S.enviado.caja)}</strong>${S.enviado.n} art. · ${dinero(S.enviado.total)} · llega como «${esc(PERSONAS[S.persona].nombre)} · ${dinero(S.enviado.total)}» en espera</div></div>`;
     c += `<p class="nota" style="margin:8px 2px 0">Escanea para empezar el siguiente ticket.</p>`;
   } else if (!n) {
-    c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno. El botón + de abajo: mandar, impresiones y buscar.</div>`;
+    c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno. Buscar, impresiones y mandar: en el botón de abajo a la derecha.</div>`;
   } else {
     c += `<div class="encabezado"><span class="titulo">Ticket · <b class="num">${n}</b> art.</span><span class="espacio"></span><span class="total num">${dinero(totalTicket())}</span></div>`;
     c += `<div class="lineas">`;
@@ -1300,20 +1499,21 @@ function datosPrecio(p, publico) {
   if (p.promo) d += `<span class="dato promo">Promoción «${esc(p.promo)}»</span>`;
   if (p.mayoreo) d += `<span class="dato mayoreo">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>`;
   if (p.piezas) d += `<span class="dato">${dinero(Math.round(p.precio / p.piezas))} c/u</span>`;
-  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato">Existencia oculta mientras cuentas</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
+  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato oculta">Existencia oculta mientras cuentas ${esc(queCuentas())}${S.celular !== 'tienda' && !S.rapidoBloqueo && conteoActivo() ? ` <button class="enlace" data-a="yaTermine">Ya terminé</button>` : ''}</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
   return d;
 }
 function tarjetaPrecio(publico) {
   const codigo = S.precio;
   const p = POR_CODIGO.get(codigo);
   if (!p) return `<div class="no-esta"><span class="ic">${ic('barras')}</span><div><strong>No está en el catálogo</strong><span class="codigo">${esc(codigo)}</span><div class="nota">Búscalo por nombre o pregúntale a quien da de alta los productos.</div></div></div>`;
-  return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}</div></div></div>`;
+  const alTicket = !publico && S.celular !== 'tienda' && !S.rapidoBloqueo ? `<button class="btn tonal al-ticket" data-a="agregarDePrecio">${ic('mas')}Al ticket</button>` : '';
+  return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}${alTicket}</div></div></div>`;
 }
 function panelPrecio() {
   const tienda = S.celular === 'tienda';
   const cerrada = tienda && !S.persona && S.cerradaSola ? `<div class="aviso-fijo" role="status"><span>Se cerró la sesión de ${esc(S.cerradaSola.nombre)}: lo contado quedó a su nombre.</span><button class="btn tonal" data-a="entrarParaContar">Entrar</button><button class="btn-ic" data-a="quitarAvisoSesion" aria-label="Quitar el aviso">${ic('cerrar')}</button></div>` : '';
   if (cerrada) return cerrada + (S.precio ? tarjetaPrecio(true) : '<div class="nota">Escanea para ver el precio: lo que ve el cliente.</div>');
-  if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>${tienda ? 'El precio, el mayoreo y las promociones: lo que ve el cliente, sin entrar. El botón + de abajo: enseñar y buscar.' : 'Aquí nada se agrega al ticket: es el verificador (F9) de la caja. El botón + de abajo: al ticket, enseñar y buscar.'}</div>`;
+  if (!S.precio) return `<div class="vacio"><strong>Escanea para ver el precio</strong>${tienda ? 'El precio, el mayoreo y las promociones: lo que ve el cliente, sin entrar. Enseñar y buscar: en el botón de abajo a la derecha.' : 'Es el verificador (F9) de la caja: escanear no agrega nada. Enseñar y buscar: en el botón de abajo a la derecha. Si se lo lleva, «Al ticket» en la tarjeta.'}</div>`;
   return tarjetaPrecio(tienda);
 }
 function panelConteo() {
@@ -1325,55 +1525,84 @@ function panelConteo() {
   if (!per) return `<div class="vacio"><strong>Para contar, entra</strong>Con tu ficha y tu PIN del POS, como en la caja.</div><button class="btn lleno ancho" style="margin-top:8px" data-a="entrarParaContar">${ic('conteo')}Entrar para contar</button>`;
   const t = conteoActivo();
   if (!t) {
-    let h = `<div class="encabezado"><span class="titulo">¿Qué vas a contar?</span>${S.pos === 'piloto' ? '<span class="espacio"></span><span class="nota">Así será al dejar eleventa</span>' : ''}</div><div class="tareas">`;
-    for (const x of CONTEOS) {
-      if (x.tipo === 'dia') {
-        const hechos = DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length;
-        h += `<button class="tarea" data-a="abrirConteo" data-id="dia"><span class="ic">${ic('reloj')}</span><span><strong>Conteo del día</strong><small>Todo lo que hay de 15 productos · ${hechos} de 15</small></span>${ic('adelante', 'i ch')}</button>`;
-      } else {
-        h += `<button class="tarea" data-a="abrirConteo" data-id="${x.id}"><span class="ic">${ic('conteo')}</span><span><strong>${esc(x.titulo)}</strong><small>Conteo completo · ${x.contados} de ${x.total} · ${esc(x.quien || 'nadie todavía')}</small><span class="progreso" style="display:block;margin-top:4px"><i style="width:${Math.round(100 * x.contados / x.total)}%"></i></span></span>${ic('adelante', 'i ch')}</button>`;
-      }
-    }
-    if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Lo que nadie cuente queda en 0 al cerrarlo</small></span>${ic('adelante', 'i ch')}</button>`;
-    h += `</div><p class="nota" style="margin:6px 2px">${per.completo ? '' : `${esc(per.nombre)} cuenta en lo que ya está abierto; abrir un departamento pide «Conteo completo». `}Revisar y cerrar: en la caja (Inventario, F4).</p>`;
-    if (S.celular === 'tienda') h += `<button class="btn borde ancho" data-a="salir">${ic('salir')}Salir (${esc(per.nombre)})</button>`;
-    return h;
+    return `<div class="vacio"><strong>¿Qué vas a contar?</strong>El conteo del día o un departamento abierto. Revisar y cerrar: en la caja (F4).</div>
+      <button class="btn lleno ancho" data-a="elegirConteo">${ic('conteo')}Elegir qué contar</button>${S.celular === 'tienda' ? `<button class="btn borde ancho" style="margin-top:8px" data-a="salir">${ic('salir')}Salir (${esc(per.nombre)})</button>` : ''}`;
   }
   const dia = t.tipo === 'dia';
-  let h = `<button class="encabezado" data-a="verContado" style="width:100%;text-align:left"><span class="titulo">${dia ? `${ic('reloj', 'i ch')} <b>Del día</b> · todo lo que hay` : `${ic('conteo', 'i ch')} <b>${esc(t.titulo)}</b> · este lugar`}</span><span class="espacio"></span>`;
-  if (dia) { const hechos = DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length; h += `<span class="nota num">${hechos} de 15 ›</span>`; }
-  else h += `<span class="nota num">${t.contados} de ${t.total} ›</span>`;
-  h += `</button>`;
-  if (!dia) h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
-  const a = c.actual;
-  if (a) {
-    const p = POR_CODIGO.get(a.codigo), pr = presentacion(p), total = piezasDe(a);
-    const desglose = a.cajas ? `${a.cajas} ${pr.que}${a.cajas === 1 ? '' : 's'} + ${a.sueltas} ${p.unidad === 'm' ? 'm' : a.sueltas === 1 ? 'suelta' : 'sueltas'}` : (p.unidad === 'm' ? 'Cada lectura, un metro' : 'Cada pieza suma una');
-    let linea2 = '';
-    if (dia) {
-      const d = c.dia[a.codigo], antes = d ? d.antes : 0;
-      linea2 = antes ? `${total} aquí + ${antes} de otros lugares = ${redondo(total + antes)}` : 'El total de la tienda: cuenta todos los lugares';
-    } else {
-      const otros = (DE_OTROS[a.codigo] || []).concat(c.capturas.filter(k => k.codigo === a.codigo && k.estado !== 'no-entro').map(k => ['tú', k.cant]));
-      linea2 = otros.length ? `<button class="enlace" data-a="verCapturasProducto" data-c="${a.codigo}">Ya van ${redondo(otros.reduce((s, o) => s + o[1], 0))}: ${otros.map(o => `${o[0]} ${o[1]}`).join(' · ')}${S.red === 'caida' ? ' (hace 12 min)' : ''}</button>` : 'Nadie más lo ha contado';
-    }
-    const muestra = dia ? totalDia(a.codigo) : total;
-    const suma = c.sumaHasta && Date.now() < c.sumaHasta ? `<span class="suma num" aria-live="polite">${esc(c.suma)}</span>` : '';
-    const ultima = a.lecturas[a.lecturas.length - 1];
-    const menos = ultima === 'caja' ? `−${pr.piezas}` : '−1';
-    h += `<div class="contando" style="margin-top:6px"><div class="nom">${esc(p.nombre)}${a.para ? ` <span class="chip-para">para ${DEPTOS[a.para]}, de paso</span>` : ''}</div>
-      <div class="cuenta-grande">${suma}<button class="menos-uno num" data-a="menosConteo" aria-label="Quitar la última lectura" ${a.lecturas.length ? '' : 'disabled'}>${menos}</button><button class="contador num crece" data-a="teclearConteo" aria-label="${muestra}. Tocar para teclear"><small>×</small>${muestra}</button></div>
-      <div class="det">${desglose}</div><div class="det">${linea2}</div></div>`;
-  } else {
-    h += `<div class="vacio" style="margin-top:4px"><strong>Escanea ${dia ? 'uno de los 15' : 'el primer producto'}</strong>${dia ? 'Es el total de la tienda: anaquel, mostrador y bodega. Se aplica con «Es todo».' : 'Cada pieza suma una y el código de la caja suma la caja. No se ve cuántas debería haber: es a ciegas.'}</div>`;
-  }
-  if (dia) {
-    const pend = sinAplicar();
-    if (pend.length) h += `<p class="nota pendiente" style="margin:6px 2px 0">${pend.length} sin aplicar: ${pend.map(k => esc(POR_CODIGO.get(k).nombre)).join(', ')}</p>`;
-  }
+  const hechos = dia ? DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length : 0;
+  const avance = dia ? `${hechos} de 15` : `${t.contados} de ${t.total}`;
+  const corto = dia ? `Del día ${hechos}/15` : `${t.titulo} ${t.contados}/${t.total}`;
+  let h = `<div class="encabezado conteo"><span class="titulo">${ic(dia ? 'reloj' : 'conteo', 'i ch')} <b>${dia ? 'Del día' : esc(t.titulo)}</b></span><button class="corto num" data-a="verContado">${esc(corto)}</button><button class="lugar" data-a="cambiarLugar" aria-label="Lugar: ${esc(c.lugar || 'sin elegir')}. Cambiarlo">${esc(c.lugar || 'Lugar')}${ic('abajo', 'i ch')}</button><span class="espacio"></span><button class="avance num" data-a="verContado" aria-label="Lo contado: ${avance}">${avance} ›</button></div>`;
+  if (!dia && !c.aviso) h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
+  if (c.aviso) h += bloqueAviso(c.aviso);
+  else if (c.actual) h += bloqueProducto(t, c.actual);
+  else h += `<div class="vacio pista-conteo" style="margin-top:4px"><strong>Escanea ${dia ? 'uno de los 15' : 'el primer producto'}</strong>${dia ? 'Es el total de la tienda: anaquel, mostrador y bodega. ' : 'Cada pieza suma una y el código de la caja suma la caja; no se ve cuántas debería haber. '}${dia ? 'Es todo' : 'Guardar'}, lo contado y buscar: en el botón de abajo a la derecha.</div>`;
   return h;
 }
-
+/* Lo que no va, en el lugar del producto: se queda hasta decidir (lo de otro departamento) o hasta la siguiente lectura */
+function bloqueAviso(v) {
+  if (v.tipo === 'retomar') return `<div class="aviso-conteo otro" role="status"><div class="fila-aviso"><span class="txt una"><b>${esc(v.nombre)}:</b> ${esc(v.texto)}</span></div><div class="acciones-aviso"><button class="btn lleno crece" data-a="sigueSumando" data-c="${v.codigo}">Sigue sumando</button><button class="btn borde crece" data-a="quitarRetomado" data-c="${v.codigo}">Quitar</button></div></div>`;
+  const otro = v.tipo === 'otro';
+  const acciones = otro ? `<div class="acciones-aviso"><button class="btn lleno crece" data-a="contarParaOtro" data-c="${v.codigo}" data-d="${v.depto}">Contarlo para ${DEPTOS[v.depto]}</button><button class="btn borde crece" data-a="loLlevo">Lo llevo a su lugar</button></div>` : '';
+  return `<div class="aviso-conteo ${otro ? 'otro' : 'error'}${v.desconocido ? ' desconocido' : ''}" role="alert"><div class="fila-aviso"><span class="ic">${ic(otro ? 'conteo' : 'barras')}</span>${otro ? `<span class="txt una"><b>${esc(v.corto)}</b> ${esc(v.nombre)}</span>` : `<span class="txt">${v.nombre ? `<b>${esc(v.nombre)}</b>` : ''}${esc(v.texto)}</span>`}${otro ? '' : `<button class="btn-ic" data-a="quitarAviso" aria-label="Entendido">${ic('cerrar')}</button>`}</div>${acciones}</div>`;
+}
+/* El producto que se cuenta: se toca entero (sus capturas); el − quita la última lectura; el contador se toca para teclear */
+function bloqueProducto(t, a) {
+  const c = S.conteo, p = POR_CODIGO.get(a.codigo), dia = t.tipo === 'dia';
+  const total = dia ? totalDia(a.codigo) : piezasDe(a), nuevas = nuevasDe(a);
+  const suma = c.sumaHasta && Date.now() < c.sumaHasta ? `<span class="suma num" aria-hidden="true">${esc(c.suma)}</span>` : '';
+  const ultima = a.lecturas[a.lecturas.length - 1], prUlt = ultima && presentaciones(p).find(x => x.k === ultima);
+  const menos = prUlt && prUlt.k !== 'suelta' ? `−${prUlt.piezas}` : '−1';
+  const cada = p.unidad === 'm' ? 'Cada lectura suma un metro' : 'Cada pieza suma una';
+  let l1, l2 = '';
+  if (dia) {
+    const otros = otrosLugaresDia(a.codigo), aqui = piezasDe(a);
+    l1 = otros.length ? `${aqui} aquí + ${textoLugares(otros)}` : 'El total de la tienda: cuenta todos los lugares';
+    l2 = desglose(p, sumarCuentas(a.baseCuentas, a.cuentas)) ? `${desglose(p, sumarCuentas(a.baseCuentas, a.cuentas))} aquí` : cada;
+  } else {
+    l1 = a.base > 0 ? `${a.base} guardadas + ${nuevas}` : (desglose(p, a.cuentas) || cada);
+    const otros = (DE_OTROS[a.codigo] || []).map(o => ({ q: quienDice(o.quien), cant: o.cant, lugar: o.lugar }))
+      .concat(c.capturas.filter(k => k.codigo === a.codigo && k.lugar !== a.lugar && k.estado !== 'no-entro').map(k => ({ q: 'tú', cant: k.cant, lugar: k.lugar })));
+    if (otros.length) {
+      l2 = `Ya van ${redondo(otros.reduce((s, o) => s + o.cant, 0))}: ${otros.map(o => `${o.q}, ${o.lugar.toLowerCase()}`).join(' · ')}${S.red === 'caida' ? ' (hace 12 min)' : ''}`;
+      if (!S.pistaYaVan || S.pistaYaVan === a.codigo) { S.pistaYaVan = a.codigo; l2 += '. Cuenta lo de aquí aunque ya vaya algo'; }
+    } else l2 = 'Nadie más lo ha contado';
+  }
+  return `<div class="contando">
+    <button class="producto-toca" data-a="verCapturasProducto" data-c="${a.codigo}" aria-label="${esc(p.nombre)}: sus capturas"><span class="nom">${esc(p.nombre)}${a.para ? ` <span class="chip-para">para ${DEPTOS[a.para]}, de paso</span>` : ''}${suma}</span><span class="det">${l1}</span><span class="det">${l2}</span></button>
+    <div class="cuenta-grande"><button class="menos-uno num" data-a="menosConteo" aria-label="Quitar la última lectura" ${a.lecturas.length ? '' : 'disabled'}>${menos}</button><button class="contador num crece" data-a="teclearConteo" aria-label="${total}. Tocar para teclear"><small>×</small>${total}</button></div>
+  </div>`;
+}
+/* El renglón de lo último: fijo, de una línea, encima de los modos. No se va por tiempo ni lo tapa otro aviso */
+function renglonConteo() {
+  const c = S.conteo, t = conteoActivo();
+  if (!t || (S.pos === 'piloto' && !S.verConteo) || !PERSONAS[S.persona]) return '';
+  const r = (texto, boton = '', clase = '') => `<div class="renglon-ultimo ${clase}" role="status"><span class="txt">${texto}</span>${boton}</div>`;
+  const t3 = (antes, nombre, despues) => `${antes ? `<span class="fijo">${antes}${antes === '¿' ? '' : '&nbsp;'}</span>` : ''}<span class="nom">${esc(nombre)}</span><span class="fijo">${/^[:]/.test(String(despues)) ? '' : '&nbsp;'}${despues}</span>`;
+  const b = (etq, a, datos = '') => `<button class="btn tonal" data-a="${a}" ${datos}>${etq}</button>`;
+  if (c.quitada) { const p = POR_CODIGO.get(c.quitada.codigo); return r(t3('Quitada:', p.nombre, c.quitada.cant === 0 ? 'no hay' : c.quitada.cant), b('Deshacer', 'deshacerQuitar')); }
+  if (t.tipo === 'completo') {
+    const k = c.pregunta && c.capturas.find(x => x.id === c.pregunta);
+    if (k) return r(t3('¿', POR_CODIGO.get(k.codigo).nombre, `(${k.cant}) fue de más?`), b('Quitar', 'quitarCaptura', `data-id="${k.id}" data-renglon="1"`), 'pregunta');
+    const u = c.capturas.find(x => x.id === c.ultimaGuardada);
+    if (u) {
+      const p = POR_CODIGO.get(u.codigo), cant = u.cant === 0 ? 'no hay' : u.suma ? `+${u.cant} (${redondo(u.suma + u.cant)} aquí)` : u.cant;
+      return r(t3('Antes:', p.nombre, `${cant}${u.estado === 'por-subir' ? ' · por subir' : ''}`), b('Quitar', 'quitarCaptura', `data-id="${u.id}" data-renglon="1"`));
+    }
+    return r('Escanear otro producto guarda este', '', 'regla');
+  }
+  const ap = c.ultimoAplicado;
+  if (ap) {
+    const p = POR_CODIGO.get(ap.codigo), ver = PERSONAS[S.persona].costos && S.celular !== 'tienda';
+    return r(t3(ap.porAplicar ? 'Por aplicar:' : 'Aplicado:', p.nombre, `${ap.total === 0 ? 'no hay' : ap.total}${ver && !ap.porAplicar ? ` · el sistema tenía ${ap.sistema}: ${ap.dif >= 0 ? '+' : ''}${ap.dif}` : ''}`), '', 'aplicado');
+  }
+  const pend = sinAplicar();
+  if (pend.length) {
+    const k = pend[0], d = c.dia[k], p = POR_CODIGO.get(k), min = minutosDesde(d.desde);
+    return r(t3('', p.nombre, `: ${totalDia(k)} · hace ${min} min${pend.length > 1 ? ` · y ${pend.length - 1} más` : ''}`), b('¿Es todo?', 'esTodoDe', `data-c="${k}"`), min >= 10 ? 'vencido' : 'pendiente');
+  }
+  return r('Escanear otro no lo aplica; se aplica con «Es todo»', '', 'regla');
+}
 /* ——— Sobre el bloqueo: solo el precio, sin existencia ——— */
 function panelBloqueo() {
   const c = S.precio ? tarjetaPrecio(true) : `<div class="vacio"><strong>Escanea para ver el precio</strong>Sobre el bloqueo solo se ve el precio. Para el ticket, el conteo o la existencia, abre la app.</div>`;
@@ -1384,7 +1613,7 @@ function panelBloqueo() {
 
 /* ——— Hojas ——— */
 function hoja() {
-  const fn = { ticket: hojaTicket, buscar: hojaBuscar, impresiones: hojaImpresiones, verImpresiones: hojaVerImpresiones, mandar: hojaMandar, cantidad: hojaCantidad, contado: hojaContado, menu: hojaMenu, abrirDepto: hojaAbrirDepto, aplicarDia: hojaAplicarDia, capturasProducto: hojaCapturasProducto }[S.hoja];
+  const fn = { ticket: hojaTicket, buscar: hojaBuscar, impresiones: hojaImpresiones, verImpresiones: hojaVerImpresiones, mandar: hojaMandar, cantidad: hojaCantidad, contado: hojaContado, menu: hojaMenu, abrirDepto: hojaAbrirDepto, aplicarDia: hojaAplicarDia, capturasProducto: hojaCapturasProducto, elegirConteo: hojaElegirConteo, lugar: hojaLugar }[S.hoja];
   return fn ? fn() : '';
 }
 const barraHoja = (titulo, sub, cerrar = 'cerrarHoja', icono = 'cerrar') => `<div class="barra"><button class="btn-ic" data-a="${cerrar}" aria-label="Cerrar">${ic(icono)}</button><h2>${titulo}${sub ? `<small>${sub}</small>` : ''}</h2></div>`;
@@ -1433,11 +1662,11 @@ function hojaBuscar() {
   } else if (!res.length) {
     lista = `<div class="vacio"><strong>Nada con «${esc(S.busqueda)}»</strong>Prueba con el principio de dos palabras, o escanea el código.</div>`;
   } else {
-    lista = `<div class="resultados">` + res.map(p => `<button class="resultado" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span><span class="nom">${marcarPiezas(p.nombre, S.busqueda)}</span><span class="det">${DEPTOS[p.depto] || 'Servicios'}${p.sinInventario || S.celular === 'tienda' || S.modo === 'conteo' ? '' : existenciaOculta(p.codigo) ? ' · existencia oculta mientras cuentas' : ` · existencia ${p.existencia}`}</span></span><span class="pre num">${dinero(p.precio)}${p.mayoreo ? `<small>desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])}</small>` : ''}</span></button>`).join('') + `</div>`;
+    lista = `<div class="resultados">` + res.map(p => `<button class="resultado" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span><span class="nom">${marcarPiezas(p.nombre, S.busqueda)}</span><span class="det">${DEPTOS[p.depto] || 'Servicios'}${p.sinInventario || S.celular === 'tienda' || S.modo === 'conteo' ? '' : existenciaOculta(p.codigo) ? ` · existencia oculta mientras cuentas ${esc(queCuentas())}` : ` · existencia ${p.existencia}`}</span></span><span class="pre num">${dinero(p.precio)}${p.mayoreo ? `<small>desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])}</small>` : ''}</span></button>`).join('') + `</div>`;
   }
   const filas = ['qwertyuiop', 'asdfghjklñ', 'zxcvbnm'];
   const teclado = esCelular() ? '' : `<div class="teclado" aria-label="Teclado (prototipo)">${filas.map((f, i) => `<div class="fila">${f.split('').map(k => `<button data-a="tecla" data-k="${k}" tabindex="-1">${k}</button>`).join('')}${i === 2 ? `<button class="media" data-a="tecla" data-k="borrar" tabindex="-1" aria-label="Borrar">⌫</button>` : ''}</div>`).join('')}<div class="fila"><button class="ancha" data-a="tecla" data-k=" " tabindex="-1">espacio</button></div></div>`;
-  return `<div class="hoja completa modo-${m}"><div class="contenido">${barraHoja(titulo, '', 'cerrarHoja', 'atras')}<div class="desliza" style="display:flex;flex-direction:column;justify-content:flex-end">${lista}</div>
+  return `<div class="hoja completa modo-${m}"><div class="contenido">${barraHoja(titulo, '', 'cerrarHoja', 'atras')}<div class="desliza" style="display:flex;flex-direction:column"><div style="margin-top:auto">${lista}</div></div>
     <div class="pie" style="border:0;padding-top:4px"><label class="campo">${ic('buscar')}<input id="busqueda" type="text" inputmode="search" autocomplete="off" enterkeyhint="search" placeholder="Nombre, pedazos de palabra o código" value="${esc(S.busqueda)}" aria-label="Buscar">${S.busqueda ? `<button class="btn-ic" data-a="limpiarBusqueda" aria-label="Borrar lo escrito">${ic('cerrar')}</button>` : ''}</label></div>${teclado}</div></div>`;
 }
 
@@ -1521,94 +1750,154 @@ function pantallaQr() {
 function hojaCantidad() {
   const d = S.hojaDatos;
   const p = POR_CODIGO.get(d.codigo);
-  const conPunto = d.conConteo && p.unidad === 'm' && d.fila === 'sueltas';
-  const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', conPunto ? '.' : '', '0', '⌫'];
-  const teclado = `<div class="numerico">${teclas.map(k => k ? `<button class="${k === '⌫' ? 'op' : ''}" data-a="cifra" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k === '.' ? 'Punto' : k}">${k}</button>` : '<span></span>').join('')}</div>`;
+  const tecladoDe = (teclas, cls = '') => `<div class="numerico${cls}">${teclas.map(k => k ? `<button class="${k === '⌫' ? 'op' : ''}" data-a="cifra" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k === '.' ? 'Punto' : k}">${k}</button>` : '<span></span>').join('')}</div>`;
   if (!d.conConteo) {
     const v = parseInt(d.texto || '0', 10);
-    return `<div class="hoja modo-${S.modo}"><div class="contenido">${barraHoja(esc(p ? p.nombre : d.codigo), 'Cuántas lleva')}<div class="desliza"><div class="cifra"><div class="valor num">${d.texto ? esc(d.texto) : '<small>0</small>'}</div></div>${teclado}</div>
+    return `<div class="hoja modo-${S.modo}"><div class="contenido">${barraHoja(esc(p ? p.nombre : d.codigo), 'Cuántas lleva')}<div class="desliza"><div class="cifra"><div class="valor num">${d.texto ? esc(d.texto) : '<small>0</small>'}</div></div>${tecladoDe(['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'])}</div>
       <div class="pie"><button class="btn lleno ancho" data-a="cifraLista" ${v > 0 ? '' : 'disabled'}>Dejar ${v || ''}</button></div></div></div>`;
   }
-  const pr = presentacion(p), dia = conteoActivo() && conteoActivo().tipo === 'dia';
-  const filas = pr ? [['cajas', pr.nombre], ['sueltas', pr.suelta]] : [['sueltas', p.unidad === 'm' ? 'Metros' : 'Piezas']];
+  /* Contar: una casilla por presentación, de la más grande a la suelta, en dos columnas; el total al momento */
+  const t = conteoActivo(), dia = t && t.tipo === 'dia', a = S.conteo.actual;
+  const pres = presentaciones(p), fila = pres.find(x => x.k === d.fila) || pres[pres.length - 1];
+  const conPunto = p.unidad === 'm' && fila.k === 'suelta';
   const num = v => parseFloat(v || '0') || 0;
-  const aqui = redondo(num(d.cajas) * (pr ? pr.piezas : 0) + num(d.sueltas));
-  const antes = dia && S.conteo.dia[d.codigo] ? S.conteo.dia[d.codigo].antes : 0;
-  const casillas = filas.map(([k, t]) => `<button class="caja${d.fila === k ? ' on' : ''}" style="min-height:56px" data-a="filaCifra" data-k="${k}"><span class="radio"></span><span><strong>${t}</strong></span><span class="valor num" style="font-size:26px;font-weight:800">${esc(d[k] || '0')}</span></button>`).join('');
-  const tecleado = (d.cajas || '') !== '' || (d.sueltas || '') !== '';
-  const nada = aqui === 0 && !tecleado && !antes;
+  const aqui = redondo(pres.reduce((s, x) => s + num(d.valores[x.k]) * x.piezas, 0));
+  const otros = dia ? otrosLugaresDia(d.codigo) : [], deOtros = redondo(otros.reduce((s, [, v]) => s + v, 0));
+  const tecleado = pres.some(x => (d.valores[x.k] || '') !== '');
+  const nada = !tecleado && aqui === 0 && !deOtros;
+  const casillas = pres.map(x => `<button class="caja${fila.k === x.k ? ' on' : ''}" data-a="filaCifra" data-k="${x.k}" aria-pressed="${fila.k === x.k}"><strong>${x.nombre}</strong><span class="valor num">${esc(d.valores[x.k] || '0')}</span></button>`).join('');
   const pie = dia
-    ? `<div style="display:flex;gap:8px"><button class="btn borde crece" data-a="otroLugar" ${aqui > 0 ? '' : 'disabled'}>Otro lugar</button><button class="btn lleno crece" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : `Es todo · ${redondo(antes + aqui)}`}</button></div>`
+    ? `<div style="display:flex;gap:8px"><button class="btn borde crece" data-a="otroLugar" ${aqui > 0 || tecleado ? '' : 'disabled'}>Otro lugar</button><button class="btn lleno crece" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : `Es todo · ${redondo(aqui + deOtros)}`}</button></div>`
     : `<button class="btn lleno ancho" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : aqui === 0 ? 'Guardar 0 · no hay' : `Guardar ${aqui}`}</button>`;
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), dia ? (antes ? `Lo de este lugar · ${antes} de otros lugares` : 'Lo de este lugar') : 'Lo que hay en este lugar')}<div class="desliza">
-    <div class="cajas" style="margin-bottom:8px">${casillas}</div><div class="fila-total" style="margin:0 4px 8px"><span>${dia && antes ? `${aqui} aquí + ${antes} de otros lugares` : 'Total'}</span><b class="num">${unidad(p, redondo(antes + aqui))}</b></div>${teclado}</div>
+  const lugar = (a && a.lugar) || S.conteo.lugar || 'este lugar';
+  return `<div class="hoja modo-conteo teclado-conteo"><div class="contenido"><button class="jalar" data-a="cerrarHoja" aria-label="Cerrar: se tira lo tecleado"></button>${barraHoja(esc(p.nombre), `Lo de ${esc(lugar)}${otros.length ? ` · ${textoLugares(otros)}` : ''}`)}<div class="desliza">
+    <div class="cajas dos">${casillas}</div><div class="fila-total"><span>${dia && otros.length ? `${aqui} aquí + ${textoLugares(otros)}` : 'Aquí'}</span><b class="num">${unidad(p, redondo(aqui + deOtros))}</b></div>${tecladoDe(['1', '2', '3', '4', '5', '6', '7', '8', '9', conPunto ? '.' : '', '0', '⌫'], ' chico')}</div>
     <div class="pie">${pie}</div></div></div>`;
 }
 function hojaAbrirDepto() {
   const abiertos = CONTEOS.filter(t => t.tipo === 'completo').map(t => t.depto);
   const lista = Object.entries(DEPTOS).filter(([k]) => !abiertos.includes(k));
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja('Abrir un departamento', 'Para el conteo completo')}<div class="desliza"><div class="tareas">
-    ${lista.length ? lista.map(([k, n]) => `<button class="tarea" data-a="abrirDeptoElegido" data-id="${k}"><span class="ic">${ic('conteo')}</span><span><strong>${n}</strong><small>${CATALOGO.filter(p => p.depto === k && !p.base).length * 14} productos · nadie lo está contando</small></span>${ic('adelante', 'i ch')}</button>`).join('') : '<div class="vacio">Todos los departamentos están abiertos.</div>'}
-    </div><p class="nota" style="margin-top:10px">Cuentan todos los que estén en el wifi de la tienda, con la app o con la página /conteo; las capturas se suman. Revisar las diferencias y cerrarlo es en la caja (Inventario, F4).</p></div></div></div>`;
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja('Abrir un departamento', 'Para el conteo completo')}<div class="desliza"><div class="tareas compactas">
+    ${lista.length ? lista.map(([k, n]) => `<button class="tarea" data-a="abrirDeptoElegido" data-id="${k}"><span class="ic">${ic('conteo')}</span><span><strong>${n}</strong><small>${CATALOGO.filter(p => p.depto === k && !p.base).length * 14} productos${CERRADOS[k] ? ` · se contó el ${CERRADOS[k]}` : ''}</small></span>${ic('adelante', 'i ch')}</button>`).join('') : '<div class="vacio">Todos los departamentos están abiertos.</div>'}
+    </div><p class="nota" style="margin-top:10px">Cuentan todos los que estén en el wifi de la tienda, con la app o con la página /conteo; las capturas se suman. Revisar las diferencias y cerrarlo es en la caja (F4).</p></div></div></div>`;
 }
-/* Lo contado: «Lo mío» y «Falta», con las pestañas abajo, junto al pulgar */
+/* «¿Qué vas a contar?»: una hoja, porque ahí no se escanea; caben los departamentos del arranque */
+const ahoraDe = x => { const l = x.ahora ? x.ahora.split(', ') : []; const yo = PERSONAS[S.persona] && PERSONAS[S.persona].nombre; if (S.conteo.activo === x.id && yo && !l.includes(yo)) l.push(yo); return l.join(', '); };
+function hojaElegirConteo() {
+  const c = S.conteo, per = PERSONAS[S.persona], res = S.hojaDatos && S.hojaDatos.resumen;
+  let h = `<div class="hoja modo-conteo"><div class="contenido">${barraHoja('¿Qué vas a contar?', 'Aquí no se escanea')}<div class="desliza">`;
+  if (res) h += `<p class="resumen" role="status">${esc(res)}</p>`;
+  h += `<div class="tareas compactas">`;
+  for (const x of CONTEOS) {
+    if (x.tipo === 'dia') {
+      const hechos = DEL_DIA.filter(k => DIA_DE_OTROS[k] || (c.dia[k] && c.dia[k].estado !== 'sin-aplicar')).length;
+      h += `<button class="tarea" data-a="abrirConteo" data-id="dia"><span class="ic">${ic('reloj')}</span><span><strong>Conteo del día</strong><small>Todo lo que hay de 15 productos</small></span><span class="avance num">${hechos} de 15 ›</span></button>`;
+    } else {
+      const ahora = ahoraDe(x);
+      h += `<button class="tarea" data-a="abrirConteo" data-id="${x.id}"><span class="ic">${ic('conteo')}</span><span><strong>${esc(x.titulo)}</strong><small>${ahora ? `ahora: ${esc(ahora)}` : 'nadie'}</small></span><span class="avance num">${x.contados}/${x.total} ›</span></button>`;
+    }
+  }
+  if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Lo que nadie cuente queda en 0 al cerrarlo</small></span>${ic('adelante', 'i ch')}</button>`;
+  h += `</div><p class="nota" style="margin:8px 2px 0">${per.completo ? '' : `${esc(per.nombre)} cuenta en lo que ya está abierto; abrir un departamento pide «Conteo completo». `}Revisar y cerrar: en la caja (F4).</p>`;
+  if (S.celular === 'tienda') h += `<button class="btn borde ancho" style="margin-top:10px" data-a="salir">${ic('salir')}Salir (${esc(per.nombre)})</button>`;
+  return h + `</div></div></div>`;
+}
+/* El lugar: una vez por vuelta, con el orden que hace cuadrar el cierre */
+function hojaLugar() {
+  const c = S.conteo, t = conteoActivo(), d = S.hojaDatos || {};
+  const titulo = d.seguir ? '¿En qué lugar sigues?' : d.cambiar ? '¿Dónde estás?' : `${t && t.tipo === 'completo' ? esc(t.titulo) : 'Del día'}: ¿dónde empiezas?`;
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(titulo, 'Se cambia arriba, en el panel')}<div class="desliza">
+    <p class="lead-hoja">Primero lo que está a la venta, de corrido; la bodega al final. Mientras se cuenta, no se surte ni se acomoda lo que llega.</p>
+    <div class="lugares">${LUGARES_CONTEO.filter(l => !(d.seguir && l === c.lugar)).map(l => `<button class="btn ${c.lugar === l ? 'lleno' : 'borde'} ancho" data-a="elegirLugar" data-v="${l}" aria-pressed="${c.lugar === l}">${l}</button>`).join('')}</div></div></div></div>`;
+}
+/* Lo contado: «Lo mío», «Falta» y «Fuera de lugar», con las pestañas abajo, junto al pulgar */
 function hojaContado() {
   const c = S.conteo, t = conteoActivo();
   if (!t) return '';
-  const dia = t.tipo === 'dia', tab = S.tabContado || 'mio';
+  const dia = t.tipo === 'dia', tienda = S.celular === 'tienda';
+  const fuera = dia ? [] : c.fuera;
+  let tab = S.tabContado || 'mio';
+  if (tab === 'fuera' && !fuera.length) tab = 'mio';
+  const nombreEstado = { contando: 'contando, sin guardar', 'sin-aplicar': 'sin aplicar', 'por-subir': 'por subir', subida: 'subida', 'por-aplicar': 'por aplicar', aplicada: 'aplicada', 'no-entro': 'no entró' };
+  const icEstado = { subida: 'check', aplicada: 'check', 'por-subir': 'subir', 'por-aplicar': 'subir' };
+  const estadoTxt = (e, desde) => `${icEstado[e] ? ic(icEstado[e], 'i ch') : ''}${nombreEstado[e] || e}${e === 'sin-aplicar' && desde ? ` · hace ${minutosDesde(desde)} min` : ''}`;
+  const cant = n => n === 0 ? '<span class="cant num no-hay">no hay</span>' : `<span class="cant num">${n}</span>`;
+  // «Lo mío»
+  const mio = [];
+  if (dia) {
+    if (c.actual) mio.push({ codigo: c.actual.codigo, total: totalDia(c.actual.codigo), det: [[c.actual.lugar, piezasDe(c.actual)], ...otrosLugaresDia(c.actual.codigo)], estado: 'contando' });
+    for (const [k, d] of Object.entries(c.dia)) if (!(c.actual && c.actual.codigo === k)) mio.push({ codigo: k, total: d.estado === 'sin-aplicar' ? totalDia(k) : d.total, det: Object.entries(d.lugares), estado: d.estado, desde: d.desde, hora: d.hora });
+  } else {
+    if (c.actual && nuevasDe(c.actual) > 0) mio.push({ codigo: c.actual.codigo, total: nuevasDe(c.actual), lugar: c.actual.lugar, hora: 'ahora', estado: 'contando' });
+    for (const k of c.capturas) mio.push({ ...k, total: k.cant });
+  }
+  // «Falta»: lo que nadie ha contado, por nombre, con su departamento
+  const falta = dia
+    ? DEL_DIA.filter(k => !DIA_DE_OTROS[k] && !(c.dia[k] && c.dia[k].estado !== 'sin-aplicar') && !(c.actual && c.actual.codigo === k)).map(k => POR_CODIGO.get(k))
+    : CATALOGO.filter(p => p.depto === t.depto && !p.base && !DE_OTROS[p.codigo] && !c.capturas.some(k => k.codigo === p.codigo) && !(c.actual && c.actual.codigo === p.codigo));
+  falta.sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'));
   let filas = '';
   if (tab === 'mio') {
-    const items = [];
-    if (c.actual) items.push({ codigo: c.actual.codigo, cant: dia ? totalDia(c.actual.codigo) : piezasDe(c.actual), hora: 'ahora', estado: 'contando' });
-    if (dia) {
-      for (const [k, d] of Object.entries(c.dia)) if (!(c.actual && c.actual.codigo === k)) items.push({ codigo: k, cant: d.antes, hora: d.hora || 'ahora', estado: d.estado });
-    } else {
-      for (const k of c.capturas.filter(k => k.conteo === t.id || CONTEOS.some(x => x.id === k.conteo))) items.push({ ...k });
-    }
-    const nombreEstado = { contando: 'contando, sin guardar', 'sin-aplicar': 'sin aplicar', 'por-subir': 'por subir', subida: 'subida', 'por-aplicar': 'por aplicar', aplicada: 'aplicada', 'no-entro': 'no entró' };
-    const icEstado = { subida: 'check', aplicada: 'check', 'por-subir': 'subir', 'por-aplicar': 'subir' };
-    filas = items.length ? items.map(k => {
+    filas = mio.length ? mio.map(k => {
       const p = POR_CODIGO.get(k.codigo);
-      const otroDepto = !dia && k.conteo && k.conteo !== t.id ? ` · para ${esc(CONTEOS.find(x => x.id === k.conteo).titulo)}` : '';
-      const quitar = !dia && k.id && k.estado !== 'no-entro' ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar esta captura">${ic('bote')}</button>` : (dia && k.estado === 'sin-aplicar' ? `<button class="btn tonal" style="min-height:40px;padding:0 12px;font-size:14px" data-a="esTodoDe" data-c="${k.codigo}">Es todo</button>` : '<span></span>');
-      return `<div class="captura${k.estado === 'no-entro' ? ' no-entro' : ''}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${k.hora} · <span class="subida">${icEstado[k.estado] ? ic(icEstado[k.estado], 'i ch') : ''}${nombreEstado[k.estado] || k.estado}</span>${k.cajas ? ` · ${k.cajas} + ${k.sueltas}` : ''}${otroDepto}</div></div><span class="cant num">${k.cant === 0 ? 'no hay' : k.cant}</span>${quitar}</div>`;
+      const para = !dia && k.conteo && k.conteo !== t.id ? ` · para ${esc(CONTEOS.find(x => x.id === k.conteo).titulo)}` : '';
+      const det = dia ? `${k.det.length ? textoLugares(k.det) + ' · ' : ''}${estadoTxt(k.estado, k.desde)}` : `${esc(k.lugar || '')} · ${k.hora} · ${estadoTxt(k.estado)}${para}`;
+      const accion = !dia && k.id && k.estado !== 'no-entro' ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar esta captura">${ic('bote')}</button>`
+        : dia && k.estado === 'sin-aplicar' ? `<button class="btn tonal" style="min-height:48px;padding:0 12px;font-size:14px" data-a="esTodoDe" data-c="${k.codigo}">¿Es todo?</button>` : '<span></span>';
+      return `<div class="captura${k.estado === 'no-entro' ? ' no-entro' : ''}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${det}</div></div>${cant(k.total)}${accion}</div>`;
     }).join('') : `<div class="vacio"><strong>Todavía no cuentas nada</strong>Regresa al escáner y escanea el primer producto.</div>`;
+  } else if (tab === 'falta') {
+    filas = falta.length ? falta.map(p => {
+      const ab = dia && abiertoDe(p.depto);
+      if (ab) return `<div class="captura falta gris"><div><div class="nom">${esc(p.nombre)}</div><div class="det">en ${esc(ab.titulo)}: se cuenta ahí</div></div><span></span><span></span></div>`;
+      return `<button class="captura falta" data-a="faltaContar" data-c="${p.codigo}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${DEPTOS[p.depto]} · tocar para contarlo o decir «no hay»</div></div><span></span>${ic('adelante', 'i ch')}</button>`;
+    }).join('') : `<div class="vacio"><strong>No falta nada</strong>Díselo al encargado: revisa y cierra en la caja.</div>`;
+    if (!dia && falta.length) filas += `<p class="nota" style="margin-top:8px">En el prototipo, ${falta.length} de muestra; en la tienda son todos los del departamento que nadie ha contado.</p>`;
   } else {
-    const lista = dia ? DEL_DIA.filter(k => !DIA_DE_OTROS[k] && !(c.dia[k] && c.dia[k].estado !== 'sin-aplicar'))
-      : CATALOGO.filter(p => p.depto === t.depto && !p.base && !DE_OTROS[p.codigo] && !c.capturas.some(k => k.codigo === p.codigo)).map(p => p.codigo);
-    filas = lista.length ? lista.map(k => { const p = POR_CODIGO.get(k); return `<button class="captura falta" data-a="faltaContar" data-c="${k}"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${DEPTOS[p.depto]} · tocar para contarlo o decir «no hay»</div></div><span></span>${ic('adelante', 'i ch')}</button>`; }).join('')
-      : `<div class="vacio"><strong>No falta nada</strong>Avísale al encargado: revisa y cierra en la caja.</div>`;
-    if (!dia && lista.length) filas += `<p class="nota" style="margin-top:8px">En el prototipo, ${lista.length} de muestra; en la tienda son todos los del departamento que nadie ha contado.</p>`;
+    filas = fuera.map(f => {
+      const p = POR_CODIGO.get(f.codigo), ab = abiertoDe(f.depto);
+      const accion = ab ? `<button class="btn tonal" style="min-height:48px;padding:0 12px;font-size:14px" data-a="contarFuera" data-c="${f.codigo}">Contarlo para ${DEPTOS[f.depto]}</button>` : `<button class="btn borde" style="min-height:48px;padding:0 12px;font-size:14px" data-a="yaLoLleve" data-c="${f.codigo}">Ya lo llevé</button>`;
+      return `<div class="captura"><div><div class="nom">${esc(p.nombre)}</div><div class="det">Es de ${DEPTOS[f.depto]} · ${f.hora}</div></div><span></span>${accion}</div>`;
+    }).join('');
   }
-  const nMio = dia ? Object.keys(c.dia).length + (c.actual && !c.dia[c.actual.codigo] ? 1 : 0) : c.capturas.length + (c.actual ? 1 : 0);
   const sub = dia ? `${DEL_DIA.length} productos · ${sinAplicar().length} sin aplicar` : `${c.capturas.length} ${c.capturas.length === 1 ? 'captura' : 'capturas'}${c.porSubir ? ` · ${c.porSubir} por subir` : ''}`;
-  return `<div class="hoja completa modo-conteo"><div class="contenido">${barraHoja(`${esc(dia ? 'Conteo del día' : t.titulo)} · lo contado`, sub, 'cerrarHoja', 'atras')}
-    <div class="desliza" style="display:flex;flex-direction:column;justify-content:flex-end"><div class="capturas">${filas}</div></div>
+  const pestana = (v, txt) => `<button class="${tab === v ? 'on' : ''}" role="tab" aria-selected="${tab === v}" data-a="tabContado" data-v="${v}">${txt}</button>`;
+  return `<div class="hoja completa modo-conteo"><div class="contenido">${barraHoja(`${esc(dia ? 'Del día' : t.titulo)} · lo que contaste`, sub, 'cerrarHoja', 'atras')}
+    <div class="desliza" style="display:flex;flex-direction:column"><div class="capturas" style="margin-top:auto">${filas}</div></div>
     <div class="pie">
-      <div class="chips" role="tablist" style="padding:0"><button class="chip${tab === 'mio' ? ' on' : ''}" role="tab" aria-selected="${tab === 'mio'}" data-a="tabContado" data-v="mio">Lo mío (${nMio})</button><button class="chip${tab === 'falta' ? ' on' : ''}" role="tab" aria-selected="${tab === 'falta'}" data-a="tabContado" data-v="falta">Falta</button></div>
-      <div style="display:flex;gap:8px"><button class="btn borde crece" data-a="contarOtraCosa">Contar otra cosa</button><button class="btn lleno crece" data-a="salirConteo">${S.celular === 'tienda' ? 'Terminé mi parte y salir' : 'Terminé mi parte'}</button></div>
-      <p class="nota centro" style="margin:0">Revisar y cerrar: en la caja (Inventario, F4).</p>
+      <div class="pestanas" role="tablist">${pestana('mio', `Lo mío (${mio.length})`)}${pestana('falta', `Falta (${falta.length})`)}${fuera.length ? pestana('fuera', `Fuera (${fuera.length})`) : ''}</div>
+      <div style="display:flex;gap:8px"><button class="btn borde crece" data-a="contarOtraCosa">Contar otra cosa</button><button class="btn lleno crece" data-a="salirConteo">${tienda ? 'Terminé mi parte y salir' : 'Terminé mi parte'}</button></div>
+      <p class="nota centro" style="margin:0">Revisar y cerrar: en la caja (F4).</p>
     </div></div></div>`;
 }
 /* «Es todo»: el total del día pide confirmar, porque se aplica ya y no se corrige */
 function hojaAplicarDia() {
-  const codigo = S.hojaDatos && S.hojaDatos.codigo, p = POR_CODIGO.get(codigo);
-  if (!p) return '';
-  const total = totalDia(codigo), d = S.conteo.dia[codigo], antes = d ? d.antes : 0, aqui = redondo(total - antes);
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(`${esc(p.nombre)}: ${unidad(p, total)}`, antes ? `${aqui} aquí + ${antes} de otros lugares` : 'El total de la tienda')}<div class="desliza">
-    <p style="margin:0 0 8px;font-size:16px">Se aplica ya, a ciegas: el POS compara con lo que dice el sistema. Si quedó mal, es un ajuste en la caja.</p>
+  const codigo = S.hojaDatos.codigo, p = POR_CODIGO.get(codigo), c = S.conteo;
+  const total = totalDia(codigo), a = c.actual && c.actual.codigo === codigo ? c.actual : null, otros = otrosLugaresDia(codigo);
+  const partes = (a ? [`${piezasDe(a)} aquí`] : []).concat(otros.map(([l, v]) => `${v} en ${l.toLowerCase()}`));
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(`${esc(p.nombre)}: ${unidad(p, total)} en total`, partes.join(' + ') || 'El total de la tienda')}<div class="desliza">
+    <p style="margin:0 0 8px;font-size:16px">Se aplica ya. Si quedó mal, es un ajuste en la caja.</p>
     ${total === 0 ? '<p class="nota" style="margin:0">Dice «no hay»: no se encontró en ningún lugar.</p>' : ''}</div>
-    <div class="pie"><button class="btn lleno ancho" data-a="aplicarDiaOk">${ic('check')}Aplicar ${unidad(p, total)}</button><button class="btn borde ancho" data-a="cerrarHoja">Seguir contando</button></div></div></div>`;
+    <div class="pie"><button class="btn lleno ancho" data-a="aplicarDiaOk">${ic('check')}Aplicar ${unidad(p, total)}</button><button class="btn borde ancho" data-a="cerrarHoja">Falta un lugar</button></div></div></div>`;
 }
-/* «Ya van»: quién contó ese producto, cuánto y a qué hora */
+/* Las capturas de un producto: quién, dónde, cuánto y a qué hora. Las de otros las quita quien tiene «Conteo completo» */
 function hojaCapturasProducto() {
-  const codigo = S.hojaDatos && S.hojaDatos.codigo, p = POR_CODIGO.get(codigo), per = PERSONAS[S.persona];
-  const otras = (DE_OTROS[codigo] || []).map((o, i) => ({ quien: o[0], cant: o[1], hora: o[2], i, deOtro: true }));
-  const mias = S.conteo.capturas.filter(k => k.codigo === codigo).map(k => ({ quien: 'Tú', cant: k.cant, hora: k.hora, id: k.id }));
-  const todas = mias.concat(otras);
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), `Ya van ${redondo(todas.reduce((s, k) => s + k.cant, 0))} en ${todas.length} ${todas.length === 1 ? 'lugar' : 'lugares'}`)}<div class="desliza"><div class="capturas">
-    ${todas.map(k => `<div class="captura"><div><div class="nom">${esc(k.quien)}${k.quien === 'Beto' ? ' <small class="nota">(en /conteo)</small>' : ''}</div><div class="det">${k.hora}</div></div><span class="cant num">${k.cant}</span>${k.id ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar">${ic('bote')}</button>` : per.completo ? `<button class="btn-ic" data-a="quitarDeOtro" data-c="${codigo}" data-i="${k.i}" aria-label="Quitar la captura de ${esc(k.quien)}">${ic('bote')}</button>` : '<span></span>'}</div>`).join('')}
-    </div><p class="nota" style="margin-top:10px">${per.completo ? 'Con «Conteo completo» se quitan también las de otros (la captura equivocada se quita y se cuenta otra vez).' : 'Cada quien quita las suyas; las de otros, el encargado.'} Nunca sale lo que dice el sistema.</p></div></div></div>`;
+  const codigo = S.hojaDatos && S.hojaDatos.codigo, p = POR_CODIGO.get(codigo), per = PERSONAS[S.persona], c = S.conteo, t = conteoActivo();
+  if (t && t.tipo === 'dia') {
+    const a = c.actual && c.actual.codigo === codigo ? c.actual : null;
+    const filas = (a ? [[a.lugar, piezasDe(a), 'contando']] : []).concat(otrosLugaresDia(codigo).map(([l, v]) => [l, v, 'sin aplicar']));
+    return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), `Del día: ${totalDia(codigo)} en total`)}<div class="desliza"><div class="capturas">
+      ${filas.map(([l, v, e]) => `<div class="captura"><div><div class="nom">Tú · ${esc(l)}</div><div class="det">${e}</div></div><span class="cant num">${v}</span><span></span></div>`).join('')}
+      </div><p class="nota" style="margin-top:10px">El del día es el total de la tienda: lo de cada lugar se suma y se aplica una vez, con «Es todo».</p></div></div></div>`;
+  }
+  const otras = (DE_OTROS[codigo] || []).map((o, i) => ({ quien: quienDice(o.quien), cant: o.cant, hora: o.hora, lugar: o.lugar, i, enConteo: o.enConteo }));
+  const mias = c.capturas.filter(k => k.codigo === codigo).map(k => ({ quien: 'tú', cant: k.cant, hora: k.hora, lugar: k.lugar, id: k.id }));
+  const contando = c.actual && c.actual.codigo === codigo && nuevasDe(c.actual) > 0 ? [{ quien: 'tú', cant: nuevasDe(c.actual), hora: 'contando', lugar: c.actual.lugar }] : [];
+  const todas = contando.concat(mias, otras);
+  const suma = redondo(todas.reduce((s, k) => s + k.cant, 0));
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), `Ya van ${suma} en ${todas.length} ${todas.length === 1 ? 'captura' : 'capturas'}`)}<div class="desliza"><div class="capturas">
+    ${todas.map(k => `<div class="captura"><div><div class="nom">${k.quien[0].toUpperCase() + k.quien.slice(1)} · ${esc(k.lugar || '')}${k.enConteo ? ' <small class="nota">(en /conteo)</small>' : ''}</div><div class="det">${k.hora}</div></div><span class="cant num">${k.cant}</span>${k.id ? `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar">${ic('bote')}</button>` : k.i != null && per.completo ? `<button class="btn-ic" data-a="quitarDeOtro" data-c="${codigo}" data-i="${k.i}" aria-label="Quitar la captura de ${esc(k.quien)}">${ic('bote')}</button>` : '<span></span>'}</div>`).join('')}
+    </div><p class="nota" style="margin-top:10px">Cuenta lo de aquí aunque ya vaya algo. ${per.completo ? 'Con «Conteo completo» se quitan también las de otros (la captura equivocada se quita y se cuenta otra vez).' : 'Cada quien quita las suyas; las de otros, el encargado.'} Nunca sale lo que dice el sistema.</p></div></div></div>`;
 }
 
 function hojaMenu() {
@@ -1616,7 +1905,7 @@ function hojaMenu() {
   const red = S.red === 'buena' ? 'Conectado a la caja principal · 12 ms' : S.red === 'lenta' ? 'Red lenta: el ticket y el conteo esperan su turno' : 'Sin red: el precio y la búsqueda siguen con la copia';
   const boton = (a, i, t, sub) => `<button data-a="${a}">${ic(i)}<span>${t}<small>${sub}</small></span></button>`;
   let yo, items = '';
-  if (!tienda) yo = `<span class="letra">${per.letra}</span><div><strong>${per.nombre}</strong><small>Celular de Luis: Precio, Ticket y Conteo · entró a las 9:02</small></div>`;
+  if (!tienda) yo = `<span class="letra">${per.letra}</span><div><strong>${per.nombre}</strong><small>Celular de Luis: Precio, Ticket y Conteo · entró a las 9:02 con su huella</small></div>`;
   else if (!per) {
     yo = `<span class="letra">${ic('tienda')}</span><div><strong>Celular de la tienda</strong><small>Precio y Conteo. Precio no pide entrar</small></div>`;
     items += boton('entrarParaContar', 'conteo', 'Entrar para contar', 'Con tu ficha y tu PIN del POS, como en la caja');
@@ -1641,8 +1930,8 @@ function pantallaEntrada() {
     h += `<div class="pantalla"><div class="fichas" style="margin-top:28px"><span class="ficha on" style="width:auto;padding:12px 22px"><span class="letra">L</span>Luis</span></div><h1 style="text-align:center">Hola, Luis</h1>`;
     if (!S.conPin) {
       return h + `<p class="lead" style="text-align:center">Celular de Luis: Precio, Ticket y Conteo. Entras con tu huella y dura el turno.</p>
-        <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><button class="btn lleno ancho" data-a="pedirHuella">${ic('huella')}Entrar con tu huella</button><button class="btn borde ancho" data-a="usarPin">Usar mi PIN del POS</button></div>
-        <p class="nota centro" style="margin:12px 0 0">La huella no sale del celular. Si alguien registra otra huella en él, la app vuelve a pedir tu PIN del POS. Sin red, entras igual.</p></div><div class="barra-gestos"></div>`;
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><button class="btn lleno ancho" data-a="pedirHuella">${ic('huella')}Entrar con tu huella</button><button class="btn borde ancho" data-a="usarPin" ${S.red === 'caida' ? 'disabled' : ''}>${S.red === 'caida' ? 'Sin red, solo con la huella' : 'Usar mi PIN del POS'}</button></div>
+        <p class="nota centro" style="margin:12px 0 0">Solo con tu huella: el PIN del celular no sirve aquí. Si alguien registra otra huella, la app vuelve a pedir tu PIN del POS. Sin red, entras con la huella.</p></div><div class="barra-gestos"></div>`;
     }
     h += `<p class="lead" style="text-align:center">Tu PIN del POS, de respaldo. Entras con la cuarta cifra.</p>` + puntosPin();
     h += `<p class="nota centro"><button class="btn tonal" style="min-height:40px;font-size:14px" data-a="pedirHuella">${ic('huella')}Mejor con la huella</button></p>`;
@@ -1657,7 +1946,7 @@ function pantallaEntrada() {
     const per = PERSONAS[S.fichaElegida];
     h += `<div class="pantalla"><div class="cabeza-entrada"><button class="btn-ic" data-a="otraFicha" aria-label="Otra ficha">${ic('atras')}</button><h1>PIN de ${esc(per.nombre)}</h1></div>
       <div class="ficha-sola"><span class="letra">${per.letra}</span><button class="btn tonal" data-a="otraFicha">Otra ficha</button></div>` + puntosPin();
-    h += `<p class="nota centro">${S.red === 'caida' ? 'Sin red no se entra: el PIN lo revisa la caja principal. Precio sigue funcionando.' : 'Entras con la cuarta cifra. 5 intentos en este celular; luego espera 5 minutos. En el prototipo entra cualquier PIN.'}</p>`;
+    h += `<p class="nota centro">${S.red === 'caida' ? 'Sin red no se entra: el PIN lo revisa la caja principal. Precio sigue funcionando.' : 'Entras con la cuarta cifra. 5 intentos en este celular; luego espera 5 minutos. En el prototipo entra cualquier PIN, salvo 0000.'}</p>`;
   }
   return h + tecladoPin() + `</div><div class="barra-gestos"></div>`;
 }
@@ -1666,19 +1955,23 @@ function pantallaAlta() {
   if (S.pasoAlta === 0 && S.escanerAlta) {
     return barraEstado(false) + `<div class="app">${visor()}<section class="panel modo-ticket"><span class="asidero"></span><div class="cuerpo"><div class="vacio"><strong>Escanea el código de la caja</strong>En la caja: Configuración › Celulares › «Dar de alta un celular». Quien lo pide ahí ya entró con su PIN y su permiso, y eligió de quién es.</div></div><div class="acciones"><button class="btn borde crece" data-a="altaSinQr">Escribir la dirección</button></div></section></div><div class="barra-gestos"></div>`;
   }
-  if (!tienda && S.pasoAlta === 2) {
+  if (!tienda && S.pasoAlta === 3) {
     /* Solo en el de una persona: confirma con su PIN del POS, una sola vez */
     return barraEstado(true) + `<div class="pantalla"><h1>Confirma que es tuyo</h1><p class="lead">Tu PIN del POS, una sola vez: así la caja sabe que este celular es de Luis. Después solo se pide de respaldo.</p>${puntosPin()}<p class="nota centro">En el prototipo entra cualquiera de 4 cifras.</p>${tecladoPin()}</div><div class="barra-gestos"></div>`;
   }
   const qr = 'Lo enseña la caja en Configuración › Celulares, con un permiso de un solo uso que vence en 10 minutos.';
   const cercanos = 'Android 17 lo pide para hablar con la caja principal por el wifi de la tienda. La app no sale a internet.';
+  const modelo = tienda ? 'moto g54' : 'Pixel 8 Pro', sera = tienda ? 'el celular de la tienda, con Precio y Conteo' : 'el celular de Luis, con Precio, Ticket y Conteo';
+  const esEste = ['¿Es este? En la caja', S.pasoAlta < 2 ? 'La caja pregunta «¿Es este?» y alguien toca «Sí» ahí: así nadie más usa el código.' : S.pasoAlta === 2 ? `Esperando a la caja · Se conectó un ${modelo}.` : `Sí, es este: será ${sera}.`];
   const pasos = tienda ? [
-    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Será el celular de la tienda: Precio y Conteo. En la caja, «Sí, es este».' : qr],
+    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Leído: la dirección de la caja principal y un permiso de un solo uso.' : qr],
     ['Permitir «Dispositivos cercanos»', cercanos],
+    esEste,
     ['Bajar el catálogo', 'Precios, promociones y fotos (unos 9 MB), sin existencias: lo que ve el cliente.'],
   ] : [
-    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Será el celular de Luis: Precio, Ticket y Conteo.' : qr],
+    ['Escanear el código de la caja', S.pasoAlta > 0 ? 'Leído: la dirección de la caja principal y un permiso de un solo uso.' : qr],
     ['Permitir «Dispositivos cercanos»', cercanos],
+    esEste,
     ['Confirmar que es tuyo', 'Tu PIN del POS, una sola vez.'],
     ['Entrar con tu huella', 'Desde ahí, entras con tu huella. Si alguien registra otra en el celular, vuelve a pedir tu PIN del POS.'],
     ['Bajar el catálogo', 'Con las existencias y las fotos (unos 9 MB).'],
@@ -1689,7 +1982,8 @@ function pantallaAlta() {
   h += `<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:16px">`;
   if (S.pasoAlta === 0) h += `<button class="btn lleno ancho" data-a="altaEscanear">${ic('qr')}Escanear el código de la caja</button><button class="btn borde ancho" data-a="altaSinQr">Escribir la dirección y el PIN</button>`;
   else if (S.pasoAlta === 1) h += `<button class="btn lleno ancho" data-a="altaPermiso">${ic('cercanos')}Continuar</button>`;
-  else if (S.pasoAlta === 3 && !tienda) h += `<button class="btn lleno ancho" data-a="pedirHuella">${ic('huella')}Activar la huella</button>`;
+  else if (S.pasoAlta === 2) h += `<p class="nota centro" style="margin:0">Prototipo: lo que se toca en la caja</p><button class="btn tonal ancho" data-a="cajaSiEsEste">La caja: «Sí, es este»</button>`;
+  else if (S.pasoAlta === 4 && !tienda) h += `<button class="btn lleno ancho" data-a="pedirHuella">${ic('huella')}Activar la huella</button>`;
   else if (S.pasoAlta >= fin) h += `<div class="nota centro"><span class="girando" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>Bajando el catálogo… 4,212 de 5,832 productos</div><button class="btn lleno ancho" data-a="altaLista">${ic('check')}Empezar: ya se puede usar</button>`;
   h += `</div></div><div class="barra-gestos"></div>`;
   return h;
@@ -1708,7 +2002,7 @@ function pantallaAjustes() {
   const fila = (t, sub, on, accion) => `<${accion ? `button data-a="${accion}" role="switch" aria-checked="${!!on}"` : 'div'} class="ajuste"${accion ? ' style="width:100%;text-align:left"' : ''}><div><strong>${t}</strong><small>${sub}</small></div>${on == null ? ic('adelante', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</${accion ? 'button' : 'div'}>`;
   const tienda = S.celular === 'tienda';
   return barraEstado(true) + `<div class="pantalla" style="padding-top:calc(var(--sb) + 4px)"><div class="barra" style="display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -12px"><button class="btn-ic" data-a="cerrarAjustes" aria-label="Regresar">${ic('atras')}</button><h2 style="margin:0;font-size:22px;font-weight:600">Ajustes</h2></div>
-    <div class="seccion">Al leer</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
+    <div class="seccion">Al leer${tienda ? ` · ${S.persona ? 'de ' + esc(PERSONAS[S.persona].nombre) : 'sin nadie adentro'}` : ''}</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
     <div class="seccion">Una mano${tienda ? ` · ${S.persona ? 'de ' + esc(PERSONAS[S.persona].nombre) : 'sin nadie adentro'}` : ''}</div>${fila('Botón rápido a la izquierda', S.zurdo ? 'Para la mano izquierda: las direcciones van en espejo (↑, ↗, →)' : 'Para zurdos: el botón y sus direcciones en espejo', S.zurdo, 'zurdo')}<button class="ajuste" data-a="verPistas" style="width:100%;text-align:left"><div><strong>Volver a ver las pistas</strong><small>Las burbujas del botón rápido en cada modo</small></div>${ic('adelante', 'i ch')}</button>
     <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', `5,832 productos${tienda ? ', sin existencias' : ''} · al día (hace 1 min)`, null)}${fila('De quién es', tienda ? 'De la tienda · Precio y Conteo · la sesión se cierra a los 10 minutos sin usarse' : 'De Luis · Precio, Ticket y Conteo', null)}
     <div class="seccion">Herramientas de medición</div>${fila('Sesión de prueba, banco y estrés', tienda ? 'Piden la ficha y el PIN de alguien con «Configuración de la tienda»' : 'Las de hoy, para medir el escáner en la tienda', null)}${fila('El escáner', tienda ? 'Motor, lente y resolución: también con esa ficha' : 'Motor, lente, resolución y cuadros por segundo', null)}
@@ -1725,7 +2019,7 @@ function dialogo() {
   return '';
 }
 function precioGrande() {
-  const p = POR_CODIGO.get(S.precio);
+  const p = POR_CODIGO.get(S.precioGrandeCodigo || S.precio);
   if (!p) return '';
   return `<button class="precio-grande" data-a="cerrarGrande" aria-label="Cerrar el precio grande"><span class="n">${esc(p.nombre)}</span><span class="m num">${dinero(p.precio)}</span>${p.mayoreo ? `<span class="y">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>` : ''}<span class="y" style="font-size:14px;margin-top:20px">Toca para regresar</span></button>`;
 }
@@ -1741,30 +2035,38 @@ function entrarComo(nuevo) {
     /* Lo suyo deja de ser «de otros»; si alguien con «Conteo completo» quitó una de sus capturas, ya no está */
     const quedan = new Set();
     for (const [k, lista] of Object.entries(DE_OTROS)) {
-      DE_OTROS[k] = lista.filter(o => { if (o[3] === nuevo) { quedan.add(o[4]); return false; } return true; });
+      DE_OTROS[k] = lista.filter(o => { if (o.de === nuevo) { quedan.add(o.id); return false; } return true; });
       if (!DE_OTROS[k].length) delete DE_OTROS[k];
     }
     c.capturas = c.capturas.filter(k => k.estado === 'no-entro' || quedan.has(k.id));
-    for (const k of Object.keys(DIA_DE_OTROS)) if (DIA_DE_OTROS[k][2] === nuevo) delete DIA_DE_OTROS[k];
+    for (const k of Object.keys(DIA_DE_OTROS)) if (DIA_DE_OTROS[k].de === nuevo) delete DIA_DE_OTROS[k];
     S.conteo = c; S.modo = 'conteo';
-    if (!c.activo && CONTEOS.length === 1 && CONTEOS[0].tipo === 'dia' && (S.pos !== 'piloto' || S.verConteo)) c.activo = 'dia';
   }
-  S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.pinError = ''; S.conPin = false; S.toast = null; S.cerradaSola = null; S.cierrePendiente = null;
+  S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.pinError = ''; S.conPin = false; S.toast = null; S.cerradaSola = null; S.cierrePendiente = null; S.sesionCerrada = false;
   cargarPistas();
-  /* Lo del día que quedó sin aplicar al cerrarse sola la sesión, se recuerda al volver */
-  const t = conteoActivo();
-  if (S.celular === 'tienda' && t && t.tipo === 'dia' && sinAplicar().length) { S.dialogo = 'sinAplicar'; S.despuesDialogo = null; }
+  if (S.celular === 'tienda') entrarAConteo();
+  /* Si la sesión se cerró sola a media cuenta, el producto espera en su lugar: «Sigue sumando» o «Quitar» */
+  const r = S.conteo.retomar;
+  if (S.celular === 'tienda' && r) { const p = POR_CODIGO.get(r.codigo); S.conteo.aviso = { tipo: 'retomar', nombre: p.nombre, codigo: r.codigo, texto: r.dia ? `${r.total}, sin aplicar desde las ${r.hora}` : `${r.total}, guardado a las ${r.hora}` }; S.conteo.retomar = null; return; }
+  /* Lo del día que dejó sin aplicar al salir: se le pregunta a quien lo contó, al volver */
+  if (S.celular === 'tienda' && sinAplicar().length) { S.dialogo = 'sinAplicar'; S.despuesDialogo = null; }
 }
 function cerrarSesion(sola, texto) {
   const quien = S.persona, per = PERSONAS[quien];
   S.hoja = null; S.menuRapido = false; S.pin = ''; S.pinError = ''; S.conPin = false; S.avisoCierre = false; S.precioGrande = false;
-  if (S.celular !== 'tienda') { S.pantalla = 'entrada'; return; }
+  if (S.celular !== 'tienda') { S.pantalla = 'entrada'; S.sesionCerrada = true; return; }
   if (!per) return;
-  if (sola) dejarActual();
+  if (sola && S.conteo.actual) {
+    const c0 = S.conteo, cod = c0.actual.codigo, dia = conteoActivo() && conteoActivo().tipo === 'dia';
+    dejarActual();
+    const mias = c0.capturas.filter(k => k.codigo === cod && k.lugar === c0.lugar && k.estado !== 'no-entro');
+    const total = dia ? (c0.dia[cod] && c0.dia[cod].lugares[c0.lugar]) || 0 : redondo(mias.reduce((s, k) => s + k.cant, 0));
+    if (total > 0) c0.retomar = { codigo: cod, hora: horaAhora(), dia, total };
+  }
   const c = S.conteo, hubo = c.activo || c.capturas.length || Object.keys(c.dia).length;
   /* Para quien entre después, lo suyo es de otros: sale en «Ya van» y en «ya lo contó» */
-  c.capturas.forEach(k => { if (k.estado !== 'no-entro') (DE_OTROS[k.codigo] = DE_OTROS[k.codigo] || []).push([per.nombre, k.cant, k.hora, quien, k.id]); });
-  Object.entries(c.dia).forEach(([k, d]) => { if (d.estado === 'aplicada' || d.estado === 'por-aplicar') DIA_DE_OTROS[k] = [per.nombre, d.hora, quien]; });
+  c.capturas.forEach(k => { if (k.estado !== 'no-entro') (DE_OTROS[k.codigo] = DE_OTROS[k.codigo] || []).push({ quien: per.nombre, cant: k.cant, hora: k.hora, lugar: k.lugar, de: quien, id: k.id }); });
+  Object.entries(c.dia).forEach(([k, d]) => { if (d.estado === 'aplicada' || d.estado === 'por-aplicar') DIA_DE_OTROS[k] = { quien: per.nombre, hora: d.hora, de: quien }; });
   S.conteosDe[quien] = c;
   S.conteo = conteoVacio();
   S.persona = null; S.modo = 'precio'; S.pantalla = 'escaner'; S.precio = null;
@@ -1777,10 +2079,22 @@ function cerrarSesion(sola, texto) {
 function terminarParte(t) {
   const c = S.conteo, dia = t && t.tipo === 'dia';
   const n = dia ? Object.values(c.dia).filter(d => d.estado === 'aplicada' || d.estado === 'por-aplicar').length : c.capturas.length, sube = c.porSubir;
-  const parte = dia ? `Tu parte: ${n} ${n === 1 ? 'producto aplicado' : 'productos aplicados'}${sube ? `, ${sube} por subir` : ''}.` : `Tu parte: ${n} ${n === 1 ? 'captura' : 'capturas'}${sube ? `, ${sube} por subir` : ''}. Avísale al encargado: revisa y cierra en la caja.`;
-  c.activo = null; S.hoja = null;
+  const parte = dia ? `Tu parte: ${n} ${n === 1 ? 'producto aplicado' : 'productos aplicados'}${sube ? `, ${sube} por subir` : ''}.` : `Tu parte: ${n} ${n === 1 ? 'captura' : 'capturas'}${sube ? `, ${sube} por subir` : ''}. Díselo al encargado: revisa y cierra en la caja.`;
+  c.activo = null; c.aviso = null; S.hoja = null;
   if (S.celular === 'tienda' && S.persona) { cerrarSesion(false, `${parte} Salió ${PERSONAS[S.persona].nombre}.`); return; }
+  if (S.modo === 'conteo') { S.hoja = 'elegirConteo'; S.hojaDatos = { resumen: parte }; return; }   // regresa a «¿Qué vas a contar?»
   toast(parte);
+}
+/* El aviso del minuto antes de cerrarse sola la sesión del de la tienda: fijo, con cuenta atrás y «Seguir» de 56 dp.
+   En el prototipo dura 4 s; en la app, un minuto */
+function avisarCierre() {
+  const quien = S.persona; if (!quien) return;
+  S.avisoCierre = { hasta: Date.now() + 4000 }; S.toast = null; vibrar([60, 80, 60]);
+  for (let i = 1; i <= 4; i++) despues(i * 1000, () => {
+    if (!S.avisoCierre || S.persona !== quien) return;
+    if (i === 4) cerrarSesion(true);
+    pintar();
+  });
 }
 /* Le quitaron el acceso en la caja: al volver a verla, el celular lo borra todo */
 function revocar() {
@@ -1795,41 +2109,46 @@ function lineaPorId(id) { return S.ticket.find(l => l.id === Number(id)); }
 const A = {
   nada() {},
   cerrarMenuRapido() { cerrarMenuRapido(); },
-  verConteoPrototipo() { S.verConteo = true; if (S.celular === 'tienda' && !S.persona) { pedirFicha(); pintar(); return; } toast('Así será al dejar eleventa: en el piloto, la app no deja contar.'); pintar(); },
+  verConteoPrototipo() { S.verConteo = true; if (S.celular === 'tienda' && !S.persona) { pedirFicha(); pintar(); return; } entrarAConteo(); pintar(); },
   leer() { leer(); },
   linterna() { S.escaner.linterna = !S.escaner.linterna; pintarEscaner(); },
   modo(d) {
     if (S.modo === d.v) return;
     /* En el de la tienda, Conteo pide la ficha (en el piloto, antes dice que no se cuenta) */
     if (d.v === 'conteo' && S.celular === 'tienda' && !S.persona && (S.pos !== 'piloto' || S.verConteo)) { S.hoja = null; pedirFicha(); pintar(); return; }
+    const deConteo = S.modo === 'conteo';
+    if (deConteo) { dejarActual(); moverAFuera(); }   // salir de Conteo guarda lo que se contaba
     S.modo = d.v; S.hoja = null;
-    if (d.v === 'conteo' && !S.conteo.activo && CONTEOS.length === 1 && CONTEOS[0].tipo === 'dia' && (S.pos !== 'piloto' || S.verConteo)) S.conteo.activo = 'dia';
-    if (d.v !== 'conteo') { /* lo que se contaba se queda: al volver sigue ahí */ }
+    if (d.v === 'conteo') entrarAConteo();
+    const pend = deConteo && PERSONAS[S.persona] ? sinAplicar() : [];
+    if (pend.length) toast(`Del día, sin aplicar: ${POR_CODIGO.get(pend[0]).nombre}${pend.length > 1 ? ` y ${pend.length - 1} más` : ''}.`, '¿Es todo?', () => { S.modo = 'conteo'; S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: pend[0] }; pintar(); }, 6000);
     pintar();
   },
   verTicket() { S.hoja = 'ticket'; pintar(); },
-  cerrarHoja() { S.hoja = null; S.hojaDatos = null; S.busqueda = ''; pintar(); },
+  cerrarHoja() { if (S.hoja === 'lugar' && !S.conteo.lugar) S.conteo.lugar = 'Anaquel'; if (S.hoja === 'lugar' && conteoActivo() && conteoActivo().tipo === 'dia') S.conteo.lugarDia = true; S.hoja = null; S.hojaDatos = null; S.busqueda = ''; pintar(); },
   menos(d) { const l = lineaPorId(d.id); if (!l) return; recordar(); if (l.cant > 1) l.cant--; else { S.ticket = S.ticket.filter(x => x !== l); toast('Quitado del ticket', 'Deshacer', () => A.deshacer()); } pintar(); },
   mas(d) { const l = lineaPorId(d.id); if (!l) return; recordar(); l.cant++; pintar(); },
   deshacer() { const u = S.deshacer.pop(); if (!u) return; const x = JSON.parse(u); S.ticket = x.t; S.impresiones = x.i; S.toast = null; pintar(); },
   vaciar() { recordar(); S.ticket = []; S.impresiones = []; S.hoja = null; toast('Ticket vacío', 'Deshacer', () => A.deshacer()); pintar(); },
   teclearCant(d) { const l = lineaPorId(d.id); S.hojaAnterior = S.hoja; S.hoja = 'cantidad'; S.hojaDatos = { codigo: l.codigo, id: l.id, texto: '', conConteo: false }; pintar(); },
+  /* Arranca con lo de este lugar: lo guardado más lo nuevo, por presentación */
   teclearConteo() {
-    const a = S.conteo.actual, p = POR_CODIGO.get(a.codigo);
+    const a = S.conteo.actual; if (!a) return;
+    const p = POR_CODIGO.get(a.codigo), pres = presentaciones(p), suma = sumarCuentas(a.baseCuentas, a.cuentas);
     S.hoja = 'cantidad';
-    S.hojaDatos = { codigo: a.codigo, conConteo: true, cajas: a.cajas ? String(a.cajas) : '', sueltas: a.sueltas ? String(a.sueltas) : '', fila: presentacion(p) ? 'cajas' : 'sueltas', nuevo: true };
+    S.hojaDatos = { codigo: a.codigo, conConteo: true, valores: Object.fromEntries(pres.map(x => [x.k, suma[x.k] ? String(suma[x.k]) : ''])), fila: pres[0].k, nuevo: true };
     pintar();
   },
   filaCifra(d) { S.hojaDatos.fila = d.k; S.hojaDatos.nuevo = true; pintar(); },
   cifra(d) {
     const h = S.hojaDatos; if (!h) return;
     if (h.conConteo) {
-      const k = h.fila;
-      if (h.nuevo && d.k !== '⌫') h[k] = '';
+      const k = h.fila, v = h.valores;
+      if (h.nuevo && d.k !== '⌫') v[k] = '';
       h.nuevo = false;
-      if (d.k === '⌫') h[k] = (h[k] || '').slice(0, -1);
-      else if (d.k === '.') { if (!(h[k] || '').includes('.')) h[k] = (h[k] || '0') + '.'; }
-      else if ((h[k] || '').length < 6) h[k] = (h[k] || '') + d.k;
+      if (d.k === '⌫') v[k] = (v[k] || '').slice(0, -1);
+      else if (d.k === '.') { if (!(v[k] || '').includes('.')) v[k] = (v[k] || '0') + '.'; }
+      else if ((v[k] || '').length < 6) v[k] = (v[k] === '0' ? '' : (v[k] || '')) + d.k;
     } else if (d.k === '⌫') h.texto = h.texto.slice(0, -1);
     else if (h.texto.length < 5) h.texto += d.k;
     pintar();
@@ -1837,24 +2156,31 @@ const A = {
   cifraLista() {
     const h = S.hojaDatos;
     if (h.conConteo) {
-      if ((h.cajas || '') === '' && (h.sueltas || '') === '' && !(S.conteo.dia[h.codigo] && S.conteo.dia[h.codigo].antes)) return;   // sin teclear nada no se graba «no hay»
-      const a = S.conteo.actual, t = conteoActivo();
-      a.cajas = parseInt(h.cajas || '0', 10) || 0; a.sueltas = parseFloat(h.sueltas || '0') || 0; a.lecturas = [];
-      if (t.tipo === 'dia') { S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: a.codigo }; pintar(); return; }
-      S.hoja = null; S.hojaDatos = null; guardarCaptura(true); pintar(); return;
+      const c = S.conteo, a = c.actual, t = conteoActivo(); if (!a || !t) return;
+      const p = POR_CODIGO.get(a.codigo), pres = presentaciones(p), dia = t.tipo === 'dia';
+      const tecleado = pres.some(x => (h.valores[x.k] || '') !== '');
+      if (!tecleado && !(dia && otrosLugaresDia(a.codigo).length)) return;   // sin teclear nada no se graba «no hay»
+      /* Lo tecleado es todo lo de este lugar: reemplaza lo guardado */
+      a.cuentas = Object.fromEntries(pres.map(x => [x.k, parseFloat(h.valores[x.k] || '0') || 0]));
+      a.lecturas = []; a.tecleado = true; a.base = 0; a.baseCuentas = {};
+      if (dia) { S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: a.codigo }; pintar(); return; }
+      S.hoja = null; S.hojaDatos = null;
+      guardarCaptura(a, true); c.actual = null;
+      pintar(); return;
     }
     const v = parseInt(h.texto || '0', 10); if (!(v > 0)) return;
     recordar(); const l = lineaPorId(h.id); if (l) l.cant = v; S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null;
     S.hojaDatos = null; pintar();
   },
+  /* Del día: guarda lo de este lugar y pregunta en cuál sigue */
   otroLugar() {
-    const h = S.hojaDatos, c = S.conteo, a = c.actual;
-    a.cajas = parseInt(h.cajas || '0', 10) || 0; a.sueltas = parseFloat(h.sueltas || '0') || 0;
-    const d = c.dia[a.codigo] || (c.dia[a.codigo] = { antes: 0, estado: 'sin-aplicar' });
-    d.antes = redondo(d.antes + piezasDe(a));
-    c.actual = { codigo: a.codigo, cajas: 0, sueltas: 0, lecturas: [] };
-    S.hojaDatos = { ...h, cajas: '', sueltas: '', nuevo: true };
-    toast(`Lo de aquí quedó: van ${d.antes}. Ve al otro lugar y cuenta.`);
+    const h = S.hojaDatos, c = S.conteo, a = c.actual; if (!a) return;
+    const pres = presentaciones(POR_CODIGO.get(a.codigo));
+    a.cuentas = Object.fromEntries(pres.map(x => [x.k, parseFloat(h.valores[x.k] || '0') || 0]));
+    a.lecturas = []; a.tecleado = true; a.base = 0; a.baseCuentas = {};
+    const codigo = a.codigo;
+    dejarActual();
+    S.hoja = 'lugar'; S.hojaDatos = { seguir: codigo };
     pintar();
   },
   buscar() { S.hojaAnterior = S.hoja; S.hoja = 'buscar'; S.busqueda = ''; pintar(); },
@@ -1866,7 +2192,7 @@ const A = {
     S.busqueda = '';
     if (S.modo === 'ticket') { agregarAlTicket(c); S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null; }
     else if (S.modo === 'precio') { S.precio = c; S.hoja = null; }
-    else { if (!S.conteo.activo) { S.hoja = null; toast('Primero elige qué vas a contar.'); } else { aplicarLectura(c); S.hoja = null; } }
+    else { if (!S.conteo.activo) { S.hoja = 'elegirConteo'; S.hojaDatos = null; } else { S.hoja = null; aplicarLectura(c); } }
     pintar();
   },
   impresiones() { S.hojaAnterior = S.hoja; S.hoja = 'impresiones'; S.hojaDatos = []; S.filtroPc = 'todas'; pintar(); },
@@ -1894,74 +2220,125 @@ const A = {
   qrLeido() { S.qr = null; S.enviado = { caja: 'la caja (por QR)', n: piezasTicket(), total: totalTicket() }; S.ticket = []; S.impresiones = []; S.deshacer = []; pintar(); },
   qrCerrar() { S.qr = null; S.hoja = 'ticket'; pintar(); },
   agregarDePrecio() { if (POR_CODIGO.has(S.precio)) { agregarAlTicket(S.precio, 1, true); pintar(); } },
-  agrandar() { S.precioGrande = true; pintar(); },
-  cerrarGrande() { S.precioGrande = false; pintar(); },
+  agrandar() { S.precioGrande = true; S.precioGrandeCodigo = S.precioAlPulsar || S.precio; pintar(); },
+  cerrarGrande() { S.precioGrande = false; S.precioGrandeCodigo = null; pintar(); },
+  elegirConteo() { S.hoja = 'elegirConteo'; S.hojaDatos = null; pintar(); },
   abrirConteo(d) {
-    const t = CONTEOS.find(x => x.id === d.id);
-    if (!t) return;
-    if (S.conteo.activo && S.conteo.activo !== t.id) dejarActual();
-    S.conteo.activo = t.id; S.conteo.paraOtro = null; S.indices.conteo = 0; S.hoja = null;
+    const t = CONTEOS.find(x => x.id === d.id); if (!t) return;
+    const c = S.conteo;
+    if (c.activo && c.activo !== t.id) { dejarActual(); moverAFuera(); S.indices.conteo = 0; }
+    c.activo = t.id; c.paraOtro = null; c.aviso = null;
+    /* El lugar: al entrar a un departamento, y al del día la primera vez */
+    if (t.tipo === 'completo' || !c.lugarDia) { S.hoja = 'lugar'; S.hojaDatos = {}; } else { S.hoja = null; S.hojaDatos = null; }
     pintar();
-    if (t.tipo === 'dia') toast('Escanea los de la lista: es el total de la tienda; «Es todo» lo aplica.');
+  },
+  cambiarLugar() { S.hoja = 'lugar'; S.hojaDatos = { cambiar: true }; pintar(); },
+  elegirLugar(d) {
+    const c = S.conteo, seguir = S.hojaDatos && S.hojaDatos.seguir;
+    if (c.lugar !== d.v && c.actual) dejarActual();   // lo de este lugar se guarda (o queda sin aplicar)
+    c.lugar = d.v;
+    if (conteoActivo() && conteoActivo().tipo === 'dia') c.lugarDia = true;
+    S.hoja = null; S.hojaDatos = null;
+    if (seguir) { empezarProducto(seguir); A.teclearConteo(); return; }
+    pintar();
   },
   abrirDepto() { S.hoja = 'abrirDepto'; pintar(); },
   abrirDeptoElegido(d) {
     const t = DEPTO(d.id, PERSONAS[S.persona].nombre, 0, CATALOGO.filter(p => p.depto === d.id && !p.base).length * 14);
-    CONTEOS.push(t); S.hoja = null; A.abrirConteo({ id: t.id });
+    CONTEOS.push(t); A.abrirConteo({ id: t.id });
   },
   menosConteo() {
-    const a = S.conteo.actual; if (!a || !a.lecturas.length) return;
-    const ultima = a.lecturas.pop();
-    if (ultima === 'caja') a.cajas = Math.max(0, a.cajas - 1); else a.sueltas = Math.max(0, redondo(a.sueltas - 1));
-    S.conteo.suma = ''; S.conteo.sumaHasta = 0;
-    if (piezasDe(a) <= 0 && !a.lecturas.length) { const t = conteoActivo(); if (!(t && t.tipo === 'dia' && S.conteo.dia[a.codigo])) S.conteo.actual = null; }
+    const c = S.conteo, a = c.actual; if (!a || !a.lecturas.length) return;
+    const k = a.lecturas.pop();
+    a.cuentas[k] = Math.max(0, redondo((a.cuentas[k] || 0) - 1));
+    c.suma = ''; c.sumaHasta = 0;
+    const t = conteoActivo();
+    if (piezasDe(a) <= 0 && !a.lecturas.length && !(t && t.tipo === 'dia' && c.dia[a.codigo])) c.actual = null;
+    anunciar(`Quitada la última lectura: ${POR_CODIGO.get(a.codigo).nombre}, ${t && t.tipo === 'dia' ? totalDia(a.codigo) : piezasDe(a)}`);
     pintar();
   },
   guardarConteo() {
-    const t = conteoActivo(), a = S.conteo.actual;
-    if (t && t.tipo === 'dia') {
-      const codigo = a ? a.codigo : sinAplicar()[0];
-      if (!codigo) return;
-      S.hoja = 'aplicarDia'; S.hojaDatos = { codigo }; pintar(); return;
-    }
-    guardarCaptura(); pintar();
+    const t = conteoActivo(), c = S.conteo, a = c.actual;
+    if (t && t.tipo === 'dia') { const codigo = a ? a.codigo : sinAplicar()[0]; if (!codigo) return; S.hoja = 'aplicarDia'; S.hojaDatos = { codigo }; pintar(); return; }
+    if (!a) return;
+    dejarActual(); pintar();
   },
   esTodoDe(d) { S.hoja = 'aplicarDia'; S.hojaDatos = { codigo: d.c }; pintar(); },
   aplicarDiaOk() { const codigo = S.hojaDatos.codigo; S.hoja = null; S.hojaDatos = null; aplicarDia(codigo); pintar(); },
   verContado() { if (!conteoActivo()) return; S.hoja = 'contado'; S.tabContado = S.tabContado || 'mio'; pintar(); },
   tabContado(d) { S.tabContado = d.v; pintar(); },
+  /* Desde «Falta»: empieza a contarlo en este lugar, con el teclado (para lo que no tiene código o para decir «no hay») */
   faltaContar(d) {
-    const t = conteoActivo(); if (!t) return;
-    dejarActual();
-    S.conteo.actual = { codigo: d.c, cajas: 0, sueltas: 0, lecturas: [] };
+    const c = S.conteo; if (!conteoActivo()) return;
+    dejarActual(); c.aviso = null;
+    empezarProducto(d.c);
     S.hoja = null; A.teclearConteo();
   },
   verCapturasProducto(d) { S.hoja = 'capturasProducto'; S.hojaDatos = { codigo: d.c }; pintar(); },
   quitarDeOtro(d) {
     const lista = DE_OTROS[d.c]; if (!lista) return;
-    const [quien] = lista.splice(Number(d.i), 1)[0];
+    const o = lista.splice(Number(d.i), 1)[0];
     if (!lista.length) delete DE_OTROS[d.c];
-    toast(`Quitada la captura de ${quien}: ya no se suma.`); pintar();
+    toast(`Quitada la captura de ${o.quien}: ya no se suma.`, null, null, 4200, true); pintar();
   },
+  /* Quitar una captura: desde el renglón de lo último («Quitada · Deshacer» ahí mismo) o desde lo contado (aviso arriba) */
   quitarCaptura(d) {
     const c = S.conteo, k = c.capturas.find(x => x.id === Number(d.id)); if (!k) return;
     c.capturas = c.capturas.filter(x => x !== k);
-    if (k.estado === 'por-subir') { c.porSubir = Math.max(0, c.porSubir - 1); toast('Quitada: no había subido, así que nunca llega.'); }
-    else toast('Captura quitada: ya no se suma.');
+    if (k.estado === 'por-subir') c.porSubir = Math.max(0, c.porSubir - 1);
+    const a = c.actual;
+    if (a && a.baseIds && a.baseIds.includes(k.id)) { a.baseIds = a.baseIds.filter(id => id !== k.id); a.base = redondo(a.base - k.cant); for (const [kk, v] of Object.entries(k.cuentas || {})) a.baseCuentas[kk] = redondo((a.baseCuentas[kk] || 0) - v); }
+    if (c.pregunta === k.id) c.pregunta = null;
+    c.ultimaQuitada = k;
+    const p = POR_CODIGO.get(k.codigo), por = k.estado === 'por-subir' ? 'no había subido: nunca llega' : 'ya no se suma';
+    anunciar(`Quitada: ${p.nombre}, ${k.cant}; ${por}`);
+    if (d.renglon) c.quitada = k;
+    else toast(`Quitada: ${p.nombre} ${k.cant === 0 ? '(no hay)' : k.cant}; ${por}.`, 'Deshacer', () => A.deshacerQuitar(), 5000, true);
     if (S.hoja === 'capturasProducto' && !c.capturas.some(x => x.codigo === k.codigo) && !DE_OTROS[k.codigo]) S.hoja = null;
     pintar();
   },
-  contarOtraCosa() { dejarActual(); S.conteo.activo = null; S.hoja = null; pintar(); },
+  deshacerQuitar() {
+    const c = S.conteo, k = c.ultimaQuitada; if (!k) return;
+    c.capturas.push(k); c.capturas.sort((x, y) => y.id - x.id);
+    if (k.estado === 'por-subir') c.porSubir++;
+    const a = c.actual;
+    if (a && a.codigo === k.codigo && a.lugar === k.lugar && !a.tecleado) { a.baseIds.push(k.id); a.base = redondo(a.base + k.cant); a.baseCuentas = sumarCuentas(a.baseCuentas, k.cuentas); }
+    c.quitada = null; c.ultimaQuitada = null; c.ultimaGuardada = k.id;
+    anunciar(`Regresó: ${POR_CODIGO.get(k.codigo).nombre}, ${k.cant}`);
+    pintar();
+  },
+  /* Lo de otro departamento: contarlo ahí, de paso, o llevarlo a su lugar */
+  contarParaOtro(d) { const c = S.conteo; c.aviso = null; c.paraOtro = d.d; contarLectura(d.c); pintar(); },
+  loLlevo() { S.conteo.aviso = null; anunciar('Lo llevas a su lugar.'); pintar(); },
+  quitarAviso() { S.conteo.aviso = null; pintar(); },
+  sigueSumando(d) { S.conteo.aviso = null; empezarProducto(d.c); pintar(); },
+  quitarRetomado(d) {
+    const c = S.conteo, t = conteoActivo(); c.aviso = null;
+    if (t && t.tipo === 'dia') { const e = c.dia[d.c]; if (e) { delete e.lugares[c.lugar]; if (e.cuentasDe) delete e.cuentasDe[c.lugar]; if (!Object.keys(e.lugares).length) delete c.dia[d.c]; } }
+    else for (const k of c.capturas.filter(x => x.codigo === d.c && x.lugar === c.lugar)) { c.capturas = c.capturas.filter(x => x !== k); if (k.estado === 'por-subir') c.porSubir = Math.max(0, c.porSubir - 1); }
+    anunciar('Quitado: queda en 0.'); pintar();
+  },
+  contarFuera(d) {
+    const c = S.conteo, f = c.fuera.find(x => x.codigo === d.c); if (!f) return;
+    c.fuera = c.fuera.filter(x => x !== f);
+    dejarActual(); c.aviso = null; c.paraOtro = f.depto;
+    empezarProducto(f.codigo);
+    S.hoja = null; pintar();
+  },
+  yaLoLleve(d) { S.conteo.fuera = S.conteo.fuera.filter(x => x.codigo !== d.c); pintar(); },
+  contarOtraCosa() { dejarActual(); moverAFuera(); S.conteo.activo = null; S.conteo.aviso = null; S.hoja = 'elegirConteo'; S.hojaDatos = null; pintar(); },
+  /* «Terminé mi parte»: guarda lo que se contaba; lo del día sin aplicar se pregunta (lo toca quien contó) */
   salirConteo() {
-    const t = conteoActivo(); dejarActual();
+    const t = conteoActivo(); dejarActual(); moverAFuera();
     const tienda = S.celular === 'tienda';
     const pend = t && t.tipo === 'dia' ? sinAplicar() : [];
     if (pend.length) { S.hoja = null; S.dialogo = 'sinAplicar'; S.despuesDialogo = tienda ? 'terminarYSalir' : 'terminar'; pintar(); return; }
     terminarParte(t);
     pintar();
   },
+  yaTermine() { A.salirConteo(); },
   aplicarPendientes() { sinAplicar().forEach(aplicarDia); A.seguirTrasDialogo(); },
-  descartarPendientes() { sinAplicar().forEach(k => { delete S.conteo.dia[k]; }); toast('Lo sin aplicar se descartó.'); A.seguirTrasDialogo(); },
+  descartarPendientes() { sinAplicar().forEach(k => { delete S.conteo.dia[k]; }); toast('Lo sin aplicar se descartó.', null, null, 4200, true); A.seguirTrasDialogo(); },
   seguirTrasDialogo() {
     const que = S.despuesDialogo; S.dialogo = null; S.despuesDialogo = null;
     if (que === 'terminar' || que === 'terminarYSalir') terminarParte(conteoActivo());
@@ -1971,9 +2348,8 @@ const A = {
   menu() { S.hoja = 'menu'; pintar(); },
   /* «Salir» (la pastilla, el menú) en el de la tienda; «Cerrar la sesión» en el de Luis. Solo pregunta si queda algo del día sin aplicar */
   salir() {
-    const t = conteoActivo();
-    if (t && S.conteo.actual) dejarActual();
-    if (t && t.tipo === 'dia' && sinAplicar().length) { S.hoja = null; S.dialogo = 'sinAplicar'; S.despuesDialogo = 'salir'; pintar(); return; }
+    if (S.conteo.actual) dejarActual();
+    moverAFuera();
     cerrarSesion(false); pintar();
   },
   entrarParaContar() { S.hoja = null; if (S.pos === 'piloto' && !S.verConteo) { S.modo = 'conteo'; pintar(); return; } pedirFicha(); pintar(); },
@@ -1983,16 +2359,32 @@ const A = {
   otraFicha() { S.fichaElegida = null; S.pin = ''; S.pinError = ''; pintar(); },
   ficha(d) { S.fichaElegida = d.id; S.pin = ''; S.pinError = ''; pintar(); },
   pedirHuella() { S.dialogo = 'huella'; pintar(); },
-  huellaOk() { vibrar(30); S.dialogo = null; if (S.pantalla === 'alta') { S.pasoAlta = 4; pintar(); return; } entrarComo('luis'); pintar(); },
-  usarPin() { S.dialogo = null; S.conPin = true; S.pin = ''; S.pinError = ''; pintar(); },
+  huellaOk() {
+    vibrar(30); S.dialogo = null;
+    if (S.pantalla === 'alta') { S.pasoAlta = 5; pintar(); return; }
+    const tras = S.trasHuella; S.trasHuella = null;
+    entrarComo('luis');
+    if (tras) { S.modo = 'precio'; S.precio = tras.precio; }
+    pintar();
+  },
+  usarPin() { S.dialogo = null; if (S.red === 'caida' && S.pantalla === 'entrada') { pintar(); return; } S.conPin = true; S.pin = ''; S.pinError = ''; pintar(); },
   pin(d) {
     if (S.celular === 'tienda' && S.pantalla === 'entrada' && S.red === 'caida') { S.pinError = 'Sin red no se entra. Precio sigue funcionando.'; pintar(); return; }
+    const nuevo = S.pantalla === 'alta' || S.celular !== 'tienda' ? 'luis' : S.fichaElegida;
+    S.intentos = S.intentos || {};
+    if ((S.intentos[nuevo] || 0) >= 5) { S.pin = ''; pintar(); return; }   // espera 5 minutos en este celular
     if (d.k === '⌫') S.pin = S.pin.slice(0, -1); else if (S.pin.length < 4) S.pin += d.k;
     S.pinError = '';
     if (S.pin.length === 4) {
-      const nuevo = S.celular === 'tienda' ? S.fichaElegida : 'luis';
+      const pin = S.pin;
       despues(160, () => {
-        if (S.pantalla === 'alta') { S.pasoAlta = 3; S.pin = ''; pintar(); return; }
+        if (pin === '0000') {   // en el prototipo, «0000» es un PIN incorrecto
+          const n = S.intentos[nuevo] = (S.intentos[nuevo] || 0) + 1; S.pin = ''; vibrar([40, 60, 40]);
+          S.pinError = n >= 5 ? `Demasiados intentos de ${PERSONAS[nuevo].nombre} en este celular: espera 5 minutos. En la caja sí entra. Se avisó por Telegram.` : `PIN incorrecto · quedan ${5 - n} en este celular`;
+          pintar(); return;
+        }
+        S.intentos[nuevo] = 0;
+        if (S.pantalla === 'alta') { S.pasoAlta = 4; S.pin = ''; pintar(); return; }
         entrarComo(nuevo); pintar();
       });
     }
@@ -2006,12 +2398,17 @@ const A = {
   rapidoPrecio() { S.rapidoBloqueo = true; S.precioAntes = S.precio; S.precio = null; S.indices.precio = 0; pintar(); },
   cerrarRapido() { S.rapidoBloqueo = false; S.precio = S.precioAntes || null; pintar(); },
   abrirDesdeBloqueo() { S.dialogo = 'abrir'; pintar(); },
-  desbloquear() { S.dialogo = null; S.rapidoBloqueo = false; S.pantalla = 'escaner'; S.modo = 'precio'; pintar(); },
+  desbloquear() {
+    S.dialogo = null; S.rapidoBloqueo = false;
+    if (S.celular !== 'tienda' && S.sesionCerrada) { S.trasHuella = { precio: S.precio }; S.pantalla = 'entrada'; S.dialogo = 'huella'; pintar(); return; }
+    S.pantalla = 'escaner'; S.modo = 'precio'; pintar();
+  },
   cerrarDialogo() { S.dialogo = null; pintar(); },
   altaEscanear() { S.escanerAlta = true; pintar(); },
-  altaSinQr() { toast('En la app: la dirección de la caja principal (o «Buscar en la red») y el PIN de quien puede dar de alta cajas.'); pintar(); },
+  altaSinQr() { toast('Mientras el POS no tenga celulares: el de Luis como una caja nueva («Celular de Luis», serie L), sin copia y solo con red. El de la tienda espera a los celulares.', null, null, 6000); pintar(); },
   altaPermiso() { S.dialogo = 'cercanos'; pintar(); },
   permitir() { S.dialogo = null; S.pasoAlta = 2; pintar(); },
+  cajaSiEsEste() { S.pasoAlta = 3; vibrar(30); pintar(); },
   noPermitir() { S.dialogo = null; toast('Sin ese permiso la app no puede hablar con la caja. Se vuelve a pedir al tocar «Continuar».'); pintar(); },
   altaLista() {
     const tienda = S.celular === 'tienda';
@@ -2025,7 +2422,7 @@ const A = {
 tel.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
   if (!b || b.disabled) return;
-  if (S.hojaDesdeGesto && performance.now() - S.hojaDesdeGesto < 300 && b.closest('.hoja') && !b.closest('.barra')) return;   // salvo cerrar, arriba
+  if (enRebote(b)) return;   // el toque de rebote: solo responde el botón; arriba de la hoja, cerrar
   S.cierrePendiente = null;   // tocar es usarlo
   if (b.closest('.rapido')) { cerrarMenuRapido(false); usarGesto(); }
   const f = A[b.dataset.a];
@@ -2039,13 +2436,18 @@ const ARMA = 32, DESARMA = 24, HISTERESIS = 4, SLOP = 8, TOQUE_MS = 400, ZONA = 
 /* Dónde quedan las opciones respecto al centro del botón (dp); en zurdo, en espejo */
 const LUGARES = { arriba: [0, -88], diagonal: [-62, -62], izquierda: [-88, 0] };
 const SECTORES = [['arriba', 45, 112.5], ['diagonal', 112.5, 157.5], ['izquierda', 157.5, 225]];
-let gesto = null, pintarAlSoltar = false;
+let gesto = null, pintarAlSoltar = false, ultimoPulso = null;
+/* Cada toque se mide desde que baja el dedo: el rebote de 300 ms y lo que enseña «Enseñar» */
+document.addEventListener('pointerdown', e => {
+  ultimoPulso = { t: performance.now(), en: e.target };
+  if (e.target.closest && (e.target.closest('#fab') || e.target.closest('#rapido .op'))) S.precioAlPulsar = S.precio;
+}, true);
+const enRebote = b => S.rebote && ultimoPulso && ultimoPulso.t >= S.rebote && ultimoPulso.t - S.rebote < 300 && !b.closest('#rapido') && !b.closest('.hoja .barra') && !b.closest('.cierra-visor');
 function anguloDe(dx, dy) { let a = Math.atan2(-dy, dx) * 180 / Math.PI; if (a < -90) a += 360; return a; }
 function sectorDe(a, actual) {
-  for (const [dir, de, a2] of SECTORES) {
-    const h = dir === actual ? HISTERESIS : 0;
-    if (a >= de - h && a < a2 + h) return dir;
-  }
+  const antes = SECTORES.find(([dir]) => dir === actual);
+  if (antes && a >= antes[1] - HISTERESIS && a < antes[2] + HISTERESIS) return actual;   // la de antes, con 4° de más
+  for (const [dir, de, a2] of SECTORES) if (a >= de && a < a2) return dir;
   return 'cancela';
 }
 function abrirMenuRapido() {
@@ -2053,6 +2455,7 @@ function abrirMenuRapido() {
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
   if (r) { r.classList.add('abierto'); r.querySelectorAll('.op').forEach(o => o.tabIndex = 0); r.querySelector('#fab').setAttribute('aria-expanded', 'true'); }
   if (app) app.classList.add('menu-abierto');
+  const pn = tel.querySelector('.panel'); if (pn) pn.inert = true;
   if (!(S.pistasVistas || {})[S.modo]) { S.pistasVistas = { ...(S.pistasVistas || {}), [S.modo]: true }; guardar('pistas-' + quienPistas(), JSON.stringify(S.pistasVistas)); const p = tel.querySelector('.pista-rapido'); if (p) p.remove(); }
 }
 function cerrarMenuRapido(repintar = true) {
@@ -2060,8 +2463,24 @@ function cerrarMenuRapido(repintar = true) {
   const r = tel.querySelector('#rapido'), app = tel.querySelector('.app');
   if (r) { r.classList.remove('abierto', 'cancela'); r.querySelectorAll('.op').forEach(o => { o.classList.remove('sel'); o.tabIndex = -1; }); const f = r.querySelector('#fab'); if (f) f.setAttribute('aria-expanded', 'false'); }
   if (app) app.classList.remove('menu-abierto');
+  const pn = tel.querySelector('.panel'); if (pn) pn.inert = false;
+  S.rebote = performance.now();
   correrAviso();
   if (repintar) pintar();
+}
+function ponerAlDiaOpciones() {
+  const o = opcionesRapidas(); if (!o) return;
+  for (const dir of ['arriba', 'diagonal', 'izquierda']) {
+    const el = tel.querySelector(`#rapido .op[data-dir="${dir}"]`), x = o[dir];
+    if (!el || !x) continue;
+    const etq = el.querySelector('.etq-op'); if (etq) etq.textContent = `${flecha(dir)} ${x.etiqueta}`;
+    el.disabled = !!x.apagada; if (x.razon) el.dataset.razon = x.razon;
+    el.setAttribute('aria-label', `${x.etiqueta}${x.apagada && x.razon ? `. ${x.razon}` : ''}`);
+    let cu = el.querySelector('.cuenta-op');
+    if (x.cuenta) { if (!cu) { cu = document.createElement('span'); cu.className = 'cuenta-op num'; el.insertBefore(cu, etq); } cu.textContent = x.cuenta; }
+    else if (cu) cu.remove();
+    if (el.disabled) el.classList.remove('sel');
+  }
 }
 function marcarSector(dir) {
   tel.querySelectorAll('#rapido .op').forEach(o => o.classList.toggle('sel', o.dataset.dir === dir && !o.disabled));
@@ -2075,7 +2494,9 @@ function dibujarTrazo(g) {
   const linea = ang => { const r = ang * Math.PI / 180; return `<line x1="120" y1="120" x2="${120 + 118 * Math.cos(r)}" y2="${120 - 118 * Math.sin(r)}" stroke="#ffc107" stroke-width="1.5" stroke-dasharray="4 4"/>`; };
   const angs = S.zurdo ? [135, 67.5, 22.5, -45] : [45, 112.5, 157.5, 225];
   const t = document.createElement('div'); t.className = 'trazo-gesto'; t.style.left = x + 'px'; t.style.top = y + 'px';
-  t.innerHTML = `<svg viewBox="0 0 240 240" aria-hidden="true"><circle cx="120" cy="120" r="${ARMA}" fill="rgba(255,193,7,.15)" stroke="#ffc107" stroke-width="2"/><circle cx="120" cy="120" r="${DESARMA}" fill="none" stroke="#ffc107" stroke-width="1" stroke-dasharray="2 3"/>${angs.map(linea).join('')}</svg>`;
+  const ox = (g.cx - g.x0) / k, oy = (g.cy - g.y0) / k;
+  const zonas = Object.entries(LUGARES).filter(([d]) => tel.querySelector(`#rapido .op[data-dir="${d}"]`)).map(([, [lx, ly]]) => `<circle cx="${120 + ox + (S.zurdo ? -lx : lx)}" cy="${120 + oy + ly}" r="${ZONA}" fill="rgba(76,175,80,.12)" stroke="#4caf50" stroke-width="1.5" stroke-dasharray="3 3"/>`).join('');
+  t.innerHTML = `<svg viewBox="0 0 240 240" aria-hidden="true">${zonas}<circle cx="120" cy="120" r="${ARMA}" fill="rgba(255,193,7,.15)" stroke="#ffc107" stroke-width="2"/><circle cx="120" cy="120" r="${DESARMA}" fill="none" stroke="#ffc107" stroke-width="1" stroke-dasharray="2 3"/>${angs.map(linea).join('')}</svg>`;
   tel.appendChild(t); g.trazo = t;
 }
 tel.addEventListener('pointerdown', e => {
@@ -2098,7 +2519,8 @@ document.addEventListener('pointermove', e => {
   else if (dist < DESARMA) dir = gesto.armado ? 'centro' : null;
   /* Si el dedo está sobre una opción (28 dp de su centro), gana esa, aunque el ángulo desde donde se pulsó diga otra */
   const ox = (e.clientX - gesto.cx) / gesto.k * (S.zurdo ? -1 : 1), oy = (e.clientY - gesto.cy) / gesto.k;
-  for (const [d, [lx, ly]] of Object.entries(LUGARES)) if (Math.hypot(ox - lx, oy - ly) <= ZONA) { gesto.armado = true; dir = d; }
+  for (const [d, [lx, ly]] of Object.entries(LUGARES)) if (Math.hypot(ox - lx, oy - ly) <= ZONA && tel.querySelector(`#rapido .op[data-dir="${d}"]`)) { gesto.armado = true; dir = d; }
+  if (dir && dir !== 'centro' && dir !== 'cancela' && !tel.querySelector(`#rapido .op[data-dir="${dir}"]`)) dir = 'cancela';   // un hueco: como cancelar
   if (dir !== gesto.dir) {
     gesto.dir = dir; marcarSector(dir === 'centro' ? null : dir);
     const op = dir && tel.querySelector(`#rapido .op[data-dir="${dir}"]`);
@@ -2116,7 +2538,6 @@ function soltarGesto(e, cancelado) {
     S.elegidasDeslizando = (S.elegidasDeslizando || 0) + 1; guardar('deslizadas-' + quienPistas(), String(S.elegidasDeslizando));
     cerrarMenuRapido(false);
     A[op.dataset.a]({});
-    S.hojaDesdeGesto = performance.now();   // la hoja que abrió el gesto no acepta el toque de rebote
     if (pintarAlSoltar) { pintarAlSoltar = false; pintar(); }
     return;
   }
@@ -2131,7 +2552,7 @@ document.addEventListener('pointercancel', e => soltarGesto(e, true));
 tel.addEventListener('keydown', e => {
   if (e.target.id === 'fab' && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
-    if (S.menuRapido) cerrarMenuRapido(); else { abrirMenuRapido(); const p = tel.querySelector('#rapido .op:not(:disabled)'); if (p) p.focus(); }
+    if (S.menuRapido) { cerrarMenuRapido(); S.rebote = 0; } else { abrirMenuRapido(); const p = tel.querySelector('#rapido .op:not(:disabled)'); if (p) p.focus(); }
   }
   if (S.menuRapido && e.target.closest && e.target.closest('#rapido .op') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
     e.preventDefault();
@@ -2140,7 +2561,7 @@ tel.addEventListener('keydown', e => {
   }
 });
 /* Escape cierra el botón rápido aunque el foco no esté en el celular (por ejemplo, después de tocarlo con el ratón) */
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menuRapido) { cerrarMenuRapido(); const f = tel.querySelector('#fab'); if (f) f.focus(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menuRapido) { cerrarMenuRapido(); S.rebote = 0; const f = tel.querySelector('#fab'); if (f) f.focus(); } });   // el rebote es de los toques, no del teclado
 tel.addEventListener('input', e => { if (e.target.id === 'busqueda') { S.busqueda = e.target.value; const pos = e.target.selectionStart; pintar(); const q = tel.querySelector('#busqueda'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } } });
 tel.addEventListener('keydown', e => {
   if (e.target.id === 'busqueda' && e.key === 'Enter') { const r = buscarEn(S.busqueda)[0]; if (r) A.elegir({ c: r.codigo }); e.preventDefault(); }
@@ -2160,7 +2581,7 @@ const PROTO = {
   red(v) {
     S.red = v;
     if (v !== 'caida' && S.accesoQuitado) { despues(700, revocar); pintar(); return; }
-    if (v !== 'caida' && S.cierrePendiente && S.cierrePendiente === S.persona) { const q = S.cierrePendiente; despues(700, () => { if (S.cierrePendiente === q && S.persona === q) { S.cierrePendiente = null; cerrarSesion(true); pintar(); } }); }
+    if (v !== 'caida' && S.cierrePendiente && S.cierrePendiente === S.persona) { const q = S.cierrePendiente; despues(700, () => { if (S.cierrePendiente === q && S.persona === q) { S.cierrePendiente = null; avisarCierre(); pintar(); } }); }
     const todos = () => [S.conteo, ...Object.values(S.conteosDe)];
     if (v !== 'caida' && todos().some(c => c.porSubir)) {
       despues(900, () => {
@@ -2170,7 +2591,7 @@ const PROTO = {
           Object.values(c.dia).forEach(d => { if (d.estado === 'por-aplicar') d.estado = 'aplicada'; });
           c.porSubir = 0;
         });
-        if (fuera) toast(`No entraron ${fuera}: Carmen cerró Escolar a las 15:10. Díselo para que lo revise.`);
+        if (fuera) toast(`No entraron ${fuera}: Carmen cerró Escolar a las 15:10. Díselo para que lo revise.`, null, null, 6000, true);
         pintar();
       });
     }
@@ -2197,12 +2618,25 @@ const PROTO = {
   /* La sesión del de la tienda: un minuto antes avisa; si nadie toca «Seguir», se cierra */
   sinUso() {
     if (S.pantalla === 'revocado') return;
-    if (S.celular !== 'tienda') { toast('En el celular de Luis la sesión dura el turno (8 h): no se cierra por no usarse.'); pintar(); return; }
-    if (!S.persona) { toast('Sin nadie adentro no hay sesión: Precio no la pide.'); pintar(); return; }
+    /* El reloj avanza 10 minutos: lo del día sin aplicar se pone en ámbar (vibra una vez) y la existencia vuelve a salir */
+    const antes = PERSONAS[S.persona] ? sinAplicar().filter(k => minutosDesde(S.conteo.dia[k].desde) < 10).length : 0;
+    S.minutosExtra = (S.minutosExtra || 0) + 10;
+    if (antes) vibrar([60, 80, 60]);
+    if (S.celular !== 'tienda') { toast('Pasaron 10 minutos sin usarlo. En el de Luis la sesión dura el turno: no se cierra.', null, null, 4200, true); pintar(); return; }
+    if (!S.persona) { toast('Sin nadie adentro no hay sesión: Precio no la pide.', null, null, 4200, true); pintar(); return; }
     const quien = S.persona;
     if (S.red === 'caida') { S.cierrePendiente = quien; toast(`Sin red, la sesión de ${PERSONAS[quien].nombre} no se cierra: nadie podría volver a entrar. Si al volver la red sigue sin usarse, se cierra.`); pintar(); return; }
-    S.avisoCierre = true; vibrar([60, 80, 60]); S.toast = null;
-    despues(4000, () => { if (S.avisoCierre && S.persona === quien) { cerrarSesion(true); pintar(); } });
+    avisarCierre();
+    pintar();
+  },
+  /* El escáner se pausa a los 20 s sin códigos: en Conteo guarda lo que se contaba y el producto se queda a la vista */
+  pausa() {
+    const c = S.conteo, a = c.actual;
+    if (S.modo !== 'conteo' || !conteoActivo() || !a) { toast('El escáner se pausa a los 20 s sin códigos. En Conteo eso guarda lo que se contaba.', null, null, 4200, true); pintar(); return; }
+    const codigo = a.codigo;
+    dejarActual();
+    empezarProducto(codigo);
+    anunciar('El escáner se pausó: se guardó lo que contabas.');
     pintar();
   },
   /* Desde una caja: Configuración › Celulares › «Quitar el acceso». Sin red, el celular se entera al volver a verla */
@@ -2216,7 +2650,7 @@ const PROTO = {
   letraGrande() { S.letraGrande = !S.letraGrande; pintar(); },
   tema(v) { S.tema = v; guardar('tema', v); const r = document.documentElement; if (v === 'sistema') delete r.dataset.theme; else r.dataset.theme = v === 'oscuro' ? 'dark' : 'light'; pintar(); },
   leer() { if (S.pantalla === 'escaner' || S.rapidoBloqueo) leer(sel.value); },
-  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO(); pintar(); pintarGuia($('#guia')); },
+  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema, letraGrande: S.letraGrande, verGesto: S.verGesto }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO(); pintar(); pintarGuia($('#guia')); },
 };
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-p]');
@@ -2236,24 +2670,27 @@ function pintarProto() {
 
 /* Lo que se puede probar: cada tarea deja la app lista para empezar */
 const GUIA = [
-  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha: salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza hacia la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Para arrepentirse: desliza y regresa al botón, o suelta hacia abajo o a la derecha. Nada se elige.', 'Arriba, «Ver el gesto» dibuja el círculo de 32 dp y las fronteras mientras pulsas; con el ratón es igual: presiona, arrastra y suelta.', 'En Precio y en Conteo, el mismo botón: ← siempre es buscar y ↑ lo principal del modo.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-luis', '{}'); guardar('deslizadas-luis', '0'); } },
-  { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido en diagonal (↖): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', 'Botón rápido hacia arriba (↑): «Al ticket», sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
+  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha (los tres puntos): salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza a la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Pulsa en una esquina del botón y lleva el dedo al centro de cada opción: se enciende la que está bajo el dedo. Arriba, «Ver: El gesto» dibuja las zonas.', 'Pulsa, espera y suelta sin moverte: se cierra. Solo un toque lo deja abierto.', 'Elige ↑ y toca otra vez donde soltaste: «¿A qué caja?» no lo acepta y su botón se enciende después.', 'Arriba, «Leer» con el menú abierto: la etiqueta de ↑ se pone al día y el aviso espera a que se cierre.', 'En Precio y en Conteo, el mismo botón: ← siempre busca y ↑ lo entrega. En Precio, ↑ es «Enseñar al cliente» y ↖ está vacío.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-luis', '{}'); guardar('deslizadas-luis', '0'); } },
+  { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido hacia arriba (↑): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', '«Al ticket» está en la tarjeta, como en el F9 de la caja: el aviso sale arriba, nombra el producto y ofrece «Deshacer».'], prep() { S.modo = 'precio'; S.precio = null; } },
   { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', 'Botón rápido hacia arriba (↑): «Mandar a Caja 2» y «Mandar»; llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
   { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
   { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['Botón rápido en diagonal (↖): «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
-  { id: 'conteo', grupo: 'contar', titulo: 'Contar un departamento', texto: 'El conteo completo: lo de cada lugar se guarda solo y se suma a lo de los demás.', pasos: ['Es el celular de la tienda con Ana. Elige «Escolar».', 'Toca la franja tres veces: el cuaderno suma ×3 y junto al contador sale «+1»; «Ya van 5: Luis 5» se toca y dice quién contó.', 'Sigue: el lápiz suma una suelta y el código de su caja «+12 caja»; el − quita la última lectura, la caja entera («−12»).', 'Escanea otro: lo anterior se guarda solo y el aviso ofrece «Quitar». Botón rápido ↑ «Guardar» para el último.', 'Botón rápido ↖ «Lo contado»: «Lo mío» y «Falta» abajo; «Terminé mi parte y salir».'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); } },
-  { id: 'conteo-dia', grupo: 'contar', titulo: 'El conteo del día', texto: 'El total de la tienda de 15 productos; se aplica con «Es todo», una vez.', pasos: ['Conteo entra directo: hoy no hay departamentos abiertos.', 'Toca la franja: el lápiz suma 1, 1 y la caja 12. Luego la goma: el lápiz queda «sin aplicar», no se aplica solo.', 'Vuelve el lápiz: «1 aquí + 14 de otros lugares = 15». Toca el contador: «Otro lugar» y «Es todo · N».', 'Botón rápido ↑ «Es todo» pide confirmar y aplica. Con Luis o Carmen dice lo que tenía el sistema.', 'El sacapuntas ya lo contó Carmen; el papel lustre no está en el conteo de hoy.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; } },
-  { id: 'conteo-cajas', grupo: 'contar', titulo: 'Cajas, rollos y «no hay»', texto: 'Teclear lo que hay: una casilla por presentación, con el total al momento.', pasos: ['Es Arte, con Luis. Toca la franja: el rollo de listón suma 10 m, y cada metro suelto 1.', 'Toca el contador: «Rollos de 10 m» y «Metros sueltos»; ahí sí hay punto (4.5).', 'Desde «Lo contado» › «Falta», toca uno: «Guardar» se enciende al teclear. Teclea 0 y «Guardar 0 · no hay».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.conArte(); S.conteo.activo = 'arte'; } },
-  { id: 'conteo-no-va', grupo: 'contar', titulo: 'Lo que no va', texto: 'Otro departamento, lo que no está en el catálogo: lo dice y vibra distinto.', pasos: ['Escolar y Oficina están abiertos. Toca la franja: el cuaderno, y luego el folder (es de Oficina).', 'El aviso ofrece «Contarlo para Oficina»: cuenta de paso y regresa a Escolar con el siguiente.', 'La cartulina es de Papel, que no está abierto: «Llévalo a su lugar». El siguiente no está en el catálogo.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.dosDeptos(); S.conteo.activo = 'esc'; S.secuenciaConteo = 'noVa'; } },
-  { id: 'conteo-sinred', grupo: 'contar', titulo: 'Sin red: la bandeja', texto: 'Se sigue contando; lo guardado espera y sube solo.', pasos: ['Ya está «Red: Caída». Cuenta y escanea otro: queda «por subir»; arriba, «Sin red · 1 por subir».', '«Ya van» dice «hace 12 min»: es lo último que se supo.', 'Mientras, Carmen cerró Escolar en la caja. Arriba, «Red: Buena»: lo que no alcanzó a subir sale «no entró».'], prep() { S.pos = 'normal'; S.red = 'caida'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); S.conteo.activo = 'esc'; S.cierreSinRed = true; } },
-  { id: 'conteo-arranque', grupo: 'contar', titulo: 'El conteo de arranque', texto: 'Todos los departamentos abiertos; cada quien toma uno.', pasos: ['Con Luis: cinco departamentos, cada uno con su avance y quién cuenta.', 'Elige uno sin nadie (Papel o Regalos) y cuenta; «Ya van» incluye lo que capturan otros, también en /conteo (Beto, en las tijeras de Escolar).', 'Con «Celular: De la tienda», toca «Conteo» y entra Ana: no le sale «Abrir otro departamento».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.arranque(); } },
-  { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano.', pasos: ['Con Ana, en el conteo del día, toca la franja tres veces: el lápiz suma 1, 1 y su caja, 12. Botón rápido ↑ «Es todo» y «Aplicar».', 'Toca la franja otra vez (la goma) y luego «Salir», en la pastilla de arriba: pregunta qué hacer con la goma, que quedó sin aplicar.', 'Toca «Conteo» y entra Carmen: empieza limpio, y el lápiz dice «ya lo contó Ana».', 'Sale Carmen y entra Ana otra vez: sigue donde iba.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.fichaElegida = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; } },
-  { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: Precio sin entrar; para contar, la ficha y el PIN de quien cuenta.', pasos: ['Abre en Precio y sin nadie: arriba a la izquierda, el ícono de la tienda. Toca la franja: el precio, sin la existencia.', 'Abajo solo hay Precio y Conteo; en Precio, el botón rápido no tiene «Al ticket».', 'Toca «Conteo»: «¿Quién cuenta?». Ana y cualquier PIN de 4 cifras.', 'Arriba, Ana y «Salir» en una pastilla. «Salir» regresa a Precio, sin nadie.', 'Entra otra vez y, arriba, «Pasa: 10 min sin uso»: avisa un minuto antes con «Seguir»; si nadie lo toca, se cierra sola.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = null; S.modo = 'precio'; S.precio = null; } },
+  { id: 'conteo', grupo: 'contar', titulo: 'Contar un departamento', texto: 'Lo de cada lugar se guarda solo y se suma a lo de los demás.', pasos: ['Es el celular de la tienda con Ana, en Escolar · Anaquel.', 'Toca la franja tres veces: el cuaderno ×3, con «+1» junto al nombre; «Ya van 5: Luis, anaquel» dice que alguien ya pasó.', 'Sigue: el lápiz suma 1 y el código de su caja «+12 caja». Abajo, el renglón de lo último: «Antes: Cuaderno… 3 · Quitar».', 'La goma, y luego el lápiz otra vez: «¿Goma blanca chica (1) fue de más? · Quitar», y el lápiz sigue en «14 · 13 guardadas + 1».', 'La cartulina es de Papel, que no se está contando: lo dice en el lugar del producto, sin avisos flotantes.', 'Botón rápido ↖ «Lo contado»: «Lo mío», «Falta» y «Terminé mi parte y salir», abajo.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
+  { id: 'conteo-lugar', grupo: 'contar', titulo: 'El lugar y el orden', texto: 'El lugar va con cada captura: primero lo que está a la venta, la bodega al final.', pasos: ['Con Luis. Elige «Escolar»: pregunta dónde empiezas y dice el orden. Toca «Anaquel».', 'Toca la franja tres veces: el lápiz suma 3. Arriba, toca «Anaquel» y cambia a «Bodega»: lo del anaquel se guarda.', 'Toca la franja: el cuaderno. Y otra: el lápiz en la bodega empieza en 1, y «Ya van» dice «Ana, bodega · tú, anaquel».', 'Toca el producto (no solo el número): sus capturas, con quién, dónde y a qué hora.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.secuenciaConteo = { para: 'esc', sec: 'lugar' }; S.hoja = 'elegirConteo'; } },
+  { id: 'conteo-dia', grupo: 'contar', titulo: 'El conteo del día', texto: 'El total de la tienda de 15 productos, por lugares; se aplica con «Es todo», una vez.', pasos: ['Conteo entra directo al del día y la primera vez pregunta el lugar: «Anaquel».', 'Toca la franja: el lápiz suma 1, 1 y la caja 12. Luego la goma: el lápiz queda sin aplicar y el renglón de abajo lo dice, con «¿Es todo?».', 'Arriba, cambia a «Bodega» y toca la franja: el lápiz, «1 aquí + 14 en anaquel». ↑ «Es todo · 15» pide confirmar: «Aplicar» o «Falta un lugar».', 'Aplicado, Luis ve lo que tenía el sistema y la diferencia. El sacapuntas: «ya lo contó Carmen a las 11:02»; el papel lustre no está en el de hoy.', 'Arriba, «Pasa: 10 min sin uso»: lo sin aplicar se pone en ámbar. Si te vas a Precio, la pestaña Conteo lleva su número.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.hoja = 'lugar'; S.hojaDatos = {}; } },
+  { id: 'conteo-encima', grupo: 'contar', titulo: 'Un conteo encima de otro', texto: 'Lo de un departamento abierto no se cuenta en el del día: se corregiría dos veces.', pasos: ['Con Luis, en el del día, mientras Escolar se cuenta completo.', 'Toca la franja: el lápiz es de Escolar: «Escolar se está contando completo; se cuenta ahí», con la vibración de error.', 'Sigue: el sobre manila (de Oficina) sí se cuenta.', 'Botón rápido ↖ «Lo contado» › «Falta»: lo de Escolar sale en gris, «en Escolar».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; S.secuenciaConteo = { para: 'dia', sec: 'encima' }; } },
+  { id: 'conteo-cajas', grupo: 'contar', titulo: 'Cajas y sueltas', texto: 'Una casilla por presentación, en dos columnas, con el total al momento.', pasos: ['Con Luis, en Escolar · Anaquel. Toca la franja: la pluma suma 1, su paquete «+10 paquete» y su caja «+50 caja».', 'El − quita la última lectura: la caja entera («−50»).', 'Toca el contador: cajas, paquetes y sueltas en dos columnas, con teclas de 52 dp. Cabe en el chico también con «Letra 200 %».', 'Desde «Lo contado» › «Falta», toca uno: «Guardar» se enciende al teclear. Teclea 0 y «Guardar 0 · no hay».', 'En «Contar otra cosa» › Arte, el listón: el rollo suma 10 m y cada metro, 1; ahí el teclado lleva punto.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.conArte(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'cajas' }; } },
+  { id: 'conteo-no-va', grupo: 'contar', titulo: 'Lo que no va', texto: 'Otro departamento, uno ya cerrado, lo que no está en el catálogo: lo dice en el lugar del producto.', pasos: ['Escolar y Oficina están abiertos. Toca la franja: el cuaderno, y luego el folder (de Oficina): «Contarlo para Oficina» o «Lo llevo a su lugar», y se queda hasta decidir.', 'Sin decidir, toca la franja: la cartulina (de Papel, que no se cuenta): «Llévalo a su lugar». El folder pasó a lo contado › «Fuera de lugar», y ↖ lleva su número.', 'La bolsa de regalo: Regalos se contó el 12/11, así que es un ajuste. El siguiente código no está en el catálogo: en rojo.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.dosDeptos(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'noVa' }; } },
+  { id: 'conteo-sinred', grupo: 'contar', titulo: 'Sin red: la bandeja', texto: 'Se sigue contando; lo guardado espera y sube solo.', pasos: ['Ya está «Red: Caída». Cuenta y escanea otro: queda «por subir»; arriba, «Sin red · 1 por subir».', '«Ya van» dice «hace 12 min»: es lo último que se supo.', 'Mientras, Carmen cerró Escolar en la caja. Arriba, «Red: Buena»: lo que no alcanzó a subir sale «no entró», arriba y en lo contado.'], prep() { S.pos = 'normal'; S.red = 'caida'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.cierreSinRed = true; } },
+  { id: 'conteo-arranque', grupo: 'contar', titulo: 'El conteo de arranque', texto: 'Todos los departamentos abiertos; cada quien toma uno.', pasos: ['Con Luis: «¿Qué vas a contar?» es una hoja con los cinco departamentos, cuántos van y quién está contando ahora.', 'Elige uno sin nadie (Papel o Regalos), el lugar, y cuenta.', 'En Escolar, ← Buscar «tijeras»: «Ya van 15: tú, anaquel · Beto, bodega»; Beto contó en /conteo.', 'Con «Celular: De la tienda», toca «Conteo» y entra Ana: no le sale «Abrir otro departamento».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.arranque(); S.hoja = 'elegirConteo'; } },
+  { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano; lo de cada quien es suyo.', pasos: ['Ana, en el del día: toca la franja tres veces (el lápiz, 14) y otra (la goma): el lápiz queda sin aplicar.', '«Salir», arriba junto a su ficha: no pregunta nada; lo del lápiz queda a nombre de Ana.', 'Toca «Conteo» y entra Carmen: empieza limpio y pregunta su lugar.', 'Sale Carmen y entra Ana otra vez: le pregunta por lo suyo sin aplicar.', '«Terminé mi parte y salir», en lo contado, sí pregunta antes de salir.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; } },
+  { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: Precio sin entrar; para contar, la ficha y el PIN de quien cuenta.', pasos: ['Abre en Precio y sin nadie: arriba a la izquierda, el ícono de la tienda. Toca la franja: el precio, sin la existencia y sin «Al ticket».', 'Abajo solo hay Precio y Conteo; el botón rápido es el mismo que en el de Luis.', 'Toca «Conteo»: «¿Quién cuenta?», sin ninguna ficha elegida. Toca la de Ana; luego su PIN: 0000 es incorrecto («quedan 4 en este celular») y cualquier otro entra.', 'Arriba, la ficha de Ana y «Salir». «Salir» regresa a Precio sin nadie, con «Deshacer» unos segundos.', 'Entra otra vez y, arriba, «Pasa: 10 min sin uso»: la franja avisa con cuenta atrás y «Seguir»; si nadie la toca, se cierra sola.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = null; S.modo = 'precio'; S.precio = null; } },
+  { id: 'cierre', titulo: 'La sesión se cierra sola', texto: 'En el de la tienda, a los 10 minutos sin usarse: lo contado queda a nombre de quien contó.', pasos: ['Ana cuenta en Escolar · Anaquel: toca la franja tres veces (el cuaderno, 3).', 'Arriba, «Pasa: 10 min sin uso»: la franja fija avisa con cuenta atrás y «Seguir». No la toques.', 'Se cerró: lo contado quedó a nombre de Ana y Precio lo dice hasta que alguien entre. Toca la franja: «No se contó: estás en Precio».', 'Toca «Conteo» y entra Ana: «Cuaderno…: 3, guardado a las …» con «Sigue sumando» y «Quitar».', 'Con «Red: Caída», «10 min sin uso» no la cierra; al volver la red, sale el aviso del minuto.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
   { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket, botón rápido ↑: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
   { id: 'piloto', grupo: 'contar', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
   { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
-  { id: 'entrada', titulo: 'Entrar', texto: 'En el de Luis, el desbloqueo del celular; en el de la tienda, la ficha y el PIN, solo para contar.', pasos: ['Es el celular de Luis con la sesión cerrada: Android pide la huella. Toca el sensor.', 'La ficha › «Cerrar la sesión» y ahora «Usar mi PIN del POS»: entras con la cuarta cifra.', 'Arriba, «Celular: De la tienda» y toca «Conteo»: las fichas de quienes cuentan, con el teclado junto al pulgar.', 'Con Ana no sale «Abrir otro departamento»: no tiene el permiso del conteo completo.'], prep() { S.pos = 'normal'; S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; S.dialogo = 'huella'; } },
-  { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez. El código de la caja ya dice de quién es el celular.', pasos: ['«Escanear el código de la caja» y toca la franja: «Será el celular de Luis».', '«Continuar»: Android pide «Dispositivos cercanos».', 'Confirma con tu PIN del POS (una sola vez) y activa la huella.', 'Mientras baja el catálogo ya se puede usar.', 'Con «Celular: De la tienda» son tres pasos: sin PIN ni huella, y el catálogo sin existencias.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
+  { id: 'entrada', titulo: 'Entrar', texto: 'En el de Luis, su huella; en el de la tienda, la ficha y el PIN, solo para contar.', pasos: ['Es el celular de Luis con la sesión cerrada: Android pide la huella, y solo la huella (el PIN del celular no sirve aquí). Toca el sensor.', 'La ficha › «Cerrar la sesión» y ahora «Usar mi PIN del POS»: entras con la cuarta cifra. Con «Red: Caída», solo con la huella.', 'Arriba, «Celular: De la tienda» y toca «Conteo»: las fichas de quienes cuentan, sin ninguna elegida, y el teclado al tocar una.', 'Con Ana no sale «Abrir otro departamento»: no tiene el permiso del conteo completo.'], prep() { S.pos = 'normal'; S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; S.dialogo = 'huella'; S.sesionCerrada = true; } },
+  { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez. La caja confirma «¿Es este?» antes de que el celular quede activo.', pasos: ['«Escanear el código de la caja» y toca la franja.', '«Continuar»: Android pide «Dispositivos cercanos».', 'Ya habló con la caja: «Esperando a la caja · Se conectó un Pixel 8 Pro». Toca «La caja: «Sí, es este»», lo que se toca en la caja.', 'Confirma con tu PIN del POS (una sola vez) y activa la huella. Mientras baja el catálogo ya se puede usar.', 'Con «Celular: De la tienda» no hay PIN ni huella, y el catálogo va sin existencias.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
   { id: 'perder', titulo: 'Si se pierde un celular', texto: 'Desde cualquier caja se le quita el acceso; al volver a verla, el celular lo borra todo.', pasos: ['Arriba, «Pasa: Quitar el acceso»: lo que hace la caja en Configuración › Celulares.', 'Con red, al momento: «Este celular ya no tiene acceso».', 'Ahora con «Red: Caída» antes: el celular sigue hasta que vuelve la red y entonces lo borra. Lo que no alcanzó a subir se pierde.', '«Dar de alta otra vez» empieza desde el código de la caja.'], prep() { S.modo = 'precio'; } },
 ];
 function pintarGuia(dest) {
@@ -2269,7 +2706,7 @@ function pintarGuia(dest) {
 function elegirGuia(id) {
   const t = GUIA.find(x => x.id === id);
   temporizadores.forEach(clearTimeout); temporizadores = [];
-  const keep = { tam: S.tam, tema: S.tema };
+  const keep = { tam: S.tam, tema: S.tema, letraGrande: S.letraGrande, verGesto: S.verGesto };   // lo de «Ver» se queda
   S = { ...INICIO(), ...keep, guia: id };
   CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO();
   t.prep();
