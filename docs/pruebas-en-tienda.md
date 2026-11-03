@@ -123,5 +123,5 @@ y del banco a mano: Compartir → guardar en el celular, y de ahí a la laptop c
   primero. Lo que se cambie, con su porqué, en [CAMBIOS.md](../CAMBIOS.md).
 - Con `en_catalogo` y `variante`: qué productos no se encontraron y cómo guarda eleventa los que sí (12 u 11 dígitos,
   UPC-E como UPC-A). Si el catálogo de la tienda ya no hace falta en el celular, «Usar el de ejemplo» borra la copia.
-- El motor y los umbrales definitivos se deciden cuando el POS llegue a su fase de Android ([plan](plan.md)); aquí se
-  junta la evidencia.
+- El motor y los umbrales definitivos se deciden en la fase 2, la app conectada al POS
+  ([plan](plan.md#fase-2-la-app-conectada-al-pos)); aquí se junta la evidencia.

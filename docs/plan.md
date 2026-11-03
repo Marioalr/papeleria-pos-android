@@ -12,6 +12,11 @@ escanea lo que hoy pasa por el lector de la caja (contar, recibir mercancía, co
 > celular, a qué distancia y a qué ritmo, sin una sola lectura falsa. Con eso se decide si el celular basta para contar
 > y para la preventa o hace falta un lector, y de qué tamaño imprime el POS sus etiquetas. La interfaz se congela hasta
 > tener esas mediciones.
+>
+> **Desde el 2026-11-03, la app se conecta al POS** ([fase 2](#fase-2-la-app-conectada-al-pos)). Las pruebas de la cámara
+> (velocidades) salieron bien (dueño, 2026-11-03), y el POS se acerca al piloto: la interfaz se descongela para armar
+> tickets, revisar precios (el F9 de la caja), contar y agregar las impresiones. El núcleo de reconocimiento se queda
+> como se midió. Primero, la [propuesta de interfaz](propuesta-interfaz.md), con su prototipo, para aprobar.
 
 ## Decisiones
 
@@ -214,15 +219,34 @@ ser 0), si la linterna ayuda y qué lente conviene.
 **Fuera de esta fase:** buscar el producto en el POS, vender, contar o recibir con el POS, el inicio de sesión y los
 permisos por rol, y adaptar el escáner a los celulares del personal.
 
-## Cuando el POS llegue a su fase de Android
+## Fase 2: la app conectada al POS
 
-Con lo medido en el Pixel se decide:
+Desde el 2026-11-03 ([arriba](#plan-de-la-app-android)). **Cómo se une al POS ya está decidido:** app nativa en Kotlin
+que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10). El escáner sigue en su
+módulo, sin cambios.
 
-- **Cómo se une al POS:** app nativa que habla con el servicio de la caja principal, o el escáner como AAR dentro de
-  una app MAUI.
-- **El motor y los umbrales** de la guía, con los CSV del Pixel en la tienda.
-- **Qué celulares necesita el personal:** cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU,
-  Android reciente) se mide entonces en los celulares del personal, con las mismas herramientas.
+Lo que hace la app: armar tickets en el piso y mandarlos a una caja (la preventa), revisar precios (el verificador, F9),
+contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). La
+interfaz, sus pantallas y lo que le pide al POS están en la [propuesta](propuesta-interfaz.md), con un
+[prototipo navegable](propuesta-interfaz/prototipo.html). **Estado:** propuesta, para aprobar.
+
+| # | Entrega | Qué trae | Necesita del POS |
+|---|---|---|---|
+| 1 | **La base** | Los modos Precio, Ticket y Conteo sobre el escáner de hoy, el panel, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
+| 2 | **Conectar y Precio** | El alta del celular, las fichas y el PIN, el precio y la búsqueda con la API; la copia del catálogo cuando el POS la sirva | Celulares, la copia sin PIN ni clientes, la regla de los códigos |
+| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos | — |
+| 4 | **Mandar el ticket** | Elegir la caja, mandarlo y el QR sin red | Recibir tickets del celular (su entrega 12), las cajas con quién atiende |
+| 5 | **Impresiones** | Las impresiones por cobrar con miniaturas y lotes | Apartarlas; cobrar una sola vez |
+| 6 | **Conteo** | El conteo del día y el completo, con la bandeja de salida | Capturas ligeras; el conteo de arranque (después del piloto) |
+
+**Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
+app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
+tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes. Lo demás se queda.
+
+Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
+las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celulares necesita el personal**:
+cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU, Android reciente) se mide en los celulares del
+personal, con las mismas herramientas.
 
 ## Por definir
 

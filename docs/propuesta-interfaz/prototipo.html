@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>App Android de Papelería POS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* El prototipo de la app Android conectada al POS (docs/propuesta-interfaz.md). En la PC: la barra del prototipo arriba,
+   el celular a escala en su marco y «Qué probar» a un lado. En el celular: la app a pantalla completa y el prototipo en
+   un botón. Dentro de la app: la cámara de fondo, la franja intocable en medio (del 32 al 68 % del visor, como hoy) y
+   todo lo que se toca abajo, al alcance del pulgar. Letras del sistema (en Android, Roboto), sin nada de internet. */
+:root {
+  /* Fuera de la app */
+  --mesa: #dfe4ea;
+  --noche: #15202a;
+  --noche-2: #22313f;
+  --noche-borde: #34495c;
+  --noche-texto: #e7edf3;
+  --noche-suave: #9db0c2;
+  /* El tema de la app (app/tema/Tema.kt): azul petróleo y grises, sin los colores dinámicos del sistema */
+  --sup: #f7f9fb;
+  --sup-1: #eef2f5;
+  --sup-2: #e4e9ee;
+  --linea: #d3dbe2;
+  --borde: #a9b5bf;
+  --texto: #181c1f;
+  --suave: #40484d;
+  --tenue: #687279;
+  --pri: #1d5c7a;
+  --en-pri: #ffffff;
+  --pri-c: #c8e6f7;
+  --en-pri-c: #001e2c;
+  /* Un color por modo: el precio en ámbar, como el verificador (F9) de la caja; el conteo en violeta (el terciario) */
+  --precio: #8a5300;
+  --en-precio: #ffffff;
+  --precio-c: #ffe2b0;
+  --en-precio-c: #2b1700;
+  --conteo: #5f5a7d;
+  --en-conteo: #ffffff;
+  --conteo-c: #e5defb;
+  --en-conteo-c: #1b1736;
+  /* Estados */
+  --exito: #2e7d32;
+  --exito-c: #d6efd7;
+  --en-exito-c: #0b2e0d;
+  --error: #b3261e;
+  --error-c: #f9dedc;
+  --en-error-c: #410e0b;
+  --aviso: #7a4a00;
+  --aviso-c: #fff0d0;
+  --velo: rgba(12, 20, 28, .42);
+  --sombra: rgba(14, 26, 36, .22);
+  /* El escáner (escaner/ui/Tonos.kt): igual en los dos temas, como en la app */
+  --capa: rgba(0, 0, 0, .6);
+  --ambar: #ffc107;
+  --verde: #2e7d32;
+  --laser: #ff1744;
+  --chip: #1e1e1e;
+  --f-texto: Roboto, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-codigo: "Roboto Mono", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mesa: #0c1115; --sup: #101417; --sup-1: #1b2024; --sup-2: #262c30; --linea: #343c42; --borde: #59646c;
+    --texto: #dfe3e7; --suave: #bfc8ce; --tenue: #8e979d;
+    --pri: #8ecff0; --en-pri: #003549; --pri-c: #004c68; --en-pri-c: #c8e6f7;
+    --precio: #ffb951; --en-precio: #2b1700; --precio-c: #4d3200; --en-precio-c: #ffdfb0;
+    --conteo: #c9c1ea; --en-conteo: #312c4c; --conteo-c: #47426a; --en-conteo-c: #e5defb;
+    --exito: #81c784; --exito-c: #1d3d1f; --en-exito-c: #c8ecc9;
+    --error: #f2b8b5; --error-c: #8c1d18; --en-error-c: #f9dedc;
+    --aviso: #ffc95c; --aviso-c: #3a2a00; --velo: rgba(0, 0, 0, .55); --sombra: rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --mesa: #0c1115; --sup: #101417; --sup-1: #1b2024; --sup-2: #262c30; --linea: #343c42; --borde: #59646c;
+  --texto: #dfe3e7; --suave: #bfc8ce; --tenue: #8e979d;
+  --pri: #8ecff0; --en-pri: #003549; --pri-c: #004c68; --en-pri-c: #c8e6f7;
+  --precio: #ffb951; --en-precio: #2b1700; --precio-c: #4d3200; --en-precio-c: #ffdfb0;
+  --conteo: #c9c1ea; --en-conteo: #312c4c; --conteo-c: #47426a; --en-conteo-c: #e5defb;
+  --exito: #81c784; --exito-c: #1d3d1f; --en-exito-c: #c8ecc9;
+  --error: #f2b8b5; --error-c: #8c1d18; --en-error-c: #f9dedc;
+  --aviso: #ffc95c; --aviso-c: #3a2a00; --velo: rgba(0, 0, 0, .55); --sombra: rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--mesa); color: var(--texto); font: 14px/1.4 var(--f-texto); -webkit-tap-highlight-color: transparent; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+button:disabled { cursor: default; }
+:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.ch { width: 20px; height: 20px; }
+.num { font-variant-numeric: tabular-nums; }
+.codigo { font-family: var(--f-codigo); letter-spacing: .02em; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; } }
+
+/* ——— La barra del prototipo (fuera de la app) ——— */
+.proto { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--noche); color: var(--noche-texto); font-size: 12.5px; }
+.proto strong { font-size: 13px; letter-spacing: .01em; }
+.proto .grupo { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.proto .grupo > span { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--noche-suave); margin-right: 2px; }
+.proto button, .proto select { border: 1px solid var(--noche-borde); background: var(--noche-2); color: var(--noche-texto); padding: 4px 10px; border-radius: 999px; font-size: 12.5px; }
+.proto button:hover { border-color: var(--noche-suave); }
+.proto button.on { background: var(--noche-texto); color: var(--noche); border-color: var(--noche-texto); font-weight: 600; }
+.proto select { max-width: 230px; }
+.proto .espacio { flex: 1; }
+.proto :focus-visible { outline-color: var(--noche-texto); }
+
+.escenario { display: flex; gap: 20px; align-items: flex-start; justify-content: center; padding-block: 16px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.soporte { flex: none; position: relative; }
+.marco { position: absolute; top: 0; left: 0; transform-origin: 0 0; padding: 10px; border-radius: 46px; background: #0a0d10; box-shadow: 0 18px 44px rgba(8, 16, 24, .3), inset 0 0 0 1px rgba(255, 255, 255, .07); }
+.telefono { --sb: 32px; --gb: 20px; position: relative; width: 448px; height: 997px; border-radius: 36px; overflow: hidden; background: #000; color: var(--texto); isolation: isolate; font-size: 16px; line-height: 1.35; }
+.telefono[data-tam="mediano"] { width: 412px; height: 915px; --sb: 28px; }
+.telefono[data-tam="chico"] { width: 360px; height: 740px; --sb: 24px; }
+
+.guia { flex: none; width: 340px; max-height: calc(100vh - 110px); overflow: auto; background: var(--sup); border: 1px solid var(--linea); border-radius: 12px; padding: 14px 14px 12px; color: var(--texto); }
+.guia h2 { margin: 0 0 4px; font-size: 16px; text-wrap: balance; }
+.guia > p { margin: 0 0 10px; color: var(--suave); font-size: 13px; }
+.guia h3 { margin: 14px 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
+.guia ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.guia li > button { width: 100%; text-align: left; border: 1px solid var(--linea); background: var(--sup-1); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.guia li > button:hover { border-color: var(--pri); }
+.guia li > button.on { border-color: var(--pri); background: var(--pri-c); color: var(--en-pri-c); }
+.guia li strong { font-size: 13.5px; }
+.guia li small { color: var(--suave); font-size: 12.5px; line-height: 1.4; }
+.guia li > button.on small { color: inherit; }
+.guia .pasos { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--sup-1); font-size: 13px; color: var(--suave); }
+.guia .pasos ol { list-style: decimal; padding-left: 18px; gap: 4px; }
+.guia .pie { margin-top: 12px; font-size: 12px; color: var(--tenue); }
+.guia kbd { font: 600 11px var(--f-codigo); padding: 1px 5px; border: 1px solid var(--borde); border-bottom-width: 2px; border-radius: 4px; }
+
+/* En el celular: la app a pantalla completa; el prototipo, en el botón de arriba */
+.asa { display: none; }
+@media (max-width: 759px) {
+  body { background: #000; overflow: hidden; }
+  .proto, .escenario > .guia { display: none; }
+  .escenario { display: block; height: 100%; padding: 0; }
+  .soporte { width: 100% !important; height: 100% !important; }
+  .marco { position: static; transform: none !important; width: 100%; height: 100%; padding: 0; border-radius: 0; box-shadow: none; }
+  .telefono, .telefono[data-tam] { width: 100%; height: 100%; border-radius: 0; --sb: 0px; --gb: 0px; }
+  .barra-estado, .barra-gestos { display: none !important; }
+  .asa { display: flex; position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: rgba(21, 32, 42, .86); color: #e7edf3; font-size: 12px; border: 1px solid rgba(255, 255, 255, .18); }
+  .cortina { position: fixed; inset: 0; z-index: 70; overflow: auto; background: var(--sup); padding-block: calc(env(safe-area-inset-top, 0px) + 12px) 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .cortina .proto { display: flex; border-radius: 12px; margin-bottom: 12px; }
+  .cortina .guia { width: auto; max-height: none; }
+}
+.cortina[hidden] { display: none; }
+
+/* ——— Barras del sistema (solo en el marco) ——— */
+.barra-estado { position: absolute; z-index: 40; top: 0; left: 0; right: 0; height: var(--sb); display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 13px; font-weight: 500; color: #fff; background: #000; pointer-events: none; }
+.barra-estado.clara { background: var(--sup); color: var(--texto); }
+.barra-estado .ics { display: flex; gap: 6px; align-items: center; }
+.barra-estado svg { width: 16px; height: 16px; fill: currentColor; }
+.barra-gestos { position: absolute; z-index: 45; left: 0; right: 0; bottom: 0; height: var(--gb); display: grid; place-items: center; pointer-events: none; }
+.barra-gestos::after { content: ""; width: 108px; height: 4px; border-radius: 2px; background: var(--texto); opacity: .55; }
+.barra-gestos.sobre-negro::after { background: #fff; }
+
+/* ——— El visor y el escáner (sin cambios: lo de escaner/ui) ——— */
+.app { position: absolute; inset: 0; }
+.visor { position: absolute; left: 0; right: 0; top: var(--sb); height: calc(100% - var(--sb) - var(--gb) - 80px); overflow: hidden; background: #0c0e10; }
+.imagen { position: absolute; inset: -24px; background:
+  radial-gradient(60% 30% at 25% 18%, rgba(255, 230, 190, .22), transparent 70%),
+  linear-gradient(180deg, #2b2f33 0 9%, #4a3d2c 9% 11%, #20262b 11% 30%, #4a3d2c 30% 32%, #1e2428 32% 54%, #4a3d2c 54% 56%, #23292d 56% 78%, #4a3d2c 78% 80%, #1b2023 80%);
+  filter: blur(2.5px) saturate(.9); }
+.imagen i { position: absolute; border-radius: 3px; opacity: .78; }
+.franja { position: absolute; z-index: 2; left: 4%; right: 4%; top: 32%; height: 36%; border-radius: 12px; box-shadow: 0 0 0 200vmax var(--capa); }
+.franja .esq { position: absolute; width: 28px; height: 28px; border: 4px solid #fff; animation: pulso 2.5s ease-in-out infinite; }
+.franja .e1 { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
+.franja .e2 { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
+.franja .e3 { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
+.franja .e4 { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
+@keyframes pulso { 50% { opacity: .55; } }
+.franja .laser { position: absolute; left: 7%; right: 7%; top: 50%; height: 2px; margin-top: -1px; background: var(--laser); box-shadow: 0 0 10px 2px rgba(255, 23, 68, .55); }
+.franja.leido { box-shadow: 0 0 0 200vmax var(--capa), inset 0 0 0 4px var(--verde), 0 0 0 4px var(--verde); }
+.franja.leido .esq, .franja.leido .laser, .franja.viendo .laser { display: none; }
+.franja .tocar { position: absolute; inset: 0; border-radius: 12px; }
+.franja .pista { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); white-space: nowrap; font-size: 12px; color: rgba(255, 255, 255, .8); background: rgba(0, 0, 0, .45); padding: 3px 10px; border-radius: 999px; pointer-events: none; }
+.etiqueta-vista { position: absolute; left: 50%; top: 50%; width: 62%; max-width: 230px; transform: translate(-50%, -50%) rotate(-4deg); background: #f4f2ec; border-radius: 6px; padding: 8px 10px 4px; box-shadow: 0 6px 14px rgba(0, 0, 0, .4); pointer-events: none; }
+.etiqueta-vista svg { display: block; width: 100%; height: auto; }
+.etiqueta-vista.qr { width: 34%; padding: 8px; }
+.ambar { position: absolute; inset: -10px; pointer-events: none; }
+.ambar b { position: absolute; width: 20px; height: 20px; border: 3px solid var(--ambar); }
+.ambar b:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.ambar b:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.ambar b:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.ambar b:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.leido-centro { position: absolute; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; max-width: 92%; padding: 10px 16px; border-radius: 20px; background: var(--verde); color: #fff; font: 600 21px/1.2 var(--f-codigo); white-space: nowrap; animation: entra .15s ease-out; pointer-events: none; }
+.leido-centro svg { width: 30px; height: 30px; stroke-width: 2.6; }
+@keyframes entra { from { transform: translate(-50%, -50%) scale(.85); opacity: .4; } }
+.destello { position: absolute; inset: 0; z-index: 1; background: rgba(46, 125, 50, .22); animation: destello .45s ease-out forwards; pointer-events: none; }
+@keyframes destello { to { opacity: 0; } }
+.indicacion { position: absolute; z-index: 3; left: 50%; bottom: calc(68% + 16px); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 24px; background: var(--chip); color: #fff; font-size: 19px; font-weight: 500; white-space: nowrap; pointer-events: none; }
+.indicacion svg { width: 26px; height: 26px; }
+.indicacion.accion svg { color: var(--ambar); }
+.linterna { position: absolute; z-index: 4; top: 12px; right: max(16px, env(safe-area-inset-right, 0px)); width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: #fff; }
+.linterna.on { background: #fff; color: #111; }
+.pausa { position: absolute; z-index: 5; inset: 0; background: rgba(0, 0, 0, .55); display: grid; place-items: center; color: #fff; text-align: center; }
+.pausa div { background: var(--chip); border-radius: 24px; padding: 20px 24px; }
+.pausa strong { display: block; font-size: 20px; }
+
+/* Arriba a la izquierda: quién y cómo está la red (solo si algo falla) */
+.quien { position: absolute; z-index: 4; top: 12px; left: max(16px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; gap: 8px; max-width: calc(100% - 100px); }
+.ficha-yo { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: #fff; font-size: 19px; font-weight: 700; border: 2px solid rgba(255, 255, 255, .85); }
+.estado-red { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 18px; background: var(--chip); color: #fff; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.estado-red i { width: 10px; height: 10px; border-radius: 50%; background: var(--ambar); }
+.estado-red.caida i { background: #ff5252; }
+.estado-red.subir i { background: #8ecff0; }
+
+/* ——— El panel de abajo ——— */
+.panel { position: absolute; z-index: 10; left: 0; right: 0; bottom: 0; top: calc(var(--sb) + (100% - var(--sb) - var(--gb) - 80px) * .68 + 10px); display: flex; flex-direction: column; background: var(--sup); color: var(--texto); border-radius: 24px 24px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .3); padding-bottom: var(--gb); }
+.modo-ticket { --m: var(--pri); --en-m: var(--en-pri); --m-c: var(--pri-c); --en-m-c: var(--en-pri-c); }
+.modo-precio { --m: var(--precio); --en-m: var(--en-precio); --m-c: var(--precio-c); --en-m-c: var(--en-precio-c); }
+.modo-conteo { --m: var(--conteo); --en-m: var(--en-conteo); --m-c: var(--conteo-c); --en-m-c: var(--en-conteo-c); }
+.asidero { display: block; width: 100%; height: 18px; flex: none; position: relative; }
+.asidero::after { content: ""; position: absolute; left: 50%; top: 7px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--borde); }
+.cuerpo { flex: 1; min-height: 0; overflow: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 4px max(16px, env(safe-area-inset-left, 0px)); }
+.acciones { flex: none; display: flex; gap: 8px; padding: 6px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); }
+.modos { flex: none; display: flex; justify-content: center; gap: 4px; padding: 2px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--linea); }
+.modos button { flex: 1; max-width: 140px; height: 52px; margin-top: 4px; border-radius: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--suave); font-size: 15px; font-weight: 500; }
+.modos button.on { background: var(--m-c); color: var(--en-m-c); font-weight: 700; }
+.modos button.on[data-v="ticket"] { --m-c: var(--pri-c); --en-m-c: var(--en-pri-c); }
+.modos .cuenta { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--pri); color: var(--en-pri); font-size: 12px; font-weight: 700; display: inline-grid; place-items: center; }
+
+.encabezado { display: flex; align-items: baseline; gap: 8px; min-height: 30px; }
+.encabezado .titulo { font-size: 15px; font-weight: 600; color: var(--suave); }
+.encabezado .titulo b { color: var(--texto); }
+.encabezado .espacio { flex: 1; }
+.encabezado .total { font-size: 24px; font-weight: 700; }
+.vacio { color: var(--suave); padding: 8px 2px; font-size: 16px; }
+.vacio strong { display: block; color: var(--texto); font-size: 18px; margin-bottom: 2px; }
+
+.btn { min-height: 56px; border-radius: 28px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; white-space: nowrap; }
+.btn.lleno { background: var(--m, var(--pri)); color: var(--en-m, var(--en-pri)); }
+.btn.tonal { background: var(--sup-2); color: var(--texto); }
+.btn.borde { border: 1.5px solid var(--borde); color: var(--texto); }
+.btn.peligro { background: var(--error-c); color: var(--en-error-c); }
+.btn.ancho { width: 100%; }
+.btn.crece { flex: 1; min-width: 0; }
+.btn:disabled { opacity: .42; }
+.btn .sub { font-weight: 500; opacity: .85; }
+.btn-ic { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.btn-ic:hover { background: var(--sup-2); }
+.burbuja { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--pri); color: var(--en-pri); font-size: 12.5px; font-weight: 700; display: inline-grid; place-items: center; }
+/* En los celulares angostos, los botones de al lado se quedan con el icono (y su número) */
+.telefono { container-type: inline-size; }
+@container (max-width: 400px) {
+  .acciones .etq { display: none; }
+  .acciones .btn { padding: 0 14px; }
+  .modos button { font-size: 14px; }
+  .panel .tarjeta-precio { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
+  .panel .foto.g { width: 60px; height: 60px; border-radius: 12px; }
+  .panel .tarjeta-precio .nombre { font-size: 16.5px; }
+  .panel .tarjeta-precio .debajo { display: none; }
+  .panel .tarjeta-precio .monto b { font-size: 34px; }
+  .panel .contador { min-width: 92px; height: 64px; font-size: 38px; border-radius: 18px; }
+  .panel .contador small { font-size: 20px; }
+  .panel .contando .nom { font-size: 16px; -webkit-line-clamp: 1; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* Renglones del ticket: el actual en dos filas (nombre e importe; precio y − cantidad +), los demás en una */
+.lineas { display: flex; flex-direction: column; gap: 2px; }
+.linea { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 8px; border-radius: 16px; }
+.linea.doble { grid-template-columns: 44px minmax(0, 1fr); align-items: start; row-gap: 2px; }
+.linea.doble .foto { grid-row: span 2; margin-top: 2px; }
+.linea .fila1, .linea .fila2 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.linea .fila1 { align-items: flex-start; }
+.linea .fila1 .nom { flex: 1; }
+.linea .fila2 .det { flex: 1; min-width: 0; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
+.linea.actual { background: var(--m-c); color: var(--en-m-c); animation: brilla .9s ease-out; }
+@keyframes brilla { from { box-shadow: 0 0 0 3px var(--m); } }
+.linea .txt { min-width: 0; }
+.linea .nom { font-size: 16px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.linea.compacta .nom { -webkit-line-clamp: 1; font-weight: 500; }
+.linea .det { font-size: 13.5px; color: var(--suave); display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.linea.actual .det { color: inherit; opacity: .9; }
+.linea .der { display: flex; align-items: center; gap: 8px; }
+.linea .imp { font-weight: 700; font-size: 16px; min-width: 60px; text-align: right; }
+.linea .x { font-weight: 700; color: var(--suave); }
+.linea.desconocido .nom { color: var(--error); }
+.linea.desconocido.actual .nom { color: inherit; }
+/* En el panel de abajo, el nombre en un renglón: el completo se ve en el ticket o en el precio */
+.panel .linea.doble .nom { -webkit-line-clamp: 1; }
+.paso { display: inline-flex; align-items: center; border-radius: 26px; background: var(--sup); box-shadow: inset 0 0 0 1.5px var(--borde); }
+.paso button { width: 46px; height: 48px; display: grid; place-items: center; border-radius: 24px; }
+.paso .n { width: auto; min-width: 34px; padding: 0 2px; font-weight: 700; font-size: 18px; }
+.marca-mayoreo { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--exito-c); color: var(--en-exito-c); }
+.marca-quedan { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--aviso-c); color: var(--aviso); }
+.minis { display: inline-flex; gap: 3px; }
+.minis svg { width: 16px; height: 21px; border-radius: 2px; box-shadow: 0 0 0 1px var(--linea); }
+
+/* Fotos de los productos (dibujos) y miniaturas de las impresiones */
+.foto { width: 44px; height: 44px; border-radius: 10px; background: var(--sup-1); color: var(--suave); display: grid; place-items: center; overflow: hidden; flex: none; }
+.foto svg { width: 100%; height: 100%; }
+.foto svg.i { width: 24px; height: 24px; }
+.foto.g { width: 88px; height: 88px; border-radius: 16px; }
+.mini { position: relative; aspect-ratio: 85 / 110; width: 100%; border-radius: 6px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px var(--linea); }
+.mini svg { display: block; width: 100%; height: 100%; }
+.mini.bn svg { filter: grayscale(1); }
+
+/* Precio */
+.tarjeta-precio { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: start; padding: 4px 0 6px; }
+.tarjeta-precio .nombre { font-size: 18px; font-weight: 600; line-height: 1.25; }
+.tarjeta-precio .debajo { font-size: 13.5px; color: var(--suave); margin-top: 2px; }
+.tarjeta-precio .monto { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
+.tarjeta-precio .monto b { font-size: 40px; line-height: 1.1; font-weight: 700; color: var(--texto); letter-spacing: -.01em; }
+.tarjeta-precio .monto small { font-size: 14px; color: var(--suave); }
+.datos-precio { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.dato { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 10px; border-radius: 15px; background: var(--sup-1); font-size: 14px; }
+.dato.mayoreo { background: var(--exito-c); color: var(--en-exito-c); }
+.dato.promo { background: var(--m-c); color: var(--en-m-c); }
+.dato.poco { background: var(--aviso-c); color: var(--aviso); font-weight: 600; }
+.no-esta { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
+.no-esta .ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--error-c); color: var(--en-error-c); flex: none; }
+.no-esta strong { display: block; font-size: 18px; }
+.precio-grande { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; background: #fffdf7; color: #1d1a12; text-align: center; }
+.precio-grande .n { font-size: 26px; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+.precio-grande .m { font-size: 96px; line-height: 1; font-weight: 800; letter-spacing: -.02em; }
+.precio-grande .y { font-size: 20px; color: #5a5242; }
+
+/* Conteo */
+.contando { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.contando .nom { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.contando .det { font-size: 13.5px; color: var(--suave); }
+.contador { grid-row: span 2; min-width: 112px; height: 84px; padding: 0 14px; border-radius: 22px; background: var(--m-c); color: var(--en-m-c); display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 48px; font-weight: 800; line-height: 1; }
+.contador small { font-size: 26px; font-weight: 600; opacity: .7; margin-right: 2px; }
+.contador.crece { animation: crece .15s ease-out; }
+@keyframes crece { 50% { transform: scale(1.12); } }
+.progreso { height: 6px; border-radius: 3px; background: var(--sup-2); overflow: hidden; margin-top: 4px; }
+.progreso i { display: block; height: 100%; background: var(--m); border-radius: 3px; }
+.tareas { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.tarea { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 64px; padding: 10px 12px; border-radius: 16px; background: var(--sup-1); text-align: left; }
+.tarea .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--conteo-c); color: var(--en-conteo-c); }
+.tarea strong { display: block; font-size: 16px; }
+.tarea small { color: var(--suave); font-size: 13.5px; }
+
+/* Hojas (lo que se abre encima) */
+.hoja { position: absolute; z-index: 20; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; background: var(--velo); }
+.hoja > .contenido { max-height: calc(100% - var(--sb) - 24px); display: flex; flex-direction: column; background: var(--sup); color: var(--texto); border-radius: 26px 26px 0 0; box-shadow: 0 -10px 30px var(--sombra); padding-bottom: var(--gb); animation: sube .2s ease-out; }
+.hoja.completa > .contenido { max-height: none; height: calc(100% - var(--sb)); border-radius: 0; }
+.hoja.completa { background: var(--sup); }
+@keyframes sube { from { transform: translateY(30px); opacity: .6; } }
+.hoja .barra { flex: none; display: flex; align-items: center; gap: 4px; min-height: 60px; padding: 6px max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px)); }
+.hoja .barra h2 { flex: 1; margin: 0; font-size: 20px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hoja .barra h2 small { display: block; font-size: 13.5px; font-weight: 400; color: var(--suave); }
+.hoja .desliza { flex: 1; min-height: 0; overflow: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+.hoja .pie { flex: none; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--linea); display: flex; flex-direction: column; gap: 8px; }
+.nota { font-size: 13.5px; color: var(--suave); }
+.nota.centro { text-align: center; }
+.fila-total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.fila-total span { color: var(--suave); }
+.fila-total b { font-size: 28px; }
+.seccion { margin: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tenue); }
+.agregar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Mandar a una caja */
+.cajas { display: flex; flex-direction: column; gap: 8px; }
+.caja { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 72px; padding: 10px 14px; border-radius: 18px; background: var(--sup-1); text-align: left; box-shadow: inset 0 0 0 2px transparent; }
+.caja.on { box-shadow: inset 0 0 0 2px var(--m, var(--pri)); background: var(--m-c, var(--pri-c)); color: var(--en-m-c, var(--en-pri-c)); }
+.caja:disabled { opacity: .5; }
+.caja .radio { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--borde); }
+.caja.on .radio { box-shadow: inset 0 0 0 2px var(--m, var(--pri)), inset 0 0 0 6px var(--sup); background: var(--m, var(--pri)); }
+.caja strong { display: block; font-size: 17px; }
+.caja small { font-size: 14px; color: var(--suave); }
+.caja.on small { color: inherit; opacity: .85; }
+.caja .esperan { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: var(--sup-2); white-space: nowrap; }
+
+/* Enviado / QR */
+.enviado { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 16px; background: var(--exito-c); color: var(--en-exito-c); }
+.enviado .ic { width: 44px; height: 44px; border-radius: 50%; background: var(--exito); color: #fff; display: grid; place-items: center; flex: none; }
+.enviado strong { display: block; font-size: 17px; }
+.qr-pantalla { position: absolute; inset: 0; z-index: 35; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: calc(var(--sb) + 18px) 24px calc(var(--gb) + 18px); background: #ffffff; color: #111; text-align: center; }
+.qr-pantalla h2 { margin: 0; font-size: 22px; }
+.qr-pantalla p { margin: 0; color: #444; font-size: 15px; }
+.qr-pantalla .qr { width: min(82%, 330px); aspect-ratio: 1; }
+.qr-pantalla .qr svg { width: 100%; height: 100%; }
+.qr-pantalla .botones { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.qr-pantalla .btn.tonal { background: #ececec; color: #111; }
+.qr-pantalla .btn.lleno { background: #1d5c7a; color: #fff; }
+
+/* Buscar */
+.resultados { display: flex; flex-direction: column-reverse; gap: 2px; }
+.resultado { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 64px; padding: 8px 8px; border-radius: 14px; text-align: left; }
+.resultado:hover, .resultado:focus-visible { background: var(--sup-1); }
+.resultado .nom { display: block; font-size: 16px; font-weight: 500; line-height: 1.25; }
+.resultado .nom mark { background: none; color: inherit; font-weight: 800; }
+.resultado .det { display: block; font-size: 13.5px; color: var(--suave); }
+.resultado .pre { font-weight: 700; font-size: 16px; text-align: right; }
+.resultado .pre small { display: block; font-weight: 500; font-size: 12.5px; color: var(--suave); }
+.campo { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 6px 0 16px; border-radius: 28px; background: var(--sup-1); box-shadow: inset 0 0 0 2px var(--m, var(--pri)); }
+.campo input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 17px; }
+.teclado { flex: none; display: grid; gap: 6px; padding: 8px 6px 6px; background: var(--sup-2); }
+.teclado .fila { display: flex; gap: 5px; justify-content: center; }
+.teclado button { flex: 1; max-width: 40px; height: 44px; border-radius: 8px; background: var(--sup); font-size: 17px; box-shadow: 0 1px 0 var(--borde); }
+.teclado button.ancha { max-width: 210px; flex: 5; font-size: 14px; color: var(--suave); }
+.teclado button.media { max-width: 60px; flex: 1.5; }
+.sugeridos { display: flex; flex-wrap: wrap; gap: 8px; }
+.sugerido { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px 6px 6px; border-radius: 24px; background: var(--sup-1); font-size: 15px; }
+.sugerido .foto { width: 36px; height: 36px; border-radius: 18px; }
+
+/* Teclado numérico (cantidad) */
+.cifra { text-align: center; padding: 6px 0 2px; }
+.cifra .que { font-size: 15px; color: var(--suave); }
+.cifra .valor { font-size: 44px; font-weight: 800; min-height: 56px; }
+.cifra .valor small { font-size: 22px; font-weight: 500; color: var(--suave); }
+.numerico { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.numerico button { height: 60px; border-radius: 18px; background: var(--sup-1); font-size: 24px; font-weight: 600; }
+.numerico button.op { color: var(--m, var(--pri)); }
+
+/* Impresiones */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; }
+.chip { flex: none; height: 40px; padding: 0 14px; border-radius: 20px; box-shadow: inset 0 0 0 1.5px var(--borde); font-size: 14.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.chip.on { background: var(--pri-c); color: var(--en-pri-c); box-shadow: inset 0 0 0 1.5px var(--pri); font-weight: 700; }
+.lote { margin-bottom: 14px; }
+.lote.junto { padding: 10px; border-radius: 18px; box-shadow: inset 0 0 0 1.5px var(--linea); }
+.lote-cabeza { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.lote-cabeza div { flex: 1; min-width: 0; font-size: 14px; color: var(--suave); }
+.lote-cabeza div b { color: var(--texto); }
+.lote-cabeza .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.trabajos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.trabajo { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; background: var(--sup-1); text-align: left; box-shadow: inset 0 0 0 2px transparent; }
+.trabajo.on { box-shadow: inset 0 0 0 3px var(--pri); background: var(--pri-c); color: var(--en-pri-c); }
+.trabajo:disabled { opacity: .55; }
+.trabajo .marca { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .92); color: transparent; box-shadow: 0 0 0 2px var(--borde); }
+.trabajo.on .marca { background: var(--pri); color: var(--en-pri); box-shadow: none; }
+.trabajo .doc { font-size: 14px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.trabajo .res { font-size: 12.5px; color: var(--suave); line-height: 1.3; }
+.trabajo.on .res { color: inherit; opacity: .85; }
+.trabajo .abajo { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12.5px; color: var(--suave); }
+.trabajo.on .abajo { color: inherit; }
+.trabajo .abajo b { font-size: 16px; color: var(--texto); }
+.trabajo.on .abajo b { color: inherit; }
+.trabajo .revisar { font-size: 12.5px; font-weight: 600; color: var(--aviso); }
+
+/* Lo contado */
+.capturas { display: flex; flex-direction: column; gap: 2px; }
+.captura { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; min-height: 56px; padding: 6px 4px 6px 8px; border-bottom: 1px solid var(--linea); }
+.captura .nom { font-size: 15.5px; font-weight: 500; line-height: 1.25; }
+.captura .det { font-size: 13px; color: var(--suave); }
+.captura .cant { font-size: 20px; font-weight: 800; }
+.subida { display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; vertical-align: middle; }
+.subida svg.i { width: 14px; height: 14px; }
+
+/* Entrada, alta y menús */
+.pantalla { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--sup); color: var(--texto); padding: calc(var(--sb) + 12px) max(20px, env(safe-area-inset-right, 0px)) calc(var(--gb) + 14px) max(20px, env(safe-area-inset-left, 0px)); overflow: auto; }
+.pantalla h1 { margin: 8px 0 4px; font-size: 26px; font-weight: 600; text-wrap: balance; }
+.pantalla .lead { margin: 0 0 14px; color: var(--suave); font-size: 16px; }
+.fichas { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin: 10px 0 14px; }
+.ficha { width: 92px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; border-radius: 18px; font-size: 15px; }
+.ficha .letra { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: 700; background: var(--sup-2); }
+.ficha.on { background: var(--pri-c); color: var(--en-pri-c); }
+.ficha.on .letra { background: var(--pri); color: var(--en-pri); }
+.puntos { display: flex; justify-content: center; gap: 16px; margin: 6px 0 4px; }
+.puntos i { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--borde); }
+.puntos i.on { background: var(--pri); box-shadow: none; }
+.pin-error { text-align: center; color: var(--error); min-height: 22px; font-size: 14.5px; }
+.pantalla .numerico { margin-top: auto; }
+.pantalla .numerico button { height: 64px; }
+.paso-alta { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--linea); }
+.paso-alta .n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--pri-c); color: var(--en-pri-c); font-weight: 700; flex: none; }
+.paso-alta.hecho .n { background: var(--exito); color: #fff; }
+.paso-alta strong { display: block; font-size: 16.5px; }
+.paso-alta span { color: var(--suave); font-size: 14.5px; }
+.dialogo { position: absolute; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, .5); }
+.dialogo > div { width: 100%; max-width: 330px; background: var(--sup-1); color: var(--texto); border-radius: 28px; padding: 22px 22px 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, .4); }
+.dialogo h3 { margin: 10px 0 8px; font-size: 21px; font-weight: 500; text-align: center; }
+.dialogo p { margin: 0 0 12px; color: var(--suave); font-size: 14.5px; text-align: center; }
+.dialogo .ic { display: grid; place-items: center; color: var(--pri); }
+.dialogo .opciones { display: flex; flex-direction: column; gap: 4px; }
+.dialogo .opciones button { min-height: 48px; border-radius: 24px; font-weight: 600; color: var(--pri); }
+.menu-lista { display: flex; flex-direction: column; }
+.menu-lista button { display: flex; align-items: center; gap: 16px; min-height: 56px; padding: 0 8px; border-radius: 14px; text-align: left; font-size: 16.5px; }
+.menu-lista button:hover { background: var(--sup-1); }
+.menu-lista small { display: block; font-size: 13.5px; color: var(--suave); }
+.yo { display: flex; align-items: center; gap: 14px; padding: 4px 4px 12px; border-bottom: 1px solid var(--linea); margin-bottom: 6px; }
+.yo .letra { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--pri); color: var(--en-pri); font-size: 22px; font-weight: 700; flex: none; }
+.yo strong { display: block; font-size: 18px; }
+.yo small { color: var(--suave); font-size: 14px; }
+.ajuste { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 0; border-bottom: 1px solid var(--linea); }
+.ajuste div { flex: 1; min-width: 0; }
+.ajuste strong { display: block; font-size: 16px; font-weight: 500; }
+.ajuste small { color: var(--suave); font-size: 13.5px; }
+.interruptor { width: 52px; height: 32px; border-radius: 16px; background: var(--sup-2); box-shadow: inset 0 0 0 2px var(--borde); position: relative; flex: none; }
+.interruptor::after { content: ""; position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-radius: 50%; background: var(--borde); transition: all .15s; }
+.interruptor.on { background: var(--pri); box-shadow: none; }
+.interruptor.on::after { left: 24px; top: 4px; width: 24px; height: 24px; background: var(--en-pri); }
+
+/* El bloqueo */
+.bloqueo { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; background: linear-gradient(170deg, #253746, #0f171e 60%); color: #fff; padding: calc(var(--sb) + 40px) 24px calc(var(--gb) + 24px); text-align: center; }
+.bloqueo .hora { font-size: 76px; font-weight: 300; line-height: 1; }
+.bloqueo .fecha { font-size: 17px; opacity: .85; margin-top: 6px; }
+.bloqueo .rapidos { margin-top: auto; width: 100%; max-width: 340px; background: rgba(255, 255, 255, .1); border-radius: 26px; padding: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; text-align: left; }
+.bloqueo .mosaico { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 0 14px; border-radius: 22px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 15px; font-weight: 500; }
+.bloqueo .mosaico.on { background: #ffe2b0; color: #2b1700; }
+.bloqueo .mosaico small { display: block; font-size: 12.5px; opacity: .8; font-weight: 400; }
+.bloqueo .aviso-bloqueo { font-size: 14px; opacity: .8; margin-top: 12px; }
+.candado { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; opacity: .8; }
+
+/* Avisos */
+.toast { position: absolute; z-index: 25; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--gb) + 4px); display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 8px 8px 16px; border-radius: 14px; background: #2b3135; color: #eef2f5; font-size: 15px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); animation: sube .2s ease-out; }
+.toast.arriba { bottom: auto; top: calc(var(--sb) + 64px); }
+.toast span { flex: 1; }
+.toast button { min-height: 40px; padding: 0 12px; border-radius: 20px; color: #8ecff0; font-weight: 700; }
+.girando { width: 22px; height: 22px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: gira .8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header class="proto" id="proto">
+  <strong>App Android · prototipo</strong>
+  <div class="grupo" role="group" aria-label="Red de la tienda"><span>Red</span>
+    <button data-p="red" data-v="buena" class="on">Buena</button><button data-p="red" data-v="lenta">Lenta</button><button data-p="red" data-v="caida">Caída</button>
+  </div>
+  <div class="grupo" role="group" aria-label="El POS"><span>POS</span>
+    <button data-p="pos" data-v="piloto" class="on">En el piloto</button><button data-p="pos" data-v="normal">Sin eleventa</button>
+  </div>
+  <div class="grupo" role="group" aria-label="Celular"><span>Celular</span>
+    <button data-p="tam" data-v="pixel" class="on">Pixel 8 Pro</button><button data-p="tam" data-v="mediano">Mediano</button><button data-p="tam" data-v="chico">Chico</button>
+  </div>
+  <div class="grupo" role="group" aria-label="Tema"><span>Tema</span>
+    <button data-p="tema" data-v="sistema" class="on">Sistema</button><button data-p="tema" data-v="claro">Claro</button><button data-p="tema" data-v="oscuro">Oscuro</button>
+  </div>
+  <div class="grupo"><span>Leer</span>
+    <select id="leer-codigo" aria-label="Qué código leer"></select>
+    <button data-p="leer">Leer</button>
+  </div>
+  <span class="espacio"></span>
+  <button data-p="reiniciar">Empezar de cero</button>
+</header>
+<button class="asa" id="asa" type="button" aria-controls="cortina">Prototipo · Qué probar</button>
+<div class="cortina" id="cortina" hidden></div>
+<main class="escenario">
+  <div class="soporte" id="soporte"><div class="marco" id="marco"><div class="telefono" id="tel" data-tam="pixel"></div></div></div>
+  <aside class="guia" id="guia" aria-label="Qué probar"></aside>
+</main>
+<script>
+'use strict';
+
+/* ——— Datos ficticios: códigos EAN-13 válidos que empiezan con 750999, internos con 299999 ——— */
+const DEPTOS = { esc: 'Escolar', ofi: 'Oficina', pap: 'Papel', arte: 'Arte', reg: 'Regalos' };
+const P = (codigo, nombre, depto, precio, icono, extra = {}) => ({ codigo, nombre, depto, precio, icono, existencia: 20, vendidos: 10, ...extra });
+const CATALOGO = [
+  P('7509990100019', 'Cuaderno profesional cuadro chico 100 hojas', 'esc', 4600, 'cuaderno', { mayoreo: [12, 4100], existencia: 8, vendidos: 240 }),
+  P('7509990100026', 'Lápiz HB No. 2', 'esc', 550, 'lapiz', { mayoreo: [12, 450], existencia: 140, vendidos: 410, caja: { codigo: '7509990100200', piezas: 12 } }),
+  P('7509990100033', 'Goma blanca chica', 'esc', 500, 'goma', { existencia: 63, vendidos: 300, promo: 'Regreso a clases: lleva 3 y paga 2' }),
+  P('7509990100040', 'Sacapuntas metálico', 'esc', 900, 'sacapuntas', { existencia: 1, vendidos: 120 }),
+  P('7509990100057', 'Pegamento blanco 250 g', 'esc', 3200, 'pegamento', { existencia: 18, vendidos: 90 }),
+  P('7509990100064', 'Tijeras escolares punta roma', 'esc', 2400, 'tijeras', { existencia: 12, vendidos: 70 }),
+  P('7509990100071', 'Folder tamaño carta crema', 'ofi', 350, 'folder', { mayoreo: [25, 300], existencia: 400, vendidos: 380 }),
+  P('7509990100088', 'Sobre manila tamaño oficio', 'ofi', 400, 'sobre', { existencia: 230, vendidos: 150 }),
+  P('7509990100095', 'Plumón para pizarrón negro', 'ofi', 1900, 'plumon', { existencia: 36, vendidos: 64 }),
+  P('7509990100101', 'Cinta adhesiva transparente 18 mm', 'ofi', 1200, 'cinta', { existencia: 50, vendidos: 200 }),
+  P('7509990100118', 'Calculadora básica 8 dígitos', 'ofi', 8500, 'calculadora', { existencia: 4, vendidos: 15 }),
+  P('7509990100125', 'Cartulina blanca', 'pap', 600, 'cartulina', { existencia: 120, vendidos: 260 }),
+  P('7509990100132', 'Papel lustre azul', 'pap', 250, 'lustre', { existencia: 300, tinta: '#2563c9', vendidos: 60 }),
+  P('7509990100149', 'Papel lustre rojo', 'pap', 250, 'lustre', { existencia: 280, tinta: '#d33a2c', vendidos: 55 }),
+  P('7509990100156', 'Lapicero punto fino 0.7 mm azul', 'esc', 800, 'lapicero', { mayoreo: [12, 700], existencia: 96, vendidos: 330 }),
+  P('7509990100163', 'Juego de geometría metálico', 'esc', 3800, 'geometria', { existencia: 9, vendidos: 40 }),
+  P('7509990100170', 'Colores largos 12 piezas', 'arte', 4500, 'colores', { existencia: 14, vendidos: 85 }),
+  P('7509990100187', 'Bolsa de regalo mediana', 'reg', 1800, 'bolsa', { existencia: 25, vendidos: 30 }),
+  P('7509990100200', 'Lápiz HB No. 2 · caja con 12', 'esc', 5400, 'lapiz', { piezas: 12, base: '7509990100026', existencia: 140, vendidos: 25 }),
+  P('2999990000016', 'Papel china verde', 'pap', 200, 'china', { existencia: 150, vendidos: 45, cajon: true }),
+];
+const RAPIDOS = [
+  { codigo: 'RAPIDO-COPIA', nombre: 'Copia blanco y negro carta', depto: 'serv', precio: 200, icono: 'copia', rapido: true, sinInventario: true },
+  { codigo: 'RAPIDO-CURP', nombre: 'CURP (10 impresiones)', depto: 'serv', precio: 1000, icono: 'curp', rapido: true, sinInventario: true },
+];
+const TODOS = [...CATALOGO, ...RAPIDOS];
+const POR_CODIGO = new Map(TODOS.map(p => [p.codigo, p]));
+const SIN_REGISTRAR = '7509990100194';
+const QR_ALTA = 'QR-ALTA';
+
+/* Las impresiones por cobrar: las que mide el POS (agente de la caja 2) y las de la cola de Control Print, mezcladas */
+const TRABAJOS = [
+  { id: 'p-31', cp: false, doc: 'tarea_historia.pdf', res: '3 págs · B/N · Carta', pc: 'CAJA2', quien: 'Carmen', hora: '14:51', min: 891, precio: 600, color: false, mini: 'doc' },
+  { id: 'cp-2481', cp: true, num: 2481, doc: 'portada_proyecto.png', res: '1 pág · Color · Carta · Papel normal', pc: 'PRINCIPAL', quien: 'Luis', hora: '14:50', min: 890, precio: 800, color: true, mini: 'portada' },
+  { id: 'cp-2480', cp: true, num: 2480, doc: 'ine_ambos_lados.jpg', res: '1 pág × 2 copias · B/N · Carta', pc: 'PRINCIPAL', quien: 'Luis', hora: '14:31', min: 871, precio: 400, color: false, mini: 'ine' },
+  { id: 'p-30', cp: false, doc: 'mapa_republica.pdf', res: '1 pág · Color · Carta', pc: 'CAJA2', quien: 'Carmen', hora: '14:12', min: 852, precio: 1000, color: true, mini: 'mapa' },
+  { id: 'cp-2478', cp: true, num: 2478, doc: 'acta_nacimiento.pdf', res: '1 pág · B/N · Carta', pc: 'PRINCIPAL', quien: 'Luis', hora: '13:58', min: 838, precio: 200, color: false, mini: 'doc' },
+  { id: 'cp-2477', cp: true, num: 2477, doc: 'constancia_estudios.pdf', res: '2 págs · B/N · Carta', pc: 'PRINCIPAL', quien: 'Luis', hora: '13:57', min: 837, precio: 400, color: false, mini: 'tabla' },
+  { id: 'cp-2476', cp: true, num: 2476, doc: 'fotos_graduacion.jpg', res: '4 págs · Color · Carta · Fotográfico', pc: 'PRINCIPAL', quien: 'Luis', hora: '13:20', min: 800, precio: 4800, color: true, mini: 'foto', revisar: true },
+];
+
+const PERSONAS = {
+  ana: { nombre: 'Ana', letra: 'A', completo: false, detalle: 'Permisos de defecto' },
+  carmen: { nombre: 'Carmen', letra: 'C', completo: true, detalle: 'Encargada: también el conteo completo' },
+  luis: { nombre: 'Luis', letra: 'L', completo: true, detalle: 'Primera cuenta: todos los permisos' },
+};
+/* En el piloto, el POS vive en la caja 2 y la caja 1 sigue con eleventa (y Control Print) */
+const CAJAS = [
+  { id: 1, nombre: 'Caja 1', principal: true, atiende: 'Luis', esperan: 1 },
+  { id: 2, nombre: 'Caja 2', atiende: 'Carmen', esperan: 0 },
+];
+/* Los conteos: el del día (15 productos que elige el POS) y los departamentos abiertos del conteo completo */
+const DEL_DIA = ['7509990100019', '7509990100040', '7509990100118', '7509990100163', '7509990100064', '7509990100057', '7509990100095', '7509990100101', '7509990100125', '7509990100156', '7509990100170', '7509990100187', '7509990100088', '7509990100033', '7509990100026'];
+const CONTEOS_INICIO = () => [
+  { id: 'dia', tipo: 'dia', titulo: 'Conteo del día', detalle: '15 productos que eligió el POS esta mañana', productos: DEL_DIA },
+  { id: 'esc', tipo: 'completo', depto: 'esc', titulo: 'Escolar · conteo completo', detalle: 'Lo abrió Luis a las 9:10 · cuentan Luis y Ana', total: 120, contados: 37 },
+];
+let CONTEOS = CONTEOS_INICIO();
+/* Lo que ya contaron otros en el conteo completo (se ve al escanear: «Ya van 7: tú 2 · Luis 5») */
+const DE_OTROS = { '7509990100019': [['Luis', 5]], '7509990100026': [['Ana', 24]], '7509990100064': [['Luis', 12]] };
+
+/* Lo que se lee al tocar la franja, por modo: así los pasos de «Qué probar» siempre dan lo mismo */
+const SECUENCIAS = {
+  ticket: ['7509990100019', '7509990100026', '7509990100019', '7509990100057', '7509990100071', '2999990000016', SIN_REGISTRAR],
+  precio: ['7509990100019', '7509990100040', '7509990100033', '7509990100200', SIN_REGISTRAR, '7509990100118'],
+  conteo: ['7509990100019', '7509990100019', '7509990100019', '7509990100026', '7509990100200', '7509990100026', '7509990100071', '7509990100163'],
+};
+
+/* ——— Utilidades ——— */
+const $ = s => document.querySelector(s);
+const dinero = c => '$' + (c / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const vibrar = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* sin vibración en este navegador */ } };
+function guardar(k, v) { try { localStorage.setItem('papeleria-android-' + k, v); } catch (e) { /* sin almacenamiento */ } }
+function leerGuardado(k) { try { return localStorage.getItem('papeleria-android-' + k); } catch (e) { return null; } }
+
+/* Iconos (trazos de 24 px, al estilo de Material Symbols redondeados) */
+const IC = {
+  precio: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.6"/>',
+  ticket: '<path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  conteo: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 12.5l2 2 4-4.5"/>',
+  buscar: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  imprimir: '<path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>',
+  mandar: '<path d="M4 12 20 4l-4 16-4-7z"/><path d="m12 13 8-9"/>',
+  cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  atras: '<path d="M15 5l-7 7 7 7"/>',
+  menos: '<path d="M6 12h12"/>',
+  mas: '<path d="M12 6v12M6 12h12"/>',
+  bote: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
+  deshacer: '<path d="M9 7 5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',
+  linterna: '<path d="M8 3h8l-1 6H9z"/><path d="M9 9h6l-1 12h-4z"/><path d="M12 13v2"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  qr: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/>',
+  sinred: '<path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/>',
+  agrandar: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  teclado: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/>',
+  persona: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  cambiar: '<path d="M7 7h12l-3-3M17 17H5l3 3"/>',
+  ajustes: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  medir: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  salir: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+  barras: '<path d="M4 5v14M7 5v14M10 5v14M14 5v14M17 5v14M20 5v14"/>',
+  candado: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  abrir: '<path d="M14 4h6v6M20 4l-9 9M10 6H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/>',
+  lista: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+  celular: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>',
+  wifi: '<path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>',
+  cercanos: '<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
+  mano: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L3 15a1.5 1.5 0 0 1 2.5-1.6L8 16"/>',
+  subir: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  reloj: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+};
+const ic = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[n] || ''}</svg>`;
+
+/* Fotos de los productos: dibujos sencillos (en la app, la foto de 240 px que guarda el POS o las iniciales) */
+function dibujo(p) {
+  const t = p.tinta;
+  const d = {
+    cuaderno: '<rect x="11" y="6" width="28" height="36" rx="3" fill="#2f6fb3"/><rect x="17" y="13" width="17" height="8" rx="1.5" fill="#fff"/><g fill="#d7dde3"><circle cx="11" cy="11" r="2"/><circle cx="11" cy="17" r="2"/><circle cx="11" cy="23" r="2"/><circle cx="11" cy="29" r="2"/><circle cx="11" cy="35" r="2"/></g>',
+    lapiz: '<g transform="rotate(-40 24 24)"><rect x="8" y="20" width="26" height="8" fill="#f2b705"/><rect x="5" y="20" width="4" height="8" fill="#e46a8a"/><polygon points="34,20 42,24 34,28" fill="#e9c79b"/><polygon points="39.5,22.7 42,24 39.5,25.3" fill="#333"/></g>' + (p.piezas ? '<rect x="6" y="30" width="36" height="12" rx="2" fill="#1d5c7a"/><text x="24" y="39" font-size="8" text-anchor="middle" fill="#fff" font-family="sans-serif" font-weight="700">×12</text>' : ''),
+    goma: '<rect x="9" y="16" width="30" height="16" rx="3" fill="#f7f7f7" stroke="#cfd5da"/><rect x="9" y="16" width="12" height="16" rx="3" fill="#2f6fb3"/>',
+    sacapuntas: '<rect x="12" y="14" width="24" height="20" rx="3" fill="#a9b2ba"/><circle cx="20" cy="24" r="5" fill="#59636c"/><path d="M27 18h6v12h-6z" fill="#c9d0d6"/>',
+    pegamento: '<rect x="15" y="16" width="18" height="26" rx="4" fill="#f4f4f4" stroke="#cfd5da"/><rect x="19" y="8" width="10" height="9" rx="2" fill="#e8742c"/><rect x="18" y="24" width="12" height="9" rx="1" fill="#e8742c"/>',
+    tijeras: '<circle cx="15" cy="33" r="6" fill="none" stroke="#e8742c" stroke-width="4"/><circle cx="31" cy="33" r="6" fill="none" stroke="#e8742c" stroke-width="4"/><path d="M18 28 30 8M28 28 16 8" stroke="#8d969e" stroke-width="3.5" stroke-linecap="round"/>',
+    folder: '<path d="M7 14h13l3 4h18v20H7z" fill="#e9d6a6"/><path d="M7 19h34v19H7z" fill="#f3e3b8"/>',
+    sobre: '<rect x="7" y="12" width="34" height="24" rx="2" fill="#d9b779"/><path d="M7 13l17 13 17-13" fill="none" stroke="#b8935a" stroke-width="2"/>',
+    plumon: '<g transform="rotate(-35 24 24)"><rect x="7" y="19" width="26" height="10" rx="2" fill="#2b2f33"/><rect x="31" y="20" width="9" height="8" rx="2" fill="#555c63"/><rect x="11" y="21" width="12" height="6" fill="#fff"/></g>',
+    cinta: '<circle cx="24" cy="24" r="14" fill="#cfe4ef"/><circle cx="24" cy="24" r="7" fill="#fff" stroke="#9fb7c4" stroke-width="2"/>',
+    calculadora: '<rect x="12" y="7" width="24" height="34" rx="3" fill="#3b4248"/><rect x="15" y="10" width="18" height="8" rx="1" fill="#b9d3a5"/><g fill="#d6dbe0"><rect x="15" y="21" width="5" height="4" rx="1"/><rect x="21.5" y="21" width="5" height="4" rx="1"/><rect x="28" y="21" width="5" height="4" rx="1"/><rect x="15" y="27" width="5" height="4" rx="1"/><rect x="21.5" y="27" width="5" height="4" rx="1"/><rect x="28" y="27" width="5" height="4" rx="1"/><rect x="15" y="33" width="5" height="4" rx="1"/><rect x="21.5" y="33" width="11.5" height="4" rx="1"/></g>',
+    cartulina: '<path d="M10 7h22l6 6v28H10z" fill="#fff" stroke="#cfd5da"/><path d="M32 7v6h6" fill="#e9edf0" stroke="#cfd5da"/>',
+    lustre: `<rect x="9" y="8" width="30" height="32" rx="1.5" fill="${t || '#2563c9'}"/><path d="M12 11l9 0-9 9z" fill="#fff" opacity=".35"/>`,
+    lapicero: '<g transform="rotate(-40 24 24)"><rect x="7" y="21" width="28" height="6" rx="3" fill="#2563c9"/><polygon points="35,22 42,24 35,26" fill="#c6ccd2"/><rect x="10" y="18" width="10" height="3" rx="1" fill="#2563c9"/></g>',
+    geometria: '<polygon points="9,38 9,12 31,38" fill="#b9c4cd"/><path d="M24 38a14 14 0 0 1 28 0" transform="translate(-14 0)" fill="none" stroke="#8d969e" stroke-width="3"/>',
+    colores: '<rect x="9" y="18" width="30" height="20" rx="2" fill="#1d5c7a"/><g><rect x="12" y="10" width="3" height="10" fill="#e53935"/><rect x="16.5" y="9" width="3" height="11" fill="#fb8c00"/><rect x="21" y="10" width="3" height="10" fill="#fdd835"/><rect x="25.5" y="9" width="3" height="11" fill="#43a047"/><rect x="30" y="10" width="3" height="10" fill="#1e88e5"/><rect x="34" y="11" width="3" height="9" fill="#8e24aa"/></g>',
+    bolsa: '<path d="M12 18h24l-2 22H14z" fill="#d84d7a"/><path d="M18 18v-3a6 6 0 0 1 12 0v3" fill="none" stroke="#7a2443" stroke-width="2.5"/>',
+    china: '<path d="M9 12c8-3 22 3 30 0v26c-8 3-22-3-30 0z" fill="#59b36b"/>',
+    copia: '<path d="M12 7h18l6 6v28H12z" fill="#fff" stroke="#9aa5ae"/><path d="M16 18h16M16 23h16M16 28h12" stroke="#9aa5ae" stroke-width="2"/>',
+    curp: '<rect x="8" y="12" width="32" height="24" rx="3" fill="#fff" stroke="#9aa5ae"/><rect x="11" y="16" width="9" height="11" rx="1" fill="#c9d3da"/><path d="M23 18h13M23 22h13M23 26h9M11 31h25" stroke="#9aa5ae" stroke-width="2"/>',
+  }[p.icono] || '';
+  return `<svg viewBox="0 0 48 48" aria-hidden="true">${d}</svg>`;
+}
+const foto = (p, g = false) => `<span class="foto${g ? ' g' : ''}">${dibujo(p)}</span>`;
+
+/* Las miniaturas de la primera hoja de cada impresión (dibujos) */
+function miniatura(m) {
+  const lineas = (y0, n, w = 61) => Array.from({ length: n }, (_, i) => `<rect x="12" y="${y0 + i * 6}" width="${i % 4 === 3 ? w - 20 : w}" height="2.4" rx="1" fill="#9aa3ab"/>`).join('');
+  const d = {
+    doc: `<rect x="12" y="11" width="44" height="5" rx="1" fill="#2e3a45"/>${lineas(24, 12)}`,
+    tabla: `<rect x="12" y="11" width="36" height="5" rx="1" fill="#2e3a45"/>${lineas(22, 4)}<g fill="none" stroke="#9aa3ab" stroke-width="1"><rect x="12" y="50" width="61" height="40"/><path d="M12 60h61M12 70h61M12 80h61M33 50v40M53 50v40"/></g>`,
+    portada: '<rect x="0" y="0" width="85" height="44" fill="#e8742c"/><rect x="12" y="52" width="61" height="9" rx="1.5" fill="#1d3557"/><rect x="20" y="66" width="45" height="4" rx="1" fill="#8a96a3"/><circle cx="42" cy="22" r="11" fill="#ffd166"/><rect x="18" y="86" width="49" height="3" rx="1" fill="#8a96a3"/>',
+    ine: '<g><rect x="10" y="12" width="65" height="40" rx="4" fill="#d9e6ef" stroke="#7e95a8"/><rect x="15" y="18" width="16" height="20" rx="2" fill="#9fb2c2"/><rect x="35" y="19" width="34" height="3" fill="#5c7183"/><rect x="35" y="26" width="28" height="3" fill="#5c7183"/><rect x="35" y="33" width="30" height="3" fill="#5c7183"/></g><g><rect x="10" y="60" width="65" height="40" rx="4" fill="#d9e6ef" stroke="#7e95a8"/><rect x="15" y="66" width="55" height="3" fill="#5c7183"/><rect x="15" y="73" width="48" height="3" fill="#5c7183"/><rect x="15" y="86" width="55" height="8" fill="#5c7183"/></g>',
+    mapa: '<rect x="8" y="10" width="69" height="90" fill="#cfe8f5"/><path d="M14 30c10-8 20-6 28 2s18 6 24 16-2 22-12 26-8 14-18 12-10-14-16-22-14-20-6-34z" fill="#8fc77e" stroke="#4f8a43"/><rect x="12" y="13" width="30" height="5" fill="#2e3a45"/>',
+    foto: '<rect x="0" y="0" width="85" height="110" fill="#7fb7e6"/><circle cx="62" cy="28" r="9" fill="#ffe08a"/><path d="M0 80l22-26 16 18 14-14 33 30v22H0z" fill="#4c8a4f"/><path d="M0 92l30-18 25 16 30-8v28H0z" fill="#3a6f3d"/>',
+  }[m] || '';
+  return `<svg viewBox="0 0 85 110" aria-hidden="true"><rect width="85" height="110" fill="#fff"/>${d}</svg>`;
+}
+
+/* Un EAN-13 de verdad, dibujado (para la etiqueta que «ve» la cámara) */
+const EAN = {
+  L: ['0001101', '0011001', '0010011', '0111101', '0100011', '0110001', '0101111', '0111011', '0110111', '0001011'],
+  G: ['0100111', '0110011', '0011011', '0100001', '0011101', '0111001', '0000101', '0010001', '0001001', '0010111'],
+  R: ['1110010', '1100110', '1101100', '1000010', '1011100', '1001110', '1010000', '1000100', '1001000', '1110100'],
+  par: ['LLLLLL', 'LLGLGG', 'LLGGLG', 'LLGGGL', 'LGLLGG', 'LGGLLG', 'LGGGLL', 'LGLGLG', 'LGLGGL', 'LGGLGL'],
+};
+function barrasEan(codigo) {
+  if (!/^\d{13}$/.test(codigo)) return '';
+  const d = codigo.split('').map(Number);
+  let bits = '101';
+  for (let i = 1; i <= 6; i++) bits += EAN[EAN.par[d[0]][i - 1]][d[i]];
+  bits += '01010';
+  for (let i = 7; i <= 12; i++) bits += EAN.R[d[i]];
+  bits += '101';
+  let rects = '';
+  for (let i = 0; i < bits.length; i++) if (bits[i] === '1') {
+    const guarda = i < 3 || (i >= 45 && i < 50) || i >= 92;
+    rects += `<rect x="${i + 7}" y="0" width="1" height="${guarda ? 46 : 41}" fill="#111"/>`;
+  }
+  const t = `<text y="54" font-size="8" font-family="monospace" fill="#111">`;
+  return `<svg viewBox="0 0 109 56" aria-hidden="true">${rects}${t}<tspan x="0">${codigo[0]}</tspan><tspan x="13" letter-spacing="1.6">${codigo.slice(1, 7)}</tspan><tspan x="59" letter-spacing="1.6">${codigo.slice(7)}</tspan></text></svg>`;
+}
+/* Un QR dibujado (no se puede leer: es para ver el tamaño y la forma) */
+function qrDibujo(semilla, n = 37) {
+  let s = semilla;
+  const azar = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
+  let r = '';
+  const ojo = (x, y) => { r += `<rect x="${x}" y="${y}" width="7" height="7" fill="#111"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" fill="#fff"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3" fill="#111"/>`; };
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const enOjo = (x < 8 && y < 8) || (x > n - 9 && y < 8) || (x < 8 && y > n - 9);
+    if (!enOjo && azar() > .52) r += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="#111"/>`;
+  }
+  ojo(0, 0); ojo(n - 7, 0); ojo(0, n - 7);
+  return `<svg viewBox="-2 -2 ${n + 4} ${n + 4}" shape-rendering="crispEdges" aria-hidden="true"><rect x="-2" y="-2" width="${n + 4}" height="${n + 4}" fill="#fff"/>${r}</svg>`;
+}
+
+/* ——— El estado del prototipo ——— */
+const INICIO = () => ({
+  red: 'buena', tam: 'pixel', tema: 'sistema', pos: 'piloto',
+  pantalla: 'escaner',        // alta | entrada | escaner | bloqueo | ajustes
+  dadoDeAlta: true, pasoAlta: 0, permisoCercanos: false, dialogo: null,
+  persona: 'ana', fichaElegida: 'ana', pin: '', pinError: '',
+  modo: 'ticket',
+  hoja: null, hojaDatos: null, precioGrande: false,
+  ticket: [], impresiones: [], idLinea: 1, deshacer: [], cajaElegida: 2, enviado: null, qr: null, enviando: false,
+  precio: null,
+  conteo: { activo: null, actual: null, capturas: [], porSubir: 0, idCaptura: 1 },
+  escaner: { fase: 'escaneando', codigo: null, linterna: false },
+  indices: { ticket: 0, precio: 0, conteo: 0 },
+  busqueda: '', filtroPc: 'todas', elegidos: [], toast: null, rapidoBloqueo: false, guia: null,
+});
+let S = INICIO();
+let temporizadores = [];
+const despues = (ms, f) => { const t = setTimeout(f, ms); temporizadores.push(t); return t; };
+
+/* ——— Cálculos del ticket (como la caja: el mayoreo entra solo al llegar a la escala) ——— */
+function precioUnitario(p, cant) { return p.mayoreo && cant >= p.mayoreo[0] ? p.mayoreo[1] : p.precio; }
+function importe(l) { const p = POR_CODIGO.get(l.codigo); return p ? precioUnitario(p, l.cant) * l.cant : 0; }
+const trabajosElegidos = () => TRABAJOS.filter(t => S.impresiones.includes(t.id));
+const totalImpresiones = () => trabajosElegidos().reduce((s, t) => s + t.precio, 0);
+const totalTicket = () => S.ticket.reduce((s, l) => s + importe(l), 0) + totalImpresiones();
+const piezasTicket = () => S.ticket.reduce((s, l) => s + l.cant, 0) + S.impresiones.length;
+function recordar() { S.deshacer.push(JSON.stringify({ t: S.ticket, i: S.impresiones })); if (S.deshacer.length > 30) S.deshacer.shift(); }
+
+function agregarAlTicket(codigo, cant = 1, aviso = false) {
+  recordar();
+  const i = S.ticket.findIndex(l => l.codigo === codigo);
+  if (i >= 0) { const l = S.ticket.splice(i, 1)[0]; l.cant += cant; S.ticket.unshift(l); }
+  else S.ticket.unshift({ id: S.idLinea++, codigo, cant, desconocido: !POR_CODIGO.has(codigo) });
+  S.enviado = null; S.qr = null;
+  if (aviso) toast(`Agregado al ticket · ${piezasTicket()} art. · ${dinero(totalTicket())}`, 'Ver', () => { S.modo = 'ticket'; S.hoja = 'ticket'; pintar(); });
+}
+
+/* ——— El escáner simulado: viendo (ámbar) → leído (verde, vibración) → escaneando ——— */
+function siguienteCodigo() {
+  const m = S.pantalla === 'alta' ? null : (S.rapidoBloqueo ? 'precio' : S.modo);
+  if (!m) return QR_ALTA;
+  if (m === 'conteo' && S.conteo.activo && S.conteo.activo.tipo === 'dia') {
+    const c = S.conteo, faltan = c.activo.productos.filter(x => !c.capturas.some(k => k.codigo === x));
+    if (c.actual) return c.actual.codigo;
+    return faltan.length ? faltan[0] : c.activo.productos[0];
+  }
+  if (m === 'conteo' && S.conteo.activo && S.conteo.activo.tipo === 'completo' && S.conteo.activo.depto !== 'esc') {
+    const deDepto = CATALOGO.filter(p => p.depto === S.conteo.activo.depto && !p.base);
+    return deDepto[S.indices.conteo++ % deDepto.length].codigo;
+  }
+  const sec = SECUENCIAS[m]; return sec[S.indices[m]++ % sec.length];
+}
+function leer(codigo) {
+  if (S.escaner.fase !== 'escaneando') return;
+  codigo = codigo || siguienteCodigo();
+  S.escaner.fase = 'viendo'; S.escaner.codigo = codigo; pintarEscaner();
+  despues(280, () => {
+    S.escaner.fase = 'leido'; vibrar(35);
+    aplicarLectura(codigo);
+    pintar();
+    despues(550, () => { S.escaner.fase = 'escaneando'; S.escaner.codigo = null; pintarEscaner(); });
+  });
+}
+function aplicarLectura(codigo) {
+  if (S.pantalla === 'alta') { S.pasoAlta = 1; return; }
+  if (S.rapidoBloqueo || S.modo === 'precio') { S.precio = codigo; return; }
+  if (S.modo === 'ticket') { agregarAlTicket(codigo); return; }
+  if (S.modo === 'conteo') contarLectura(codigo);
+}
+/* Contar: el código de la pieza suma una suelta y el de la caja suma una caja (como la página /conteo de hoy) */
+const piezasDe = a => a.sueltas + a.cajas * (POR_CODIGO.get(a.codigo).caja ? POR_CODIGO.get(a.codigo).caja.piezas : 0);
+function contarLectura(codigo) {
+  const c = S.conteo, t = c.activo;
+  if (!t) { toast('Primero elige qué vas a contar.'); return; }
+  const leido = POR_CODIGO.get(codigo);
+  if (!leido || leido.rapido) { toast('Ese código no está en el catálogo: apártalo y avísale al encargado.'); return; }
+  const base = leido.base || codigo, esCaja = !!leido.base, p = POR_CODIGO.get(base);
+  if (t.tipo === 'completo' && p.depto !== t.depto) { toast(`«${p.nombre}» es de ${DEPTOS[p.depto]}: se cuenta con ese departamento.`); return; }
+  if (t.tipo === 'dia' && !t.productos.includes(base)) { toast(`«${p.nombre}» no está en el conteo de hoy.`); return; }
+  if (t.tipo === 'dia' && c.capturas.some(k => k.codigo === base)) { toast(`«${p.nombre}» ya se contó hoy. Si quedó mal, es un ajuste en la caja.`); return; }
+  if (!(c.actual && c.actual.codigo === base)) { guardarCaptura(); c.actual = { codigo: base, cajas: 0, sueltas: 0 }; }
+  if (esCaja) c.actual.cajas++; else c.actual.sueltas++;
+}
+/* Guardar: lo contado del producto en este lugar queda como una captura y se sube sola (al escanear otro también) */
+function guardarCaptura() {
+  const c = S.conteo, a = c.actual;
+  c.actual = null;
+  if (!a) return;
+  const cant = piezasDe(a);
+  if (cant <= 0) return;
+  const nuevo = !c.capturas.some(k => k.codigo === a.codigo);
+  const cap = { id: c.idCaptura++, codigo: a.codigo, cant, cajas: a.cajas, sueltas: a.sueltas, hora: horaAhora(), subida: S.red !== 'caida', tipo: c.activo.tipo };
+  c.capturas.unshift(cap);
+  if (!cap.subida) c.porSubir++;
+  if (c.activo.tipo === 'completo' && nuevo && !DE_OTROS[a.codigo]) c.activo.contados = Math.min(c.activo.total, c.activo.contados + 1);
+  toast(`Guardado: ${cant} de «${POR_CODIGO.get(a.codigo).nombre}»${cap.subida ? '' : ' (se sube al volver la red)'}`);
+}
+/* El reloj del prototipo: empieza a las 14:52, como la barra de estado */
+const ARRANQUE = Date.now();
+function horaAhora() { const m = 14 * 60 + 52 + Math.floor((Date.now() - ARRANQUE) / 60000); return `${Math.floor(m / 60) % 24}:${String(m % 60).padStart(2, '0')}`; }
+
+let toastTimer = null;
+function toast(texto, accion, f) {
+  S.toast = { texto, accion, f };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { S.toast = null; pintar(); }, 4200);
+}
+
+/* ——— Pintar ——— */
+const tel = $('#tel');
+function pintar() {
+  tel.dataset.tam = S.tam;
+  let h = '';
+  if (S.pantalla === 'alta') h = pantallaAlta();
+  else if (S.pantalla === 'entrada') h = pantallaEntrada();
+  else if (S.pantalla === 'ajustes') h = pantallaAjustes();
+  else if (S.pantalla === 'bloqueo' && !S.rapidoBloqueo) h = pantallaBloqueo();
+  else h = pantallaEscaner();
+  if (S.dialogo) h += dialogo();
+  const arriba = S.pantalla !== 'escaner' || (S.hoja && S.hoja !== 'menu');
+  if (S.toast) h += `<div class="toast${arriba ? ' arriba' : ''}" role="status"><span>${esc(S.toast.texto)}</span>${S.toast.accion ? `<button data-a="toast">${esc(S.toast.accion)}</button>` : ''}</div>`;
+  tel.innerHTML = h;
+  const q = tel.querySelector('#busqueda');
+  if (q && document.activeElement !== q && !esCelular()) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  pintarProto();
+}
+function pintarEscaner() {
+  const v = tel.querySelector('.visor');
+  if (!v) return pintar();
+  v.outerHTML = visor();
+}
+const esCelular = () => matchMedia('(max-width: 759px)').matches;
+
+function barraEstado(clara) {
+  const wifi = S.red === 'caida' ? IC.sinred : IC.wifi;
+  return `<div class="barra-estado${clara ? ' clara' : ''}"><span>14:52</span><span class="ics"><svg class="i" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2">${wifi}</svg><svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><rect x="20" y="10" width="2" height="4" rx="1"/></svg></span></div>`;
+}
+
+function visor() {
+  const e = S.escaner;
+  const viendo = e.fase === 'viendo' || e.fase === 'leido';
+  const codigo = e.codigo;
+  let etiqueta = '';
+  if (viendo && codigo) {
+    const esQr = codigo === QR_ALTA;
+    etiqueta = `<div class="etiqueta-vista${esQr ? ' qr' : ''}">${esQr ? qrDibujo(7, 29) : barrasEan(codigo)}${e.fase === 'viendo' ? '<span class="ambar"><b></b><b></b><b></b><b></b></span>' : ''}</div>`;
+  }
+  const ind = e.fase === 'viendo' ? ['Leyendo…', 'barras', false] : e.fase === 'leido' ? null : ['Apunta al código de barras', 'barras', false];
+  const leidoTxt = codigo === QR_ALTA ? 'Código de la caja' : codigo;
+  const puedeTocar = e.fase === 'escaneando';
+  return `<div class="visor">
+    <div class="imagen">${manchas()}</div>
+    <div class="franja ${e.fase}">
+      <i class="esq e1"></i><i class="esq e2"></i><i class="esq e3"></i><i class="esq e4"></i><i class="laser"></i>
+      ${etiqueta}
+      ${puedeTocar ? `<button class="tocar" data-a="leer" aria-label="Leer un código (prototipo)"></button><span class="pista">Prototipo: toca la franja para «leer»</span>` : ''}
+    </div>
+    ${e.fase === 'leido' ? `<div class="destello"></div><div class="leido-centro">${ic('check')}<span>${esc(leidoTxt)}</span></div>` : ''}
+    ${ind ? `<div class="indicacion" role="status">${ic(ind[1])}<span>${ind[0]}</span></div>` : ''}
+    ${S.pantalla !== 'alta' && !S.rapidoBloqueo ? `<div class="quien"><button class="ficha-yo" data-a="menu" aria-label="${esc(PERSONAS[S.persona].nombre)}: menú">${PERSONAS[S.persona].letra}</button>${estadoRed()}</div>` : ''}
+    <button class="linterna${e.linterna ? ' on' : ''}" data-a="linterna" aria-label="Linterna" aria-pressed="${e.linterna}">${ic('linterna')}</button>
+  </div>`;
+}
+function manchas() {
+  const colores = ['#b5482f', '#d9a441', '#2f6fb3', '#3d8b5a', '#c9c3b6', '#7a4a8c', '#e07b39', '#4f7c8a'];
+  let r = '';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 37) % 100, fila = [3, 15, 37, 59, 82][i % 5], w = 6 + (i * 13) % 12, h = 6 + (i * 7) % 9;
+    r += `<i style="left:${x}%;top:${fila}%;width:${w}%;height:${h}%;background:${colores[i % colores.length]}"></i>`;
+  }
+  return r;
+}
+function estadoRed() {
+  const sube = S.conteo.porSubir;
+  if (S.red === 'caida') return `<span class="estado-red caida"><i></i>Sin red${sube ? ` · ${sube} por subir` : ''}</span>`;
+  if (S.red === 'lenta') return `<span class="estado-red"><i></i>Red lenta</span>`;
+  if (sube) return `<span class="estado-red subir"><i></i>Subiendo ${sube}</span>`;
+  return '';
+}
+
+function pantallaEscaner() {
+  const rapido = S.rapidoBloqueo;
+  let h = barraEstado(false) + `<div class="app">` + visor();
+  h += rapido ? panelBloqueo() : panel();
+  h += `</div>`;
+  if (!rapido && S.hoja) h += hoja();
+  if (S.precioGrande) h += precioGrande();
+  if (S.qr) h += pantallaQr();
+  h += `<div class="barra-gestos"></div>`;
+  return h;
+}
+
+/* ——— El panel de abajo, según el modo ——— */
+function panel() {
+  const m = S.modo;
+  let cuerpo = '', acciones = '';
+  if (m === 'ticket') [cuerpo, acciones] = panelTicket();
+  if (m === 'precio') [cuerpo, acciones] = panelPrecio();
+  if (m === 'conteo') [cuerpo, acciones] = panelConteo();
+  return `<section class="panel modo-${m}" aria-label="Modo ${m}">
+    <button class="asidero" data-a="${m === 'ticket' ? 'verTicket' : m === 'conteo' && S.conteo.activo ? 'verContado' : 'nada'}" aria-label="Ver todo"></button>
+    <div class="cuerpo">${cuerpo}</div>
+    ${acciones ? `<div class="acciones">${acciones}</div>` : ''}
+    ${modos()}
+  </section>`;
+}
+function modos() {
+  const n = piezasTicket();
+  const b = (v, txt, icono, extra = '') => `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}" aria-pressed="${S.modo === v}">${ic(icono, 'i ch')}${txt}${extra}</button>`;
+  return `<nav class="modos" aria-label="Modo">${b('precio', 'Precio', 'precio')}${b('ticket', 'Ticket', 'ticket', n && S.modo !== 'ticket' ? `<span class="cuenta num">${n}</span>` : '')}${b('conteo', 'Conteo', 'conteo')}</nav>`;
+}
+/* modo: 'actual' (el último, resaltado), 'quieta' (en el ticket completo: con − y + pero sin resaltar) o 'compacta' */
+function lineaTicket(l, modo) {
+  const p = POR_CODIGO.get(l.codigo);
+  if (!p) {
+    if (modo === 'compacta') return `<div class="linea compacta desconocido"><span class="foto">${ic('barras')}</span><div class="txt"><div class="nom">Código sin producto</div></div><div class="der"><span class="x num">×${l.cant}</span></div></div>`;
+    return `<div class="linea doble desconocido${modo === 'actual' ? ' actual' : ''}"><span class="foto">${ic('barras')}</span><div class="fila1"><div class="nom">Código sin producto: <span class="codigo">${l.codigo}</span></div></div><div class="fila2"><span class="det">La caja lo da de alta o lo cobra como artículo común</span>${paso(l)}</div></div>`;
+  }
+  if (modo === 'compacta') return `<div class="linea compacta"><span class="foto">${dibujo(p)}</span><div class="txt"><div class="nom">${esc(p.nombre)}</div></div><div class="der"><span class="x num">×${l.cant}</span><span class="imp num">${dinero(importe(l))}</span></div></div>`;
+  const pu = precioUnitario(p, l.cant);
+  const may = p.mayoreo && l.cant >= p.mayoreo[0];
+  const quedan = p.existencia != null && !p.sinInventario && p.existencia <= 2 ? `<span class="marca-quedan">Quedan ${p.existencia}</span>` : '';
+  return `<div class="linea doble${modo === 'actual' ? ' actual' : ''}"><span class="foto">${dibujo(p)}</span><div class="fila1"><div class="nom">${esc(p.nombre)}</div><span class="imp num">${dinero(importe(l))}</span></div><div class="fila2"><span class="det"><span class="num">${dinero(pu)} c/u</span>${may ? '<span class="marca-mayoreo">Mayoreo</span>' : ''}${quedan}</span>${paso(l)}</div></div>`;
+}
+function paso(l) {
+  return `<span class="paso"><button data-a="menos" data-id="${l.id}" aria-label="${l.cant > 1 ? 'Uno menos' : 'Quitar'}">${ic(l.cant > 1 ? 'menos' : 'bote')}</button><button class="n num" data-a="teclearCant" data-id="${l.id}" aria-label="Cantidad: ${l.cant}. Tocar para teclearla">${l.cant}</button><button data-a="mas" data-id="${l.id}" aria-label="Uno más">${ic('mas')}</button></span>`;
+}
+function panelTicket() {
+  const n = piezasTicket();
+  let c = '';
+  if (S.enviado) {
+    c += `<div class="enviado" role="status"><span class="ic">${ic('check')}</span><div><strong>Enviado a ${esc(S.enviado.caja)}</strong>${S.enviado.n} art. · ${dinero(S.enviado.total)} · llega como «${esc(PERSONAS[S.persona].nombre)} · ${dinero(S.enviado.total)}» en espera</div></div>`;
+    c += `<p class="nota" style="margin:8px 2px 0">Escanea para empezar el siguiente ticket.</p>`;
+  } else if (!n) {
+    c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno; al terminar, se manda a una caja.</div>`;
+  } else {
+    c += `<div class="encabezado"><span class="titulo">Ticket · <b class="num">${n}</b> art.</span><span class="espacio"></span><span class="total num">${dinero(totalTicket())}</span></div>`;
+    c += `<div class="lineas">`;
+    S.ticket.forEach((l, i) => { c += lineaTicket(l, i === 0 ? 'actual' : 'compacta'); });
+    if (S.impresiones.length) c += lineaImpresiones(false);
+    c += `</div>`;
+  }
+  const hayImp = TRABAJOS.filter(t => !S.impresiones.includes(t.id) && !t.revisar).length;
+  const caja = CAJAS.find(x => x.id === S.cajaElegida);
+  const a = `<button class="btn tonal" data-a="buscar" aria-label="Buscar lo que no se escanea">${ic('buscar')}</button>
+    <button class="btn tonal" data-a="impresiones" aria-label="Impresiones por cobrar${S.red !== 'caida' && hayImp ? `: ${hayImp}` : ''}">${ic('imprimir')}<span class="etq">Impresiones</span>${S.red !== 'caida' && hayImp ? ` <span class="burbuja num">${hayImp}</span>` : ''}</button>
+    <button class="btn lleno crece" data-a="mandar" ${n ? '' : 'disabled'}>${ic('mandar')}A ${esc(caja.nombre)}</button>`;
+  return [c, a];
+}
+function lineaImpresiones(conQuitar) {
+  const ts = trabajosElegidos();
+  const minis = ts.slice(0, 4).map(t => `<svg viewBox="0 0 85 110" style="${t.color ? '' : 'filter:grayscale(1)'}">${miniatura(t.mini).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>`).join('');
+  return `<div class="linea compacta"><span class="foto">${ic('imprimir')}</span><div class="txt"><div class="nom">Impresiones · ${ts.length} ${ts.length === 1 ? 'trabajo' : 'trabajos'}</div><div class="det"><span class="minis">${minis}</span></div></div><div class="der">${conQuitar ? `<button class="btn-ic" data-a="verImpresiones" aria-label="Ver o quitar impresiones">${ic('lista')}</button>` : ''}<span class="imp num">${dinero(totalImpresiones())}</span></div></div>`;
+}
+
+function datosPrecio(p, publico) {
+  let d = '';
+  if (p.promo) d += `<span class="dato promo">Promoción «${esc(p.promo)}»</span>`;
+  if (p.mayoreo) d += `<span class="dato mayoreo">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>`;
+  if (p.piezas) d += `<span class="dato">${dinero(Math.round(p.precio / p.piezas))} c/u</span>`;
+  if (!publico && !p.sinInventario) d += p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
+  return d;
+}
+function tarjetaPrecio(publico) {
+  const codigo = S.precio;
+  const p = POR_CODIGO.get(codigo);
+  if (!p) return `<div class="no-esta"><span class="ic">${ic('barras')}</span><div><strong>No está en el catálogo</strong><span class="codigo">${esc(codigo)}</span><div class="nota">Búscalo por nombre o pregúntale a quien da de alta los productos.</div></div></div>`;
+  return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}</div></div></div>`;
+}
+function panelPrecio() {
+  let c, a;
+  if (!S.precio) {
+    c = `<div class="vacio"><strong>Escanea para ver el precio</strong>Aquí nada se agrega al ticket: es el verificador (F9) de la caja.</div>`;
+    a = `<button class="btn tonal crece" data-a="buscar">${ic('buscar')}Buscar por nombre</button>`;
+  } else {
+    const hay = POR_CODIGO.has(S.precio);
+    c = tarjetaPrecio(false);
+    const n = piezasTicket();
+    a = `<button class="btn tonal" data-a="buscar" aria-label="Buscar por nombre">${ic('buscar')}</button>` +
+      (hay ? `<button class="btn tonal" data-a="agrandar" aria-label="Enseñar el precio al cliente">${ic('agrandar')}</button><button class="btn lleno crece" data-a="agregarDePrecio">${ic('mas')}Al ticket${n ? ` <span class="sub num">(${n})</span>` : ''}</button>` : '');
+  }
+  return [c, a];
+}
+function panelConteo() {
+  const c = S.conteo, per = PERSONAS[S.persona];
+  if (S.pos === 'piloto') {
+    return [`<div class="no-esta"><span class="ic">${ic('candado')}</span><div><strong>En el piloto no se cuenta</strong><div class="nota">Mientras dure el piloto con eleventa, el inventario se lleva en eleventa: las existencias llegan al POS con su lectura. Al dejar eleventa, aquí se hace el conteo físico de arranque.</div></div></div>`, ''];
+  }
+  if (!c.activo) {
+    let h = `<div class="encabezado"><span class="titulo">¿Qué vas a contar?</span></div><div class="tareas">`;
+    for (const t of CONTEOS) h += `<button class="tarea" data-a="abrirConteo" data-id="${t.id}"><span class="ic">${ic(t.tipo === 'dia' ? 'reloj' : 'conteo')}</span><span><strong>${esc(t.titulo)}</strong><small>${esc(t.detalle)}</small></span>${ic('atras', 'i ch')}</button>`;
+    if (per.completo) h += `<button class="tarea" data-a="abrirDepto"><span class="ic">${ic('mas')}</span><span><strong>Abrir otro departamento</strong><small>Para el conteo completo: lo que nadie cuente queda en cero al cerrarlo</small></span>${ic('atras', 'i ch')}</button>`;
+    h += `</div>`;
+    if (!per.completo) h += `<p class="nota" style="margin:6px 2px">${esc(per.nombre)} cuenta en lo que ya está abierto; abrir y cerrar un departamento pide el permiso del conteo completo.</p>`;
+    return [h, ''];
+  }
+  const t = c.activo;
+  let h = `<button class="encabezado" data-a="verContado" style="width:100%;text-align:left"><span class="titulo"><b>${esc(t.titulo)}</b></span><span class="espacio"></span>`;
+  if (t.tipo === 'completo') h += `<span class="nota num">${t.contados} de ${t.total} ›</span>`;
+  else { const hechos = new Set(c.capturas.map(x => x.codigo)).size; h += `<span class="nota num">${hechos} de ${t.productos.length} ›</span>`; }
+  h += `</button>`;
+  if (t.tipo === 'completo') h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
+  if (c.actual) {
+    const p = POR_CODIGO.get(c.actual.codigo), a = c.actual, total = piezasDe(a);
+    const desglose = a.cajas ? `${a.cajas} ${a.cajas === 1 ? 'caja' : 'cajas'} de ${p.caja.piezas} + ${a.sueltas} ${a.sueltas === 1 ? 'suelta' : 'sueltas'}` : 'Cada pieza suma una';
+    const otros = t.tipo === 'completo' ? (DE_OTROS[a.codigo] || []).concat(c.capturas.filter(k => k.codigo === a.codigo).length ? [['tú', c.capturas.filter(k => k.codigo === a.codigo).reduce((s, k) => s + k.cant, 0)]] : []) : [];
+    const yaVan = otros.length ? `Ya van ${otros.reduce((s, o) => s + o[1], 0)} en otros lugares: ${otros.map(o => `${o[0]} ${o[1]}`).join(' · ')}` : (t.tipo === 'dia' ? 'El total de la tienda: si está en dos lugares, cuenta los dos' : 'Lo de este lugar; se suma a lo que cuenten los demás');
+    h += `<div class="contando" style="margin-top:8px"><div class="nom">${esc(p.nombre)}</div><button class="contador num crece" data-a="teclearConteo" aria-label="Contadas: ${total}. Tocar para teclear"><small>×</small>${total}</button><div class="det">${desglose} · ${yaVan}</div></div>`;
+  } else {
+    h += `<div class="vacio" style="margin-top:4px"><strong>Escanea el primer producto</strong>Cada pieza suma una y el código de la caja suma la caja. No se ve cuántas debería haber: es a ciegas.</div>`;
+  }
+  const a = `<button class="btn tonal" data-a="menosConteo" ${c.actual ? '' : 'disabled'} aria-label="Una menos">${ic('menos')}1</button>
+    <button class="btn tonal" data-a="buscar" aria-label="Buscar lo que no tiene código">${ic('buscar')}</button>
+    <button class="btn lleno crece" data-a="guardarConteo" ${c.actual ? '' : 'disabled'}>${ic('check')}Guardar${c.actual ? ` <span class="sub num">${piezasDe(c.actual)}</span>` : ''}</button>`;
+  return [h, a];
+}
+
+/* ——— Sobre el bloqueo: solo el precio, sin existencia ——— */
+function panelBloqueo() {
+  const c = S.precio ? tarjetaPrecio(true) : `<div class="vacio"><strong>Escanea para ver el precio</strong>Sobre el bloqueo solo se ve el precio. Para el ticket, el conteo o la existencia, abre la app.</div>`;
+  return `<section class="panel modo-precio" aria-label="Precio sobre el bloqueo"><span class="asidero"></span><div class="cuerpo">${c}</div>
+    <div class="acciones"><button class="btn tonal" data-a="cerrarRapido">${ic('cerrar')}Cerrar</button><button class="btn lleno crece" data-a="abrirDesdeBloqueo">${ic('candado')}Abrir la app</button></div>
+    <div class="modos"><span class="candado" style="margin:10px auto;color:var(--suave)">${ic('candado', 'i ch')}Precio sobre el bloqueo</span></div></section>`;
+}
+
+/* ——— Hojas ——— */
+function hoja() {
+  const fn = { ticket: hojaTicket, buscar: hojaBuscar, impresiones: hojaImpresiones, verImpresiones: hojaVerImpresiones, mandar: hojaMandar, cantidad: hojaCantidad, contado: hojaContado, menu: hojaMenu, abrirDepto: hojaAbrirDepto }[S.hoja];
+  return fn ? fn() : '';
+}
+const barraHoja = (titulo, sub, cerrar = 'cerrarHoja', icono = 'cerrar') => `<div class="barra"><button class="btn-ic" data-a="${cerrar}" aria-label="Cerrar">${ic(icono)}</button><h2>${titulo}${sub ? `<small>${sub}</small>` : ''}</h2></div>`;
+
+function hojaTicket() {
+  const n = piezasTicket();
+  const deshacer = S.deshacer.length ? `<button class="btn-ic" data-a="deshacer" aria-label="Deshacer lo último">${ic('deshacer')}</button>` : '';
+  let h = `<div class="hoja completa modo-ticket"><div class="contenido"><div class="barra"><button class="btn-ic" data-a="cerrarHoja" aria-label="Regresar al escáner">${ic('atras')}</button><h2>Ticket de ${esc(PERSONAS[S.persona].nombre)}<small>${n} art. · lo último arriba</small></h2>${deshacer}</div><div class="desliza"><div class="lineas">`;
+  if (!n) h += `<div class="vacio"><strong>El ticket está vacío</strong>Regresa al escáner y escanea lo que lleva el cliente.</div>`;
+  S.ticket.forEach(l => { h += lineaTicket(l, 'quieta'); });
+  if (S.impresiones.length) h += lineaImpresiones(true);
+  h += `</div><div class="agregar"><button class="btn tonal" data-a="buscar">${ic('buscar')}Buscar</button><button class="btn tonal" data-a="impresiones">${ic('imprimir')}Impresiones</button></div>`;
+  h += `<p class="nota" style="margin-top:14px">Los precios los pone la caja al recibirlo, con su catálogo. Desde el celular no se cambian precios ni se hacen descuentos.</p></div>`;
+  const caja = CAJAS.find(x => x.id === S.cajaElegida);
+  h += `<div class="pie"><div class="fila-total"><span>Total</span><b class="num">${dinero(totalTicket())}</b></div><button class="btn lleno ancho" data-a="mandar" ${n ? '' : 'disabled'}>${ic('mandar')}Mandar a ${esc(caja.nombre)}</button>${n ? `<button class="btn borde ancho" data-a="vaciar">${ic('bote')}Empezar otro ticket</button>` : ''}</div></div></div>`;
+  return h;
+}
+
+/* Buscar: el campo abajo, junto al pulgar y pegado al teclado; el mejor resultado queda junto al campo */
+function buscarEn(q) {
+  const piezas = sinAcentos(q).split(/\s+/).filter(Boolean);
+  if (!piezas.length) return [];
+  return TODOS.map(p => {
+    if (p.codigo === q.trim()) return { p, r: 1e6 };
+    const palabras = sinAcentos(p.nombre + ' ' + (DEPTOS[p.depto] || '') + ' ' + p.codigo).split(/[^a-z0-9ñ.]+/).filter(Boolean);
+    if (!piezas.every(z => palabras.some(w => w.startsWith(z)))) return null;
+    const empieza = sinAcentos(p.nombre).startsWith(piezas[0]) ? 1000 : 0;
+    const elegido = S.elegidos.includes(p.codigo) ? 5000 : 0;
+    return { p, r: elegido + empieza + p.vendidos };
+  }).filter(Boolean).sort((a, b) => b.r - a.r).slice(0, 30).map(x => x.p);
+}
+function marcarPiezas(nombre, q) {
+  const piezas = sinAcentos(q).split(/\s+/).filter(Boolean);
+  return nombre.split(' ').map(w => { const z = piezas.find(z => sinAcentos(w).startsWith(z)); return z ? `<mark>${esc(w.slice(0, z.length))}</mark>${esc(w.slice(z.length))}` : esc(w); }).join(' ');
+}
+function hojaBuscar() {
+  const m = S.modo;
+  const titulo = m === 'ticket' ? 'Agregar al ticket' : m === 'precio' ? 'Ver el precio' : 'Contar un producto';
+  const res = buscarEn(S.busqueda);
+  let lista = '';
+  if (!S.busqueda.trim()) {
+    lista = `<div class="seccion">${m === 'ticket' ? 'Rápidos y lo más vendido' : 'Lo más vendido'}</div><div class="sugeridos">`;
+    const sug = (m === 'ticket' ? RAPIDOS : []).concat([...CATALOGO].sort((a, b) => b.vendidos - a.vendidos).slice(0, 4));
+    for (const p of sug) lista += `<button class="sugerido" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span>${esc(p.nombre)} · <b class="num">${dinero(p.precio)}</b></span></button>`;
+    lista += `</div><p class="nota" style="margin-top:12px">Dos pedazos de palabra, en cualquier orden: «lus az» da el papel lustre azul. Lo que eliges con un texto sale primero la siguiente vez.</p>`;
+  } else if (!res.length) {
+    lista = `<div class="vacio"><strong>Nada con «${esc(S.busqueda)}»</strong>Prueba con el principio de dos palabras, o escanea el código.</div>`;
+  } else {
+    lista = `<div class="resultados">` + res.map(p => `<button class="resultado" data-a="elegir" data-c="${p.codigo}">${foto(p)}<span><span class="nom">${marcarPiezas(p.nombre, S.busqueda)}</span><span class="det">${DEPTOS[p.depto] || 'Servicios'}${p.sinInventario ? '' : ` · existencia ${p.existencia}`}</span></span><span class="pre num">${dinero(p.precio)}${p.mayoreo ? `<small>desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])}</small>` : ''}</span></button>`).join('') + `</div>`;
+  }
+  const filas = ['qwertyuiop', 'asdfghjklñ', 'zxcvbnm'];
+  const teclado = esCelular() ? '' : `<div class="teclado" aria-label="Teclado (prototipo)">${filas.map((f, i) => `<div class="fila">${f.split('').map(k => `<button data-a="tecla" data-k="${k}" tabindex="-1">${k}</button>`).join('')}${i === 2 ? `<button class="media" data-a="tecla" data-k="borrar" tabindex="-1" aria-label="Borrar">⌫</button>` : ''}</div>`).join('')}<div class="fila"><button class="ancha" data-a="tecla" data-k=" " tabindex="-1">espacio</button></div></div>`;
+  return `<div class="hoja completa modo-${m}"><div class="contenido">${barraHoja(titulo, '', 'cerrarHoja', 'atras')}<div class="desliza" style="display:flex;flex-direction:column;justify-content:flex-end">${lista}</div>
+    <div class="pie" style="border:0;padding-top:4px"><label class="campo">${ic('buscar')}<input id="busqueda" type="text" inputmode="search" autocomplete="off" enterkeyhint="search" placeholder="Nombre, pedazos de palabra o código" value="${esc(S.busqueda)}" aria-label="Buscar">${S.busqueda ? `<button class="btn-ic" data-a="limpiarBusqueda" aria-label="Borrar lo escrito">${ic('cerrar')}</button>` : ''}</label></div>${teclado}</div></div>`;
+}
+
+/* Impresiones por cobrar: las de todas las PC, en lotes (2 min o menos entre una y otra), con su miniatura */
+function lotes(lista) {
+  const r = [];
+  for (const t of lista) {
+    const ult = r[r.length - 1];
+    if (ult && ult[ult.length - 1].min - t.min <= 2) ult.push(t); else r.push([t]);
+  }
+  return r;
+}
+function hojaImpresiones() {
+  if (S.red === 'caida') {
+    return `<div class="hoja modo-ticket"><div class="contenido">${barraHoja('Impresiones por cobrar', '')}<div class="desliza"><div class="no-esta"><span class="ic">${ic('sinred')}</span><div><strong>Sin red no se ven las impresiones</strong><div class="nota">Viven en la caja principal (y en Control Print). Al volver la red salen aquí; mientras, la caja las agrega con F2.</div></div></div></div></div></div>`;
+  }
+  const pcs = [...new Set(TRABAJOS.map(t => t.pc))];
+  const lista = TRABAJOS.filter(t => !S.impresiones.includes(t.id) && (S.filtroPc === 'todas' || t.pc === S.filtroPc));
+  let h = `<div class="hoja completa modo-ticket"><div class="contenido">${barraHoja('Impresiones por cobrar', 'De todas las PC · lo nuevo arriba', 'cerrarHoja', 'atras')}<div class="desliza">`;
+  h += `<div class="chips" role="group" aria-label="De qué PC">${['todas', ...pcs].map(pc => `<button class="chip${S.filtroPc === pc ? ' on' : ''}" data-a="filtroPc" data-v="${pc}">${pc === 'todas' ? 'Todas' : pc}</button>`).join('')}</div>`;
+  if (!lista.length) h += `<div class="vacio"><strong>No hay impresiones por cobrar</strong>Lo que se imprima en cualquier PC aparece aquí.</div>`;
+  for (const lote of lotes(lista)) {
+    const junto = lote.length > 1;
+    const elegibles = lote.filter(t => !t.revisar);
+    const total = elegibles.reduce((s, t) => s + t.precio, 0);
+    h += `<div class="lote${junto ? ' junto' : ''}">`;
+    if (junto) h += `<div class="lote-cabeza"><div><b>Hoy ${lote[lote.length - 1].hora}–${lote[0].hora}</b> · lote de ${lote.length} · <span class="num">${dinero(total)}</span></div><button class="btn tonal" data-a="elegirLote" data-ids="${elegibles.map(t => t.id).join(',')}">Elegir los ${elegibles.length}</button></div>`;
+    h += `<div class="trabajos">` + lote.map(t => tarjetaTrabajo(t)).join('') + `</div></div>`;
+  }
+  h += `<p class="nota">Las de la PRINCIPAL vienen de Control Print (solo se leen). Las que dicen «Revisar hojas» se resuelven en la caja.</p></div>`;
+  const elegidas = TRABAJOS.filter(t => S.hojaDatos && S.hojaDatos.includes(t.id));
+  const suma = elegidas.reduce((s, t) => s + t.precio, 0);
+  h += `<div class="pie"><button class="btn lleno ancho" data-a="agregarImpresiones" ${elegidas.length ? '' : 'disabled'}>${ic('mas')}${elegidas.length ? `Agregar ${elegidas.length} · ${dinero(suma)}` : 'Toca las que trae el cliente'}</button></div></div></div>`;
+  return h;
+}
+function tarjetaTrabajo(t) {
+  const on = S.hojaDatos && S.hojaDatos.includes(t.id);
+  return `<button class="trabajo${on ? ' on' : ''}" data-a="elegirTrabajo" data-id="${t.id}" ${t.revisar ? 'disabled' : ''} aria-pressed="${on}">
+    <span class="mini${t.color ? '' : ' bn'}">${miniatura(t.mini)}</span><span class="marca">${ic('check', 'i ch')}</span>
+    <span class="doc">${t.cp ? `#${t.num} · ` : ''}${esc(t.doc)}</span><span class="res">${esc(t.res)}</span>
+    ${t.revisar ? '<span class="revisar">Revisar hojas: se ve en la caja</span>' : ''}
+    <span class="abajo"><span>${t.hora} · ${t.pc}</span><b class="num">${dinero(t.precio)}</b></span></button>`;
+}
+function hojaVerImpresiones() {
+  const ts = trabajosElegidos();
+  let h = `<div class="hoja modo-ticket"><div class="contenido">${barraHoja('Impresiones del ticket', `${ts.length} · ${dinero(totalImpresiones())}`)}<div class="desliza"><div class="trabajos">`;
+  h += ts.map(t => `<div class="trabajo"><span class="mini${t.color ? '' : ' bn'}">${miniatura(t.mini)}</span><span class="doc">${esc(t.doc)}</span><span class="abajo"><span>${t.hora}</span><b class="num">${dinero(t.precio)}</b></span><button class="btn peligro" style="min-height:44px" data-a="quitarTrabajo" data-id="${t.id}">${ic('bote', 'i ch')}Quitar</button></div>`).join('');
+  h += `</div></div></div></div>`;
+  return h;
+}
+
+/* Mandar a una caja: dice quién atiende y cuántos esperan; la última que se usó ya viene elegida */
+function hojaMandar() {
+  const n = piezasTicket();
+  if (S.red === 'caida') {
+    return `<div class="hoja modo-ticket"><div class="contenido">${barraHoja('No se pudo mandar', 'Sin red: la caja principal no contesta')}<div class="desliza"><p style="margin:0 0 6px;font-size:16px">El ticket sigue aquí. Enséñalo como QR y que la caja lo lea con su lector, o espera a que vuelva la red.</p></div>
+      <div class="pie"><button class="btn lleno ancho" data-a="mostrarQr">${ic('qr')}Enseñar como QR</button><button class="btn borde ancho" data-a="cerrarHoja">Esperar a la red</button></div></div></div>`;
+  }
+  let h = `<div class="hoja modo-ticket"><div class="contenido">${barraHoja('¿A qué caja?', `${n} art. · ${dinero(totalTicket())}`)}<div class="desliza"><div class="cajas" role="radiogroup">`;
+  for (const c of CAJAS) {
+    const conEleventa = S.pos === 'piloto' && c.id === 1;
+    const on = c.id === S.cajaElegida && !conEleventa;
+    if (conEleventa) { h += `<button class="caja" disabled><span class="radio"></span><span><strong>${c.nombre}</strong><small>Sigue con eleventa: no recibe tickets del celular</small></span><span class="esperan">Piloto</span></button>`; continue; }
+    h += `<button class="caja${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-a="elegirCaja" data-id="${c.id}"><span class="radio"></span><span><strong>${c.nombre}${c.principal && S.pos !== 'piloto' ? ' · principal' : ''}</strong><small>Atiende ${c.atiende}</small></span><span class="esperan num">${c.esperan ? `${c.esperan} en espera` : 'Nadie espera'}</span></button>`;
+  }
+  if (S.pos !== 'piloto') h += `<button class="caja" disabled><span class="radio"></span><span><strong>Caja 3</strong><small>Apagada: no se le puede mandar</small></span><span class="esperan">—</span></button>`;
+  h += `</div></div>`;
+  const caja = CAJAS.find(x => x.id === S.cajaElegida);
+  h += `<div class="pie"><button class="btn lleno ancho" data-a="enviar" ${S.enviando ? 'disabled' : ''}>${S.enviando ? '<span class="girando"></span>Mandando…' : `${ic('mandar')}Mandar a ${caja.nombre}`}</button><p class="nota centro">Llega como ticket en espera, con tu nombre. Ahí se cobra.</p></div></div></div>`;
+  return h;
+}
+function pantallaQr() {
+  const n = piezasTicket();
+  return `<div class="qr-pantalla" role="dialog" aria-label="Ticket como QR"><h2>Que la caja lea este código</h2><p>Con su lector, como lee el folio de un ticket. ${n} art. · ${dinero(totalTicket())}</p>
+    <div class="qr">${qrDibujo(S.ticket.length * 17 + 3)}</div><p style="font-size:13px;color:#666">Lleva un renglón por producto, «2*7509990100019», como si el lector los escaneara uno tras otro: entran al ticket que la caja tenga abierto.${S.impresiones.length ? ' Las impresiones se agregan en la caja (F2).' : ''} (Dibujo: no se puede leer.)</p>
+    <div class="botones"><button class="btn lleno ancho" data-a="qrLeido">${ic('check')}Ya lo leyeron: empezar otro</button><button class="btn tonal ancho" data-a="qrCerrar">Regresar al ticket</button></div></div>`;
+}
+
+/* La cantidad tecleada. En el ticket, cuántas lleva (20 copias). En el conteo, una casilla por presentación, como la
+   página /conteo de hoy: «Cajas de 12» y «Sueltas», con el total al momento */
+function hojaCantidad() {
+  const d = S.hojaDatos;
+  const p = POR_CODIGO.get(d.codigo);
+  const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
+  const teclado = `<div class="numerico">${teclas.map(k => k ? `<button class="${k === '⌫' ? 'op' : ''}" data-a="cifra" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k}">${k}</button>` : '<span></span>').join('')}</div>`;
+  if (!d.conConteo) {
+    const v = parseInt(d.texto || '0', 10);
+    return `<div class="hoja modo-${S.modo}"><div class="contenido">${barraHoja(esc(p ? p.nombre : d.codigo), 'Cuántas lleva')}<div class="desliza"><div class="cifra"><div class="valor num">${d.texto ? esc(d.texto) : '<small>0</small>'}</div></div>${teclado}</div>
+      <div class="pie"><button class="btn lleno ancho" data-a="cifraLista" ${v > 0 ? '' : 'disabled'}>Dejar ${v || ''}</button></div></div></div>`;
+  }
+  const filas = p.caja ? [['cajas', `Cajas de ${p.caja.piezas}`], ['sueltas', 'Sueltas']] : [['sueltas', 'Piezas']];
+  const total = (parseInt(d.cajas || '0', 10) * (p.caja ? p.caja.piezas : 0)) + parseInt(d.sueltas || '0', 10);
+  const casillas = filas.map(([k, t]) => `<button class="caja${d.fila === k ? ' on' : ''}" style="min-height:60px" data-a="filaCifra" data-k="${k}"><span class="radio"></span><span><strong>${t}</strong></span><span class="valor num" style="font-size:26px;font-weight:800">${d[k] || '0'}</span></button>`).join('');
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(esc(p.nombre), 'Lo que hay en este lugar')}<div class="desliza">
+    <div class="cajas" style="margin-bottom:10px">${casillas}</div><div class="fila-total" style="margin:0 4px 10px"><span>Total</span><b class="num">${total} ${total === 1 ? 'pieza' : 'piezas'}</b></div>${teclado}</div>
+    <div class="pie"><button class="btn lleno ancho" data-a="cifraLista" ${total > 0 ? '' : 'disabled'}>${ic('check')}Guardar ${total || ''}</button></div></div></div>`;
+}
+function hojaAbrirDepto() {
+  const abiertos = CONTEOS.filter(t => t.tipo === 'completo').map(t => t.depto);
+  const lista = Object.entries(DEPTOS).filter(([k]) => !abiertos.includes(k));
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja('Abrir un departamento', 'Para el conteo completo')}<div class="desliza"><div class="tareas">
+    ${lista.map(([k, n]) => `<button class="tarea" data-a="abrirDeptoElegido" data-id="${k}"><span class="ic">${ic('conteo')}</span><span><strong>${n}</strong><small>${CATALOGO.filter(p => p.depto === k && !p.base).length * 14} productos · nadie lo está contando</small></span>${ic('atras', 'i ch')}</button>`).join('')}
+    </div><p class="nota" style="margin-top:10px">Cuentan todos los que estén en el wifi de la tienda; las capturas se suman. Revisar las diferencias y cerrarlo es en la caja (Inventario, F4).</p></div></div></div>`;
+}
+
+function hojaContado() {
+  const c = S.conteo;
+  if (!c.activo) return '';
+  const dia = c.activo.tipo === 'dia';
+  const todas = (c.actual ? [{ id: 0, codigo: c.actual.codigo, cant: piezasDe(c.actual), hora: 'ahora', actual: true }] : []).concat(c.capturas);
+  let h = `<div class="hoja completa modo-conteo"><div class="contenido">${barraHoja(esc(c.activo.titulo), `Lo que contaste tú · ${todas.length} ${todas.length === 1 ? 'captura' : 'capturas'}`, 'cerrarHoja', 'atras')}<div class="desliza"><div class="capturas">`;
+  if (!todas.length) h += `<div class="vacio"><strong>Todavía no cuentas nada</strong>Regresa al escáner y escanea el primer producto.</div>`;
+  for (const k of todas) {
+    const p = POR_CODIGO.get(k.codigo);
+    const estado = k.actual ? 'contando, sin guardar' : k.subida ? `${ic('check', 'i ch')}${dia ? 'aplicada' : 'subida'}` : `${ic('subir', 'i ch')}por subir`;
+    const quitar = k.actual || dia ? '<span></span>' : `<button class="btn-ic" data-a="quitarCaptura" data-id="${k.id}" aria-label="Quitar esta captura">${ic('bote')}</button>`;
+    h += `<div class="captura"><div><div class="nom">${esc(p.nombre)}</div><div class="det">${k.hora} · <span class="subida">${estado}</span>${k.cajas ? ` · ${k.cajas} ${k.cajas === 1 ? 'caja' : 'cajas'} + ${k.sueltas}` : ''}</div></div><span class="cant num">${k.cant}</span>${quitar}</div>`;
+  }
+  h += `</div>`;
+  if (dia) {
+    const faltan = c.activo.productos.filter(x => !todas.some(k => k.codigo === x));
+    if (faltan.length) h += `<div class="seccion">Faltan ${faltan.length}</div><div class="capturas">${faltan.map(x => `<div class="captura"><div><div class="nom">${esc(POR_CODIGO.get(x).nombre)}</div><div class="det">${DEPTOS[POR_CODIGO.get(x).depto]}</div></div><span></span><span></span></div>`).join('')}</div>`;
+    h += `<p class="nota" style="margin-top:12px">Cada producto se cuenta una vez al día y se aplica al guardarlo; si quedó mal, se corrige con un ajuste en la caja.</p></div>`;
+  } else {
+    h += `<p class="nota" style="margin-top:12px">Si el mismo producto está en dos lugares, se cuenta en cada uno: las capturas se suman. Quitar una tuya se puede aquí; revisar las diferencias y cerrar el conteo es en la caja (Inventario, F4).</p></div>`;
+  }
+  h += `<div class="pie"><button class="btn borde ancho" data-a="salirConteo">Terminé mi parte</button></div></div></div>`;
+  return h;
+}
+
+function hojaMenu() {
+  const per = PERSONAS[S.persona];
+  const red = S.red === 'buena' ? 'Conectado a la caja principal · 12 ms' : S.red === 'lenta' ? 'Red lenta: el ticket y el conteo esperan su turno' : 'Sin red: el precio y la búsqueda siguen con la copia';
+  return `<div class="hoja"><div class="contenido"><div class="barra"><button class="btn-ic" data-a="cerrarHoja" aria-label="Cerrar">${ic('cerrar')}</button><h2>Este celular</h2></div><div class="desliza">
+    <div class="yo"><span class="letra">${per.letra}</span><div><strong>${per.nombre}</strong><small>${esc(per.detalle)} · entró a las 9:02</small></div></div>
+    <div class="menu-lista">
+      <button data-a="cambiarPersona">${ic('cambiar')}<span>Cambiar de persona<small>La ficha y el PIN, como en la caja</small></span></button>
+      <button data-a="ajustes">${ic('ajustes')}<span>Ajustes<small>Bip, vibración, linterna, la caja principal y el catálogo</small></span></button>
+      <button data-a="nada">${ic('wifi')}<span>La red<small>${red}</small></span></button>
+      <button data-a="bloqueo">${ic('celular')}<span>Del bolsillo al precio<small>El mosaico «Precio» sobre el bloqueo</small></span></button>
+      <button data-a="salir">${ic('salir')}<span>Salir<small>La siguiente persona entra con su ficha</small></span></button>
+    </div></div></div></div>`;
+}
+
+/* ——— Pantallas completas ——— */
+function pantallaEntrada() {
+  const elegida = PERSONAS[S.fichaElegida];
+  let h = barraEstado(true) + `<div class="pantalla"><h1>¿Quién atiende?</h1><p class="lead">Toca tu ficha y escribe tu PIN: entra sola con la cuarta cifra.</p><div class="fichas">`;
+  for (const [id, p] of Object.entries(PERSONAS)) h += `<button class="ficha${S.fichaElegida === id ? ' on' : ''}" data-a="ficha" data-id="${id}" aria-pressed="${S.fichaElegida === id}"><span class="letra">${p.letra}</span>${p.nombre}</button>`;
+  h += `</div><div class="puntos" aria-label="${S.pin.length} de 4 cifras">${[0, 1, 2, 3].map(i => `<i class="${i < S.pin.length ? 'on' : ''}"></i>`).join('')}</div><div class="pin-error" role="alert">${esc(S.pinError)}</div>`;
+  h += `<p class="nota centro">PIN de ${elegida.nombre}. En el prototipo entra cualquiera de 4 cifras.</p>`;
+  h += `<div class="numerico">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map(k => k ? `<button data-a="pin" data-k="${k}" aria-label="${k === '⌫' ? 'Borrar' : k}">${k}</button>` : '<span></span>').join('')}</div></div><div class="barra-gestos"></div>`;
+  return h;
+}
+function pantallaAlta() {
+  if (S.pasoAlta === 0 && S.escanerAlta) {
+    return barraEstado(false) + `<div class="app">${visor()}<section class="panel modo-ticket"><span class="asidero"></span><div class="cuerpo"><div class="vacio"><strong>Escanea el código de la caja</strong>En la caja: Configuración › Celulares › «Dar de alta un celular». Quien lo pide ahí ya entró con su PIN y su permiso.</div></div><div class="acciones"><button class="btn borde crece" data-a="altaSinQr">Escribir la dirección</button></div></section></div><div class="barra-gestos"></div>`;
+  }
+  const hecho = i => S.pasoAlta > i ? ' hecho' : '';
+  let h = barraEstado(true) + `<div class="pantalla"><h1>Conectar con la tienda</h1><p class="lead">Una sola vez por celular. Después cada quien entra con su ficha y su PIN, como en la caja.</p>`;
+  h += `<div class="paso-alta${hecho(0)}"><span class="n">${S.pasoAlta > 0 ? ic('check', 'i ch') : 1}</span><div><strong>Escanear el código de la caja</strong><span>Lo enseña la caja en Configuración › Celulares. Trae la dirección de la caja principal y un permiso de un solo uso, que vence en 10 minutos.</span></div></div>`;
+  h += `<div class="paso-alta${hecho(1)}"><span class="n">${S.pasoAlta > 1 ? ic('check', 'i ch') : 2}</span><div><strong>Permitir «Dispositivos cercanos»</strong><span>Android 17 lo pide para hablar con la caja principal por el wifi de la tienda. Solo se usa para eso: la app no sale a internet.</span></div></div>`;
+  h += `<div class="paso-alta${hecho(2)}"><span class="n">3</span><div><strong>Bajar el catálogo</strong><span>Los productos, sus códigos y precios, y las fotos (unos 9 MB). Así el precio y la búsqueda salen al instante, también sin red.</span></div></div>`;
+  h += `<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:16px">`;
+  if (S.pasoAlta === 0) h += `<button class="btn lleno ancho" data-a="altaEscanear">${ic('qr')}Escanear el código de la caja</button><button class="btn borde ancho" data-a="altaSinQr">Escribir la dirección y el PIN</button>`;
+  else if (S.pasoAlta === 1) h += `<button class="btn lleno ancho" data-a="altaPermiso">${ic('cercanos')}Continuar</button>`;
+  else h += `<div class="nota centro"><span class="girando" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>Bajando el catálogo… 4,212 de 5,832 productos</div><button class="btn lleno ancho" data-a="altaLista">Listo: ¿quién atiende?</button>`;
+  h += `</div></div><div class="barra-gestos"></div>`;
+  return h;
+}
+function pantallaBloqueo() {
+  return `<div class="bloqueo"><div class="hora">14:52</div><div class="fecha">martes, 3 de noviembre</div>
+    <div class="rapidos"><div class="mosaico">${ic('wifi')}<span>Wi-Fi<small>Papelería</small></span></div><div class="mosaico">${ic('linterna')}<span>Linterna</span></div>
+    <button class="mosaico on" data-a="rapidoPrecio">${ic('precio')}<span>Precio<small>Papelería POS</small></span></button><div class="mosaico">${ic('celular')}<span>No molestar</span></div></div>
+    <p class="aviso-bloqueo">El celular sigue bloqueado: toca el mosaico «Precio».</p></div><div class="barra-gestos sobre-negro"></div>`;
+}
+function pantallaAjustes() {
+  const fila = (t, s, on) => `<div class="ajuste"><div><strong>${t}</strong><small>${s}</small></div>${on == null ? ic('atras', 'i ch') : `<span class="interruptor${on ? ' on' : ''}"></span>`}</div>`;
+  return barraEstado(true) + `<div class="pantalla" style="padding-top:calc(var(--sb) + 4px)"><div class="barra" style="display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -12px"><button class="btn-ic" data-a="cerrarAjustes" aria-label="Regresar">${ic('atras')}</button><h2 style="margin:0;font-size:22px;font-weight:600">Ajustes</h2></div>
+    <div class="seccion">Al leer</div>${fila('Vibración', 'Al leer cada código', true)}${fila('Bip', 'Apagado de fábrica: basta la vibración', false)}${fila('Linterna automática', 'Se enciende sola con poca luz', false)}
+    <div class="seccion">Este celular</div>${fila('Caja principal', '192.168.1.106 · conectado', null)}${fila('Catálogo', '5,832 productos · al día (hace 1 min)', null)}${fila('Nombre del celular', 'Celular de Ana', null)}
+    <div class="seccion">Herramientas de medición</div>${fila('Sesión de prueba, banco y estrés', 'Las de hoy, para medir el escáner en la tienda', null)}${fila('El escáner', 'Motor, lente, resolución y cuadros por segundo', null)}
+    <p class="nota" style="margin-top:12px">Lo de la cámara y los motores no cambia: está como se midió.</p></div><div class="barra-gestos"></div>`;
+}
+function dialogo() {
+  if (S.dialogo === 'cercanos') return `<div class="dialogo"><div><div class="ic">${ic('cercanos')}</div><h3>¿Permitir que Papelería POS encuentre dispositivos cercanos, se conecte a ellos y determine su posición relativa?</h3><div class="opciones"><button data-a="permitir">Permitir</button><button data-a="noPermitir">No permitir</button></div></div></div>`;
+  if (S.dialogo === 'abrir') return `<div class="dialogo"><div><div class="ic">${ic('candado')}</div><h3>Desbloquea para abrir la app</h3><p>Con la huella, el rostro o el PIN del celular (no el del POS).</p><div class="opciones"><button data-a="desbloquear">Desbloquear (prototipo)</button><button data-a="cerrarDialogo">Cancelar</button></div></div></div>`;
+  return '';
+}
+function precioGrande() {
+  const p = POR_CODIGO.get(S.precio);
+  if (!p) return '';
+  return `<button class="precio-grande" data-a="cerrarGrande" aria-label="Cerrar el precio grande"><span class="n">${esc(p.nombre)}</span><span class="m num">${dinero(p.precio)}</span>${p.mayoreo ? `<span class="y">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>` : ''}<span class="y" style="font-size:14px;margin-top:20px">Toca para regresar</span></button>`;
+}
+
+/* ——— Acciones ——— */
+function lineaPorId(id) { return S.ticket.find(l => l.id === Number(id)); }
+const A = {
+  nada() {},
+  leer() { leer(); },
+  linterna() { S.escaner.linterna = !S.escaner.linterna; pintarEscaner(); },
+  modo(d) {
+    if (S.modo === d.v) return;
+    S.modo = d.v; S.hoja = null;
+    if (d.v !== 'conteo') { /* lo que se contaba se queda: al volver sigue ahí */ }
+    pintar();
+  },
+  verTicket() { S.hoja = 'ticket'; pintar(); },
+  cerrarHoja() { S.hoja = null; S.hojaDatos = null; S.busqueda = ''; pintar(); },
+  menos(d) { const l = lineaPorId(d.id); if (!l) return; recordar(); if (l.cant > 1) l.cant--; else { S.ticket = S.ticket.filter(x => x !== l); toast('Quitado del ticket', 'Deshacer', () => A.deshacer()); } pintar(); },
+  mas(d) { const l = lineaPorId(d.id); if (!l) return; recordar(); l.cant++; pintar(); },
+  deshacer() { const u = S.deshacer.pop(); if (!u) return; const x = JSON.parse(u); S.ticket = x.t; S.impresiones = x.i; S.toast = null; pintar(); },
+  vaciar() { recordar(); S.ticket = []; S.impresiones = []; S.hoja = null; toast('Ticket vacío', 'Deshacer', () => A.deshacer()); pintar(); },
+  teclearCant(d) { const l = lineaPorId(d.id); S.hojaAnterior = S.hoja; S.hoja = 'cantidad'; S.hojaDatos = { codigo: l.codigo, id: l.id, texto: '', conConteo: false }; pintar(); },
+  teclearConteo() {
+    const a = S.conteo.actual, p = POR_CODIGO.get(a.codigo);
+    S.hoja = 'cantidad';
+    S.hojaDatos = { codigo: a.codigo, conConteo: true, cajas: a.cajas ? String(a.cajas) : '', sueltas: a.sueltas ? String(a.sueltas) : '', fila: p.caja ? 'cajas' : 'sueltas', nuevo: true };
+    pintar();
+  },
+  filaCifra(d) { S.hojaDatos.fila = d.k; S.hojaDatos.nuevo = true; pintar(); },
+  cifra(d) {
+    const h = S.hojaDatos; if (!h) return;
+    if (h.conConteo) {
+      const k = h.fila;
+      if (h.nuevo && d.k !== '⌫') h[k] = '';
+      h.nuevo = false;
+      if (d.k === '⌫') h[k] = (h[k] || '').slice(0, -1); else if ((h[k] || '').length < 5) h[k] = (h[k] || '') + d.k;
+    } else if (d.k === '⌫') h.texto = h.texto.slice(0, -1);
+    else if (h.texto.length < 5) h.texto += d.k;
+    pintar();
+  },
+  cifraLista() {
+    const h = S.hojaDatos;
+    if (h.conConteo) {
+      const a = S.conteo.actual; a.cajas = parseInt(h.cajas || '0', 10); a.sueltas = parseInt(h.sueltas || '0', 10);
+      S.hoja = null; S.hojaDatos = null; guardarCaptura(); pintar(); return;
+    }
+    const v = parseInt(h.texto || '0', 10); if (!(v > 0)) return;
+    recordar(); const l = lineaPorId(h.id); if (l) l.cant = v; S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null;
+    S.hojaDatos = null; pintar();
+  },
+  buscar() { S.hojaAnterior = S.hoja; S.hoja = 'buscar'; S.busqueda = ''; pintar(); },
+  limpiarBusqueda() { S.busqueda = ''; pintar(); },
+  tecla(d) { S.busqueda = d.k === 'borrar' ? S.busqueda.slice(0, -1) : S.busqueda + d.k; pintar(); },
+  elegir(d) {
+    const c = d.c;
+    if (S.busqueda.trim() && !S.elegidos.includes(c)) S.elegidos.push(c);
+    S.busqueda = '';
+    if (S.modo === 'ticket') { agregarAlTicket(c); S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null; }
+    else if (S.modo === 'precio') { S.precio = c; S.hoja = null; }
+    else { if (!S.conteo.activo) { S.hoja = null; toast('Primero elige qué vas a contar.'); } else { aplicarLectura(c); S.hoja = null; } }
+    pintar();
+  },
+  impresiones() { S.hojaAnterior = S.hoja; S.hoja = 'impresiones'; S.hojaDatos = []; S.filtroPc = 'todas'; pintar(); },
+  filtroPc(d) { S.filtroPc = d.v; pintar(); },
+  elegirTrabajo(d) { const a = S.hojaDatos; const i = a.indexOf(d.id); if (i >= 0) a.splice(i, 1); else a.push(d.id); pintar(); },
+  elegirLote(d) { const ids = d.ids.split(','); const a = S.hojaDatos; const todos = ids.every(x => a.includes(x)); ids.forEach(x => { const i = a.indexOf(x); if (todos && i >= 0) a.splice(i, 1); if (!todos && i < 0) a.push(x); }); pintar(); },
+  agregarImpresiones() { recordar(); S.impresiones.push(...S.hojaDatos); const n = S.hojaDatos.length; S.hojaDatos = null; S.hoja = S.hojaAnterior === 'ticket' ? 'ticket' : null; S.enviado = null; toast(`${n} ${n === 1 ? 'impresión agregada' : 'impresiones agregadas'} al ticket`, 'Deshacer', () => A.deshacer()); pintar(); },
+  verImpresiones() { S.hoja = 'verImpresiones'; pintar(); },
+  quitarTrabajo(d) { recordar(); S.impresiones = S.impresiones.filter(x => x !== d.id); S.hoja = S.impresiones.length ? 'verImpresiones' : 'ticket'; pintar(); },
+  mandar() { if (!piezasTicket()) return; S.hojaAnterior = S.hoja; S.hoja = 'mandar'; pintar(); },
+  elegirCaja(d) { S.cajaElegida = Number(d.id); pintar(); },
+  enviar() {
+    S.enviando = true; pintar();
+    despues(S.red === 'lenta' ? 1600 : 500, () => {
+      S.enviando = false;
+      if (S.red === 'caida') { S.hoja = 'mandar'; pintar(); return; }
+      const caja = CAJAS.find(x => x.id === S.cajaElegida);
+      S.enviado = { caja: caja.nombre, n: piezasTicket(), total: totalTicket() };
+      caja.esperan++;
+      S.ticket = []; S.impresiones = []; S.deshacer = []; S.hoja = null; vibrar(30);
+      pintar();
+    });
+  },
+  mostrarQr() { S.qr = true; S.hoja = null; pintar(); },
+  qrLeido() { S.qr = null; S.enviado = { caja: 'la caja (por QR)', n: piezasTicket(), total: totalTicket() }; S.ticket = []; S.impresiones = []; S.deshacer = []; pintar(); },
+  qrCerrar() { S.qr = null; S.hoja = 'ticket'; pintar(); },
+  agregarDePrecio() { if (POR_CODIGO.has(S.precio)) { agregarAlTicket(S.precio, 1, true); pintar(); } },
+  agrandar() { S.precioGrande = true; pintar(); },
+  cerrarGrande() { S.precioGrande = false; pintar(); },
+  abrirConteo(d) {
+    const t = CONTEOS.find(x => x.id === d.id);
+    if (S.conteo.activo !== t) { S.conteo.capturas = []; S.conteo.porSubir = 0; }
+    S.conteo.activo = t; S.conteo.actual = null; S.indices.conteo = 0; pintar();
+    if (t.tipo === 'dia') toast('Escanea los de la lista; arriba dice cuántos van y «›» enseña cuáles faltan.');
+  },
+  abrirDepto() { S.hoja = 'abrirDepto'; pintar(); },
+  abrirDeptoElegido(d) {
+    const t = { id: d.id, tipo: 'completo', depto: d.id, titulo: `${DEPTOS[d.id]} · conteo completo`, detalle: `Lo abrió ${PERSONAS[S.persona].nombre} a las ${horaAhora()}`, total: CATALOGO.filter(p => p.depto === d.id && !p.base).length * 14, contados: 0 };
+    CONTEOS.push(t); S.hoja = null; A.abrirConteo({ id: t.id });
+  },
+  menosConteo() { const a = S.conteo.actual; if (!a) return; if (a.sueltas > 0) a.sueltas--; else if (a.cajas > 0) a.cajas--; if (piezasDe(a) <= 0) S.conteo.actual = null; pintar(); },
+  guardarConteo() { guardarCaptura(); pintar(); },
+  verContado() { if (!S.conteo.activo) return; S.hoja = 'contado'; pintar(); },
+  quitarCaptura(d) { const c = S.conteo; const k = c.capturas.find(x => x.id === Number(d.id)); if (!k) return; c.capturas = c.capturas.filter(x => x !== k); if (!k.subida) c.porSubir = Math.max(0, c.porSubir - 1); toast('Captura quitada: ya no se suma'); pintar(); },
+  salirConteo() { guardarCaptura(); S.conteo.activo = null; S.hoja = null; toast('Tu parte quedó guardada. El encargado revisa y cierra en la caja.'); pintar(); },
+  menu() { S.hoja = 'menu'; pintar(); },
+  cambiarPersona() { S.hoja = null; S.pantalla = 'entrada'; S.pin = ''; S.pinError = ''; S.fichaElegida = S.persona; pintar(); },
+  salir() { A.cambiarPersona(); },
+  ficha(d) { S.fichaElegida = d.id; S.pin = ''; S.pinError = ''; pintar(); },
+  pin(d) {
+    if (d.k === '⌫') S.pin = S.pin.slice(0, -1); else if (S.pin.length < 4) S.pin += d.k;
+    if (S.pin.length === 4) {
+      const nuevo = S.fichaElegida;
+      despues(160, () => {
+        if (nuevo !== S.persona && S.conteo.activo) { guardarCaptura(); S.conteo = { ...S.conteo, activo: null, actual: null, capturas: [] }; }
+        S.persona = nuevo; S.pantalla = 'escaner'; S.pin = ''; S.toast = null; pintar();
+      });
+    }
+    pintar();
+  },
+  ajustes() { S.hoja = null; S.pantalla = 'ajustes'; pintar(); },
+  cerrarAjustes() { S.pantalla = 'escaner'; pintar(); },
+  bloqueo() { S.hoja = null; S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; pintar(); },
+  rapidoPrecio() { S.rapidoBloqueo = true; S.precioAntes = S.precio; S.precio = null; S.indices.precio = 0; pintar(); },
+  cerrarRapido() { S.rapidoBloqueo = false; S.precio = S.precioAntes || null; pintar(); },
+  abrirDesdeBloqueo() { S.dialogo = 'abrir'; pintar(); },
+  desbloquear() { S.dialogo = null; S.rapidoBloqueo = false; S.pantalla = 'escaner'; S.modo = 'precio'; pintar(); },
+  cerrarDialogo() { S.dialogo = null; pintar(); },
+  altaEscanear() { S.escanerAlta = true; pintar(); },
+  altaSinQr() { toast('En la app: la dirección de la caja principal (o «Buscar en la red») y el PIN de quien puede dar de alta cajas.'); pintar(); },
+  altaPermiso() { S.dialogo = 'cercanos'; pintar(); },
+  permitir() { S.dialogo = null; S.pasoAlta = 2; pintar(); },
+  noPermitir() { S.dialogo = null; toast('Sin ese permiso la app no puede hablar con la caja. Se vuelve a pedir al tocar «Continuar».'); pintar(); },
+  altaLista() { S.pantalla = 'entrada'; S.dadoDeAlta = true; S.escanerAlta = false; pintar(); },
+  toast() { const t = S.toast; S.toast = null; if (t && t.f) t.f(); else pintar(); },
+};
+tel.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]');
+  if (!b || b.disabled) return;
+  const f = A[b.dataset.a];
+  if (f) f(b.dataset);
+});
+tel.addEventListener('input', e => { if (e.target.id === 'busqueda') { S.busqueda = e.target.value; const pos = e.target.selectionStart; pintar(); const q = tel.querySelector('#busqueda'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } } });
+tel.addEventListener('keydown', e => {
+  if (e.target.id === 'busqueda' && e.key === 'Enter') { const r = buscarEn(S.busqueda)[0]; if (r) A.elegir({ c: r.codigo }); e.preventDefault(); }
+  if (e.key === 'Escape' && S.hoja) { A.cerrarHoja(); }
+});
+
+/* Mientras se ve el visor, la tecla Espacio «lee» (en la PC) */
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, select, textarea')) return;
+  if (e.key === ' ' && tel.querySelector('.franja .tocar') && !S.hoja) { e.preventDefault(); leer(); }
+});
+
+/* ——— La barra y la guía del prototipo ——— */
+const sel = $('#leer-codigo');
+sel.innerHTML = TODOS.filter(p => !p.rapido).map(p => `<option value="${p.codigo}">${esc(p.nombre)}</option>`).join('') + `<option value="${SIN_REGISTRAR}">Código que no está en el catálogo</option>`;
+const PROTO = {
+  red(v) { S.red = v; if (v !== 'caida' && S.conteo.porSubir) { despues(900, () => { S.conteo.capturas.forEach(k => k.subida = true); S.conteo.porSubir = 0; pintar(); }); } pintar(); },
+  pos(v) { S.pos = v; if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null }; } } S.hoja = S.hoja === 'mandar' ? 'mandar' : S.hoja; pintar(); },
+  tam(v) { S.tam = v; pintar(); ajustarEscala(); },
+  tema(v) { S.tema = v; guardar('tema', v); const r = document.documentElement; if (v === 'sistema') delete r.dataset.theme; else r.dataset.theme = v === 'oscuro' ? 'dark' : 'light'; pintar(); },
+  leer() { if (S.pantalla === 'escaner' || S.rapidoBloqueo) leer(sel.value); },
+  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = CONTEOS_INICIO(); pintar(); pintarGuia($('#guia')); },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-p]');
+  if (!b) return;
+  const f = PROTO[b.dataset.p]; if (f) f(b.dataset.v);
+  pintarProto();
+});
+function pintarProto() {
+  document.querySelectorAll('[data-p][data-v]').forEach(b => {
+    const k = b.dataset.p; const on = (k === 'red' && S.red === b.dataset.v) || (k === 'tam' && S.tam === b.dataset.v) || (k === 'tema' && S.tema === b.dataset.v) || (k === 'pos' && S.pos === b.dataset.v);
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  });
+  document.querySelectorAll('[data-g]').forEach(b => b.classList.toggle('on', b.dataset.g === S.guia));
+}
+
+/* Lo que se puede probar: cada tarea deja la app lista para empezar */
+const GUIA = [
+  { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Toca el botón de las esquinas para enseñárselo grande al cliente.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', '«Al ticket» lo agrega sin salir del precio.'], prep() { S.modo = 'precio'; S.precio = null; } },
+  { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', '«A Caja 2» y «Mandar»: llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
+  { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['En Ticket, la lupa.', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
+  { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['En Ticket, «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
+  { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket arma uno y «Mandar»: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
+  { id: 'conteo', titulo: 'Contar', texto: 'A ciegas, con el contador grande, las cajas y las sueltas. (Ya con «POS: Sin eleventa».)', pasos: ['Elige «Escolar · conteo completo».', 'Toca la franja tres veces: el mismo cuaderno suma ×3, y dice lo que ya contó Luis en otro lugar.', 'Sigue: el lápiz suma sueltas y el código de su caja suma 12. Toca el número para teclear cajas y sueltas.', 'El folder es de Oficina: no entra en Escolar. Al escanear otro producto, lo anterior se guarda solo.', 'Toca el título del conteo: lo que contaste, con «Quitar», y «Terminé mi parte». También prueba «Conteo del día».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; S.persona = 'ana'; } },
+  { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, «A Caja 2»: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta (el inventario está en eleventa).', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
+  { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
+  { id: 'entrada', titulo: 'Entrar y cambiar de persona', texto: 'La ficha y el PIN de 4 cifras, como en la caja.', pasos: ['Toca la ficha de Ana, Carmen o Luis.', 'Teclea 4 cifras: entra sola con la cuarta.', 'Con Ana, en Conteo no sale el conteo completo: no tiene ese permiso.'], prep() { S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; } },
+  { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez: el código de la caja, el permiso de Android y el catálogo.', pasos: ['«Escanear el código de la caja» y toca la franja.', '«Continuar»: Android pide «Dispositivos cercanos».', 'Mientras baja el catálogo ya se puede entrar.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
+];
+function pintarGuia(dest) {
+  const g = GUIA.find(x => x.id === S.guia);
+  let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, la tecla Espacio o la franja «leen» un código; arriba se elige cuál, la red y el tamaño del celular.</p><h3>Tareas</h3><ol>`;
+  for (const t of GUIA) h += `<li><button data-g="${t.id}" class="${S.guia === t.id ? 'on' : ''}"><strong>${t.titulo}</strong><small>${t.texto}</small></button>${S.guia === t.id && g ? `<div class="pasos"><ol>${g.pasos.map(p => `<li>${p}</li>`).join('')}</ol></div>` : ''}</li>`;
+  h += `</ol><p class="pie">La cámara, la franja, la guía y la confirmación verde son las de hoy: el núcleo de reconocimiento no cambia. Propuesta: docs/propuesta-interfaz.md.</p>`;
+  dest.innerHTML = h;
+}
+function elegirGuia(id) {
+  const t = GUIA.find(x => x.id === id);
+  temporizadores.forEach(clearTimeout); temporizadores = [];
+  const keep = { tam: S.tam, tema: S.tema };
+  S = { ...INICIO(), ...keep, guia: id };
+  CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = CONTEOS_INICIO();
+  t.prep();
+  pintar(); pintarGuia($('#guia')); const c = $('#cortina'); if (!c.hidden) pintarCortina();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-g]'); if (!b) return;
+  elegirGuia(b.dataset.g);
+  if (esCelular()) { $('#cortina').hidden = true; }
+});
+
+/* En el celular: el botón de arriba abre la barra y la guía */
+const cortina = $('#cortina');
+function pintarCortina() {
+  cortina.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn tonal" id="cerrar-cortina" type="button">${ic('cerrar')}Regresar a la app</button></div>`;
+  const barra = $('#proto').cloneNode(true); barra.removeAttribute('id');
+  const s2 = barra.querySelector('select'); if (s2) { s2.id = 'leer-codigo-2'; s2.value = sel.value; s2.addEventListener('change', () => { sel.value = s2.value; }); }
+  cortina.appendChild(barra);
+  const g = document.createElement('div'); g.className = 'guia'; pintarGuia(g); cortina.appendChild(g);
+}
+$('#asa').addEventListener('click', () => { pintarCortina(); cortina.hidden = false; });
+cortina.addEventListener('click', e => { if (e.target.closest('#cerrar-cortina') || e.target.closest('[data-p="leer"]')) cortina.hidden = true; });
+
+/* La escala del celular en la PC: que quepa a lo alto */
+function ajustarEscala() {
+  const marco = $('#marco'), soporte = $('#soporte');
+  if (esCelular()) { marco.style.transform = ''; soporte.style.width = soporte.style.height = ''; return; }
+  const w = tel.offsetWidth + 20, h = tel.offsetHeight + 20;
+  const libre = window.innerHeight - $('#proto').offsetHeight - 44;
+  const k = Math.min(1, Math.max(.45, libre / h));
+  marco.style.transform = `scale(${k})`;
+  soporte.style.width = `${w * k}px`; soporte.style.height = `${h * k}px`;
+}
+window.addEventListener('resize', () => { ajustarEscala(); pintar(); });
+
+/* Arranque */
+const temaGuardado = leerGuardado('tema');
+if (temaGuardado) PROTO.tema(temaGuardado);
+pintar(); pintarGuia($('#guia')); ajustarEscala();
+</script>
+</body>
+</html>
