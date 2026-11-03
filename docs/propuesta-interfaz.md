@@ -37,7 +37,7 @@ Lo que se averiguó del POS para esta propuesta (la API, el verificador, las imp
 - **Lo que se pueda, sin red.** La red de la tienda se cae (cuando se va el internet, el wifi de los celulares también):
   el precio, la búsqueda y el ticket siguen; el conteo espera para subirse.
 - **Lo que la persona no puede hacer, no aparece,** como en la caja nueva.
-- **Un solo botón para lo demás,** abajo a la derecha, donde descansa el pulgar: un toque abre tres opciones y pulsar,
+- **Un solo botón para lo demás,** abajo a la derecha, al alcance del pulgar: un toque abre tres opciones y pulsar,
   deslizar y soltar elige una sin mirar ([el botón rápido](#el-botón-rápido)).
 - Se diseñó y se probó a **360 × 740 dp** (un celular chico) y a **448 × 997 dp** (el Pixel 8 Pro).
 
@@ -47,15 +47,15 @@ Las frecuencias son estimadas; se confirman en la tienda.
 
 | # | Necesidad | Qué tan seguido | Cómo queda |
 |---|---|---|---|
-| 1 | Contestar «¿cuánto cuesta?» | Muy seguido | **Precio**: escanear y ver precio, mayoreo, promoción y existencia; ↖ «Enseñar al cliente» lo pone en grande |
+| 1 | Contestar «¿cuánto cuesta?» | Muy seguido | **Precio**: escanear y ver precio, mayoreo, promoción y existencia; ↑ «Enseñar al cliente» lo pone en grande; si se lo lleva, «Al ticket» en la tarjeta |
 | 2 | Pasar lo que lleva el cliente | En cada preventa | **Ticket**: cada código suma uno; lo último arriba, con − y + |
 | 3 | Lo que no se escanea | Seguido | ← «Buscar»: dos pedazos de palabra, con el campo junto al pulgar |
 | 4 | Las impresiones que trae en la mano | Muchas veces al día | ↖ «Impresiones»: las miniaturas en lotes; se tocan las que trae |
 | 5 | Mandarlo a la caja | Al terminar cada ticket | ↑ «Mandar a Caja 2»: la última caja usada ya viene elegida |
 | 6 | Sin red | Unas veces al año, por horas | El ticket como QR para el lector de la caja |
-| 7 | Contar | El conteo del día; el completo, al arrancar y una vez al año | **Conteo**: a ciegas, cajas y sueltas, se guarda solo |
-| 8 | Cambiar de persona | Al cambiar de turno | La ficha y el PIN, como en la caja |
-| 9 | Dar de alta el celular | Una vez | Escanear el código que enseña la caja |
+| 7 | Contar | El conteo del día; el completo, al arrancar y una vez al año | **Conteo**: a ciegas y por lugares, cajas y sueltas; lo de cada lugar se guarda solo |
+| 8 | Entrar | Una vez por turno; en el de la tienda, cada vez que cambia quien cuenta | En el de Luis, su huella; en el de la tienda, la ficha y el PIN para contar, con «Salir» a la vista |
+| 9 | Dar de alta el celular | Una vez | Escanear el código que enseña la caja; la caja confirma «¿Es este?» |
 
 ## La pantalla principal: el escáner con tres modos
 
@@ -75,15 +75,17 @@ Las frecuencias son estimadas; se confirman en la tienda.
 │ │▌$32.00 c/u               [x  1  +]   │ │
 │ │ Cuaderno profesional…  ×2    $92.00  │ │
 │ │ Lápiz HB No. 2         ×1     $5.50  │ │
-│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  los modos y el botón rápido
+│ │ (Precio) (Ticket) (Conteo)    [···]  │ │  los modos y el botón rápido
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-`[L]` la linterna · `[x]` quitar (el bote) · `[ + ]` el botón rápido.
+`[L]` la linterna · `[x]` quitar (el bote) · `[···]` el botón rápido (tres puntos en abanico).
 
-- **Arriba a la izquierda,** la ficha de quien entró: abre «Este celular» (cambiar de persona, ajustes, la red, salir). A
-  su lado, el estado de la red **solo si algo falla** («Red lenta», «Sin red · 3 por subir»), como los chips de la caja.
+- **Arriba a la izquierda,** la ficha de quien entró, con su menú, «Este celular». En el de Luis: Ajustes, la red, del
+  bolsillo al precio y «Cerrar la sesión», sin «Cambiar de persona». En el de la tienda, sin nadie, el ícono de la
+  tienda; con alguien, su ficha y, a 8 dp, «Salir» a la vista ([quién tiene la app](#quién-tiene-la-app)). A su lado,
+  el estado de la red **solo si algo falla** («Red lenta», «Sin red · 3 por subir»), como los chips de la caja.
 - **Arriba a la derecha,** la linterna del escáner, como hoy.
 - **Abajo, el panel del modo** y la barra de modos: **Precio · Ticket · Conteo**. Se cambia tocando el nombre; deslizar
   sobre la cámara no cambia de modo, para no cambiarlo sin querer al apuntar. Si hay un ticket armado, «Ticket» lleva
@@ -92,7 +94,7 @@ Las frecuencias son estimadas; se confirman en la tienda.
   el gesto ([abajo](#el-botón-rápido)).
 - **El asidero** (o tocar el encabezado) abre el modo completo: el ticket entero o lo contado. Mientras está abierto, las
   lecturas no cuentan.
-- **La app abre en el último modo usado.** El mosaico y los accesos directos abren uno en particular
+- **La app abre en el último modo usado** (el celular de la tienda, siempre en Precio). El mosaico y los accesos directos abren uno en particular
   ([del bolsillo al precio](#del-bolsillo-al-precio)).
 - **El panel cabe en el espacio bajo la franja** (unos 280 dp en un celular chico y 360 en el Pixel): el encabezado, lo
   último leído y los modos con el botón rápido. Sin una fila de botones, ese espacio es para la lista. Lo demás se ve
@@ -100,48 +102,330 @@ Las frecuencias son estimadas; se confirman en la tienda.
 
 ### El botón rápido
 
-Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, para usarlo con una mano.
+Lo pidió el dueño (2026-11-03): lo demás de cada modo en un solo botón, abajo a la derecha, para usarlo con una mano.
+Pulsarlo abre tres botones chicos; sin soltar, se desliza hacia uno y al soltar se abre. Con la práctica es un gesto:
+pulsar y deslizar hacia arriba es «mandar», sin buscar con la vista.
 
 ```
 ┌──────────────────────────────────────────┐
-│ ╭──────────────────────────────────────╮ │
-│ │ Ticket · 4 art. ░░░░░░░░░░░ $129.50  │ │  lo de atrás se atenúa
-│ │░░░░░░░░░░░░░ ↑ Mandar a Caja 2  (>)  │ │  ↑ lo principal del modo
-│ │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ │
-│ │░░░░░░░ ↖ Impresiones  (▤)⁶░░░░░░░░░  │ │  ↖ lo segundo
-│ │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │ │
-│ │░░░ ← Buscar  (Q)░░░░░░░░░░░░  [ × ]  │ │  ← siempre buscar
+│ │                                      │ │  la franja sigue a la vista: el menú no la tapa
+│ └──────────────────────────────────────┘ │  ← 68 %
+│ ╭───────────────── ══ ─────────────────╮ │  el velo atenúa solo el panel
+│ │ Ticket · 4 art.             $129.50  │ │
+│ │      [ Pulsa y desliza sin soltar ]  │ │  la pista, mientras se abra con toques
+│ │              [ ↑ Mandar a Caja 2 ]   │ │
+│ │                                (>)   │ │  ↑ lo entrega: abre «¿A qué caja?»
+│ │        [ ↖ Impresiones ] (I)         │ │  ↖ lo propio del modo
+│ │                                      │ │
+│ │          [ ← Buscar ] (Q)     [ × ]  │ │  ← siempre buscar · el abanico cambia a ×
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-- **Uno solo, abajo a la derecha,** donde descansa el pulgar, al final de la barra de modos. Reemplaza la fila de botones
-  que iba bajo la lista.
-- **Un toque abre tres opciones,** cada una con su nombre y su flecha. Se toca una; tocar fuera o el botón otra vez
-  cierra.
-- **Pulsar y deslizar elige sin mirar:** se pulsa el botón, se desliza hacia una opción y se suelta. Cuenta la
-  dirección, no llegar hasta el botoncito: bastan unos 28 dp, y cada dirección acepta un abanico ancho (arriba, la
-  diagonal o la izquierda), así que el gesto no tiene que ser exacto. Una vibración corta al pasar por una opción y otra
-  al elegirla. Es el gesto que se aprende: pulsar y deslizar hacia arriba es «mandar», sin buscar nada con la vista.
-- **Siempre lo mismo en cada dirección:** ← es buscar en los tres modos, ↑ lo principal del modo y ↖ lo segundo.
+`(>)` mandar · `(I)` impresiones · `(Q)` buscar · `[ × ]` el botón rápido, abierto (cerrado es `[···]`: tres puntos en
+abanico). Los modos quedan bajo el velo.
 
-| Modo | ↑ arriba | ↖ diagonal | ← izquierda |
+- **Al final de la barra de modos,** a la derecha, al alcance del pulgar. Reemplaza la fila de botones que iba bajo la
+  lista: el panel gana 68 dp, un renglón más del ticket en los dos celulares (en el chico, de 116 a 184 dp). Flotando
+  sobre el panel taparía los importes y el − y + de los renglones de abajo.
+- **Cabe a 360 dp** (medido con Roboto): quedan 260 dp para los modos, 84 cada uno, y el más ancho, «Conteo» con su
+  icono, mide 71. El número del ticket va sobre el icono, como las burbujas de Material: junto al nombre, «Ticket 14»
+  pide 101 dp y aprieta a los otros dos.
+- **El icono no es un «+».** El + es el «Uno más» del renglón, en la misma columna (en el chico, 130 dp más arriba), y
+  en Precio se leería «agregar». Son tres puntos en abanico, que no salen en otro lado, y cambian a × al abrir.
+
+#### Qué lleva cada modo
+
+| Modo | ↑ Lo entrega | ↖ Lo del modo | ← Buscar |
 |---|---|---|---|
-| Ticket | Mandar a Caja 2 | Impresiones (con cuántas hay por cobrar) | Buscar |
-| Precio | Al ticket (no en el celular de la tienda) | Enseñar al cliente | Buscar |
-| Conteo | Guardar | Lo contado | Buscar lo que no tiene código |
+| Ticket | **Mandar a Caja 2**: abre «¿A qué caja?» | **Impresiones**, con cuántas hay por cobrar | **Buscar** y agregar |
+| Precio | **Enseñar al cliente**: el precio en grande | — | **Buscar** y ver el precio |
+| Conteo completo | **Guardar 13**: guarda lo de este lugar; el renglón de lo último ofrece «Quitar» | **Lo contado** | **Buscar** y contar |
+| Conteo del día | **Es todo · 37**: abre «Aplicar 37 / Falta un lugar» | **Lo contado** | **Buscar** y contar |
 
-- **Cancelar:** soltar hacia abajo o a la derecha, o regresar al botón antes de soltar.
-- **Nada se manda solo:** ↑ en Ticket abre «¿A qué caja?», donde se confirma.
-- **Mientras está abierto,** lo de atrás se atenúa y las lecturas del escáner no cuentan.
-- **Se enseña solo:** la primera vez sale una pista sobre el botón («Pulsa y desliza: ↑ mandar · ↖ impresiones ·
-  ← buscar») y las etiquetas llevan su flecha.
-- **Con TalkBack o con teclado,** el botón abre las tres como botones normales; atrás o Esc lo cierran.
-- **Zurdos:** en Ajustes, «Botón rápido a la izquierda»: el botón pasa a la esquina izquierda y las direcciones van en
-  espejo (↑, ↗, →).
-- **En Compose:** un `pointerInput` con `awaitEachGesture` sobre el botón: el primer toque abre las opciones, cada
-  movimiento calcula el ángulo desde el centro y el sector, y al soltar se elige o se cancela; la vibración con
-  `HapticFeedback`. Como el menú ya está dibujado y solo cambia de estado, el gesto no se corta.
+- **Cada dirección quiere decir siempre lo mismo,** en los tres modos y en los dos celulares, para aprender el gesto una
+  vez: ← busca; ↑ entrega lo que se tiene (el ticket a la caja, el precio al cliente, lo contado al POS); ↖ es lo propio
+  del modo. Si un modo no tiene algo para una dirección, ese lugar queda vacío y se porta como cancelar: las demás no se
+  recorren.
+- **Igual en los dos celulares:** Precio y Conteo son los mismos en el celular de confianza y en el de la tienda, que no
+  tiene Ticket.
+- **«Mandar» entra, en ↑.** Es lo que se hace al terminar cada ticket, y el gesto lo hace sin buscarlo. Un gesto
+  equivocado no manda nada: ↑ abre «¿A qué caja?», donde se toca «Mandar», y esa hoja no acepta el toque de rebote
+  ([cómo se usa](#cómo-se-usa)). Lo que se pierde es ver a qué caja va sin abrir nada; lo dice el nombre de la opción en
+  cuanto se pulsa. En la primera versión solo arman tickets personas de confianza.
+- **En Precio el gesto no cambia nada.** ↑ y ↖ son las direcciones que más se confunden, y en Precio «el precio nunca
+  agrega al ticket». Por eso «Al ticket» sale del botón y va a la vista en la tarjeta del precio, como «Agregarlo al
+  ticket» en el F9 de la caja ([Precio](#precio-el-verificador-f9-en-el-celular)), y ↖ queda vacío.
+- **En Conteo, ↑ depende del conteo** ([el botón rápido en Conteo](#el-botón-rápido-en-conteo)). En el completo guarda
+  directo, porque la captura se quita. En el del día abre la confirmación: el POS no deja corregirlo («Ya se contó hoy:
+  si hubo un error, se corrige con un ajuste»; la diferencia entra al kardex al aplicarlo) y es el total de la tienda,
+  así que aplicar los 13 de un lugar dejaría fuera los 24 de la bodega.
+- **El gesto nunca hace lo que no se corrige:** «Mandar» y «Es todo» se confirman en su hoja, «Guardar» guarda una
+  captura que se quita y lo demás solo abre o enseña.
+- **Lo apagado se ve apagado** y se queda en su lugar, con su razón: «Mandar» con el ticket vacío, «Impresiones» sin
+  red, «Enseñar» sin producto, «Guardar» y «Es todo» sin nada contado.
+- **Sin opciones, sin botón:** en Conteo, mientras no se cuenta nada (antes de elegir qué contar, o en el piloto), el
+  lugar del botón queda vacío. Los modos no se recorren: no se mueven bajo el pulgar al cambiar de modo.
+
+#### Cómo se usa
+
+| Lo que hace la persona | Lo que pasa |
+|---|---|
+| Toca el botón: se mueve menos de 8 dp y suelta antes de 400 ms | Los tres quedan abiertos para tocar uno |
+| Pulsa, desliza hacia una opción (32 dp o más, o hasta quedar encima de ella) y suelta | Se abre esa opción |
+| Pulsa y lo sostiene, o se mueve un poco, y suelta sin llegar a una opción | Se cierra sin hacer nada |
+| Desliza y suelta en el centro, abajo, a la derecha o en un hueco | Se cierra sin hacer nada |
+| Suelta en una opción apagada | Se cierra; vibra de rechazo y un aviso dice por qué |
+| Con el menú abierto, toca una opción | Se abre |
+| Con el menú abierto, toca la ×, fuera o «atrás» | Se cierra |
+| Con el menú abierto, pulsa la × y desliza | Elige, igual que desde cerrado |
+
+- **La regla corta:** solo un toque deja el menú abierto; cualquier otro soltar decide: elige o cierra. Así el pulgar
+  que se apoya al acomodar la mano no deja el menú abierto, y cancelar hacia la orilla funciona aunque de ahí a la
+  orilla no haya 32 dp. Al salir de la app o apagarse la pantalla, se cierra.
+- **Gana la opción bajo el dedo.** Si el dedo está a 28 dp o menos del centro de una opción, se elige esa. Si no está
+  sobre ninguna (el gesto a ciegas), decide el ángulo desde donde se pulsó. Con el puro ángulo, quien apuntaba a lo que
+  veía desde una esquina del botón encendía otra opción: 40 de 867 casos, en una rejilla de 4 dp sobre la zona de
+  toque. Le pasaba a quien aprende, porque el menú sale al instante.
+- **Sale al instante,** como pidió el dueño, sin el retraso de un tercio de segundo de los menús de marcado clásicos.
+  Ese retraso es para no estorbar a quien ya se sabe el gesto; aquí no estorba (tres opciones, lejos del pulgar) y
+  verlas encenderse confirma lo que se va a elegir. El gesto no espera la animación: un deslizamiento rápido elige
+  aunque los botones no hayan terminado de salir.
+- **El rebote no cuenta.** En el chico, «Mandar a Caja 2» va de 581 a 637 dp y «Aplicar 37» de 588 a 644. En el Pixel,
+  «Mandar» va de 856 a 912, y el dedo suelta ↑ entre 857 y 913. Un segundo toque por reflejo confirmaría. Por eso, por
+  300 ms desde que el botón elige o se cierra, solo él responde: la hoja que abrió (tarda 200 ms en subir), el precio en
+  grande, el panel y el aviso no aceptan toques que empiecen en ese tiempo. El botón principal de la hoja se enciende
+  al terminar; la × de arriba de la hoja sí responde.
+- **Las lecturas siguen contando con el menú abierto,** como al tocar − o +. El escáner no se toca: si lee, pinta su
+  verde, y eso la app no lo puede callar; si lo leído no contara, el verde mentiría. Por eso el velo atenúa solo el
+  panel y la franja sigue a la vista. Las etiquetas se ponen al día con cada lectura, sin perder el dedo («Guardar 13»
+  pasa a «Guardar 14»). «Guardar» y «Es todo» usan lo contado al soltar. «Enseñar» enseña el producto que estaba en la
+  tarjeta al bajar el dedo, no uno leído a medio gesto, y la pantalla grande dice su nombre.
+- **Con una hoja o el precio en grande, no cuentan.** El visor queda tapado o atenuado. La vibración sí se puede callar:
+  la app la apaga mientras tanto y al cerrar devuelve la de Ajustes, para no vibrar «leído» por lo que no cuenta. El
+  verde no se puede callar, pero queda bajo la hoja.
+- **En Conteo, la repetición a la vista se apaga al entrar al modo,** una sola vez, si se aprueba
+  ([preguntas de Conteo](#preguntas-de-conteo)): así sostener el producto con el menú abierto no lo cuenta otra vez.
+  Abrir el menú no cambia la configuración del escáner: cambiar la repetición rehace el `Confirmador`, que vuelve a
+  leer lo que está a la vista, y con el producto en la mano sumaría una pieza cada vez.
+- **Los avisos esperan al menú.** Un aviso que llega con el menú abierto no se ve (taparía ↑ y ↖) y su tiempo no corre;
+  sale al cerrarlo, con su tiempo completo. Así «Quitado del ticket · Deshacer» o el «Deshacer» de «Al ticket» no se
+  vencen sin que nadie los vea. En Conteo no hay avisos flotantes: lo último va en su renglón fijo y lo que no va, en el
+  lugar del producto ([la pantalla de Contar](#la-pantalla)).
+
+#### Medidas
+
+| Qué | Medida | Por qué |
+|---|---|---|
+| El botón | 56 dp, esquinas de 16 dp, del color del modo; a 16 dp de la orilla y a 4 dp de la barra de gestos, centrado con los modos | Como el botón flotante de Material y el mínimo de la app para lo principal |
+| Su zona de toque | 64 dp | Que el pulgar le atine a la esquina sin mirar |
+| Los tres chicos | 48 dp; el elegido crece a 56 | Para tocarlos con el menú abierto |
+| Dónde salen | A 88 dp del centro del botón (de centro a centro), a 90°, 135° y 180° | Fuera del pulgar, que llega desde abajo a la derecha; 19 dp entre uno y otro |
+| La zona de cada opción | 28 dp alrededor de su centro (56 de ancho); entre una y otra quedan 11 dp | Con el dedo encima, gana esa. Desde la esquina de la zona de toque se llega con 15 dp, casi el doble del slop |
+| Las etiquetas | 32 dp de alto, 14 sp, con su flecha. La de ↑, arriba de su botón; las de ↖ y ←, a su izquierda | A 88 dp no caben todas a la izquierda: la de ↑ chocaría con el botón de ↖ |
+| Desde dónde se mide el ángulo | Desde donde se pulsó, no desde el centro del botón | Pulsar en la orilla no elige nada |
+| El umbral | 32 dp (5 mm en el Pixel); se desarma bajo 24 dp | Un toque se mueve menos de 8 dp (el slop táctil del sistema): 32 es cuatro veces eso |
+| Un toque | Menos de 8 dp y menos de 400 ms | El slop y la pulsación larga del sistema (`ViewConfiguration`); si la persona alargó la pulsación en Accesibilidad, se respeta |
+| ↑ | De 45° a 112.5° (0° es a la derecha y 90° arriba) | Cada frontera va a medio camino entre dos botones; ↑ se abre hacia la derecha, donde no hay nada |
+| ↖ | De 112.5° a 157.5° | Entre ↑ y ←, partido a la mitad con cada uno |
+| ← | De 157.5° a 225° | Se abre hacia abajo, donde no hay nada |
+| Cancelar | Lo demás (la mitad de abajo a la derecha) y el hueco de un modo | Hacia la orilla, lejos de las opciones |
+| En las fronteras | 4° de histéresis para la opción de antes, que se revisa primero | Que el resaltado y la vibración no tiemblen, de los dos lados de cada frontera |
+| El rebote | 300 ms en que solo responde el botón | Lo que dura un doble toque en Android; la hoja tarda 200 ms en subir |
+
+- **Dónde cae, medido** con Roboto: en el chico (360 × 740) el botón queda en (316, 688); ↑ en (316, 600), ↖ en
+  (254, 626) y ← en (228, 688). Lo más alto del menú, la pista, empieza en 490 (al 200 % va arriba de la etiqueta de
+  ↑, desde unos 465); el panel empieza en 453 y la franja acaba en 443. En el Pixel (448 × 997), el botón en (404, 945)
+  y el menú desde 748; el panel empieza en 630. Nada se encima ni se sale del margen de 16 dp.
+
+#### Lo que se ve y se siente
+
+| Momento | Se ve | Vibra (Android 14 o más) |
+|---|---|---|
+| Pulsar | El velo sobre el panel; los tres salen del botón (150 ms) con su nombre; el abanico cambia a × | Nada |
+| Armarse hacia una opción, o llegar encima de ella | La opción crece y toma el color del modo, con su etiqueta | `GESTURE_THRESHOLD_ACTIVATE` |
+| Pasar a otra opción | Se resalta la nueva | `SEGMENT_TICK` |
+| Volver al centro o ir a cancelar | Nada resaltado; hacia cancelar se marca la × | `GESTURE_THRESHOLD_DEACTIVATE` |
+| Soltar en una opción | Se abre | `GESTURE_END` |
+| Soltar en una apagada | El aviso con la razón | `REJECT` |
+
+- **Distinta del escáner:** la lectura confirma con `CONFIRM` (antes de Android 11, con `VIRTUAL_KEY`). El menú nunca
+  usa esas dos, para no confundir «leído» con «elegido».
+- **En Android viejo:** antes de Android 14 (API 34) no hay `GESTURE_THRESHOLD_*` ni `SEGMENT_TICK`: se usa
+  `CLOCK_TICK` al resaltar y nada al desarmar. Antes de Android 11 (API 30), al elegir vibra `CONTEXT_CLICK` (API 23) y
+  al rechazar `LONG_PRESS`, como el rechazo de `Retroalimentacion`; si en ese celular `CLOCK_TICK` y `CONTEXT_CLICK` se
+  sienten iguales, no se vibra al resaltar. Todas respetan la «Respuesta táctil» del sistema.
+- **Sin animaciones** si el sistema las quitó: el menú aparece y se va de golpe.
+
+#### Accesibilidad y los otros gestos
+
+- **TalkBack:** el botón dice «Opciones del ticket, cerradas»; con doble toque se abren y el estado dice cuáles hay
+  («abiertas: Mandar a Caja 2, Impresiones, Buscar»), en lugar de mover el foco, que TalkBack no siempre sigue. El menú
+  es un grupo con orden fijo: ↑, ↖, ← y la × al final. Las tres también van en las acciones del botón (el menú de
+  TalkBack), para elegir sin abrirlo: es el atajo que equivale al gesto. Las apagadas dicen por qué. Mientras está
+  abierto, el panel de atrás sale del árbol de accesibilidad.
+- **Teclado:** Tab llega al botón; Enter o Espacio abre y lleva el foco a la primera; las flechas y Tab recorren; Enter
+  elige; Esc cierra y regresa al botón.
+- **Letra al 200 %:** las etiquetas crecen (26 sp, 48 dp de alto) y no se enciman: «↑ Enseñar al cliente» cabe arriba
+  de su botón, y la más ancha a la izquierda, «↖ Impresiones», queda dentro del margen de 16 dp. La barra no cabe con
+  nombres e iconos (Android lleva 14 sp a 26 sp y «Conteo» con su icono pide 110 dp de 84): los modos no elegidos se
+  quedan con su icono (48 dp; el nombre, para TalkBack y al dejar el dedo) y el elegido con los dos. 130 + 48 + 48 cabe
+  en 260. Sin el botón tampoco cabría: «Conteo» pediría 110 de 107.
+- **Zurdos:** Ajustes › «Botón rápido a la izquierda», por persona (sin nadie adentro, el del celular). El botón pasa al
+  principio de la barra y todo va en espejo: ↑, ↗ y →, las etiquetas a la derecha y cancelar abajo a la izquierda. ↑
+  sigue entregando y → (hacia el centro) busca.
+- **El arrastre del panel** vive en el asidero y el encabezado, no en la barra. Además el botón se queda con el gesto
+  desde que se pulsa, así que deslizar hacia arriba nunca jala el panel.
+- **El gesto de «atrás»** entra desde la orilla derecha (más ancho si se sube su sensibilidad) y el botón está a 16 dp:
+  su zona de toque cae adentro, y pulsar ahí y deslizar ← sería «atrás». La zona del botón se excluye del gesto
+  (`systemGestureExclusion`, desde Android 10, que es cuando llegó el gesto; Android deja hasta 200 dp por orilla). En
+  zurdo, la orilla izquierda.
+- **El gesto de inicio** (abajo) no se puede excluir: el botón va arriba de la barra de gestos. Deslizar hacia abajo
+  después de pulsar no es inicio, porque empezó en el botón: cancela.
+- **Con el menú abierto,** tocar el visor lo cierra sin enfocar (una capa invisible se queda con ese toque) y los modos
+  quedan bajo el velo.
+
+#### Cómo se aprende
+
+- **El panel vacío lo nombra por lo que hace:** «Escanea lo que lleva el cliente. Buscar, impresiones y mandar: en el
+  botón de abajo a la derecha.» En Precio, «Enseñar y buscar: en el botón de abajo a la derecha» (y, en el celular de
+  confianza, «Si se lo lleva, «Al ticket» en la tarjeta»). En Conteo, igual con lo suyo.
+- **La primera vez en cada modo,** una burbuja sobre el botón dice sus direcciones («Pulsa y desliza: ↑ mandar ·
+  ↖ impresiones · ← buscar»; en Precio, «↑ enseñar · ← buscar»; en el conteo del día, «↑ es todo»). Se va al abrir el
+  menú en ese modo.
+- **Mientras se abra con toques,** arriba del menú sale «Pulsa y desliza sin soltar», hasta que la persona elija tres
+  veces deslizando.
+- **Las pistas van por persona,** como «Botón rápido a la izquierda»: el celular de la tienda lo usan varios por turnos
+  y, por celular, el primero se llevaría las pistas. Ajustes › «Volver a ver las pistas».
+- **Las etiquetas llevan su flecha** («↑ Mandar a Caja 2») y los tres salen del botón hacia su lado: la animación enseña
+  la dirección.
+- **Se mide en la tienda,** en el celular: cuántas veces se abre con toque y cuántas con el gesto, y cuántas veces una
+  opción se cierra en menos de 2 s sin hacer nada (se eligió la que no era). Si ↖ junta los errores, se mueven las
+  fronteras. Son contadores en el celular, sin el nombre de nadie, en Ajustes › Herramientas de medición, y salen solo
+  con el CSV de la sesión de prueba, como las mediciones del escáner: la app no manda estadísticas.
+
+#### Cómo se hace
+
+En Compose, un `pointerInput` sobre el botón. Compose le sigue mandando el dedo al botón aunque salga de él, como hace
+`setPointerCapture` en la web:
+
+```kotlin
+enum class Lugar { ARRIBA, DIAGONAL, LADO }
+
+/** Las opciones respecto al centro del botón, en dp (y crece hacia abajo); en zurdo, en espejo. */
+private val CENTROS = mapOf(
+    Lugar.ARRIBA to Offset(0f, -88f),
+    Lugar.DIAGONAL to Offset(-62.2f, -62.2f),
+    Lugar.LADO to Offset(-88f, 0f),
+)
+
+/** Los sectores, desde donde se pulsó: 0° a la derecha y 90° arriba. Lo demás cancela. */
+private val SECTORES = listOf(
+    Triple(Lugar.ARRIBA, 45.0, 112.5),
+    Triple(Lugar.DIAGONAL, 112.5, 157.5),
+    Triple(Lugar.LADO, 157.5, 225.0),
+)
+
+/** La opción que elige el dedo, o null (cancela). [hay]: las que tiene el modo; el hueco cancela. */
+fun lugarDe(desdeBoton: Offset, desdePulso: Offset, armado: Boolean, antes: Lugar?, hay: Set<Lugar>): Lugar? {
+    // Sobre una opción (a 28 dp de su centro), esa
+    CENTROS.entries.firstOrNull { (l, c) -> l in hay && (desdeBoton - c).getDistance() <= 28f }?.let { return it.key }
+    if (!armado) return null
+    val g = (Math.toDegrees(atan2(-desdePulso.y, desdePulso.x).toDouble()) + 360) % 360
+    // La de antes primero, con 4° de más de cada lado; si no, las demás sin histéresis
+    val s = SECTORES.firstOrNull { (l, de, a) -> l == antes && g >= de - 4 && g < a + 4 }
+        ?: SECTORES.firstOrNull { (_, de, a) -> g >= de && g < a }
+    return s?.first?.takeIf { it in hay }
+}
+
+Modifier
+    .systemGestureExclusion() // «atrás» no se lleva lo que empieza en el botón
+    .pointerInput(zurdo) {
+        awaitEachGesture {
+            val abajo = awaitFirstDown().also { it.consume() } // el panel no se arrastra
+            val yaAbierto = menu.abierto
+            menu.abrir() // al instante; guarda lo que hay en la tarjeta, para «Enseñar»
+            val sx = if (zurdo) -1f else 1f
+            fun enDp(o: Offset) = Offset(o.x * sx, o.y) / density
+            val centro = Offset(size.width / 2f, size.height / 2f)
+            var lugar: Lugar? = null
+            var armado = false
+            var lejos = 0f
+            var ultimo = abajo
+            var cancelado = false
+            while (true) {
+                val c = awaitPointerEvent().changes.firstOrNull { it.id == abajo.id }
+                if (c == null || (!c.pressed && c.isConsumed)) { cancelado = true; break } // el sistema se lo llevó
+                val d = enDp(c.position - abajo.position) // desde donde se pulsó
+                lejos = max(lejos, d.getDistance())
+                armado = d.getDistance() >= (if (armado) 24f else 32f)
+                lugar = lugarDe(enDp(c.position - centro), d, armado, lugar, menu.lugares)
+                menu.resaltar(lugar, cancelar = armado && lugar == null) // vibra solo si cambió
+                c.consume()
+                ultimo = c
+                if (!c.pressed) break
+            }
+            val toque = lejos < viewConfiguration.touchSlop / density &&
+                ultimo.uptimeMillis - abajo.uptimeMillis < viewConfiguration.longPressTimeoutMillis
+            when {
+                cancelado -> menu.cerrar()
+                lugar != null -> menu.elegir(lugar) // la apagada: rechazo y su razón
+                toque && !yaAbierto -> Unit // solo un toque deja abiertas las tres
+                else -> menu.cerrar() // sostuvo, deslizó sin elegir o tocó la ×
+            }
+        }
+    }
+    .focusable()
+    .onKeyEvent {
+        val tecla = it.key == Key.Enter || it.key == Key.NumPadEnter || it.key == Key.Spacebar
+        if (tecla && it.type == KeyEventType.KeyUp) menu.alternar(enfocarLaPrimera = true)
+        tecla // se queda con la tecla al bajar y al subir
+    }
+    .semantics {
+        role = Role.Button
+        contentDescription = "Opciones del ticket"
+        stateDescription = if (menu.abierto) "abiertas: " + menu.opciones.joinToString { it.nombre } else "cerradas"
+        traversalIndex = 3f // en el grupo del menú: después de ↑, ↖ y ←
+        onClick { menu.alternar(); true }
+        customActions = menu.opciones.map { o -> CustomAccessibilityAction(o.nombre) { menu.elegir(o.lugar); true } }
+    }
+```
+
+- **La histéresis** va en `lugarDe`: la opción de antes se revisa primero, con 4° de más de cada lado. Si se revisara en
+  orden, solo valdría en un lado de cada frontera.
+- **Las etiquetas** («Guardar 14») son texto de Compose: se ponen al día con cada lectura sin tocar el `pointerInput`,
+  que sigue con el dedo (su llave es solo `zurdo`).
+- **El grupo del menú:** `isTraversalGroup` en el menú y `traversalIndex` en cada opción (↑, ↖, ←) y en el botón, al
+  final. Mientras está abierto, el panel lleva `hideFromAccessibility()` (Compose del BOM 2026.02).
+- **El rebote:** una capa sobre toda la pantalla, con `awaitFirstDown(pass = PointerEventPass.Initial)`, consume los
+  toques que bajan antes de 300 ms desde que el botón eligió o se cerró, salvo los del botón.
+- **Con una hoja o el precio en grande:** `controlador.configurar(config.copy(vibracion = false))`; al cerrar, la
+  vibración de Ajustes. Cambiar solo eso no rehace el motor ni el `Confirmador` (`Analizador.configurar`). Para esto no
+  se toca `msParaRepetirAVista`. En Conteo, si se aprueba, `msParaRepetirAVista = 0` al entrar al modo y lo de antes al
+  salir.
+- **La vibración,** con `View.performHapticFeedback` y sus revisiones de versión, como `Retroalimentacion`; «atrás» y
+  Esc, con un `BackHandler` mientras está abierto.
+- **El botón y el menú van en la capa de encima del escáner,** sobre el hueco que les deja la barra: así quedan arriba
+  del velo, que cubre el panel.
+- **En el prototipo, lo mismo con Pointer Events:** `pointerdown` abre y llama a `setPointerCapture`; `pointermove`
+  mide desde donde se pulsó y desde el centro del botón (para la zona), entre la escala del marco del celular (en la PC
+  va reducido), para que sean dp; `pointerup` decide y `pointercancel` cierra. El botón lleva `touch-action: none` (si
+  no, el navegador se queda con el deslizamiento) y `navigator.vibrate` vibra en Chrome de Android. Mientras se pulsa,
+  nada rehace el botón: una lectura solo cambia el texto de las etiquetas.
+
+#### Preguntas del botón rápido
+
+- [ ] ¿«Mandar» va dentro del botón rápido, en ↑ (lo propuesto)? Un error solo abre «¿A qué caja?», que no acepta el
+  toque de rebote, y el panel gana un renglón. ¿O siempre a la vista, como antes?
+- [ ] En Precio, ¿«Al ticket» como botón a la vista en la tarjeta, como «Agregarlo al ticket» del F9, con ↑ «Enseñar al
+  cliente» (lo propuesto)? Así el gesto en Precio no cambia nada. ¿O «Al ticket» en ↑, con «Deshacer»?
+- [ ] Con el menú abierto, ¿las lecturas siguen contando (lo propuesto)? El escáner igual pinta su verde.
+- [ ] Con el Pixel en una mano, ¿la esquina de abajo se alcanza bien con el pulgar? Si no, el botón sube a flotar sobre
+  el panel, unos 10 mm más arriba, a cambio de tapar la esquina de la lista.
+- [ ] ¿Se siente bien que el menú salga al instante (lo pedido), o que salga solo si se deja el dedo un momento?
+- [ ] Si se pulsa sin moverse y se suelta después de un momento, ¿el menú se cierra (lo propuesto)? Así el pulgar
+  apoyado no lo deja abierto.
+- [ ] ¿«Botón rápido a la izquierda» y las pistas van por persona (lo propuesto) o por celular?
 
 ### Precio: el verificador (F9) en el celular
 
@@ -153,22 +437,28 @@ Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, par
 │ │         Escolar · 7509990100019      │ │
 │ │         $46.00                       │ │  el precio en grande
 │ │ (Desde 12: $41.00 c/u) (Exist.: 8)   │ │  mayoreo y existencia
-│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ al ticket · ↖ enseñar al cliente · ← buscar
+│ │                       [+ Al ticket]  │ │  como «Agregarlo al ticket» del F9
+│ │ (Precio) (Ticket) (Conteo)    [···]  │ │  ↑ enseñar al cliente · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
+`[···]` el botón rápido (tres puntos en abanico).
+
 - **Escanear solo enseña.** Nada entra al ticket, como el F9 de la caja; el ámbar es el mismo.
 - **Lo que sale:** la foto (la de 240 px que guarda el POS, o las iniciales), el nombre, el departamento y el código, el
   precio en grande, la promoción de hoy, **el mayoreo** («Desde 12: $41.00 c/u») y la existencia («Quedan 1» en ámbar
-  cuando queda poco). El precio es el de lo escaneado: el código de la caja de 12 da el de la caja y, al lado, el de
+  cuando queda poco; en el celular de la tienda no sale, y lo que se está contando dice «Existencia oculta mientras
+  cuentas Escolar · Ya terminé», [a ciegas](#a-ciegas)). El precio es el de lo escaneado: el código de la caja de 12 da el de la caja y, al lado, el de
   cada pieza. Sin redondeo: el redondeo al peso solo se aplica al cobrar en efectivo.
 - **El mayoreo** no lo enseña todavía el F9 de la caja, aunque su propuesta lo pide; en el piso es lo primero que se
   pregunta después del precio («¿y si llevo 12?»).
-- **↖ «Enseñar al cliente»** pone el nombre y el precio a pantalla completa, para voltear el celular. Se toca para
-  regresar.
-- **↑ «Al ticket»** agrega uno sin salir de Precio; el aviso dice cuántos lleva el ticket y ofrece verlo. En el celular
-  de la tienda no está: ahí no hay tickets.
+- **↑ «Enseñar al cliente»** pone el nombre y el precio a pantalla completa, para voltear el celular: el producto que
+  estaba en la tarjeta al bajar el dedo. Se toca para regresar. En Precio, ↖ queda vacío: el gesto no cambia nada.
+- **«Al ticket»,** un botón de la tarjeta como «Agregarlo al ticket» del F9, agrega uno sin salir de Precio. Va al final
+  de los datos, a la derecha (48 dp), y comparte renglón con el último dato si cabe. Su aviso sale arriba, para no tapar
+  el botón (otro toque agrega otro), y nombra el producto: «Cuaderno profesional… al ticket · 5 art. · $97.50», con
+  «Deshacer». En el celular de la tienda y sobre el bloqueo no está.
 - **Lo que no está en el catálogo** lo dice en rojo, con el código, y ofrece buscar por nombre.
 - **Cada consulta cuenta** para «lo más preguntado» de Productos, como en la caja (`POST /api/consultas`).
 
@@ -243,7 +533,7 @@ Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, par
 
 - **↑ «Mandar a Caja 2»** (el botón rápido hacia arriba) abre «¿A qué caja?»: cada caja con quién atiende y cuántos
   tickets esperan; la apagada no se puede elegir. La última usada ya viene elegida, así que casi siempre es tocar
-  «Mandar»: el gesto nunca manda solo.
+  «Mandar»: el gesto nunca manda solo, y la hoja no acepta el toque de rebote (su botón se enciende a los 300 ms).
 - **Llega en espera**, con quien lo mandó en lugar de la hora («Ana · $97.50»), entra con su efecto y no interrumpe el
   cobro de la caja (la propuesta del POS, «Desde el celular»).
 - **Al mandarlo,** el panel dice «Enviado a Caja 2 · 4 art. · $129.50» en verde y el siguiente escaneo empieza otro
@@ -261,9 +551,10 @@ Pedido por el dueño (2026-11-03): lo demás de cada modo en un solo botón, par
 
 ### Conteo
 
-Contar tiene su propia sección, más abajo: [contar](#contar). En corto: a ciegas, la pieza suma una y la caja suma la
-caja, el − quita la última lectura, el conteo completo guarda solo lo de cada lugar y el del día se aplica con «Es
-todo». En el piloto no se cuenta.
+Contar tiene su propia sección, más abajo: [contar](#contar). En corto: a ciegas y por lugares (anaquel, mostrador,
+bodega); la pieza suma una y la caja suma la caja; el − quita la última lectura; el completo guarda solo lo de cada lugar
+y el renglón de lo último lo dice, con «Quitar»; el del día suma los lugares y se aplica con «Es todo». En el piloto no
+se cuenta.
 
 ## Contar
 
@@ -272,14 +563,17 @@ todo». En el piloto no se cuenta.
 > [prototipo](propuesta-interfaz/prototipo.html) se ve con «POS: Sin eleventa», o en el piloto con «Ver cómo se
 > contará».
 
-Lo contado cambia la existencia y no se deshace con un toque: es lo que menos perdona de la app. Por eso la app no
-cambia ninguna regla del POS. Le pone la cámara, las cajas y sueltas, el guardado solo, la bandeja de salida sin red y
-una sola mano.
+Lo contado cambia la existencia y no se deshace con un toque: es lo que menos perdona de la app. La app no inventa
+reglas: usa las del POS y le pone la cámara, las cajas y sueltas, el lugar, el guardado solo, la bandeja de salida sin
+red y una sola mano. Al leer el código del POS salieron huecos que la app sola no cierra (un conteo encima de otro, la
+hora contra la que se compara, quién dice quién cuenta). Esos se le piden al POS
+([lo que pide](#lo-que-pide-al-pos-para-contar)).
 
 ### Lo que ya hace el POS
 
 Leído en su código (`ConteoDepartamento`, `ConteoCiclico`, `RegistroConteoCompleto`, `RegistroConteoCiclico`,
-`TrastiendaEnElPiloto`) y en sus pantallas (`ConteoCompleto`, `ContarDepartamento`, `RevisarConteo`, `ConteoDelDia`):
+`RegistroAjustes`, `SeguridadCajas`, `TrastiendaEnElPiloto`) y en sus pantallas (`ConteoCompleto`, `ContarDepartamento`,
+`RevisarConteo`, `ConteoDelDia`):
 
 | | Conteo del día | Conteo completo |
 |---|---|---|
@@ -287,7 +581,8 @@ Leído en su código (`ConteoDepartamento`, `ConteoCiclico`, `RegistroConteoComp
 | **Quién lo abre** | Nadie: el POS lo arma la primera vez que se pide en el día | Quien tiene «Conteo completo de un departamento» (de inicio, el encargado y el dueño) |
 | **Quién cuenta** | Quien tiene «Contar inventario» (de inicio, todos) | Igual |
 | **Qué se escribe** | El total de la tienda: anaquel, mostrador y bodega | Lo de un lugar. Cada captura se suma a las de todos |
-| **Cuándo entra** | Al guardar: la diferencia entra al kardex en ese momento | Al cerrar: lo contado reemplaza la existencia y lo que nadie contó queda en 0 |
+| **Contra qué se compara** | Lo que dice el sistema al aplicarlo (`ContarAsync`) | Lo que decía el sistema en la primera captura de cada producto (`EsperadoDe`) |
+| **Cuándo entra** | Al aplicar: la diferencia entra al kardex en ese momento | Al cerrar: la diferencia se suma a la existencia de ese momento. Lo que nadie contó queda en 0 |
 | **Si quedó mal** | No se corrige: una vez por producto al día. Es un ajuste en la caja | Se quita la captura (cada quien las suyas; el encargado, cualquiera) y se cuenta otra vez |
 | **A ciegas** | Antes de contar nadie ve el sistema; ya contado, quien ve costos ve la diferencia | Nadie lo ve. El encargado, solo al revisar |
 | **Dónde, hoy** | Solo en la caja: F4 y «Conteo del día: faltan N» al abrir el turno | La caja y la página `/conteo` en el navegador del celular |
@@ -295,8 +590,21 @@ Leído en su código (`ConteoDepartamento`, `ConteoCiclico`, `RegistroConteoComp
 
 - **El completo ya evita duplicados:** cada captura lleva un número que pone quien captura; si llega dos veces, cuenta
   una. El del día no lo tiene.
-- **Se vende mientras se cuenta:** cada producto se compara contra lo que decía el sistema en su primera captura. Lo que
-  se vende o llega después sigue moviendo la existencia.
+- **Se vende mientras se cuenta:** el cierre suma la diferencia contra la primera captura, así que lo que se vende o
+  llega después sigue moviendo la existencia. Por eso importa en qué orden se cuentan los lugares
+  ([el lugar y el orden](#el-lugar-y-el-orden)).
+- **Una corrección en medio se cuenta dos veces.** Si mientras un departamento está abierto el conteo del día o un
+  ajuste corrige uno de sus productos, el cierre lo corrige otra vez. Hay 50 y el sistema dice 40: el anaquel da 20
+  (contra 40), el del día aplica 50, la bodega da 30 y al cerrar queda 50 + (50 − 40) = 60. Hoy nada lo impide: ni la
+  selección del día (`CandidatosAsync`), ni `ContarAsync`, ni los ajustes miran si el departamento está abierto (C9).
+- **El del día compara al aplicarlo:** si el anaquel da 13 a las 10:00, se venden 3 y a las 11:30 se suma la bodega
+  (24), el sistema queda en 37 y hay 34 (C4).
+- **Una captura no dice el lugar** (`CapturaConteo`: producto, cantidad, quién y hora): «Ya van 24» se ve igual si Ana
+  contó la bodega o este mismo anaquel (C11).
+- **Quién cuenta lo dice quien llama.** La API revisa la llave del equipo y el permiso del `UsuarioId` que viene en lo
+  que se manda; la sesión de `SesionesCelular` es solo de la página `/conteo` (el POS supone que los celulares no llaman
+  a la API). Con la llave de un celular se podría cerrar un departamento o ver la revisión (`revision=true`) con el id
+  del dueño (C10).
 - **`/conteo`, hoy:** usuario y PIN escritos; se busca por nombre o se lee con un lector (no hay cámara para códigos);
   una casilla por presentación; se pone al día cada 10 segundos; «Solo lo que falta» y «Lo que capturaste» con
   «Quitar». No tiene el conteo del día. Lo tecleado se pierde si se escanea otro producto antes de guardar.
@@ -305,20 +613,30 @@ Leído en su código (`ConteoDepartamento`, `ConteoCiclico`, `RegistroConteoComp
 
 ### Quién cuenta con el celular
 
-No todos tendrán la app (dueño, 2026-11-03). Conteo aparece si la persona tiene «Contar inventario» y el POS deja contar.
+No todos tendrán la app (dueño, 2026-11-03). Conteo aparece si la persona tiene «Contar inventario» y el POS deja
+contar.
 
 | Celular | Quién | Modos | En Conteo |
 |---|---|---|---|
-| **De alguien de confianza** (la primera versión: el del dueño; en el prototipo, el de Luis) | Su dueño; entra con su PIN, ya viene elegido | Precio, Ticket y Conteo | Lo que dejen sus permisos. El dueño: el del día, contar, abrir departamentos y quitar capturas de otros |
-| **De la tienda** (a futuro) | Varios, por turnos, cada quien con su ficha y su PIN | Solo Precio y Conteo, aunque la persona pueda más | Contar el del día y los departamentos abiertos. Abrir uno, solo quien tenga el permiso |
+| **De alguien de confianza** (la primera versión: el del dueño; en el prototipo, el de Luis) | Su dueño, y nadie más: entra con su huella y el celular sabe de quién es ([entrar](#entrar)) | Precio, Ticket y Conteo | Lo que dejen sus permisos. El dueño: el del día, contar, abrir departamentos y quitar capturas de otros |
+| **De la tienda** (a futuro) | Varios, por turnos. Precio no pide entrar; para contar, cada quien entra con su ficha y su PIN | Solo Precio y Conteo, aunque la persona pueda más | Contar el del día y los departamentos abiertos. Abrir uno, solo quien tenga el permiso |
 | **Los demás** | Su propio celular, sin la app | — | `/conteo` en el navegador |
 
 - **Qué modos tiene el celular de la tienda lo decide el dueño** al darlo de alta (Configuración › Celulares), no quien
-  lo usa.
-- **Por turnos:**
-  - «Cambiar de persona» guarda lo que se estaba contando a nombre de quien sale. Lo del día sin aplicar, lo aplica o lo
-    descarta quien sale.
-  - Cada captura sube a nombre de quien la contó, aunque suba después de que salió.
+  lo usa. El POS lo hace valer: con esa llave no se mandan tickets ni se revisa, cierra o cancela un conteo (C8).
+- **Por turnos, en el de la tienda:**
+  - **Entrar pide red:** el PIN lo revisa la caja principal. En la bodega, con el wifi débil, no se cambia de persona:
+    el celular se pasa en el mostrador. Sin red, la app lo dice antes de pedir el PIN.
+  - **«Salir»** (arriba, junto a su ficha) deja todo a nombre de quien contaba: lo que tenía contando se guarda y lo
+    del día sin aplicar se queda para esa persona. No pregunta nada: quien toca «Salir» puede ser quien llega, y no
+    decide por otro lo que no se deshace.
+  - **«Terminé mi parte y salir»** sí pregunta por lo sin aplicar (aplicar, descartar o seguir contando): lo toca quien
+    contó.
+  - **La sesión se cierra sola** a los 10 minutos sin usarse (avisa un minuto antes), y solo con red: sin red nadie
+    podría volver a entrar. Lo de esa persona queda a su nombre y, al volver, sigue ahí.
+  - **Lo sin aplicar de alguien que salió** no lo aplica nadie más. Si no vuelve ese día, se descarta y se le avisa al
+    entrar otra vez.
+  - **Cada captura sube con la sesión de quien la contó** (C10), aunque suba después de que salió.
   - Lo contado enseña solo lo de quien está.
 
 ### La pantalla
@@ -331,27 +649,39 @@ No todos tendrán la app (dueño, 2026-11-03). Conteo aparece si la persona tien
 │ │  ──────────────────────────────────  │ │  la franja: nada la tapa
 │ └──────────────────────────────────────┘ │  ← 68 %
 │ ╭───────────────── ══ ─────────────────╮ │
-│ │ Escolar · este lugar     37 de 120 › │ │  qué se cuenta y cómo va; se toca: lo contado
+│ │ Escolar · [Anaquel]      37 de 120 › │ │  qué se cuenta, dónde y cómo va
 │ │ ▬▬▬▬▬▬▬▬▬▬────────────────────────── │ │
-│ │ Lápiz HB No. 2         ┌───┐┌──────┐ │ │
-│ │ 1 caja + 1 suelta      │ − ││ × 13 │ │ │  − quita la última lectura · el contador: se toca para teclear
-│ │ Ya van 24: Ana 24  +12 └───┘└──────┘ │ │  lo que contaron otros · lo que sumó la lectura
-│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ guardar · ↖ lo contado · ← buscar
+│ │ Lápiz HB No. 2     +12 ┌───┐┌──────┐ │ │  lo que sumó la lectura, unos segundos
+│ │ 1 caja + 1 suelta      │−12││ × 13 │ │ │  − quita la última lectura · el contador: se toca para teclear
+│ │ Ya van 24: Ana, bodega └───┘└──────┘ │ │  el producto se toca: sus capturas
+│ │ Antes: Goma blanca 1        [Quitar] │ │  lo último guardado: se queda hasta el siguiente
+│ │ (Precio) (Ticket) (Conteo)    [···]  │ │  ↑ guardar · ↖ lo contado · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-- **Arriba, qué se cuenta y cómo va:** «Escolar · este lugar» o «Del día · todo lo que hay», y cuántos van («37 de
-  120»). Se toca, o se jala el asidero, para ver lo contado. Cada conteo lleva su icono y su frase: sus reglas no son las
-  mismas.
-- **El contador grande** (48 sp en el Pixel, 38 en el chico, en violeta): el total del producto, en piezas, metros o
-  kilos. Se toca para teclear. Junto a él, lo que sumó la última lectura: «+1» o «+12 caja».
+- **Arriba, qué se cuenta, dónde y cómo va:** «Escolar · Anaquel» o «Del día · Anaquel», y cuántos van («37 de 120»).
+  El lugar se toca para cambiarlo; lo demás, o el asidero, abre lo contado. Cada conteo lleva su icono y su frase: sus
+  reglas no son las mismas.
+- **El contador grande** (48 sp en el Pixel, 38 en el chico, en violeta): lo de este lugar en el completo y el total de
+  la tienda en el del día, en piezas, metros o kilos. Se toca para teclear. Junto al nombre, unos segundos, lo que sumó
+  la última lectura: «+1» o «+12 caja».
 - **El −** quita la última lectura; si fue la caja, la caja («−12»). Así se deshace una lectura de más sin pensar cuál
   fue.
-- **Debajo del nombre:** cuántas cajas y sueltas son y, en el completo, lo que ya contaron otros de ese producto («Ya van
-  24: Ana 24»). Nunca lo que dice el sistema.
-- **Cabe en el chico:** sin fila de botones, bajo la franja quedan unos 180 dp para el encabezado, el producto y el
-  contador (unos 260 en el Pixel).
+- **El producto se toca entero** (no un enlace chico): sus capturas, con quién, dónde y a qué hora. Debajo del nombre,
+  cuántas cajas y sueltas son y, en el completo, lo que ya contaron otros («Ya van 24: Ana, bodega»). Nunca lo que dice
+  el sistema.
+- **Cuenta lo de aquí aunque ya vaya algo:** «Ya van» dice que alguien pasó, no que este lugar ya se contó. Lo dice la
+  pista la primera vez.
+- **El renglón de lo último,** fijo, encima de los modos. En el completo, «Antes: Goma blanca 1 · Quitar»; en el del
+  día, lo sin aplicar ([abajo](#el-conteo-del-día)). Es de una línea, con el nombre cortado, y se queda hasta el
+  siguiente guardado: no se va por tiempo ni lo tapa otro aviso. «Quitar» quita lo que decía al tocarlo, aunque en ese
+  momento llegue otra lectura. Antes del primer guardado dice la regla: «Escanear otro producto guarda este».
+- **Sin avisos flotantes en Conteo:** lo leído, lo rechazado y lo guardado tienen su lugar en el panel; lo de la red va
+  arriba, en su chip. Nada sube a la franja.
+- **Cabe en el chico:** sin fila de botones, bajo la franja quedan unos 180 dp para el encabezado, el producto, el
+  contador y el renglón de lo último (unos 260 en el Pixel). Con la letra grande se esconde lo de menos
+  ([una mano](#una-mano-letra-grande-y-talkback)).
 - **Muchas iguales: escanear una y teclear.** Pasar 50 lápices uno por uno tarda; escanear uno y teclear «4 cajas y 2»
   es más rápido y más seguro.
 
@@ -362,57 +692,109 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 | | Conteo del día | Conteo completo |
 |---|---|---|
 | **↑** | **Es todo · 37:** pide confirmar y lo aplica | **Guardar 13:** guarda este lugar |
-| **↖** | **Lo contado:** lo mío y lo que falta | Igual |
+| **↖** | **Lo contado:** lo mío y lo que falta | Igual, y lo que está fuera de lugar |
 | **←** | **Buscar** lo que no tiene código | Igual |
 
 - **↑ en el del día pide confirmar,** como ↑ en Ticket abre «¿A qué caja?»: aplicar no se deshace, y un gesto sin mirar
   no debe hacer lo que no se corrige. En el completo guarda directo: una captura se quita.
-- **«Guardar» casi no hace falta:** escanear otro producto guarda el anterior. Es para el último de un lugar.
+- **La etiqueta de ↑ se pone al día** con cada lectura, también con el menú abierto («Guardar 13» pasa a «Guardar 14»), y
+  la hoja «Aplicar» tampoco acepta el toque de rebote.
+- **«Guardar» casi no hace falta:** escanear otro producto guarda el anterior, y también se guarda solo al pausarse el
+  escáner (20 s sin códigos), al salir de Conteo y al apagarse la pantalla. Es para el último de un lugar, antes de
+  cambiar de lugar.
 - **«Contar otra cosa»** (del día a un departamento, o de un departamento a otro) va en lo contado: es de una vez por
   rato.
+- **El gesto no se confunde con «atrás»:** el botón y el arranque de su gesto se excluyen del gesto de atrás de Android
+  (`Modifier.systemGestureExclusion()`, que deja hasta 200 dp por borde); para zurdos, el borde izquierdo.
 
 ```
 ┌──────────────────────────────────────────┐
 │ ╭──────────────────────────────────────╮ │
 │ │ Lápiz HB No. 2: 37 en total          │ │
-│ │ Aquí 13 · antes 24                   │ │
+│ │ 13 aquí + 24 en bodega               │ │
 │ │ Se aplica ya. Si quedó mal, es un    │ │
 │ │ ajuste en la caja.                   │ │
 │ │ [✓ Aplicar 37                      ] │ │  a la altura del pulgar
-│ │ [  Seguir contando                 ] │ │
+│ │ [  Falta un lugar                  ] │ │  se queda sin aplicar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
+
+### El lugar y el orden
+
+```
+┌──────────────────────────────────────────┐
+│ ╭──────────────────────────────────────╮ │
+│ │ Escolar: ¿dónde empiezas?            │ │
+│ │ Primero lo que está a la venta, de   │ │
+│ │ corrido; la bodega al final.         │ │
+│ │ [  Anaquel                         ] │ │  una vez por vuelta; se cambia en el encabezado
+│ │ [  Mostrador                       ] │ │
+│ │ [  Bodega                          ] │ │
+│ ╰──────────────────────────────────────╯ │
+└──────────────────────────────────────────┘
+```
+
+- **El lugar se elige una vez por vuelta,** al empezar a contar: anaquel, mostrador o bodega. Se queda hasta cambiarlo
+  en el encabezado.
+- **Viaja con cada captura** (C11): sale en «Ya van» («Ana 24 · bodega · 10:02»), en lo contado y en la revisión de la
+  caja. Mientras el POS no lo guarde, se queda en el celular: lo mío dice el lugar y lo de otros va sin él.
+- **Primero lo que está a la venta, de corrido; la bodega al final.** El POS compara cada producto contra su primera
+  captura. Si la bodega va primero, lo que se vende antes de contar el anaquel se descuenta dos veces: el sistema dice
+  50, la bodega da 30, se venden 3, el anaquel da 17 y al cerrar queda 47 + (47 − 50) = 44, cuando hay 47. Al revés
+  cuadra: el anaquel da 20, se venden 3, la bodega da 30 y queda 47 + (50 − 50) = 47.
+- **Mientras se cuenta un departamento, no se surte ni se acomoda lo que llega** en sus lugares: lo que pasa de la
+  bodega a un anaquel ya contado se pierde, y lo que llega a un lugar que falta contar se suma dos veces. Lo que llega
+  se deja aparte, o en un lugar ya contado, hasta cerrar.
+- **Un departamento se abre, se cuenta y se cierra** de preferencia el mismo día: entre más dura abierto, más fácil se
+  cruza un surtido o una compra.
+- **Si dos se reparten uno grande,** uno el piso y otro la bodega, la bodega empieza cuando el piso ya terminó.
+- **Volver a un producto en el mismo lugar sigue la cuenta:** «14 · 13 guardadas + 1». Lo nuevo sube como otra captura
+  y se suma; nadie vuelve a contar desde cero. Al teclear, el número es lo de este lugar y reemplaza lo guardado (se
+  quita la captura y sube la nueva, como corrige el POS).
+- **Una lectura de más en medio:** si el mismo producto vuelve en menos de 30 s y en medio hubo una sola lectura de
+  otro, el renglón de lo último pregunta «¿La goma (1) fue de más? · Quitar».
+- **El del día también va por lugares:** «13 aquí + 24 en bodega = 37». El orden es el mismo; con C4, el POS compara
+  contra lo que había al contar el primer lugar.
 
 ### El conteo del día
 
 ```
 ┌──────────────────────────────────────────┐
 │ ╭───────────────── ══ ─────────────────╮ │
-│ │ Del día · todo lo que hay  3 de 15 › │ │
-│ │ Lápiz HB No. 2         ┌───┐┌──────┐ │ │
-│ │ Aquí 13 · antes 24     │ − ││ × 37 │ │ │  el total de todos los lugares
-│ │ 1 sin aplicar: Goma    └───┘└──────┘ │ │  lo contado que falta aplicar
-│ │ (Precio) (Ticket) (Conteo)    [ + ]  │ │  ↑ es todo · ↖ lo contado · ← buscar
+│ │ Del día · [Anaquel]        3 de 15 › │ │
+│ │ Lápiz HB No. 2     +12 ┌───┐┌──────┐ │ │
+│ │ 13 aquí + 24 en bodega │−12││ × 37 │ │ │  el total: lo de aquí más lo de otros lugares
+│ │ 1 caja + 1 suelta aquí └───┘└──────┘ │ │
+│ │ Goma: 4 · hace 3 min     [¿Es todo?] │ │  lo sin aplicar y cuánto lleva; a los 10 min, en ámbar
+│ │ (Precio) (Ticket) (Conteo)    [···]  │ │  ↑ es todo · ↖ lo contado · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
 ```
 
-1. **Sin elegir:** si no hay departamentos abiertos (lo de todos los días, después del arranque), Conteo es el conteo del
-   día.
+1. **Sin elegir:** si no hay departamentos abiertos (lo de todos los días, después del arranque), Conteo es el conteo
+   del día. La primera vez del día pregunta el lugar.
 2. **Escanear uno de los 15:** empieza su contador. Lo contado › «Falta» dice cuáles faltan y de qué departamento son.
-3. **Todo lo que hay:** se sigue escaneando o tecleando en el mostrador y en la bodega. El contador lleva el total
-   («aquí 13 · antes 24»).
-4. **Escanear otro de los 15 no aplica el anterior:** queda «sin aplicar» y, al volver a escanearlo, sigue donde iba.
-5. **↑ «Es todo · 37»** pide confirmar y lo aplica. Quien ve los costos (de inicio, el dueño y el encargado) ve después lo
-   que tenía el sistema y la diferencia, como en la caja.
-6. **Lo que no se encuentra:** en lo contado › «Falta» se toca y se aplica 0: «no hay».
-7. **Lo que no va:** uno que no está en los 15 de hoy, o uno que ya contó alguien («Ya lo contó Carmen a las 11:02»).
-8. **Lo sin aplicar se recuerda:** en el encabezado, al cambiar de persona y con «Terminé mi parte». Lo que quedó de otro
-   día se descarta con aviso: el conteo cambia cada día.
+3. **Todo lo que hay:** se sigue en el mostrador y en la bodega, cambiando el lugar. El contador lleva el total («13
+   aquí + 24 en bodega»).
+4. **Escanear otro de los 15 no aplica el anterior:** el renglón de lo último lo dice al momento, con cuánto lleva
+   («Goma: 4 · hace 3 min · ¿Es todo?»). Al volver a escanearlo, sigue donde iba. Antes del primero, el renglón dice la
+   regla: «Escanear otro no lo aplica; se aplica con Es todo».
+5. **A los 10 minutos** el renglón se pone en ámbar y vibra una vez. También lo recuerdan un número en la pestaña
+   Conteo, salir de Conteo, atrás y «Terminé mi parte».
+6. **↑ «Es todo · 37»,** o «¿Es todo?» del renglón, pide confirmar: «Aplicar 37» o «Falta un lugar» (sigue sin
+   aplicar). Quien ve los costos (de inicio, el dueño y el encargado) ve después lo que tenía el sistema y la
+   diferencia, como en la caja.
+7. **Lo que no se encuentra:** en lo contado › «Falta» se toca, se teclea 0 y se aplica: «no hay».
+8. **Lo que no va:** uno que no está en los 15 de hoy; uno que ya contó alguien («Ya lo contó Carmen a las 11:02»); uno
+   de un departamento abierto («Escolar se está contando completo: se cuenta ahí»), que en «Falta» sale en gris.
+9. **Lo sin aplicar nunca se aplica solo.** Lo que quedó de otro día se descarta con aviso: el conteo cambia cada día.
 
 - **Por qué no se aplica solo:** el del día es el total de la tienda, de una vez. Si se aplicara al escanear el
   siguiente, lo de la bodega ya no se podría sumar.
+- **Por qué el plazo:** el POS compara contra lo que hay al aplicar, así que lo vendido entre el primer lugar y «Es
+  todo» queda de más. Con C4, el celular manda la hora del primer lugar y el POS compara contra lo que había entonces;
+  mientras, el aviso de los 10 minutos acorta el rato.
 - **Hoy se escribe en la caja:** se cuenta en el anaquel y se teclea en F4. Con el celular se cuenta y se aplica ahí
   mismo; el «faltan N» de la caja baja al momento.
 
@@ -420,56 +802,61 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 
 ```
 ┌──────────────────────────────────────────┐
-│ ╭──────────────────────────────────────╮ │
-│ │ ¿Qué vas a contar?                   │ │
-│ │ [R] Conteo del día         3 de 15 › │ │  el total de cada uno, una vez
-│ │ [C] Escolar              37 de 120 › │ │
-│ │     ▬▬▬▬▬▬──────────── Luis, Ana     │ │  quién cuenta, en la app o en /conteo
-│ │ [C] Oficina              12 de 210 › │ │
-│ │     ▬───────────────── Carmen        │ │
-│ │ [C] Papel                  0 de 95 › │ │
-│ │     ────────────────── nadie         │ │
-│ │ [+] Abrir otro departamento        › │ │  solo con «Conteo completo»
-│ ╰──────────────────────────────────────╯ │
+│ ══  ¿Qué vas a contar?                   │  una hoja: aquí no se escanea
+│ [R] Conteo del día             3 de 15 › │  el total de cada uno, una vez
+│ [C] Escolar · ahora Luis, Ana   37/120 › │  quién cuenta ahora, en la app o en /conteo
+│ [C] Oficina · ahora Carmen      12/210 › │
+│ [C] Papel · nadie                 0/95 › │
+│ [C] Arte · nadie                  0/60 › │
+│ [C] Regalos · nadie               0/40 › │
+│ [+] Abrir otro departamento            › │  solo con «Conteo completo»
+│ Revisar y cerrar: en la caja (F4)        │
 └──────────────────────────────────────────┘
 ```
 
 `[R]` el del día · `[C]` un departamento.
 
-1. **Elegir el departamento:** cada uno dice cuántos van y quién cuenta. Quien tiene «Conteo completo» abre otro.
+1. **Elegir el departamento:** «¿Qué vas a contar?» se abre como hoja, con un renglón por conteo, y caben los del
+   arranque; ahí no se escanea, así que puede tapar la franja. Cada uno dice cuántos van y quién está contando ahora
+   (C5; sin él, quién ya capturó). Quien tiene «Conteo completo» abre otro. Luego, el lugar.
 2. **Contar:** la pieza suma una, la caja suma la caja. Lo que no tiene código: ← Buscar, o la hoja de códigos del
    mostrador (se escanea una vez y se teclea cuántas).
-3. **Se guarda solo:** al escanear otro producto, lo del anterior queda como una captura de este lugar («Guardado: 13 de
-   Lápiz HB · Quitar», unos segundos). Lo que bajó a 0 con el − no se guarda; un 0 tecleado sí: «no hay».
-4. **El mismo producto en otro lugar** es otra captura: se escanea al llegar ahí y se suma.
-5. **Lo que ya contaron otros:** «Ya van 24: Ana 24». Se toca: las capturas de ese producto, con quién y a qué hora. Las
-   propias se quitan; las de otros, quien tiene «Conteo completo».
-6. **Lo de otro departamento:** «Es de Oficina». Si Oficina también se está contando, «Contarlo para Oficina» lo cuenta
-   ahí, de paso, hasta escanear otro producto; luego se queda donde está hasta que cierren Oficina (si se lleva a su
-   lugar, se contaría dos veces). Si Oficina no está abierto, se lleva a su lugar. En el arranque hay cosas fuera de
-   lugar y, si nadie las cuenta, quedan en 0.
-7. **Lo que no está en el catálogo** o no lleva inventario: en rojo, con la vibración de error. Se aparta para el
-   encargado.
-8. **↖ Lo contado:** «Lo mío», con la hora, si ya subió y «Quitar» (se corrige quitando y contando otra vez, como en el
-   POS); «Falta», lo que nadie ha contado, por nombre. Tocar uno empieza a contarlo: para lo que no tiene código o para
-   decir «no hay».
-9. **«Terminé mi parte»** guarda lo que se contaba, dice cuánto contaste y si queda algo por subir, y regresa a «¿Qué vas
-   a contar?». Se le dice al encargado.
+3. **Se guarda solo:** al escanear otro producto, lo del anterior queda como una captura de este lugar y el renglón de
+   lo último dice «Antes: Lápiz HB 13 · Quitar». También al pausarse el escáner, al salir de Conteo y al apagarse la
+   pantalla; si se pausó, el producto se queda a la vista y su contador todavía se toca. Lo que bajó a 0 con el − no se
+   guarda; un 0 tecleado sí: «no hay».
+4. **El mismo producto en otro lugar** es otra captura: se cambia el lugar y se escanea.
+5. **Lo que ya contaron otros:** «Ya van 24: Ana, bodega». Se toca el producto: sus capturas, con quién, dónde y a qué
+   hora. Las propias se quitan; las de otros, quien tiene «Conteo completo».
+6. **Lo de otro departamento** se queda en el lugar del producto hasta decidir, con la vibración de aviso:
+   - Si Oficina se está contando: «Contarlo para Oficina» (lo cuenta ahí, de paso, hasta escanear otro; luego se deja
+     donde está hasta que cierren Oficina: si se lleva a su lugar, se contaría dos veces) o «Lo llevo a su lugar».
+   - Si Oficina no se ha contado: «Llévalo a su lugar».
+   - Si Oficina ya se cerró (el POS dice cuándo): «Oficina se contó el 12/11: llévalo y avísale al encargado; es un
+     ajuste».
+   - Si se escanea otro sin decidir, no se pierde: pasa a lo contado › «Fuera de lugar», con su número en ↖.
+7. **Lo que no está en el catálogo** o no lleva inventario: en rojo, en el lugar del producto, con la vibración de
+   error. Se aparta para el encargado.
+8. **↖ Lo contado:** «Lo mío», con el lugar, la hora, el estado y «Quitar» (con «Deshacer» unos segundos, como el bote
+   del ticket); «Falta», lo que nadie ha contado, por nombre; «Fuera de lugar», lo de otros departamentos. Tocar uno de
+   «Falta» empieza a contarlo: para lo que no tiene código o para decir «no hay».
+9. **«Terminé mi parte»** guarda lo que se contaba, dice cuánto contaste y si queda algo por subir, y regresa a «¿Qué
+   vas a contar?». Se le dice al encargado.
 
 ```
 ┌──────────────────────────────────────────┐
 │ <  Escolar · lo que contaste             │
 │    12 capturas · 2 por subir             │
 │ Lápiz HB No. 2                      13   │
-│ 14:52 · por subir · 1 caja + 1     [x]   │
+│ Anaquel · 14:52 · por subir        [x]   │
 │ ──────────────────────────────────────── │
 │ Cuaderno profesional cuadro…         3   │
-│ 14:50 · subida                     [x]   │
+│ Bodega · 14:50 · subida            [x]   │
 │ ──────────────────────────────────────── │
-│ Goma blanca chica                    0   │
-│ 14:47 · subida · no hay            [x]   │
+│ Goma blanca chica               no hay   │  «no hay», en su color
+│ Anaquel · 14:47 · subida           [x]   │
 │                                          │
-│ ( Lo mío 12 )  ( Falta 83 )              │  abajo, junto al pulgar
+│ (Lo mío 12)  (Falta 83)  (Fuera 1)       │  abajo, junto al pulgar; de 48 dp
 │ [Terminé mi parte] [Contar otra cosa ]   │
 └──────────────────────────────────────────┘
 ```
@@ -480,40 +867,45 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 
 ```
 ┌──────────────────────────────────────────┐
-│ x  Lápiz HB No. 2                        │
-│    Lo que hay en este lugar              │
-│ ┌──────────────────────────────────────┐ │
-│ │▌Cajas de 12                        3 │ │  la casilla que se teclea
-│ └──────────────────────────────────────┘ │
-│ ┌──────────────────────────────────────┐ │
-│ │ Sueltas                            1 │ │
-│ └──────────────────────────────────────┘ │
-│ Total                         37 piezas  │
+│                    ══                    │  se cierra jalando esta barra, o con atrás
+│ Lápiz HB No. 2 · lo de Anaquel           │
+│ ┌──────────────────┐ ┌─────────────────┐ │
+│ │▌Cajas de 12    3 │ │ Sueltas       1 │ │  una casilla por presentación, en dos columnas
+│ └──────────────────┘ └─────────────────┘ │
+│ Aquí                          37 piezas  │
 │    [  1  ]     [  2  ]     [  3  ]       │
 │    [  4  ]     [  5  ]     [  6  ]       │
 │    [  7  ]     [  8  ]     [  9  ]       │
 │    [  .  ]     [  0  ]     [ <-  ]       │  el punto, solo en metros, kilos o litros
-│ [✓ Guardar 37                         ]  │
+│ [✓ Guardar 37                         ]  │  desde «Falta», apagado hasta teclear
 └──────────────────────────────────────────┘
 ```
 
-- **Se abre tocando el contador.** Una casilla por presentación, de la más grande a la suelta, como en `/conteo`.
-  Arrancan con lo que ya se leyó.
-- **El total, al momento.** El teclado abajo, junto al pulgar; las casillas encima.
+- **Se abre tocando el contador.** Una casilla por presentación, de la más grande a la suelta, como en `/conteo`, en dos
+  columnas. Arrancan con lo de este lugar.
+- **El total, al momento.** El teclado abajo, junto al pulgar; las casillas encima. Teclas de 52 dp: con tres
+  presentaciones (caja, paquete y suelta) y la letra grande cabe en 360 × 740 sin desplazarse.
 - **Por metro, kilo o litro,** la suelta acepta el punto («4.5»). Un rollo con su código suma su largo.
-- **«Guardar 0» se puede:** dice «no hay».
+- **Desde «Falta», «Guardar» está apagado hasta teclear una cifra;** teclear el 0 enciende «Guardar 0 · no hay». Así un
+  toque de más al desplazar la lista no graba un 0, que en la revisión sacaría el producto de «Sin contar».
 - **En el del día,** «Otro lugar» guarda lo de aquí y deja las casillas en cero para el siguiente; el total suma todos.
-- **Mientras está abierto, las lecturas no cuentan.** Se cierra con el gesto de atrás o deslizándolo hacia abajo: la «x»
-  de arriba no hace falta con una mano.
-- **Cabe en el chico** sin desplazarse, también con tres presentaciones (caja, paquete y suelta).
+- **Mientras está abierto, las lecturas no cuentan.**
+- **Se cierra con atrás o jalando su barra,** no deslizando cualquier parte: teclear rápido del 2 al 0 es un arrastre
+  hacia abajo. Cerrarlo tira lo tecleado; las lecturas se quedan.
 
 ### A ciegas
 
-- Ninguna pantalla de la app enseña lo que dice el sistema de lo que se está contando.
-- **Tampoco a un toque:** la existencia de lo que se está contando no sale en Precio ni en el «Quedan» del ticket
-  («Existencia: al contarlo»): los 15 del día hasta que se aplican y los del departamento elegido mientras se cuenta. En
-  la caja el F9 sí la enseña; en el celular, que está en la mano mientras se cuenta, sería la tentación.
-- **Lo que contaron otros sí se ve:** lo hace `/conteo` y evita contar dos veces el mismo anaquel.
+- **Ninguna pantalla de Conteo enseña lo que dice el sistema:** ni el panel, ni lo contado, ni ← Buscar, cuyos
+  resultados van sin existencia y sin «Quedan».
+- **Tampoco a un toque, mientras se cuenta de verdad:** en Precio, en el ticket y al buscar desde ahí, lo que se está
+  contando sale «Existencia oculta mientras cuentas Escolar · Ya terminé». Del día, los que faltan de aplicar; del
+  completo, los del departamento elegido.
+- **Solo mientras se cuenta:** en Conteo y hasta 10 minutos después de la última lectura; lo del día sin aplicar, hasta
+  aplicarlo o descartarlo. Luego la existencia vuelve a salir: el dueño la necesita para «¿te quedan 20?». «Ya terminé»
+  hace lo de «Terminé mi parte».
+- **En el celular de la tienda, Precio nunca enseña la existencia:** es lo que ve el cliente.
+- **Lo que contaron otros sí se ve:** lo hace `/conteo` y dice que alguien ya pasó. No dice si fue este lugar: por eso
+  va el lugar con cada captura y la pista «cuenta lo de aquí aunque ya vaya algo».
 
 ### Sin red: la bandeja de salida
 
@@ -521,18 +913,20 @@ La red se cae y en la bodega el wifi llega mal. Se sigue contando:
 
 | Estado | Quiere decir |
 |---|---|
-| Contando | En el celular, sin guardar. No se pierde si se cierra la app o se apaga la pantalla |
-| Sin aplicar | Del día: contado, falta «Es todo» |
+| Contando | En el celular, sin guardar. Se guarda solo al escanear otro, al pausarse el escáner, al salir de Conteo o al apagarse la pantalla; no se pierde si se cierra la app |
+| Sin aplicar | Del día: contado, falta «Es todo». Dice cuánto lleva |
 | Por subir | Guardado en el celular; sube solo al volver la red |
 | Subida, aplicada | El POS ya la tiene |
-| No entró | El POS no la aceptó (el departamento se cerró o se canceló, ya lo contó otro, cambió de departamento): dice por qué |
+| No entró | El POS no la aceptó (el departamento se cerró o se canceló, ya lo contó otro, cambió de departamento, se está contando completo): dice por qué |
 
 - **Cada captura lleva su número:** mandarla dos veces cuenta una. Lo que se quita va en orden, después de su captura;
   quitar una que todavía no sube la borra del celular: nunca llega.
+- **Cada captura lleva cuándo se contó** (C4): cuánto hace, con el reloj del celular que no cambia aunque muevan la hora
+  (`SystemClock.elapsedRealtime`). Ese reloj vuelve a cero al reiniciar, así que también se guardan la hora del celular
+  y su número de arranque (`Settings.Global.BOOT_COUNT`): si el celular se reinició, sube la hora del celular marcada
+  como aproximada.
 - **Arriba,** «Sin red · 3 por subir»; al volver, «Subiendo 3».
 - **«Ya van»** sale de lo último que se supo, con «hace 12 min». Sin red no se abre un departamento.
-- **Lo contado sin red sube con el tiempo que hace que se contó** ([lo que pide](#lo-que-pide-al-pos-para-contar)): así
-  lo vendido en ese rato no corre la diferencia.
 - **Lo que no entró** se queda en lo contado, para decírselo al encargado.
 
 ### El encargado y la caja
@@ -541,17 +935,18 @@ La red se cae y en la bodega el wifi llega mal. Se sigue contando:
 |---|---|
 | Abrir un departamento | También; ahí está el QR de `/conteo` |
 | Contar, como todos | — |
-| Ver cuántos van y quién cuenta | También |
+| Ver cuántos van y quién está contando ahora | También, con lo que cada celular tiene por subir (C5) |
 | Quitar una captura equivocada, también de otros | — |
-| — | **Revisar:** lo contado contra el sistema, lo que nadie contó y lo que vale la diferencia |
+| — | **Revisar:** lo contado contra el sistema, por lugar, lo que nadie contó y lo que vale la diferencia |
 | — | **Cerrar** el departamento, o cancelarlo |
 
 Revisar y cerrar se quedan en la caja:
 
-- **Cerrar no se deshace:** reemplaza la existencia de todo el departamento y deja en 0 lo que nadie contó. Se decide con
-  la tabla entera: cientos de renglones, «Con diferencia» y «Sin contar».
+- **Cerrar no se deshace:** corrige todo el departamento de una vez y deja en 0 lo que nadie contó. Se decide con la
+  tabla entera: cientos de renglones, «Con diferencia» y «Sin contar».
 - **En el celular de quien cuenta rompería lo de a ciegas:** la revisión enseña lo que dice el sistema.
 - **«Sin contar»** dice lo que nadie contó y el sistema dice que hay: antes de cerrar, el encargado lo manda a buscar.
+- **Antes de cerrar, quién falta de subir:** «Ana · 3 por subir · hace 8 min» (C5), también lo que tiene contando.
 - **En una urgencia,** `/conteo` deja revisar y cerrar desde el navegador a quien tiene el permiso.
 
 ### El conteo físico de arranque
@@ -560,29 +955,44 @@ El conteo completo de todos los departamentos da las existencias para dejar elev
 referencia para el conteo; las que valen son las contadas» (plan del POS). Es el uso más grande: miles de productos y
 varios contando a la vez.
 
-**Cuándo.** El plan del POS lo pone en las semanas previas al arranque, pero en el piloto el POS no deja contar. Hay que
-decidirlo:
+**Cuándo.** El plan del POS lo pone «en las semanas previas» al arranque, pero en el piloto el POS no deja contar. Hay
+que decidirlo:
 
 | | Cómo | A favor | En contra |
 |---|---|---|---|
-| **A. Un fin de semana, ya sin eleventa** | Se deja eleventa, se abren todos los departamentos, cuentan todos a la vez y se cierra cada uno al terminar | Lo más exacto. No pide nada al POS | La tienda para uno o dos días; hace falta mucha gente a la vez |
-| **B. En el piloto, y se cierra al dejar eleventa** | Un departamento a la vez en las semanas previas. El POS guarda lo contado contra lo que dice la lectura de eleventa y lo aplica al cerrar, ya sin eleventa | Es lo que dice el plan. La tienda sigue abierta | Pide al POS abrir y capturar en el piloto. Lo que vende la caja 1 llega con la lectura cada pocos minutos: lo vendido justo antes de contar se descuenta dos veces. Cada departamento se depura antes de contarlo |
-| **C. Arrancar con lo de eleventa y contar después** (lo recomendado) | Se arranca con las existencias de la última lectura. En las semanas siguientes se cuenta un departamento a la vez, con el POS ya sin eleventa | No pide nada al POS. Cuenta contra sus propios movimientos. La tienda sigue abierta. El conteo del día ayuda desde el primer día | Unas semanas con las existencias de eleventa, como hoy. Cambia el orden del plan del POS |
+| **A. Uno o dos días, ya sin eleventa** | Se deja eleventa, se abren todos los departamentos, cuentan todos a la vez y se cierra cada uno al terminar | Lo más exacto: no se vende mientras se cuenta. No pide nada al POS | La tienda para uno o dos días; hace falta mucha gente a la vez |
+| **B. En el piloto, y se cierra al dejar eleventa** | Un departamento a la vez en las semanas previas. El POS guarda lo contado contra lo que dice la lectura de eleventa y lo aplica al cerrar, ya sin eleventa | Es lo que dice el plan. La tienda sigue abierta | Pide al POS abrir y capturar en el piloto. Lo que vende la caja 1 llega con la lectura cada pocos minutos: lo vendido justo antes de contar se descuenta dos veces. Los departamentos quedan abiertos semanas: cualquier surtido o compra en medio descuadra. Cada departamento se depura antes de contarlo |
+| **C. Arrancar con lo de eleventa y contar después** (lo recomendado) | Se arranca con las existencias de la última lectura. En las semanas siguientes se cuenta un departamento a la vez, con el POS ya sin eleventa: los que más valen, la primera semana | Cuenta contra sus propios movimientos. La tienda sigue abierta. Cada departamento se abre y se cierra el mismo día. Pide poco al POS (C7 y C9) | Va contra el plan del POS, que quiere arrancar con lo contado. Unas semanas con existencias que se saben malas, como hoy: lo que vale el inventario, los bajos y el sugerido de compra salen de ahí. Cada cierre convierte errores viejos de eleventa en «faltó $X». Sin C9, un departamento abierto y el del día se pisan a diario |
+
+**Si se queda C:**
+
+- **Los departamentos que más valen, la primera semana** (Inventario › lo que vale el inventario, por departamento).
+- **El del día, solo en lo ya contado** (C7): en lo demás solo convertiría errores de eleventa en alertas («Diferencia
+  en el conteo del día», desde $200, le llegaría seguido al dueño), y con un departamento abierto se pisaría (C9).
+- **El primer cierre de cada departamento dice «arranque»** en la bitácora, el resumen del día y el aviso al dueño
+  (C7): su diferencia es el error que traía eleventa, no una pérdida de esa semana.
+- **Hasta contar un departamento,** lo que vale, sus bajos y su sugerido de compra se leen con cuidado: son de
+  eleventa. Inventario dice cuáles faltan.
 
 **Cómo se reparte,** con cualquiera de las tres:
 
-1. **El orden:** primero los departamentos que más valen (Inventario › lo que vale el inventario, por departamento).
-2. **El encargado abre los del día,** desde la caja o desde la app: uno por persona.
-3. **Cada quien toma el suyo** en «¿Qué vas a contar?»; ahí se ve quién está en cada uno.
-4. **Cada quien recorre todos los lugares de su departamento:** anaquel, mostrador, exhibidor y bodega. Lo de otro
-   departamento abierto lo cuenta para ese; si no está abierto, lo lleva a su lugar.
-5. **Al terminar,** lo contado › «Falta»: lo que nadie ha contado. Lo que no aparezca, se deja.
-6. **«Terminé mi parte»,** y se le dice al encargado.
-7. **El encargado revisa en la caja:** lo que el sistema dice que hay y nadie contó, lo manda a buscar; luego cierra.
+1. **El orden:** primero los departamentos que más valen.
+2. **El encargado abre los departamentos de hoy,** desde la caja o desde la app: uno por persona.
+3. **Cada quien toma el suyo** en «¿Qué vas a contar?»; ahí se ve quién está contando ahora en cada uno.
+4. **Cada quien recorre todos los lugares de su departamento,** en orden: primero lo que está a la venta (anaquel,
+   mostrador, exhibidor) y la bodega al final. Lo de otro departamento abierto lo cuenta para ese; si no, lo lleva a su
+   lugar.
+5. **Mientras, nadie surte ni acomoda lo que llega** en ese departamento.
+6. **Al terminar,** lo contado › «Falta» (lo que nadie ha contado; lo que no aparezca, se deja) y «Fuera de lugar».
+7. **«Terminé mi parte»,** y se le dice al encargado.
+8. **El encargado revisa en la caja:** quién tiene algo por subir, y lo que el sistema dice que hay y nadie contó, que
+   manda a buscar. Luego cierra, de preferencia el mismo día.
 
-- **Un departamento por persona:** nadie cuenta dos veces el mismo anaquel. Si uno es muy grande, dos se lo reparten por
-  lugares (uno el piso, otro la bodega); «ya van» avisa si alguien ya contó ese producto.
-- **El avance:** «¿Qué vas a contar?» dice de cada departamento cuántos van de cuántos y quién cuenta. La caja, igual.
+- **Un departamento por persona:** nadie cuenta dos veces el mismo anaquel. Si uno es muy grande, dos se lo reparten
+  por lugares (uno el piso, otro la bodega) y la bodega empieza cuando el piso ya terminó. «Ya van», con el lugar, dice
+  quién contó dónde.
+- **El avance:** «¿Qué vas a contar?» dice de cada departamento cuántos van de cuántos y quién está contando. La caja,
+  igual.
 - **La app y `/conteo` a la vez:** son las mismas capturas; lo de uno se ve en el otro («ya van»). En `/conteo` no hay
   cámara para los códigos: se busca por nombre o se usa un lector.
 - **Aquí sirve primero el celular de la tienda:** uno o dos con la app (Precio y Conteo) rinden más que `/conteo` en los
@@ -591,7 +1001,9 @@ decidirlo:
 ### En el piloto
 
 - El POS no deja contar y no hay conteo del día. **En la app, Conteo no aparece,** como la caja, que no ofrece la tarea.
-  Tampoco el acceso directo «Contar».
+- **Los accesos del ícono pasan a dinámicos** (`ShortcutManagerCompat`): hoy están fijos en `shortcuts.xml` y solo
+  cambian con otra versión de la app. «Contar» sale solo si se puede contar, y «Armar ticket» no sale en el celular de
+  la tienda. Los que alguien ya ancló se apagan con su mensaje («En el piloto no se cuenta»).
 - Con la opción B del arranque, aparece solo el conteo completo, con «Se aplica al dejar eleventa».
 - En el prototipo sí está, con el aviso y «Ver cómo se contará», para revisarlo.
 
@@ -601,29 +1013,53 @@ decidirlo:
 |---|---|---|
 | **Agregar inventario** (lo que llegó de un producto, sin proveedor; unas 7 al día) | No, por ahora | Se hace donde llega la mercancía, junto a la caja, de uno en uno. Mueve la existencia y el costo al momento y no tiene deshacer (se corrige con un ajuste). En el celular que cuenta se confundiría con contar, y lo agregado dos veces no se nota |
 | **Recibir mercancía a ciegas** (una compra de un proveedor) | Después, como un conteo más | Es contar lo que llegó: escanear, a ciegas, cajas y sueltas. Hoy no se usa: los proveedores están vacíos y lo que llega entra con «Agregar inventario» |
-| **Ajustes** | No | Cambian la existencia viéndola, con motivo; al cajero le piden autorización y desde $200 avisan al dueño. Lo que se cree mal se cuenta (si es del día o de un departamento abierto) o se ajusta en la caja |
+| **Ajustes** | No | Cambian la existencia viéndola, con motivo; al cajero le piden autorización y desde $200 avisan al dueño. Lo que se cree mal se cuenta (si es del día) o se ajusta en la caja. Si su departamento se está contando, no se ajusta: se cuenta ahí y el cierre lo corrige; un ajuste en medio se corregiría otra vez (C9) |
 | **Mermas** | No | Lo dañado se lleva a la caja; ahí se registra con su causa y, arriba de $200 para el cajero, con autorización |
 | **Abrir un paquete** | No | Se hace al abrirlo, en la caja |
 
 - El celular de la tienda es solo para contar y ver precios (dueño, 2026-11-03): ahí nada de esto.
+- Lo que llega mientras se cuenta un departamento entra como siempre, en la caja, pero se deja aparte o en un lugar ya
+  contado hasta cerrar ([el lugar y el orden](#el-lugar-y-el-orden)).
 - Las fotos de los productos, que hoy se toman en `/conteo` › Fotos, no son de contar: quedan para otra entrega.
+
+### Una mano, letra grande y TalkBack
+
+- **Lo que se toca, de 48 dp como mínimo;** lo principal, de 56. El producto se toca entero (el «Ya van» de hoy mide
+  32 dp de alto); las pestañas de lo contado y el «Quitar» del renglón de lo último, de 48.
+- **Con la letra grande** (hasta 200 %, la tabla no lineal de Android 14), el panel esconde en este orden: primero la
+  barra de avance y la pista («Cada pieza suma una»); luego el encabezado pasa a corto («Escolar 37/120»); al último, el
+  desglose y «Ya van», que salen al tocar el producto. Nunca se esconden el nombre (en una línea), el −, el contador ni
+  el renglón de lo último. El panel no se desplaza mientras se escanea y nada sube a la franja.
+- **El teclado,** con teclas de 52 dp y las casillas en dos columnas ([arriba](#cajas-y-sueltas-el-teclado)).
+- **Zurdos:** con «Botón rápido a la izquierda», el renglón del producto va en espejo: el contador y el − a la
+  izquierda, junto al pulgar, y el botón del renglón de lo último también.
+- **Los gestos del sistema:** el botón rápido no arranca el gesto de atrás ([arriba](#el-botón-rápido-en-conteo)) y el
+  teclado solo se cierra jalando su barra.
+- **Atrás en Conteo:** si hay algo contando, lo guarda y sale; si hay algo del día sin aplicar, primero lo recuerda
+  («Goma: 4 sin aplicar · ¿Es todo?») y otro atrás sale.
+- **TalkBack:** cada lectura se anuncia («Lápiz HB, 14, más 12 caja»), cada rechazo dice por qué («Folder carta: es de
+  Oficina») y cada guardado, qué quedó («Guardado: lápiz HB, 13»). El botón rápido abre sus tres como botones normales.
 
 ### Lo que pide al POS para contar
 
 Todo va sobre el punto 1 de [lo que pide al POS](#lo-que-pide-al-pos) (que el celular hable con la API con su llave) y
 detalla sus puntos 8 y 9. El conteo del día (`GET /api/sucursales/{id}/conteo-del-dia`, `POST /api/conteos/{id}/contar`)
-y el completo (`/api/conteos-completos/…`) ya están en la API; con la llave, la app los usa como están.
+y el completo (`/api/conteos-completos/…`) ya están en la API; con la llave, la app los usa como están. C9 y C10 cierran
+huecos que el POS ya tiene hoy, con o sin la app; C10 vale para toda la app y conviene sumarlo al punto 1.
 
 | # | Qué | Por qué | Para |
 |---|---|---|---|
 | C1 | **Capturar ligero:** que la captura conteste solo esa captura y el producto con sus capturas | Hoy cada captura regresa el departamento entero (sus productos, presentaciones, códigos y todas las capturas). Con cientos de productos y la bandeja subiendo de golpe, pesa | El completo |
 | C2 | **Ponerse al día:** las capturas nuevas y las quitadas de un conteo desde la última vez, y si sigue abierto | «Ya van» sin bajar el departamento cada 10 segundos, como `/conteo`; y saber pronto si se cerró | El completo |
 | C3 | **El número propio en el del día** (`SolicitudContar` con su `Id`, como `SolicitudCaptura`), y quitar dos veces la misma captura sin error | Si se pierde la respuesta, el celular lo vuelve a mandar. Hoy el segundo dice «Ya se contó hoy» y no se sabe si fue el mismo | Sin red |
-| C4 | **Cuándo se contó:** cada captura y cada conteo del día llevan cuánto hace que se contaron, con el reloj interno del celular (no cambia si alguien mueve la hora). El POS compara contra lo que había en ese momento | Lo contado sin red sube después. Hoy se compara contra lo que hay al llegar: lo vendido en ese rato correría la diferencia | Sin red |
-| C5 | **Quién cuenta con la app y qué le falta subir:** el latido del celular dice qué conteo tiene elegido y cuántas capturas tiene por subir; la revisión lo enseña antes de «Cerrar» («Ana · 3 por subir · hace 8 min») | Si se cierra con capturas en un celular sin red (en la bodega), no entran | El completo |
+| C4 | **Cuándo se contó:** cada captura lleva cuánto hace que se contó (con el reloj que no cambia aunque muevan la hora; tras un reinicio, la hora del celular marcada como aproximada). En el del día, la hora del primer lugar. El POS compara contra lo que había en ese momento | Hoy se compara contra lo que hay al llegar o al aplicar: lo vendido en ese rato (sin red, o entre el anaquel y la bodega) corre la diferencia | Sin red y el del día |
+| C5 | **Quién está contando y qué le falta subir:** el latido del celular dice qué conteo tiene elegido, cuántas capturas tiene por subir y si tiene algo contando. «¿Qué vas a contar?» dice «ahora: Ana» y la revisión lo enseña antes de «Cerrar» («Ana · 3 por subir · hace 8 min») | Si se cierra con capturas en un celular sin red (en la bodega), no entran. Y hoy «quién cuenta» es quien ya capturó (`ConteoResumenDto.Personas`), no quien está contando | El completo |
 | C6 | **Que `/conteo` no pierda lo tecleado** al escanear otro producto: que lo guarde o que avise | La usarán quienes no tengan la app, sobre todo en el arranque | El arranque |
-| C7 | **El arranque:** decidir cuándo (A, B o C, arriba). Con B: abrir y capturar en el piloto, y cerrar solo ya sin eleventa | Hoy el piloto no deja contar | El arranque |
-| C8 | **Los modos del celular:** que su alta diga si es de la tienda (solo Precio y Conteo) | Lo decide el dueño, no quien lo usa | La tienda |
+| C7 | **El arranque:** decidir cuándo (A, B o C, arriba). Con B: abrir y capturar en el piloto, y cerrar solo ya sin eleventa. Con C: el del día solo de los departamentos ya contados desde el arranque, y el primer cierre de cada uno marcado «arranque» en la bitácora, el resumen y el aviso | Hoy el piloto no deja contar. Con C, el del día y los cierres convertirían errores de eleventa en alertas | El arranque |
+| C8 | **Los modos del celular:** que su alta diga si es de la tienda (solo Precio y Conteo) y que el POS lo haga valer: esa llave no manda tickets ni revisa, cierra o cancela un conteo. Es el 1a y el 1b de [los celulares](#lo-que-pide-al-pos-para-los-celulares) | Lo decide el dueño, no quien lo usa; y hoy la API no distingue un celular de otro | La tienda |
+| C9 | **Que no se pisen:** mientras un departamento está abierto, el del día no elige ni acepta sus productos («se está contando completo»), tampoco en la caja, y un ajuste a uno de ellos avisa y no se hace hasta cerrar o cancelar | El cierre suma la diferencia contra la primera captura: una corrección en medio se suma dos veces. Con C pasaría a diario con lo que más vale, que es justo lo que elige el del día | Los dos |
+| C10 | **Quién cuenta, de la sesión** (con el 1b y el 1c de [los celulares](#lo-que-pide-al-pos-para-los-celulares)): el PIN da una ficha de sesión que vale el turno, y el usuario sale de ella (o del celular de una persona, que su alta ata a esa persona), no de lo que manda el celular. Cada captura de la bandeja sube con la ficha de quien la contó | Hoy la API cree el `UsuarioId` del cuerpo: con la llave de un celular se cierra un departamento o se ve la revisión con el id del dueño | Toda la app |
+| C11 | **El lugar en la captura:** anaquel, mostrador o bodega, para «Ya van» y la revisión | Una captura no dice dónde: «Ya van 24» no distingue la bodega de este mismo anaquel | El completo |
 
 ### Cómo se entregaría
 
@@ -631,85 +1067,383 @@ La entrega 6, en partes y después del piloto:
 
 | Parte | Qué trae | Necesita del POS |
 |---|---|---|
-| 6.1 | **El conteo completo:** elegir y abrir, contar, cajas y sueltas, se guarda solo, lo de otros, lo contado, la bandeja de salida | 1, C1, C2, C4, C5 |
-| 6.2 | **El conteo del día:** el total por lugares, «Es todo», lo sin aplicar | C3 |
-| 6.3 | **El celular de la tienda:** solo Precio y Conteo, por turnos | C8 |
+| 6.1 | **El conteo completo:** elegir y abrir, el lugar, contar, cajas y sueltas, se guarda solo, lo de otros, lo contado, lo fuera de lugar, la bandeja de salida | 1, C1, C2, C4, C5, C9, C10, C11 |
+| 6.2 | **El conteo del día:** el total por lugares, «Es todo», lo sin aplicar con su plazo | C3 (C4, C9 y C10 vienen con la 6.1) |
+| 6.3 | **El celular de la tienda:** Precio sin entrar, Conteo por turnos | C8 |
 
-Con la opción C, la 6.1 conviene tenerla el día del arranque; mientras, `/conteo` (con C6).
+- **El completo primero, aunque el del día sea de cada día y pida menos:** el arranque, con cualquiera de las tres
+  opciones, es lo primero que se cuenta y lo más grande; el del día ya se hace en la caja (F4) y, con C, solo entra en
+  lo ya contado. La 6.1 trae lo que usa la 6.2: el contador, el teclado, el lugar y la bandeja.
+- **Sin C1, C2 y C11 funciona,** más lento y sin el lugar en «Ya van». Sin C9 y C10, no: los conteos se pisan y con la
+  llave de un celular se cierra a nombre de otro.
+- Con la opción C, la 6.1 conviene tenerla el día del arranque; mientras, `/conteo` (con C6).
 
 ### Riesgos
 
-- **Cerrar con capturas por subir:** un celular sin red en la bodega y el encargado cierra; esas no entran. El celular
-  avisa «3 por subir» y, con C5, también la caja.
-- **Lo contado sin red, sin C4:** si en ese rato se vendió, la diferencia sale corrida.
-- **Una lectura de más:** el producto de al lado se lee y, en el completo, se guarda solo como captura de 1. El aviso
-  «Guardado · Quitar» y lo contado la dejan quitar.
-- **Sostener el producto 1.5 s lo cuenta otra vez** (lo pidió el dueño para el escáner). A ciegas, una pieza de más no se
-  nota (pregunta abajo).
-- **Dos en el mismo producto del día** (uno en la caja, otro en el celular): vale el primero; al otro se le dice quién y a
-  qué hora, y lo suyo no se aplica.
-- **El celular de la tienda sin cambiar de persona:** lo contado queda a nombre de otro.
+- **Un conteo encima de otro:** sin C9, el del día o un ajuste de un producto de un departamento abierto se corrige dos
+  veces al cerrar. La app no cuenta en el del día lo de un departamento abierto; la caja sí, hasta C9.
+- **Lo sin aplicar que se queda:** aplicado tarde, lo vendido en ese rato queda de más (sin C4); olvidado, el producto
+  no se cuenta ese día. El renglón dice cuánto lleva y a los 10 minutos avisa.
+- **El orden y el surtido:** contar la bodega primero, o surtir o acomodar lo que llega mientras se cuenta, descuadra el
+  cierre. La app lo dice al elegir el lugar; nada lo impide.
+- **Cerrar con capturas por subir o algo contando:** un celular sin red en la bodega y el encargado cierra; eso no
+  entra. El celular avisa «3 por subir» y, con C5, también la caja.
+- **Lo contado sin red, sin C4:** si en ese rato se vendió, la diferencia sale corrida. Tras un reinicio, la hora es
+  aproximada.
+- **Una lectura de más:** el de al lado se lee y, en el completo, se guarda solo como captura de 1, y lo que se contaba
+  queda partido. «Antes · Quitar», la pregunta «¿fue de más?» y la cuenta que sigue lo arreglan si se ven.
+- **Sostener el producto 1.5 s lo cuenta otra vez** (lo pidió el dueño para el escáner). A ciegas, una pieza de más no
+  se nota (pregunta abajo).
+- **Dos en el mismo producto del día** (uno en la caja, otro en el celular): vale el primero; al otro se le dice quién y
+  a qué hora, y lo suyo no se aplica.
+- **La API sin C10:** con la llave de un celular se cierra un departamento o se ve la revisión con el id de otro.
+- **El celular de la tienda sin red:** no se cambia de persona; lo contado sigue a nombre de quien entró. Sin «Salir»,
+  lo contado queda hasta 10 minutos (más, sin red) a nombre de quien entró: la ficha de arriba lo dice.
 - **«Falta» incluye lo que no hay** (existencia 0): quien cuenta no sabe cuáles; el encargado los separa al revisar.
+- **Lo fuera de lugar:** contado para Oficina, se deja donde está; si alguien lo mueve antes de que cierren Oficina, se
+  cuenta dos veces.
 - **La bodega:** poca luz y wifi débil. La linterna está arriba, lejos del pulgar en el Pixel: «Linterna automática» en
   Ajustes. La bandeja aguanta sin red.
 - **Horas de cámara:** la batería. El escáner se pausa a los 20 s sin códigos y, un minuto después, apaga la cámara;
   para el arranque, cargadores a la mano.
-- **Con la opción B:** lo vendido en la caja 1 justo antes de contar se descuenta dos veces; y depurar (juntar, cambiar
-  la unidad) un producto ya contado deja sus capturas a medias: se depura antes de contar.
+- **Con la opción B:** lo vendido en la caja 1 justo antes de contar se descuenta dos veces; los departamentos quedan
+  abiertos semanas; y depurar (juntar, cambiar la unidad) un producto ya contado deja sus capturas a medias: se depura
+  antes de contar.
+- **Con la opción C:** unas semanas con las existencias de eleventa; sin C7, el del día y los cierres llenan de alertas
+  al dueño.
+- **La letra grande:** si no se esconde lo de menos, el panel no cabe y habría que desplazarlo mientras se escanea.
 
 ### Preguntas de Conteo
 
-- [ ] ¿El conteo de arranque: A, B o C (lo recomendado)?
+- [ ] ¿El conteo de arranque: A, B o C (lo recomendado)? Si la tienda puede cerrar uno o dos días, A es la más exacta.
+- [ ] Con C, ¿el conteo del día solo en los departamentos ya contados (lo propuesto)?
 - [ ] ¿Quién más cuenta con la app en la primera versión, además del dueño: el encargado?
-- [ ] ¿El celular de la tienda (uno o dos, con la app) para el conteo de arranque, o cada quien con `/conteo` en el suyo?
+- [ ] ¿El celular de la tienda (uno o dos, con la app) para el conteo de arranque, o cada quien con `/conteo` en el
+  suyo?
 - [ ] ¿Un departamento por persona (lo propuesto), o varios en el mismo, repartidos por lugares?
+- [ ] ¿Los lugares son anaquel, mostrador y bodega, o hace falta otro (exhibidor, vitrina)?
+- [ ] ¿Se puede dejar de surtir un departamento mientras se cuenta, y cerrarlo el mismo día? Es lo que pide el cierre
+  para cuadrar.
 - [ ] En Conteo, ¿sostener el mismo producto 1.5 s lo cuenta otra vez, como hoy en el escáner, o se apaga ahí? Lo
-  propuesto: apagarlo en Conteo (el escáner ya tiene el ajuste, `msParaRepetirAVista`); a ciegas, una pieza de más no se
-  nota.
-- [ ] En el celular de la tienda, ¿pedir el PIN otra vez tras 10 minutos sin usarlo? Así lo contado queda a nombre de
-  quien contó.
+  propuesto: apagarlo en Conteo (el escáner ya tiene el ajuste, `msParaRepetirAVista`); a ciegas, una pieza de más no
+  se nota.
+- [ ] En el celular de la tienda, ¿la sesión se cierra a los 10 minutos sin usarse (lo propuesto, solo con red)? Así lo
+  contado queda a nombre de quien contó. Es la misma de [quién tiene la app](#preguntas-de-quién-tiene-la-app).
 - [ ] ¿Agregar inventario, ajustes o mermas desde el celular, aunque sea solo el dueño? Lo propuesto: no por ahora.
 
-## Entrar
+## Quién tiene la app
 
-### Dar de alta el celular, una vez
+> **Decisión del dueño (2026-11-03):** «No todos tendrán la app en su celular: en la primera versión solo personas de
+> alta confianza, el dueño por ejemplo; y más a futuro quizá el celular de la tienda, pero solo con conteo y
+> verificación de precio.»
 
-1. **En la caja:** Configuración › Celulares › «Dar de alta un celular». Lo pide quien ya entró en la caja con el permiso
-   «Dar de alta cajas»; la caja enseña un QR con la dirección de la caja principal y un permiso de un solo uso que vence
-   en 10 minutos.
-2. **En el celular:** «Escanear el código de la caja». Lo lee el mismo escáner (el QR es una de sus simbologías): nadie
-   teclea una dirección.
-3. **El permiso de Android:** «Dispositivos cercanos». Android 17 lo pide a las apps que apuntan a su versión para hablar
-   con otros equipos de la red local
-   ([permiso de red local](https://developer.android.com/privacy-and-security/local-network-permission)). La app lo
-   explica antes de que salga la ventana del sistema.
-4. **El catálogo** baja en segundo plano (unos 4 MB con 6,000 productos, más unas 300 fotos de 15 KB); mientras, ya se
-   puede entrar.
-5. Antes de mandar su llave, el celular comprueba que habla con la caja principal de verdad (`/api/identidad`, con la
-   llave pública del servicio), como ya lo hacen las cajas.
+Hay dos clases de celular. La clase se elige al darlo de alta en la caja y no cambia con quien lo agarre.
 
-**El celular no es una caja.** Hoy la única forma de dar de alta un equipo es como caja, con su serie de folios, en la
-lista de cajas y en el corte del día; además, con «La única caja» el alta desde otro equipo está cerrada. Se propone que
-el POS tenga **celulares**: su llave, sin serie ni turno, en Configuración › Celulares (ahí también se les quita el
-acceso). Mientras eso llega, el respaldo es lo que existe: la dirección (o «Buscar en la red») y el usuario y PIN de quien
-puede dar de alta cajas.
+| | **De una persona** (el de Luis, el dueño) | **De la tienda** (a futuro) |
+|---|---|---|
+| Quién lo usa | Su dueño, alguien de confianza. En la primera versión, solo Luis | Varios, por turnos |
+| A nombre de quién | De esa persona: lo que se hace ahí es suyo | De la tienda; cada conteo, de quien entró |
+| Modos | Lo que la persona puede: Precio siempre; Ticket y Conteo con sus permisos | Precio y Conteo. Sin Ticket ni impresiones |
+| Entrar | Su huella, al empezar el turno. El PIN del celular no sirve; el del POS queda de respaldo | Precio, sin entrar. Para contar, la ficha y el PIN del POS |
+| La sesión | El turno (8 h) | Se cierra a los 10 minutos sin usarse, solo con red. «Salir» a la vista |
+| Existencias | Sí, como el F9 de la caja (menos lo que se está contando, [a ciegas](#a-ciegas)) | Nunca: ni en Precio ni al aplicar el conteo del día. Solo lo que ve el cliente |
+| Ajustes | Los suyos | Los de quien entró; sin nadie, los del celular |
+| Herramientas de medición | Sí | Piden la ficha y el PIN de alguien con «Configuración de la tienda» |
 
-### ¿Quién atiende?
+- **Se ven los modos del celular que la persona puede usar.** En el de Luis, lo que Luis puede. En el de la tienda nunca
+  hay Ticket ni existencias, aunque entre Luis.
+- **Quien no tiene la app sigue con `/conteo`** en el navegador de su celular. Lo que se cuenta en los dos se suma
+  ([contar](#contar)).
+- **Una persona, un celular.** Dar de alta otro a su nombre le quita el acceso al anterior. Antes, la caja dice si el
+  anterior tiene algo por subir («El Pixel 8 Pro tiene 3 por subir · visto hace 8 min») y ofrece esperar a que suba. De
+  la tienda puede haber varios.
 
-- **Las fichas y el PIN de 4 cifras,** como en la caja: se toca la ficha y entra sola con la cuarta cifra. La API ya
-  existe (`GET /api/cajas/{id}/usuarios` y `POST /api/cajas/{id}/sesion`). Cada quien usa su usuario, PIN y permisos.
-- **La sesión dura el turno** (8 horas, como `/conteo`). «Cambiar de persona» está en el menú de la ficha.
-- **La última persona viene elegida:** si el celular es de alguien, entrar es teclear el PIN.
-- **Sin red no se entra:** los PIN no se guardan en el celular. Quien ya entró en el turno sigue trabajando.
+### Lo que cambia en cada pantalla
+
+Vale a 360 y a 448 dp de ancho. Nada nuevo toca la franja.
+
+| | Celular de Luis | Celular de la tienda |
+|---|---|---|
+| Al abrir | En el último modo usado. Con la sesión cerrada, primero su huella | En Precio, sin nadie. Si alguien sigue en su sesión, donde iba |
+| Arriba a la izquierda | La ficha «L» (48 dp), con su menú | Sin nadie, el ícono de la tienda (48 dp), con su menú. Con alguien, su ficha y, a 8 dp, «Salir»: dos botones de 48 dp de alto. «Salir» mide 72 dp de ancho y crece con la letra |
+| La red, si falla | Junto a la ficha | Junto a «Salir». En el chico baja a un segundo renglón (medido: de y 90 a 126; la indicación del escáner empieza en 159). Con letra grande no baja: se acorta a su ícono y el número, y el detalle va en el menú |
+| Barra de modos | Precio · Ticket · Conteo | Precio · Conteo: dos pestañas de 128 dp en el chico y de 140 en el Pixel |
+| Precio | Precio, mayoreo, promoción y existencia | Precio, mayoreo y promoción, como sobre el bloqueo |
+| Botón rápido en Precio | ↑ Enseñar al cliente · ← Buscar; «Al ticket» va en la tarjeta | El mismo; la tarjeta no tiene «Al ticket» |
+| Buscar | Con la existencia | Sin la existencia |
+| Ticket e impresiones | Con «Mandar tickets desde el celular» | No salen |
+| Conteo | Lo que Luis puede, también abrir departamentos | Al tocarlo, «¿Quién cuenta?»; luego, lo que puede quien entró |
+| «Salir» | — | Arriba, junto a la ficha, y abajo en «¿Qué vas a contar?» |
+| «Terminé mi parte» | Regresa a «¿Qué vas a contar?» | «Terminé mi parte y salir» |
+| El menú de la ficha | Ajustes, la red, del bolsillo al precio y «Cerrar la sesión». Sin «Cambiar de persona» | «Entrar para contar» o «Salir», Ajustes y la red |
+| Ajustes | Los suyos | Los de quien entró: el botón a la izquierda, las pistas, el bip y la vibración. La conexión (la caja principal, el nombre del celular, la sesión) solo se lee: se cambia en la caja |
+| La pista del botón rápido | La de cada modo | La misma («↑ enseñar · ← buscar» en Precio); cada quien la ve su primera vez |
+| Accesos directos del ícono | Revisar precio · Armar ticket · Contar | Revisar precio · Contar |
+
+```
+ Sin nadie, en Precio              Ana, contando
+┌────────────────────────────────┐ ┌────────────────────────────────┐
+│ (T)                       [L]  │ │ (A) (Salir)               [L]  │  la tienda, sin nadie · Ana y, a 8 dp, «Salir»
+│                                │ │ (Sin red · 3 por subir)        │  en el chico, la red baja un renglón
+│  [ ||| Apunta al código ]      │ │  [ ||| Apunta al código ]      │
+│ ┌────────────────────────────┐ │ │ ┌────────────────────────────┐ │  ← 32 %
+│ │ ────────────────────────── │ │ │ │ ────────────────────────── │ │  la franja: nada la tapa
+│ └────────────────────────────┘ │ │ └────────────────────────────┘ │  ← 68 %
+│ ╭──────────── ══ ────────────╮ │ │ ╭──────────── ══ ────────────╮ │
+│ │ [foto] Cuaderno profesio…  │ │ │ │ Escolar · Anaquel     37 › │ │
+│ │        $46.00              │ │ │ │ Lápiz HB No. 2   [−] [×13] │ │  el precio, sin existencia
+│ │ (Desde 12: $41.00 c/u)     │ │ │ │ 1 caja + 1 suelta          │ │
+│ │ (Precio) (Conteo)    [···] │ │ │ │ (Precio) (Conteo)    [···] │ │  dos modos, sin Ticket
+│ ╰────────────────────────────╯ │ │ ╰────────────────────────────╯ │
+└────────────────────────────────┘ └────────────────────────────────┘
+```
+
+`(T)` la tienda: su menú, con «Entrar para contar» · `(A)` la ficha de Ana: su menú · `(Salir)` cierra su sesión, con
+«Deshacer» · `[L]` la linterna · `[···]` el botón rápido (tres puntos en abanico).
+
+```
+ Precio, tras cerrarse sola        Ana vuelve a entrar
+┌────────────────────────────────┐ ┌────────────────────────────────┐
+│ (T)                       [L]  │ │ (A) (Salir)               [L]  │
+│                                │ │                                │
+│  [ ||| Apunta al código ]      │ │  [ ||| Apunta al código ]      │
+│ ┌────────────────────────────┐ │ │ ┌────────────────────────────┐ │
+│ │ ────────────────────────── │ │ │ │ ────────────────────────── │ │
+│ └────────────────────────────┘ │ │ └────────────────────────────┘ │
+│ ╭──────────── ══ ────────────╮ │ │ ╭──────────── ══ ────────────╮ │
+│ │ Se cerró la sesión de Ana: │ │ │ │ Lápiz HB: 7, guardado a    │ │  fija hasta que alguien entre · lo de antes del cierre
+│ │ lo contado quedó a su      │ │ │ │ las 15:10 · Sigue sumando  │ │
+│ │ nombre.  [Entrar]     [×]  │ │ │ │ Lápiz HB No. 2   [−] [× 8] │ │  sigue desde 7
+│ │ (Precio) (Conteo)    [···] │ │ │ │ (Precio) (Conteo)    [···] │ │
+│ ╰────────────────────────────╯ │ │ ╰────────────────────────────╯ │
+└────────────────────────────────┘ └────────────────────────────────┘
+```
+
+### Dar de alta el celular
+
+1. **En la caja:** Configuración › Celulares › «Dar de alta un celular», con el permiso «Dar de alta y quitar cajas y
+   celulares». La caja pregunta **¿de quién es?**
+   - **De una persona:** se elige quién, de entre quienes tienen «Usar la app en su celular» (hoy, solo Luis). Los modos
+     vienen con lo que esa persona puede; se pueden quitar. Si ya tiene un celular, la caja dice cuánto tiene por subir.
+   - **De la tienda:** Precio y Conteo, y a los cuántos minutos sin usarse se cierra la sesión (10).
+2. **La caja enseña el QR:** la dirección de la caja principal y un permiso de un solo uso que vence en 10 minutos. De
+   quién es y los modos no van en el QR: los guarda la caja principal con ese permiso, así que nadie los cambia en el
+   camino.
+3. **En el celular, «Escanear el código de la caja»,** con el mismo escáner.
+4. **«Dispositivos cercanos»,** el permiso de red local de Android 17, explicado antes. Luego el celular comprueba que
+   habla con la caja principal de verdad (`/api/identidad`), como las cajas, y le presenta el permiso.
+5. **«¿Es este?», en la caja:** «Se conectó un moto g54». El celular dice qué será («Celular de la tienda · Precio y
+   Conteo») y espera. Hasta que alguien toca «Sí, es este» en la caja, no queda activo. Si otro celular leyó el código
+   primero, «No es este» lo descarta y la caja enseña otro.
+6. **Solo en el de una persona:**
+   - **«Confirma que es tuyo»:** su PIN del POS, una sola vez. Quien da de alta en la caja puede ser otro con el
+     permiso; así nadie da de alta un celular a nombre de Luis sin Luis.
+   - **«Entra con tu huella»:** desde ahí, entrar es su huella. Sin bloqueo de pantalla no se da de alta como de una
+     persona: la app lo dice y abre los ajustes de seguridad del celular. Sin una huella que Android dé por segura,
+     entra con su PIN del POS cada turno.
+7. **El catálogo** baja en segundo plano (unos 9 MB con las fotos); mientras, ya se usa con red.
+
+Queda en la bitácora: «Dio de alta el Pixel 8 Pro como celular de Luis (Precio, Ticket y Conteo)».
+
+**Mientras el POS no tenga celulares, el respaldo:**
+
+- **Solo el de Luis, y lo menos posible.** El de la tienda espera a los celulares.
+- **Como una caja nueva, nunca una que ya existe:** «Celular de Luis», con una serie que no use ninguna caja (L). Dar de
+  alta el celular en una caja que ya existe le cambia la llave: la PC de esa caja deja de entrar y el celular toma su
+  lugar.
+- **Sin copia del catálogo y solo con red.** La copia de las cajas lleva el hash del PIN de todos, y un PIN de 4 cifras
+  sale de ahí en minutos. El precio y la búsqueda van con la API de hoy (`/api/productos/codigo`,
+  `/api/productos/buscar` y `/api/consultas`). Sin red, Precio lo dice; el mosaico del bloqueo también pide red.
+- **Entrar, igual:** su huella; su PIN del POS de respaldo, con la entrada de las cajas (`POST /api/cajas/{id}/sesion`).
+- **Se quita con «Quitar PC»** en Configuración › Cajas y sus PC. Hasta entonces, su llave abre toda la API de su caja,
+  y la API cree el `usuarioId` que le mandan ([1b](#lo-que-pide-al-pos-para-los-celulares)). Al llegar los celulares, se
+  le quita la PC a esa caja y el celular se da de alta como de Luis.
+- **Con «La única caja»** (la segunda sucursal) no hay respaldo: ahí el alta desde otra PC está cerrada.
+
+### Entrar
+
+**En el celular de Luis no hay fichas ni «Cambiar de persona»:** es suyo.
+
+- **Con su huella, al empezar el turno.** Al abrir la app con la sesión cerrada sale el aviso del sistema, abajo. «Usar
+  mi PIN del POS» queda de respaldo.
+- **Solo lo que Android da por seguro, y nunca el PIN del celular.** El PIN del celular lo puede saber alguien de la
+  casa o de la tienda: con él sería Luis en el POS. Cuenta la huella y, en los celulares que Android certifica como
+  seguros, el rostro.
+- **Otra huella no es Luis.** La llave que abre la sesión pide la huella cada vez, y Android la invalida si alguien
+  registra otra huella o quita el bloqueo de pantalla. Entonces la app pide el PIN del POS y, con él, activa la huella
+  otra vez.
+- **La huella no sale del celular:** Android solo le dice a la app que pasó. El PIN del POS ya no pasa por el wifi cada
+  mañana.
+- **Dura el turno (8 h)** o hasta «Cerrar la sesión». Mientras, lo cuida el bloqueo del celular.
+- **Sin red, entra con su huella.** El PIN del POS sí pide red: lo revisa la caja principal.
+
+**En el de la tienda, Precio no pide nada:** enseña lo que ve el cliente. Para contar:
+
+- **Al tocar «Conteo», «¿Quién cuenta?», en dos pasos.** Primero las fichas de quienes tienen «Contar inventario», tres
+  por renglón, y ninguna viene elegida. Al tocar una, «PIN de Ana», con el teclado abajo, junto al pulgar, y «Otra
+  ficha». Entra sola con la cuarta cifra. «Regresar», o el gesto de atrás, vuelve a Precio.
+- **Caben 9 fichas en el chico,** también con letra al 200 % (medido en el prototipo a 360 × 740: llegan a y 476, y a
+  513 con letra grande). El teclado del PIN va en su propia pantalla, entero (de y 426 a 706). Con más fichas, la lista
+  se desliza hacia arriba, nunca de lado: deslizar desde la orilla es el gesto de atrás.
+- **Los intentos, de ese celular:** 5 por persona; luego ese celular espera 5 minutos para esa persona. En la caja sigue
+  entrando: quien prueba PIN en un celular sin vigilar no deja a nadie fuera de la caja. Cada espera queda en la
+  bitácora y avisa por Telegram: «Demasiados intentos de Carmen desde el celular de la tienda».
+- **Sin red no se entra:** los PIN no se guardan en el celular. La app lo dice antes de pedir el PIN. Quien ya entró
+  sigue.
+- **Al volver a entrar, cada quien sigue en lo que contaba.**
+
+### Cuánto dura la sesión
+
+| | Celular de Luis | Celular de la tienda |
+|---|---|---|
+| Dura | El turno: 8 horas, como `/conteo` | 10 minutos sin usarse, y a lo más el turno |
+| Usarlo es | — | Leer un código, tocar la pantalla o moverse con TalkBack o el teclado |
+| Sin red | Sigue | Los 10 minutos no corren. Si se cumplen sin red, el aviso sale al volver la red |
+| Se cambia | — | En Configuración › Celulares, de 5 a 30 minutos |
+| Se cierra a mano | «Cerrar la sesión», en el menú de la ficha | «Salir» o «Terminé mi parte y salir» |
+| Antes de cerrarse sola | — | Un minuto antes vibra y sale una franja fija, «Se cierra en 0:59», con «Seguir» de 56 dp; TalkBack la lee al salir. Con la pantalla apagada, una notificación que vibra |
+| Al cerrarse | El ticket armado se queda en el celular | Lo que contaba se guarda a su nombre y vuelve a Precio, sin nadie |
+
+- **La ficha de arriba dice de quién es la sesión.** Si no es la tuya, «Salir».
+- **«Salir» no pregunta y se deshace:** «Salió Ana · Deshacer», unos 6 segundos; la sesión se cierra en la caja
+  principal al acabarse el aviso. Quien toca «Salir» puede ser quien llega, y no decide por otro. Lo del día sin aplicar
+  se queda a nombre de Ana: nadie más lo aplica, se le recuerda al volver y, si no vuelve ese día, se descarta con
+  aviso. «Terminé mi parte y salir» sí pregunta: lo toca quien contó.
+- **Si se cierra sola a media cuenta,** lo que iba de ese producto se guarda a su nombre (en el completo, sube como una
+  captura; en el del día, sigue sin aplicar). Al volver, en el lugar del producto: «Lápiz HB: 7, guardado a las 15:10»,
+  con «Sigue sumando» y «Quitar». La siguiente lectura de ese producto sigue en 8 («8 · 7 guardadas + 1»), como al volver
+  a cualquier producto en el mismo lugar ([el lugar y el orden](#el-lugar-y-el-orden)); «Quitar» lo deja en 0. Así no
+  se cuenta dos veces el mismo anaquel.
+- **Mientras, Precio lo dice:** una franja fija, «Se cerró la sesión de Ana: lo contado quedó a su nombre · Entrar»,
+  hasta que alguien entre o la quite con ×. La primera lectura después avisa «No se contó: estás en Precio».
+- **Las sesiones del de la tienda se guardan en la base de la caja principal,** con su inicio y su fin: un reinicio del
+  servicio no las borra. Cada captura lleva su sesión y cuánto hace que se contó (C4). Hasta el fin del día, la caja
+  principal acepta lo contado mientras esa sesión vivía, aunque ya se haya cerrado: lo que Ana contó en la bodega sin
+  red sube a su nombre aunque ya haya salido.
+
+### Sobre el bloqueo
+
+Igual en los dos. El mosaico «Precio» abre el verificador sobre la pantalla de bloqueo, sin desbloquear y sin entrar:
+nombre, precio, mayoreo y promoción, de la copia del catálogo. Ni existencia, ni ticket, ni conteo ([del bolsillo al
+precio](#del-bolsillo-al-precio)).
+
+- **En el de Luis,** «Abrir la app» pide desbloquear el celular. Si su sesión está abierta, sigue en Precio con ese
+  producto; si no, pide su huella.
+- **El de la tienda, sin bloqueo de pantalla** (lo propuesto): no guarda nada delicado y para contar pide la ficha y el
+  PIN. Con bloqueo, nadie de fuera probaría PIN en él, pero todo el personal sabría el del celular (pregunta abajo).
+
+### La copia del catálogo en cada uno
+
+| | De una persona | De la tienda |
+|---|---|---|
+| Productos, códigos, precios y mayoreo | Sí | Sí |
+| Promociones y fotos | Sí | Sí |
+| Lo de la búsqueda: sinónimos, marcas, lo más vendido | Sí | Sí |
+| Los rápidos (Copia B/N, CURP) | Sí | No: son del ticket |
+| Existencias | Sí | No: así tampoco baja cada venta |
+| Quién es | Su dueño: su nombre y lo que puede | Nadie: las fichas se piden con red |
+| Usuarios, PIN (ni su hash), clientes y crédito, costos y utilidad, folios, efectivo, el ticket impreso | Nunca | Nunca |
+
+- **Lo que no va en la copia tampoco se lo contesta la API.** Al de la tienda, el precio le llega sin existencia, y el
+  conteo del día sin lo que tenía el sistema ni la diferencia, aunque cuente quien ve los costos: eso se ve en la caja.
+- **Con el respaldo no hay copia:** todo va con red.
+
+### Si se pierde un celular
+
+- **Desde cualquier caja:** Configuración › Celulares › el celular › «Quitar el acceso». Pregunta ahí mismo y no pide el
+  PIN otra vez, como «Quitar PC» en Configuración › Cajas y sus PC. Queda en la bitácora.
+- **Al momento,** la caja principal olvida su llave y cierra sus sesiones: nada de lo que mande después entra.
+- **Si vuelve a ver la caja principal,** el celular borra su llave, su copia y lo que tenía guardado, y dice «Este
+  celular ya no tiene acceso». Lo que no alcanzó a subir se pierde; si aparece el celular, se da de alta otra vez.
+- **Lo que se lleva no es delicado:** precios y, en el de una persona, existencias. Nada de PIN, clientes ni costos.
+- **Dar de baja a la persona, o quitarle «Usar la app en su celular»,** detiene su celular. Con el permiso de vuelta,
+  sigue, sin darlo de alta otra vez.
+- **Robado con la sesión abierta,** el de Luis hace lo que Luis hasta que se le quite el acceso o se acabe el turno. Los
+  tickets llegan en espera y se ven antes de cobrarlos; las capturas, antes de cerrar el departamento. El conteo del día
+  entra al kardex al aplicarse: queda en la bitácora a nombre de Luis y se corrige con un ajuste.
+- **Cambiar de celular no es perderlo:** al dar de alta el nuevo, la caja dice cuánto tiene por subir el anterior y
+  espera a que suba, si se le pide.
+
+### En el POS: Configuración › Celulares
+
+```
+┌ Configuración › Celulares ────────────────────── [ + Dar de alta un celular ] ┐
+│                                                                               │
+│  Celular de Luis        De Luis         Precio · Ticket · Conteo              │
+│  Pixel 8 Pro            Hoy 14:52 · 0.2.0 · catálogo al día · nada por subir  │
+│                                                          [ Quitar el acceso ] │
+│  ───────────────────────────────────────────────────────────────────────────  │
+│  Celular de la tienda   De la tienda    Precio · Conteo · sesión de 10 min    │
+│  moto g54               Ayer 18:10 · 0.2.0 · catálogo al día · 3 por subir    │
+│                                                          [ Quitar el acceso ] │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Un grupo nuevo, junto a «Cajas y sus PC»,** para quien tiene «Dar de alta y quitar cajas». En pantalla pasa a «Dar
+  de alta y quitar cajas y celulares»: es el mismo cuidado.
+- **De cada celular:** nombre, modelo, de quién es, sus modos, la sesión (el de la tienda), la última vez que se vio, su
+  versión, de cuándo es su catálogo y cuánto tiene por subir. La última vez que se vio delata uno perdido.
+- **Los modos se cambian ahí** y el celular los toma al momento, por su canal de avisos. Si le quitan el modo en que
+  estaba, pasa a Precio y lo dice; el ticket armado se queda guardado.
+- **De quién es no se cambia:** para pasar el de Luis a la tienda, se da de alta otra vez.
+
+### Los permisos nuevos
+
+En un grupo «Celular» de Usuarios y permisos. Los dos son solo «Puede» o «No»: el celular no tiene cómo pedir una
+autorización.
+
+| Permiso | Qué deja | Por defecto | La primera cuenta |
+|---|---|---|---|
+| **Usar la app en su celular** | Tener un celular dado de alta a su nombre | No | Puede |
+| **Mandar tickets desde el celular** | Ticket e impresiones en su celular | No | Puede |
+
+- **Es la alta confianza en un solo lugar:** al llegar, solo Luis los tiene. Darle el primero a alguien es darle la app.
+- **El de la tienda no los pide:** ahí cuenta quien tiene «Contar inventario», como en la caja y en `/conteo`. Precio no
+  pide permiso: es lo que ve el cliente.
+- **En el código:** van al final de `AccionControlada` y en `SoloPuedeONo`; al llegar, «Puede» para quien tiene todos y
+  «No» para los demás, como «Cancelar una entrada o salida».
+
+### Lo que pide al POS para los celulares
+
+Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
+
+| # | Qué | Por qué | Para |
+|---|---|---|---|
+| 1a | **De quién es y sus modos:** el alta dice si es de una persona (cuál) o de la tienda, y con qué modos; la caja principal lo guarda con el permiso de un solo uso, y el celular queda activo cuando la caja confirma «¿Es este?». El celular pide su perfil (de quién es, sus modos y lo que puede su dueño) al conectarse y con cada aviso | Lo decide quien da de alta, no quien lo usa. Sin la confirmación, el QR le sirve a quien lo lea primero. Es el C8 de Contar | Los dos |
+| 1b | **Lo que deja cada llave:** solo las rutas de sus modos. Nada de cobrar, turnos, cortes, efectivo ni configuración, ni revisar, cerrar o cancelar un conteo. Quién hace cada cosa sale de la llave (la de una persona) o de la sesión (la de la tienda, 1c), nunca del `usuarioId` que manda el celular | Hoy la API cree el `usuarioId` que le mandan: con la llave de un celular robado se haría lo que puede cualquiera | Los dos |
+| 1c | **La sesión del de la tienda:** sus fichas y entrar con el PIN (`GET /api/celulares/{id}/fichas` y `POST /api/celulares/{id}/sesion`, como los de las cajas). La sesión se guarda en la base, con su inicio y su fin, y se cierra con «Salir», cuando el celular dice que pasaron los 10 minutos o al acabar el turno. Cada captura lleva su sesión y cuánto hace que se contó (C4); hasta el fin del día se acepta lo contado mientras la sesión vivía. Los intentos se cuentan por celular y persona (5, y ese celular espera 5 minutos), con la bitácora y Telegram | Que cada captura sea de quien la contó, también la que sube tarde o después de un reinicio. Y que probar PIN en un celular sin vigilar no deje a nadie fuera de la caja | El de la tienda |
+| 1d | **Configuración › Celulares:** la lista, los modos, «Quitar el acceso», la última vez que se vio y cuánto tiene por subir (de su latido, como C5). Dar de alta otro a nombre de alguien le quita el acceso al anterior; antes, la caja dice cuánto tiene por subir y ofrece esperar | Un celular perdido o cambiado | Los dos |
+| 1e | **Los permisos «Usar la app en su celular» y «Mandar tickets desde el celular»** | La alta confianza, en Usuarios y permisos | El de Luis, Ticket |
+| 2a | **La copia del de la tienda sin existencias ni usuarios,** y la API tampoco se los contesta: ni la existencia en el precio ni lo que tenía el sistema (`Esperado`, `Diferencia`) al aplicar el conteo del día | Solo lo que ve el cliente, y a ciegas | El de la tienda |
+
+### Preguntas de quién tiene la app
+
+- [ ] En tu celular, ¿entrar con tu huella al empezar el turno (lo propuesto) o con tu PIN del POS? ¿Y que el PIN del
+  celular no sirva (lo propuesto)? Si sirviera, quien lo sepa sería tú en el POS.
+- [ ] En el de la tienda, ¿Precio sin entrar (lo propuesto)?
+- [ ] ¿El de la tienda sin existencias (lo propuesto)? Con ellas contestaría «¿hay en bodega?», pero enseñaría más que
+  lo que ve el cliente a quien no entró. Lo que se está contando seguiría oculto.
+- [ ] ¿La sesión del de la tienda se cierra a los 10 minutos sin usarse, y solo con red (lo propuesto)? En la caja
+  dijiste que no a pedir el PIN otra vez tras unos minutos sin usarla, porque estorba (2026-10-17); aquí el celular pasa
+  de mano en mano y anda lejos de la caja. Es la misma pregunta de Contar.
+- [ ] ¿El de la tienda con bloqueo de pantalla? Sin él (lo propuesto), cualquiera que lo agarre puede probar PIN, y cada
+  espera te avisa por Telegram. Con él, todo el personal sabría el PIN del celular.
+- [ ] ¿Quién más tendrá la app en su celular, y desde cuándo? La de Contar pregunta por el encargado.
+- [ ] ¿Qué celular sería el de la tienda, y cuántos? Se mide antes de comprarlo.
+- [ ] ¿Una persona, un celular (lo propuesto), o alguien necesita dos?
 
 ## Del bolsillo al precio
 
 - **El mosaico de Ajustes rápidos pasa a ser «Precio»:** abre el escáner sobre la pantalla de bloqueo, sin el PIN del
   celular, en modo Precio. Es el camino de apertura que ya se midió (la cámara enlaza antes que la interfaz).
 - **Sobre el bloqueo solo se ve el precio:** nombre, precio, mayoreo y promoción; ni la existencia, ni el ticket, ni el
-  conteo. «Abrir la app» pide desbloquear y sigue en Precio con ese producto.
+  conteo. «Abrir la app» pide desbloquear y sigue en Precio con ese producto; en el de Luis, si su sesión está cerrada,
+  antes pide su huella ([sobre el bloqueo](#sobre-el-bloqueo)).
 - **Sale de la copia del catálogo,** así que no espera a la red: del bolsillo al precio en lo que tarda la lectura.
-- **Los accesos directos del ícono:** «Revisar precio», «Armar ticket» y «Contar».
+- **Los accesos directos del ícono,** dinámicos (`ShortcutManagerCompat`; hoy están fijos en `shortcuts.xml` y solo
+  cambian con otra versión): «Revisar precio», «Armar ticket» y «Contar» en el de Luis; «Revisar precio» y «Contar» en
+  el de la tienda. «Contar» sale solo si se puede contar, y los que alguien ya ancló se apagan con su mensaje («En el
+  piloto no se cuenta»).
 
 ## Sin red
 
@@ -721,7 +1455,7 @@ puede dar de alta cajas.
 | Mandarlo | No: se enseña como QR |
 | Impresiones | No: se agregan en la caja con F2 |
 | Contar | Sí: lo contado sube solo al volver la red |
-| Entrar | Solo quien ya entró en el turno |
+| Entrar | En el de Luis, con su huella (el PIN del POS pide red). En el de la tienda, solo quien ya entró, y su sesión no se cierra sin red |
 
 - **La red tiene tres estados,** como en la caja: buena, lenta y caída, por lo que tarda el latido. En «lenta», mandar
   espera su turno sin trabar la pantalla.
@@ -730,11 +1464,17 @@ puede dar de alta cajas.
 
 ## Ajustes y herramientas de medición
 
-- **Lo del personal,** en Ajustes: vibración y bip (apagado de fábrica, como hoy), linterna automática, la caja principal
-  a la que está conectado, el catálogo (cuántos productos y de cuándo) y el nombre del celular.
+- **Lo del personal,** en Ajustes: vibración y bip (apagado de fábrica, como hoy), linterna automática, «Botón rápido a
+  la izquierda» y «Volver a ver las pistas». Van por persona: en el celular de la tienda, los de quien entró; sin nadie,
+  los del celular.
+- **La conexión,** solo para leer: la caja principal, el catálogo (cuántos productos y de cuándo), de quién es el
+  celular y, en el de la tienda, a los cuántos minutos se cierra la sesión. Se cambia en la caja.
 - **Las herramientas de medición** (sesión de prueba, banco, estrés y los ajustes del escáner: motor, lente, resolución,
   cuadros por segundo) se quedan, porque se sigue midiendo en la tienda, pero bajan a Ajustes › Herramientas de
-  medición. Hoy son cuatro de las cinco pestañas de abajo.
+  medición. Hoy son cuatro de las cinco pestañas de abajo. En el celular de la tienda piden la ficha y el PIN de alguien
+  con «Configuración de la tienda».
+- **Los contadores del botón rápido** (con toque o con gesto, y las opciones que se cierran en menos de 2 s) van ahí,
+  sin el nombre de nadie, y salen solo con el CSV de la sesión de prueba: la app no manda estadísticas.
 
 ## Colores, letras y tamaños
 
@@ -744,7 +1484,8 @@ puede dar de alta cajas.
   en la pestaña del modo, el botón principal y el renglón resaltado; nunca en la retícula, donde el verde de «leído» y
   el ámbar de «viendo» son del escáner.
 - **Las letras del sistema** (Roboto) y cifras tabulares: el precio a 40 sp, el total a 24 sp, el contador a 48 sp.
-- **56 dp** para lo que se toca, como hoy; el botón rápido mide 60 dp y sus opciones 48 dp, con su nombre al lado.
+- **56 dp** para lo principal, como hoy, y 48 dp como mínimo para todo lo que se toca. El botón rápido mide 56 dp (su
+  zona de toque, 64) y sus opciones 48 dp, con su nombre al lado o arriba.
 
 ## Lo que cambia por dentro
 
@@ -753,9 +1494,17 @@ puede dar de alta cajas.
   `ControladorEscaner.eventos`. La regla de búsqueda en el catálogo del núcleo (las variantes de UPC y EAN) se usa tal
   cual sobre la copia del catálogo. Si un día hiciera falta cambiar algo del escáner, va en su propio PR y se mide contra
   la línea base, como siempre.
+- **Del escáner, la app solo cambia en caliente dos ajustes** (`ControladorEscaner.configurar`, sin tocar `escaner`):
+  la vibración, apagada mientras una hoja o el precio en grande tapan el visor, para no vibrar «leído» por lo que no
+  cuenta; y, si se aprueba, `msParaRepetirAVista = 0` al entrar a Conteo. Cambiar solo la vibración no rehace el motor
+  ni el `Confirmador`.
 - **Un módulo nuevo, `pos`:** el cliente de la API, la copia del catálogo (Room, que también es SQLite), la búsqueda,
   y una bandeja de salida para los tickets y las capturas, cada una con su número para que mandarla dos veces cuente una.
-- **`app`:** las pantallas nuevas sobre la de hoy; las de medición bajan a Ajustes.
+  Guarda la llave del celular cifrada con el Keystore de Android. En el de una persona, otra llave del Keystore abre la
+  sesión: pide la huella en cada uso (solo lo que Android da por seguro, sin el PIN del celular) y Android la invalida
+  si se registra otra huella o se quita el bloqueo; entonces la app pide el PIN del POS.
+- **`app`:** las pantallas nuevas sobre la de hoy; las de medición bajan a Ajustes. El botón rápido se excluye del gesto
+  de atrás (`Modifier.systemGestureExclusion()`) y los accesos directos del ícono pasan a dinámicos.
 - **El contrato:** el POS todavía no publica OpenAPI. Mientras, los DTO se escriben a mano en Kotlin (camelCase, los
   enums como números, ignorando campos nuevos), con ejemplos de JSON sacados de las pruebas del POS. Cuando el POS
   publique OpenAPI con sus respuestas tipadas, el cliente se genera de ahí.
@@ -775,39 +1524,51 @@ Nada de esto existe hoy en `papeleria-pos`; cada punto dice qué entrega de aqu�
 
 | # | Qué | Por qué | Para |
 |---|---|---|---|
-| 1 | **Celulares:** alta con un QR de un solo uso desde la caja, llave propia, sin serie de folios ni turno, y Configuración › Celulares | Un celular dado de alta como caja tiene serie, sale en el corte del día y en la red de cajas; y con «La única caja» no se puede dar de alta | Conectar |
-| 2 | **La copia del catálogo para el celular:** la de las cajas (`/api/cajas/{id}/paquete` y `/cambios`) sin usuarios, PIN, clientes ni reglas | La de hoy trae el PIN cifrado de cada usuario y los clientes; en un celular que se puede perder, no | Conectar |
+| 1 | **Celulares:** alta con un QR de un solo uso desde la caja, que la caja confirma («¿Es este?»); llave propia, sin serie de folios ni turno; de una persona o de la tienda, con sus modos; lo que deja cada llave (quién hace cada cosa sale de la llave o de la sesión, nunca del `usuarioId` que manda el celular); la sesión del de la tienda; Configuración › Celulares; los permisos «Usar la app en su celular» y «Mandar tickets desde el celular». Detalle: de 1a a 1e, [los celulares](#lo-que-pide-al-pos-para-los-celulares), y C10 | Un celular dado de alta como caja tiene serie, sale en el corte del día y en la red de cajas, y su llave abre toda la API de su caja; con «La única caja» no se puede dar de alta. Hoy la API cree el `usuarioId` que le mandan | Conectar |
+| 2 | **La copia del catálogo para el celular:** la de las cajas (`/api/cajas/{id}/paquete` y `/cambios`) sin usuarios ni el hash de sus PIN, clientes, costos, folios, efectivo ni reglas; la del de la tienda, además, sin existencias (2a) | La de hoy trae el hash del PIN de cada usuario (un PIN de 4 cifras sale de ahí en minutos) y los clientes; en un celular que se puede perder, no | Conectar |
 | 3 | **La regla de los códigos** (las variantes de UPC y EAN) en el servicio y en la copia de las cajas | Se decidió el 2026-10-11 y está en el núcleo de esta app, pero el POS todavía busca el código tal cual | Conectar |
-| 4 | **Mandar un ticket a una caja:** recibirlo, avisarle a esa caja por su canal de avisos (con acuse) y que entre en espera con quien lo mandó; el permiso «Mandar tickets» | Es la entrega 12 de la propuesta del POS; los tickets en espera hoy viven solo dentro de cada caja | Ticket |
+| 4 | **Mandar un ticket a una caja:** recibirlo, avisarle a esa caja por su canal de avisos (con acuse) y que entre en espera con quien lo mandó; el permiso «Mandar tickets desde el celular» | Es la entrega 12 de la propuesta del POS; los tickets en espera hoy viven solo dentro de cada caja | Ticket |
 | 5 | **Las cajas para el celular:** quién atiende, cuántos tickets esperan y si está prendida | Hoy la caja no le dice al servicio quién atiende ni cuántos esperan | Ticket |
 | 6 | **Impresiones:** apartarlas mientras están en un ticket del celular, y revisar «por cobrar» dentro del candado del cobro | Que dos no tomen la misma; y que dos cobros simultáneos no cobren dos veces una impresión del POS | Impresiones |
 | 7 | **El QR del ticket en la caja:** probar en la tienda que el lector lea QR y mande cada renglón con Enter | Si no, la caja tendría que entender el QR | Ticket |
-| 8 | **Conteo:** que capturar no regrese el departamento entero; el número propio también en el conteo del día; la lista del día disponible para el celular | Cada captura hoy regresa todos los productos del departamento; el conteo del día no tiene cómo evitar duplicados | Conteo |
-| 9 | **El conteo de arranque:** decidir cómo se cuenta en las semanas antes de dejar eleventa | Mientras el POS lee eleventa, no deja contar | Conteo |
+| 8 | **Conteo:** capturar ligero, ponerse al día, el número propio en el del día, cuándo se contó, quién está contando y qué le falta subir, que los conteos no se pisen, quién cuenta de la sesión y el lugar en la captura. Detalle: de C1 a C11, [lo que pide al POS para contar](#lo-que-pide-al-pos-para-contar) | Cada captura hoy regresa el departamento entero; el del día no evita duplicados ni mira si un departamento está abierto (una corrección en medio se cuenta dos veces), y se compara contra lo que hay al llegar | Conteo |
+| 9 | **El conteo de arranque** (C7): decidir cuándo (A, B o C); con C, el del día solo en lo ya contado y el primer cierre de cada departamento marcado «arranque» | Mientras el POS lee eleventa, no deja contar | Conteo |
 | 10 | **El mayoreo en el F9 de la caja** | Su propia propuesta lo pide; que el celular y la caja enseñen lo mismo | — |
 
 ## Entregas
 
-Cada entrega se prueba en el emulador y en el Pixel, y la de la cámara no cambia. Las primeras sirven ya en el piloto.
+Cada entrega se prueba en el emulador y en el Pixel, y la de la cámara no cambia. Las primeras sirven ya en el piloto. El
+orden: primero lo que usa el dueño (el precio, el bolsillo, el ticket, las impresiones), luego contar y al final el
+celular de la tienda.
 
 | # | Entrega | Qué trae | Necesita del POS |
 |---|---|---|---|
-| 1 | **La base** | Los tres modos sobre el escáner de hoy, el panel, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
-| 2 | **Conectar y Precio** | El alta (con lo de hoy mientras llega el 1), las fichas y el PIN, el precio y la búsqueda con la API de hoy; la copia del catálogo y sin red cuando el POS la sirva | 1, 2, 3 |
-| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos | — |
+| 1 | **La base** | Los tres modos sobre el escáner de hoy, el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
+| 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda. Mientras el POS no tenga celulares, el respaldo: una caja nueva («Celular de Luis», serie L), con red y sin copia. La copia del catálogo y sin red, cuando el POS sirva el 2 | 1 (1a, 1b, 1d, 1e) y 3; luego 2 |
+| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos, dinámicos | — |
 | 4 | **Mandar el ticket** | «¿A qué caja?», mandarlo, la confirmación y el QR sin red | 4, 5, 7 |
 | 5 | **Impresiones** | La hoja de impresiones con miniaturas y lotes, el renglón en el ticket | 6 |
-| 6 | **Conteo** | El conteo del día y el completo, con la bandeja de salida | 8, 9 (después del piloto) |
+| 6 | **Conteo**, después del piloto | 6.1 el completo; 6.2 el del día; 6.3 el celular de la tienda, con Precio sin entrar y Conteo por turnos ([cómo se entregaría](#cómo-se-entregaría)) | 6.1: 1, C1, C2, C4, C5, C9, C10, C11 · 6.2: C3 · 6.3: 1a, 1b, 1c, 2a |
 
 ## Preguntas para el dueño
 
-- [ ] ¿Quién arma tickets en el piso: cualquiera que atienda o solo el encargado? (también abierta en el POS)
-- [ ] ¿Los celulares son de cada quien o de la tienda? Si son de cada quien, la última persona viene elegida y entrar es
-  solo el PIN.
-- [ ] ¿El precio sobre el bloqueo, sin el PIN del celular? Solo enseña lo que el cliente ve en la tienda.
-- [ ] ¿La copia del catálogo en el celular (lo recomendado: precio al instante y sin red) o solo con red?
-- [ ] ¿Los celulares como «celulares» en el POS (lo recomendado) o como una caja más?
+Las del botón rápido, las de Contar y las de quién tiene la app van en su sección:
+[el botón rápido](#preguntas-del-botón-rápido), [Contar](#preguntas-de-conteo) y
+[quién tiene la app](#preguntas-de-quién-tiene-la-app).
+
+- [x] ¿Quién arma tickets en el piso? Por ahora, solo quien tiene la app en su celular y «Mandar tickets desde el
+  celular»: el dueño. El de la tienda no arma tickets (dueño, 2026-11-03).
+- [x] ¿Los celulares son de cada quien o de la tienda? Primero, los de personas de confianza; a futuro, quizá uno de la
+  tienda con Precio y Conteo (dueño, 2026-11-03). Cómo se entra queda en las preguntas de quién tiene la app.
+- [ ] ¿El precio sobre el bloqueo, sin el PIN del celular? Solo enseña lo que el cliente ve en la tienda. Igual en los
+  dos celulares.
+- [ ] ¿La copia del catálogo en el celular (lo recomendado: precio al instante y sin red) o solo con red? Con pocos
+  celulares, y de confianza, pesa menos el riesgo; ninguna lleva el hash del PIN, y la del de la tienda va sin
+  existencias.
+- [ ] ¿Los celulares como «celulares» en el POS (lo recomendado: uno tiene dueño y modos, y la llave de una caja abre
+  toda la API de su caja) o como una caja más? Mientras, el de Luis como caja nueva, con red.
 - [ ] ¿Apartar las impresiones que se agregan en el celular?
-- [ ] ¿El conteo físico de arranque se hace con los celulares? ¿Y cómo, si el piloto sigue leyendo eleventa?
-- [ ] ¿Las herramientas de medición las ve todo el personal o solo quien tiene Configuración?
-- [ ] ¿La app abre en el último modo usado (lo propuesto) o siempre en Precio?
+- [ ] ¿El conteo físico de arranque: A, B o C (lo recomendado)? Está en las preguntas de Contar.
+- [ ] ¿Las herramientas de medición las ve todo el personal o solo quien tiene Configuración? Lo propuesto: en los de una
+  persona, sí; en el de la tienda, con la ficha de alguien con «Configuración de la tienda».
+- [ ] ¿La app abre en el último modo usado (lo propuesto) o siempre en Precio? El de la tienda abre siempre en Precio.

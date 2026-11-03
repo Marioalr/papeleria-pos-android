@@ -226,27 +226,32 @@ que habla con el servicio de la caja principal, con su misma API (decisión del 
 módulo, sin cambios.
 
 Lo que hace la app: armar tickets en el piso y mandarlos a una caja (la preventa), revisar precios (el verificador, F9),
-contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). La
-interfaz, sus pantallas y lo que le pide al POS están en la [propuesta](propuesta-interfaz.md), con un
+contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). Lo demás de
+cada modo va en un solo botón, abajo a la derecha, que se usa con un toque o pulsando y deslizando (decisión del dueño,
+2026-11-03). La interfaz, sus pantallas y lo que le pide al POS están en la [propuesta](propuesta-interfaz.md), con un
 [prototipo navegable](propuesta-interfaz/prototipo.html). **Estado:** propuesta, para aprobar.
+
+**Quién tiene la app** (dueño, 2026-11-03): en la primera versión, solo personas de alta confianza, como el dueño, cada
+quien en su celular y entrando con su huella; a futuro, quizá un celular de la tienda con solo Precio y Conteo, por
+turnos. Contar está completo en la propuesta, aunque se entrega después del piloto.
 
 | # | Entrega | Qué trae | Necesita del POS |
 |---|---|---|---|
-| 1 | **La base** | Los modos Precio, Ticket y Conteo sobre el escáner de hoy, el panel, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
-| 2 | **Conectar y Precio** | El alta del celular, las fichas y el PIN, el precio y la búsqueda con la API; la copia del catálogo cuando el POS la sirva | Celulares, la copia sin PIN ni clientes, la regla de los códigos |
+| 1 | **La base** | Los modos Precio, Ticket y Conteo sobre el escáner de hoy, el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
+| 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda con la API; la copia del catálogo cuando el POS la sirva. Mientras, una caja nueva, con red | Celulares (de quién es, sus modos, lo que deja cada llave), los permisos nuevos, la regla de los códigos; luego la copia sin PIN ni clientes |
 | 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos | — |
 | 4 | **Mandar el ticket** | Elegir la caja, mandarlo y el QR sin red | Recibir tickets del celular (su entrega 12), las cajas con quién atiende |
 | 5 | **Impresiones** | Las impresiones por cobrar con miniaturas y lotes | Apartarlas; cobrar una sola vez |
-| 6 | **Conteo** | El conteo del día y el completo, con la bandeja de salida | Capturas ligeras; el conteo de arranque (después del piloto) |
+| 6 | **Conteo** | El completo, el del día y el celular de la tienda, con el lugar y la bandeja de salida (después del piloto) | Capturas ligeras, que los conteos no se pisen, quién cuenta de la sesión, el lugar; el conteo de arranque |
 
 **Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
 app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
 tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes. Lo demás se queda.
 
 Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
-las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celulares necesita el personal**:
-cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU, Android reciente) se mide en los celulares del
-personal, con las mismas herramientas.
+las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celular comprar para la tienda**,
+si se decide tenerlo: cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU, Android reciente) se mide
+en el modelo antes de comprarlo, con las mismas herramientas; el escáner solo se ha medido en el Pixel 8 Pro.
 
 ## Por definir
 
