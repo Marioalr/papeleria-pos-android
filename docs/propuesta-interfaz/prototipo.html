@@ -211,6 +211,7 @@ svg.i.ch { width: 20px; height: 20px; }
 .estado-red.subir i { background: #8ecff0; }
 .quien { flex-wrap: wrap; row-gap: 6px; }
 .ficha-yo.tienda svg.i { width: 24px; height: 24px; }
+.pie-alta { position: sticky; bottom: calc(-1 * (var(--gb) + 14px)); margin: auto 0 calc(-1 * (var(--gb) + 14px)); padding: 16px 0 calc(var(--gb) + 14px); display: flex; flex-direction: column; gap: 8px; background: var(--sup); box-shadow: 0 -12px 12px -12px var(--sombra); }
 .pastilla { display: flex; align-items: center; gap: 8px; flex: none; }
 .pastilla .salir { height: 48px; min-width: 72px; display: flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 24px; background: var(--chip); border: 2px solid rgba(255, 255, 255, .85); color: #fff; font-size: 16px; font-weight: 700; }
 .letra-grande .pastilla .salir { font-size: 26px; }
@@ -352,7 +353,10 @@ svg.i.ch { width: 20px; height: 20px; }
 .linea .imp { font-weight: 700; font-size: 16px; min-width: 60px; text-align: right; }
 .linea .x { font-weight: 700; color: var(--suave); }
 .linea.desconocido .nom { color: var(--error); }
+.linea.desconocido.actual { background: var(--error-c); color: var(--en-error-c); }
 .linea.desconocido.actual .nom { color: inherit; }
+.panel .linea.doble.desconocido .nom { -webkit-line-clamp: 2; }
+.linea.desconocido .fila2 .det { white-space: normal; }
 /* En el panel de abajo, el nombre en un renglón: el completo se ve en el ticket o en el precio */
 .panel .linea.doble .nom { -webkit-line-clamp: 1; }
 .paso { display: inline-flex; align-items: center; border-radius: 26px; background: var(--sup); box-shadow: inset 0 0 0 1.5px var(--borde); }
@@ -476,6 +480,17 @@ svg.i.ch { width: 20px; height: 20px; }
 .letra-grande .producto-toca .det { display: none; }
 .letra-grande .producto-toca .nom { font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .letra-grande .renglon-ultimo { font-size: 22px; }
+.letra-grande .hoja .barra h2 { font-size: 26px; }
+.letra-grande .hoja .barra h2 small { font-size: 18px; }
+.letra-grande .cajas.dos .caja strong { font-size: 20px; }
+.letra-grande .cajas.dos .valor { font-size: 30px; }
+.letra-grande .teclado-conteo .fila-total span { font-size: 20px; }
+.letra-grande .teclado-conteo .fila-total b { font-size: 32px; }
+.letra-grande .numerico button { font-size: 30px; }
+.letra-grande .hoja .pie .btn { font-size: 20px; }
+.letra-grande .captura .nom, .letra-grande .tarea strong { font-size: 22px; }
+.letra-grande .captura .det, .letra-grande .tarea small { font-size: 17px; }
+.letra-grande .pestanas button { font-size: 18px; }
 .suma { position: absolute; z-index: 1; right: -6px; bottom: -10px; padding: 2px 9px; border-radius: 11px; background: var(--m); color: var(--en-m); font-size: 14px; font-weight: 800; animation: entra .15s ease-out; pointer-events: none; }
 .chip-para { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--aviso-c); color: var(--aviso); font-size: 12.5px; font-weight: 600; vertical-align: middle; }
 .enlace { color: var(--m); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-align: left; font-size: 13.5px; min-height: 32px; padding: 0; }
@@ -866,7 +881,7 @@ const IC = {
   adelante: '<path d="M9 5l7 7-7 7"/>',
   menos: '<path d="M6 12h12"/>',
   mas: '<path d="M12 6v12M6 12h12"/>',
-  abanico: '<circle cx="17" cy="5" r="2.6" fill="currentColor" stroke="none"/><circle cx="8.5" cy="8.5" r="2.6" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="2.6" fill="currentColor" stroke="none"/><path d="M17 11a6 6 0 0 0-6 6" stroke-width="2"/><circle cx="17" cy="17" r="2" fill="currentColor" stroke="none"/>',
+  abanico: '<circle cx="17" cy="5" r="2.6" fill="currentColor" stroke="none"/><circle cx="8.5" cy="8.5" r="2.6" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="2.6" fill="currentColor" stroke="none"/><path d="M17 11a6 6 0 0 0-6 6" stroke-width="2"/>',
   bote: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
   deshacer: '<path d="M9 7 5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',
   linterna: '<path d="M8 3h8l-1 6H9z"/><path d="M9 9h6l-1 12h-4z"/><path d="M12 13v2"/>',
@@ -1031,23 +1046,26 @@ function agregarAlTicket(codigo, cant = 1, aviso = false) {
 }
 
 /* ——— El escáner simulado: viendo (ámbar) → leído (verde, vibración) → escaneando ——— */
-function siguienteCodigo() {
+function siguienteCodigo(soloVer = false) {
   const m = S.pantalla === 'alta' ? null : (S.rapidoBloqueo ? 'precio' : S.modo);
   if (!m) return QR_ALTA;
+  const sig = k => soloVer ? S.indices[k] : S.indices[k]++;
   if (m === 'conteo' && conteoActivo()) {
     const t = conteoActivo(), o = S.secuenciaConteo, sec = o && o.para === t.id ? SEC_CONTEO[o.sec] : (SEC_CONTEO[t.id] || SEC_CONTEO.esc);
-    return sec[S.indices.conteo++ % sec.length];
+    return sec[sig('conteo') % sec.length];
   }
-  const sec = SECUENCIAS[m]; return sec[S.indices[m]++ % sec.length];
+  const sec = SECUENCIAS[m]; return sec[sig(m) % sec.length];
 }
 function leer(codigo) {
   if (S.escaner.fase !== 'escaneando') return;
   S.cierrePendiente = null;
-  codigo = codigo || siguienteCodigo();
+  if (S.avisoCierre) S.avisoCierre = false;   // leer es usarlo: el aviso del minuto se va
+  /* Con una hoja, el precio en grande, el QR o un diálogo encima, la lectura enseña su verde pero no cuenta ni vibra */
+  const tapado = !!(S.hoja || S.precioGrande || S.qr || S.dialogo) && !S.rapidoBloqueo && S.pantalla !== 'alta';
+  codigo = codigo || siguienteCodigo(tapado);
   S.escaner.fase = 'viendo'; S.escaner.codigo = codigo; pintarEscaner();
   despues(280, () => {
     S.escaner.fase = 'leido';
-    const tapado = !!(S.hoja || S.precioGrande || S.qr) && !S.rapidoBloqueo && S.pantalla !== 'alta';
     if (!tapado) { vibrar(35); aplicarLectura(codigo); }
     pintar();
     despues(550, () => { S.escaner.fase = 'escaneando'; S.escaner.codigo = null; pintarEscaner(); });
@@ -1243,7 +1261,7 @@ const sinAplicar = () => Object.entries(S.conteo.dia).filter(([k, d]) => d.estad
    no enseña la existencia en ninguna parte; lo del día sin aplicar, hasta aplicarlo o descartarlo */
 function existenciaOculta(codigo) {
   const t = conteoActivo(), p = POR_CODIGO.get(codigo), c = S.conteo;
-  if (!p) return false;
+  if (!p || (S.pos === 'piloto' && !S.verConteo)) return false;   // en el piloto no se cuenta
   const base = p.base || codigo, d = c.dia[base];
   if (d && d.estado === 'sin-aplicar') return true;
   if (!t) return false;
@@ -1387,7 +1405,7 @@ function panel() {
 /* Los modos que deja este celular: el de la tienda, solo Precio y Conteo */
 const modosDelCelular = () => S.celular === 'tienda' ? ['precio', 'conteo'] : ['precio', 'ticket', 'conteo'];
 function modos() {
-  const n = piezasTicket(), pend = PERSONAS[S.persona] ? sinAplicar().length : 0;
+  const n = piezasTicket(), pend = PERSONAS[S.persona] && !(S.pos === 'piloto' && !S.verConteo) ? sinAplicar().length : 0;
   const nombres = { precio: ['Precio', 'precio'], ticket: ['Ticket', 'ticket'], conteo: ['Conteo', 'conteo'] };
   const num = v => v === 'ticket' && n && S.modo !== 'ticket' ? [n, `${n} artículos`] : v === 'conteo' && pend && S.modo !== 'conteo' ? [pend, `${pend} sin aplicar`] : null;
   const b = v => { const x = num(v); return `<button data-a="modo" data-v="${v}" class="${S.modo === v ? 'on' : ''}${x ? ' con-cuenta' : ''}" aria-pressed="${S.modo === v}" aria-label="${nombres[v][0]}${x ? `, ${x[1]}` : ''}">${ic(nombres[v][1], 'i ch')}<span class="nombre-modo">${nombres[v][0]}</span>${x ? `<span class="cuenta-ic num${v === 'conteo' ? ' aviso' : ''}">${x[0]}</span>` : ''}</button>`; };
@@ -1979,7 +1997,7 @@ function pantallaAlta() {
   const fin = pasos.length - 1;
   let h = barraEstado(true) + `<div class="pantalla"><h1>Conectar con la tienda</h1><p class="lead">${tienda ? 'Una sola vez. Precio no pide entrar; para contar, cada quien entra con su ficha y su PIN.' : 'Una sola vez. Después entras con tu huella.'}</p>`;
   h += pasos.map(([t, sub], i) => `<div class="paso-alta${S.pasoAlta > i ? ' hecho' : ''}"><span class="n">${S.pasoAlta > i ? ic('check', 'i ch') : i + 1}</span><div><strong>${t}</strong><span>${sub}</span></div></div>`).join('');
-  h += `<div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:16px">`;
+  h += `<div class="pie-alta">`;
   if (S.pasoAlta === 0) h += `<button class="btn lleno ancho" data-a="altaEscanear">${ic('qr')}Escanear el código de la caja</button><button class="btn borde ancho" data-a="altaSinQr">Escribir la dirección y el PIN</button>`;
   else if (S.pasoAlta === 1) h += `<button class="btn lleno ancho" data-a="altaPermiso">${ic('cercanos')}Continuar</button>`;
   else if (S.pasoAlta === 2) h += `<p class="nota centro" style="margin:0">Prototipo: lo que se toca en la caja</p><button class="btn tonal ancho" data-a="cajaSiEsEste">La caja: «Sí, es este»</button>`;
@@ -2092,6 +2110,7 @@ function avisarCierre() {
   S.avisoCierre = { hasta: Date.now() + 4000 }; S.toast = null; vibrar([60, 80, 60]);
   for (let i = 1; i <= 4; i++) despues(i * 1000, () => {
     if (!S.avisoCierre || S.persona !== quien) return;
+    if (i === 4 && S.red === 'caida') { S.avisoCierre = false; S.cierrePendiente = quien; toast(`Sin red, la sesión de ${PERSONAS[quien].nombre} no se cierra: nadie podría volver a entrar.`, null, null, 4200, true); pintar(); return; }
     if (i === 4) cerrarSesion(true);
     pintar();
   });
@@ -2326,7 +2345,7 @@ const A = {
     S.hoja = null; pintar();
   },
   yaLoLleve(d) { S.conteo.fuera = S.conteo.fuera.filter(x => x.codigo !== d.c); pintar(); },
-  contarOtraCosa() { dejarActual(); moverAFuera(); S.conteo.activo = null; S.conteo.aviso = null; S.hoja = 'elegirConteo'; S.hojaDatos = null; pintar(); },
+  contarOtraCosa() { dejarActual(); moverAFuera(); S.conteo.activo = null; S.indices.conteo = 0; S.conteo.aviso = null; S.hoja = 'elegirConteo'; S.hojaDatos = null; pintar(); },
   /* «Terminé mi parte»: guarda lo que se contaba; lo del día sin aplicar se pregunta (lo toca quien contó) */
   salirConteo() {
     const t = conteoActivo(); dejarActual(); moverAFuera();
@@ -2420,10 +2439,13 @@ const A = {
   toast() { const t = S.toast; S.toast = null; if (t && t.f) t.f(); else pintar(); },
 };
 tel.addEventListener('click', e => {
+  const usado = !!S.avisoCierre;
+  S.cierrePendiente = null; S.avisoCierre = false;   // tocar es usarlo: el aviso del minuto se va
+  const h = e.target.classList && e.target.classList.contains('hoja') ? e.target : null;
+  if (h && !h.classList.contains('completa') && S.hoja !== 'cantidad' && S.hoja !== 'aplicarDia' && !enRebote(h)) { A.cerrarHoja(); return; }   // afuera de la hoja
   const b = e.target.closest('[data-a]');
-  if (!b || b.disabled) return;
-  if (enRebote(b)) return;   // el toque de rebote: solo responde el botón; arriba de la hoja, cerrar
-  S.cierrePendiente = null;   // tocar es usarlo
+  if (!b || b.disabled) { if (usado) pintar(); return; }
+  if (enRebote(b)) { if (usado) pintar(); return; }   // el toque de rebote: solo responde el botón; arriba de la hoja, cerrar
   if (b.closest('.rapido')) { cerrarMenuRapido(false); usarGesto(); }
   const f = A[b.dataset.a];
   if (f) f(b.dataset);
@@ -2561,17 +2583,23 @@ tel.addEventListener('keydown', e => {
   }
 });
 /* Escape cierra el botón rápido aunque el foco no esté en el celular (por ejemplo, después de tocarlo con el ratón) */
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menuRapido) { cerrarMenuRapido(); S.rebote = 0; const f = tel.querySelector('#fab'); if (f) f.focus(); } });   // el rebote es de los toques, no del teclado
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (S.menuRapido) { cerrarMenuRapido(); S.rebote = 0; const f = tel.querySelector('#fab'); if (f) f.focus(); return; }   // el rebote es de los toques, no del teclado
+  if (S.dialogo) { A.cerrarDialogo(); return; }
+  if (S.precioGrande) { A.cerrarGrande(); return; }
+  if (S.qr) { A.qrCerrar(); return; }
+  if (S.hoja) A.cerrarHoja();
+});
 tel.addEventListener('input', e => { if (e.target.id === 'busqueda') { S.busqueda = e.target.value; const pos = e.target.selectionStart; pintar(); const q = tel.querySelector('#busqueda'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } } });
 tel.addEventListener('keydown', e => {
   if (e.target.id === 'busqueda' && e.key === 'Enter') { const r = buscarEn(S.busqueda)[0]; if (r) A.elegir({ c: r.codigo }); e.preventDefault(); }
-  if (e.key === 'Escape' && S.hoja) { A.cerrarHoja(); }
 });
 
 /* Mientras se ve el visor, la tecla Espacio «lee» (en la PC) */
 document.addEventListener('keydown', e => {
-  if (e.target.closest && e.target.closest('input, select, textarea')) return;
-  if (e.key === ' ' && tel.querySelector('.franja .tocar') && !S.hoja) { e.preventDefault(); leer(); }
+  if (e.target.closest && e.target.closest('input, select, textarea, button, a, [tabindex]')) return;   // Espacio activa lo que tiene el foco
+  if (e.key === ' ' && tel.querySelector('.franja .tocar') && !S.hoja && !S.precioGrande && !S.qr && !S.dialogo) { e.preventDefault(); leer(); }
 });
 
 /* ——— La barra y la guía del prototipo ——— */
@@ -2589,6 +2617,7 @@ const PROTO = {
         todos().forEach(c => {
           c.capturas.forEach(k => { if (k.estado === 'por-subir') { if (S.cierreSinRed && k.conteo === 'esc') { k.estado = 'no-entro'; fuera++; } else k.estado = 'subida'; } });
           Object.values(c.dia).forEach(d => { if (d.estado === 'por-aplicar') d.estado = 'aplicada'; });
+          if (c.ultimoAplicado) c.ultimoAplicado.porAplicar = false;
           c.porSubir = 0;
         });
         if (fuera) toast(`No entraron ${fuera}: Carmen cerró Escolar a las 15:10. Díselo para que lo revise.`, null, null, 6000, true);
@@ -2599,14 +2628,14 @@ const PROTO = {
   },
   pos(v) {
     S.pos = v; S.verConteo = false;
-    if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { S.conteo = { ...S.conteo, activo: null, actual: null }; } }
+    if (v === 'piloto') { S.cajaElegida = 2; if (S.conteo.activo) { dejarActual(); moverAFuera(); S.conteo.activo = null; } }
     if (S.celular === 'tienda' && !S.persona && S.modo === 'conteo') S.modo = 'precio';
     pintar();
   },
   /* El de Luis abre ya adentro; el de la tienda, en Precio y sin nadie */
   celular(v) {
     if (S.celular === v) return;
-    S.celular = v; S.hoja = null; S.menuRapido = false; S.dialogo = null; S.conPin = false; S.avisoCierre = false; S.accesoQuitado = false; S.precioGrande = false; S.qr = null;
+    S.celular = v; S.hoja = null; S.menuRapido = false; S.dialogo = null; S.conPin = false; S.avisoCierre = false; S.accesoQuitado = false; S.precioGrande = false; S.qr = null; S.cerradaSola = null; S.cierrePendiente = null;
     S.conteo = conteoVacio(); S.conteosDe = {}; DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO();
     S.persona = v === 'tienda' ? null : 'luis'; S.fichaElegida = null; cargarPistas();
     if (v === 'tienda' && S.modo !== 'precio') S.modo = 'precio';
@@ -2650,7 +2679,7 @@ const PROTO = {
   letraGrande() { S.letraGrande = !S.letraGrande; pintar(); },
   tema(v) { S.tema = v; guardar('tema', v); const r = document.documentElement; if (v === 'sistema') delete r.dataset.theme; else r.dataset.theme = v === 'oscuro' ? 'dark' : 'light'; pintar(); },
   leer() { if (S.pantalla === 'escaner' || S.rapidoBloqueo) leer(sel.value); },
-  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; const keep = { tam: S.tam, tema: S.tema, letraGrande: S.letraGrande, verGesto: S.verGesto }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO(); pintar(); pintarGuia($('#guia')); },
+  reiniciar() { temporizadores.forEach(clearTimeout); temporizadores = []; ['luis', 'tienda', ...Object.keys(PERSONAS)].forEach(k => guardar('zurdo-' + k, 'no')); const keep = { tam: S.tam, tema: S.tema, letraGrande: S.letraGrande, verGesto: S.verGesto }; S = { ...INICIO(), ...keep }; CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO(); pintar(); pintarGuia($('#guia')); },
 };
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-p]');
@@ -2670,32 +2699,32 @@ function pintarProto() {
 
 /* Lo que se puede probar: cada tarea deja la app lista para empezar */
 const GUIA = [
-  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha (los tres puntos): salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza a la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Pulsa en una esquina del botón y lleva el dedo al centro de cada opción: se enciende la que está bajo el dedo. Arriba, «Ver: El gesto» dibuja las zonas.', 'Pulsa, espera y suelta sin moverte: se cierra. Solo un toque lo deja abierto.', 'Elige ↑ y toca otra vez donde soltaste: «¿A qué caja?» no lo acepta y su botón se enciende después.', 'Arriba, «Leer» con el menú abierto: la etiqueta de ↑ se pone al día y el aviso espera a que se cierre.', 'En Precio y en Conteo, el mismo botón: ← siempre busca y ↑ lo entrega. En Precio, ↑ es «Enseñar al cliente» y ↖ está vacío.'], prep() { S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-luis', '{}'); guardar('deslizadas-luis', '0'); } },
+  { id: 'gesto', titulo: 'El botón rápido', texto: 'Abajo a la derecha: un toque abre tres opciones; pulsar y deslizar elige sin mirar.', pasos: ['En Ticket, toca la franja dos veces para tener algo que mandar.', 'Toca el botón de abajo a la derecha (el abanico de puntos): salen tres; toca «Buscar» y regresa.', 'Ahora pulsa el botón y, sin soltar, desliza a la izquierda y suelta: abre «Buscar» directo. Hacia arriba es «Mandar»; en diagonal, «Impresiones».', 'Pulsa en una esquina del botón y lleva el dedo al centro de cada opción: se enciende la que está bajo el dedo. Arriba, «Ver: El gesto» dibuja las zonas.', 'Pulsa, espera y suelta sin moverte: se cierra. Solo un toque lo deja abierto.', 'Elige ↑ y toca otra vez donde soltaste: «¿A qué caja?» no lo acepta y su botón se enciende después.', 'En Conteo (Escolar), abre el menú y toca «Leer», arriba: la etiqueta de ↑ («Guardar») se pone al día sin cerrar el menú. En Precio, toca «Al ticket» y abre el menú: el aviso espera a que se cierre.', 'En Precio y en Conteo, el mismo botón: ← siempre busca y ↑ lo entrega. En Precio, ↑ es «Enseñar al cliente» y ↖ está vacío.'], prep() { S.pos = 'normal'; S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.zurdo = false; ['luis', 'tienda', ...Object.keys(PERSONAS)].forEach(k => guardar('zurdo-' + k, 'no')); S.modo = 'ticket'; S.ticket = []; S.indices.ticket = 0; S.pistasVistas = {}; S.elegidasDeslizando = 0; guardar('pistas-luis', '{}'); guardar('deslizadas-luis', '0'); } },
   { id: 'precio', titulo: '¿Cuánto cuesta?', texto: 'El verificador (F9) de la caja: escanear solo enseña el precio.', pasos: ['Toca la franja: sale el cuaderno, con su mayoreo y su existencia.', 'Botón rápido hacia arriba (↑): «Enseñar al cliente», el precio en grande.', 'Escanea otra vez: el sacapuntas dice «Quedan 1»; luego la goma (promoción) y la caja de lápices (precio de la caja y por pieza).', '«Al ticket» está en la tarjeta, como en el F9 de la caja: el aviso sale arriba, nombra el producto y ofrece «Deshacer».'], prep() { S.modo = 'precio'; S.precio = null; } },
   { id: 'ticket', titulo: 'Armar un ticket y mandarlo', texto: 'La preventa: se escanea en el piso y llega en espera a la caja.', pasos: ['Toca la franja varias veces: cada código suma uno y el último queda arriba, con − y +.', 'El cuaderno otra vez suma a su renglón; el número se toca para teclear la cantidad.', 'El papel china entra con la etiqueta del cajón; el último código no está en el catálogo y va en rojo.', 'Botón rápido hacia arriba (↑): «Mandar a Caja 2» y «Mandar»; llega en espera con el nombre de quien lo mandó.'], prep() { S.modo = 'ticket'; S.ticket = []; S.impresiones = []; S.enviado = null; S.indices.ticket = 0; } },
-  { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.hoja = 'buscar'; S.busqueda = ''; } },
-  { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['Botón rápido en diagonal (↖): «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; S.hoja = 'impresiones'; S.hojaDatos = []; S.hojaAnterior = null; } },
+  { id: 'buscar', titulo: 'Lo que no se escanea', texto: 'Dos pedazos de palabra, con el campo junto al pulgar.', pasos: ['Botón rápido a la izquierda (←): «Buscar».', 'Escribe «lus az» (con el teclado o tocando las teclas): el papel lustre azul.', 'Sin escribir nada salen los rápidos (Copia B/N y CURP) y lo más vendido.'], prep() { S.modo = 'ticket'; S.busqueda = ''; } },
+  { id: 'impresiones', titulo: 'Las impresiones del cliente', texto: 'Las que mide el POS y las de Control Print, con su miniatura y en lotes.', pasos: ['Botón rápido en diagonal (↖): «Impresiones».', 'Toca las hojas que trae el cliente, o «Elegir los 2» de un lote.', 'La de «Revisar hojas» no se puede elegir: se resuelve en la caja.', 'En el ticket quedan en un renglón con sus miniaturas.'], prep() { S.modo = 'ticket'; } },
   { id: 'conteo', grupo: 'contar', titulo: 'Contar un departamento', texto: 'Lo de cada lugar se guarda solo y se suma a lo de los demás.', pasos: ['Es el celular de la tienda con Ana, en Escolar · Anaquel.', 'Toca la franja tres veces: el cuaderno ×3, con «+1» junto al nombre; «Ya van 5: Luis, anaquel» dice que alguien ya pasó.', 'Sigue: el lápiz suma 1 y el código de su caja «+12 caja». Abajo, el renglón de lo último: «Antes: Cuaderno… 3 · Quitar».', 'La goma, y luego el lápiz otra vez: «¿Goma blanca chica (1) fue de más? · Quitar», y el lápiz sigue en «14 · 13 guardadas + 1».', 'La cartulina es de Papel, que no se está contando: lo dice en el lugar del producto, sin avisos flotantes.', 'Botón rápido ↖ «Lo contado»: «Lo mío», «Falta» y «Terminé mi parte y salir», abajo.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
   { id: 'conteo-lugar', grupo: 'contar', titulo: 'El lugar y el orden', texto: 'El lugar va con cada captura: primero lo que está a la venta, la bodega al final.', pasos: ['Con Luis. Elige «Escolar»: pregunta dónde empiezas y dice el orden. Toca «Anaquel».', 'Toca la franja tres veces: el lápiz suma 3. Arriba, toca «Anaquel» y cambia a «Bodega»: lo del anaquel se guarda.', 'Toca la franja: el cuaderno. Y otra: el lápiz en la bodega empieza en 1, y «Ya van» dice «Ana, bodega · tú, anaquel».', 'Toca el producto (no solo el número): sus capturas, con quién, dónde y a qué hora.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.secuenciaConteo = { para: 'esc', sec: 'lugar' }; S.hoja = 'elegirConteo'; } },
   { id: 'conteo-dia', grupo: 'contar', titulo: 'El conteo del día', texto: 'El total de la tienda de 15 productos, por lugares; se aplica con «Es todo», una vez.', pasos: ['Conteo entra directo al del día y la primera vez pregunta el lugar: «Anaquel».', 'Toca la franja: el lápiz suma 1, 1 y la caja 12. Luego la goma: el lápiz queda sin aplicar y el renglón de abajo lo dice, con «¿Es todo?».', 'Arriba, cambia a «Bodega» y toca la franja: el lápiz, «1 aquí + 14 en anaquel». ↑ «Es todo · 15» pide confirmar: «Aplicar» o «Falta un lugar».', 'Aplicado, Luis ve lo que tenía el sistema y la diferencia. El sacapuntas: «ya lo contó Carmen a las 11:02»; el papel lustre no está en el de hoy.', 'Arriba, «Pasa: 10 min sin uso»: lo sin aplicar se pone en ámbar. Si te vas a Precio, la pestaña Conteo lleva su número.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.hoja = 'lugar'; S.hojaDatos = {}; } },
   { id: 'conteo-encima', grupo: 'contar', titulo: 'Un conteo encima de otro', texto: 'Lo de un departamento abierto no se cuenta en el del día: se corregiría dos veces.', pasos: ['Con Luis, en el del día, mientras Escolar se cuenta completo.', 'Toca la franja: el lápiz es de Escolar: «Escolar se está contando completo; se cuenta ahí», con la vibración de error.', 'Sigue: el sobre manila (de Oficina) sí se cuenta.', 'Botón rápido ↖ «Lo contado» › «Falta»: lo de Escolar sale en gris, «en Escolar».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; S.secuenciaConteo = { para: 'dia', sec: 'encima' }; } },
-  { id: 'conteo-cajas', grupo: 'contar', titulo: 'Cajas y sueltas', texto: 'Una casilla por presentación, en dos columnas, con el total al momento.', pasos: ['Con Luis, en Escolar · Anaquel. Toca la franja: la pluma suma 1, su paquete «+10 paquete» y su caja «+50 caja».', 'El − quita la última lectura: la caja entera («−50»).', 'Toca el contador: cajas, paquetes y sueltas en dos columnas, con teclas de 52 dp. Cabe en el chico también con «Letra 200 %».', 'Desde «Lo contado» › «Falta», toca uno: «Guardar» se enciende al teclear. Teclea 0 y «Guardar 0 · no hay».', 'En «Contar otra cosa» › Arte, el listón: el rollo suma 10 m y cada metro, 1; ahí el teclado lleva punto.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.conArte(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'cajas' }; } },
-  { id: 'conteo-no-va', grupo: 'contar', titulo: 'Lo que no va', texto: 'Otro departamento, uno ya cerrado, lo que no está en el catálogo: lo dice en el lugar del producto.', pasos: ['Escolar y Oficina están abiertos. Toca la franja: el cuaderno, y luego el folder (de Oficina): «Contarlo para Oficina» o «Lo llevo a su lugar», y se queda hasta decidir.', 'Sin decidir, toca la franja: la cartulina (de Papel, que no se cuenta): «Llévalo a su lugar». El folder pasó a lo contado › «Fuera de lugar», y ↖ lleva su número.', 'La bolsa de regalo: Regalos se contó el 12/11, así que es un ajuste. El siguiente código no está en el catálogo: en rojo.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.dosDeptos(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'noVa' }; } },
+  { id: 'conteo-cajas', grupo: 'contar', titulo: 'Cajas y sueltas', texto: 'Una casilla por presentación, en dos columnas, con el total al momento.', pasos: ['Con Luis, en Escolar · Anaquel. Toca la franja: la pluma suma 1, su paquete «+10 paquete» y su caja «+50 caja».', 'El − quita la última lectura: la caja entera («−50»).', 'Toca el contador: cajas, paquetes y sueltas en dos columnas, con teclas de 52 dp. Cabe en el chico también con «Letra 200 %».', 'Desde «Lo contado» › «Falta», toca uno: «Guardar» se enciende al teclear. Teclea 0 y «Guardar 0 · no hay».', 'En «Contar otra cosa» › Arte, el listón: el rollo suma 10 m y cada metro, 1. En su teclado, «Metros sueltos» lleva punto.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.conArte(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'cajas' }; } },
+  { id: 'conteo-no-va', grupo: 'contar', titulo: 'Lo que no va', texto: 'Otro departamento, uno ya cerrado, lo que no está en el catálogo: lo dice en el lugar del producto.', pasos: ['Escolar y Oficina están abiertos. Toca la franja: el cuaderno, y luego el folder (de Oficina): «Contarlo para Oficina» o «Lo llevo a su lugar», y se queda hasta decidir.', 'Sin decidir, toca la franja: la cartulina (de Papel, que no se cuenta): «Llévalo a su lugar». El folder pasó a lo contado › «Fuera», y ↖ lleva su número.', 'La bolsa de regalo: Regalos se contó el 12/11, así que es un ajuste. El siguiente código no está en el catálogo: en rojo.'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.dosDeptos(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.secuenciaConteo = { para: 'esc', sec: 'noVa' }; } },
   { id: 'conteo-sinred', grupo: 'contar', titulo: 'Sin red: la bandeja', texto: 'Se sigue contando; lo guardado espera y sube solo.', pasos: ['Ya está «Red: Caída». Cuenta y escanea otro: queda «por subir»; arriba, «Sin red · 1 por subir».', '«Ya van» dice «hace 12 min»: es lo último que se supo.', 'Mientras, Carmen cerró Escolar en la caja. Arriba, «Red: Buena»: lo que no alcanzó a subir sale «no entró», arriba y en lo contado.'], prep() { S.pos = 'normal'; S.red = 'caida'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; S.cierreSinRed = true; } },
   { id: 'conteo-arranque', grupo: 'contar', titulo: 'El conteo de arranque', texto: 'Todos los departamentos abiertos; cada quien toma uno.', pasos: ['Con Luis: «¿Qué vas a contar?» es una hoja con los cinco departamentos, cuántos van y quién está contando ahora.', 'Elige uno sin nadie (Papel o Regalos), el lugar, y cuenta.', 'En Escolar, ← Buscar «tijeras»: «Ya van 15: tú, anaquel · Beto, bodega»; Beto contó en /conteo.', 'Con «Celular: De la tienda», toca «Conteo» y entra Ana: no le sale «Abrir otro departamento».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.arranque(); S.hoja = 'elegirConteo'; } },
-  { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano; lo de cada quien es suyo.', pasos: ['Ana, en el del día: toca la franja tres veces (el lápiz, 14) y otra (la goma): el lápiz queda sin aplicar.', '«Salir», arriba junto a su ficha: no pregunta nada; lo del lápiz queda a nombre de Ana.', 'Toca «Conteo» y entra Carmen: empieza limpio y pregunta su lugar.', 'Sale Carmen y entra Ana otra vez: le pregunta por lo suyo sin aplicar.', '«Terminé mi parte y salir», en lo contado, sí pregunta antes de salir.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; } },
-  { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: Precio sin entrar; para contar, la ficha y el PIN de quien cuenta.', pasos: ['Abre en Precio y sin nadie: arriba a la izquierda, el ícono de la tienda. Toca la franja: el precio, sin la existencia y sin «Al ticket».', 'Abajo solo hay Precio y Conteo; el botón rápido es el mismo que en el de Luis.', 'Toca «Conteo»: «¿Quién cuenta?», sin ninguna ficha elegida. Toca la de Ana; luego su PIN: 0000 es incorrecto («quedan 4 en este celular») y cualquier otro entra.', 'Arriba, la ficha de Ana y «Salir». «Salir» regresa a Precio sin nadie, con «Deshacer» unos segundos.', 'Entra otra vez y, arriba, «Pasa: 10 min sin uso»: la franja avisa con cuenta atrás y «Seguir»; si nadie la toca, se cierra sola.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = null; S.modo = 'precio'; S.precio = null; } },
-  { id: 'cierre', titulo: 'La sesión se cierra sola', texto: 'En el de la tienda, a los 10 minutos sin usarse: lo contado queda a nombre de quien contó.', pasos: ['Ana cuenta en Escolar · Anaquel: toca la franja tres veces (el cuaderno, 3).', 'Arriba, «Pasa: 10 min sin uso»: la franja fija avisa con cuenta atrás y «Seguir». No la toques.', 'Se cerró: lo contado quedó a nombre de Ana y Precio lo dice hasta que alguien entre. Toca la franja: «No se contó: estás en Precio».', 'Toca «Conteo» y entra Ana: «Cuaderno…: 3, guardado a las …» con «Sigue sumando» y «Quitar».', 'Con «Red: Caída», «10 min sin uso» no la cierra; al volver la red, sale el aviso del minuto.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
+  { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano; lo de cada quien es suyo.', pasos: ['Ana, en el del día: toca la franja tres veces (el lápiz, 14) y otra (la goma): el lápiz queda sin aplicar.', '«Salir», arriba junto a su ficha: no pregunta nada; lo del lápiz queda a nombre de Ana.', 'Toca «Conteo» y entra Carmen: empieza limpio y pregunta su lugar.', 'Sale Carmen («Salir», arriba, o abajo en «¿Qué vas a contar?») y entra Ana otra vez: le pregunta por lo suyo sin aplicar.', '«Terminé mi parte y salir», en lo contado, sí pregunta antes de salir.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; } },
+  { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: Precio sin entrar; para contar, la ficha y el PIN de quien cuenta.', pasos: ['Abre en Precio y sin nadie: arriba a la izquierda, el ícono de la tienda. Toca la franja: el precio, sin la existencia y sin «Al ticket».', 'Abajo solo hay Precio y Conteo; el botón rápido es el mismo que en el de Luis.', 'Toca «Conteo»: «¿Quién cuenta?», sin ninguna ficha elegida. Toca la de Ana; luego su PIN: 0000 es incorrecto («quedan 4 en este celular») y cualquier otro entra.', 'Toca afuera de «¿Qué vas a contar?» para cerrarla: arriba, la ficha de Ana y «Salir» (también abajo, en la hoja). «Salir» regresa a Precio sin nadie, con «Deshacer» unos segundos.', 'Entra otra vez y, arriba, «Pasa: 10 min sin uso»: la franja avisa con cuenta atrás y «Seguir»; si nadie la toca, se cierra sola.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = null; S.modo = 'precio'; S.precio = null; } },
+  { id: 'cierre', grupo: 'contar', titulo: 'La sesión se cierra sola', texto: 'En el de la tienda, a los 10 minutos sin usarse: lo contado queda a nombre de quien contó.', pasos: ['Ana cuenta en Escolar · Anaquel: toca la franja tres veces (el cuaderno, 3).', 'Arriba, «Pasa: 10 min sin uso»: la franja fija avisa con cuenta atrás y «Seguir». No la toques.', 'Se cerró: lo contado quedó a nombre de Ana y Precio lo dice hasta que alguien entre. Toca la franja: «No se contó: estás en Precio».', 'Toca «Conteo» y entra Ana: «Cuaderno…: 3, guardado a las …» con «Sigue sumando» y «Quitar».', 'Con «Red: Caída», «10 min sin uso» no la cierra; al volver la red, sale el aviso del minuto.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
   { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket, botón rápido ↑: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
-  { id: 'piloto', grupo: 'contar', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
+  { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
   { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
   { id: 'entrada', titulo: 'Entrar', texto: 'En el de Luis, su huella; en el de la tienda, la ficha y el PIN, solo para contar.', pasos: ['Es el celular de Luis con la sesión cerrada: Android pide la huella, y solo la huella (el PIN del celular no sirve aquí). Toca el sensor.', 'La ficha › «Cerrar la sesión» y ahora «Usar mi PIN del POS»: entras con la cuarta cifra. Con «Red: Caída», solo con la huella.', 'Arriba, «Celular: De la tienda» y toca «Conteo»: las fichas de quienes cuentan, sin ninguna elegida, y el teclado al tocar una.', 'Con Ana no sale «Abrir otro departamento»: no tiene el permiso del conteo completo.'], prep() { S.pos = 'normal'; S.pantalla = 'entrada'; S.pin = ''; S.hoja = null; S.dialogo = 'huella'; S.sesionCerrada = true; } },
   { id: 'alta', titulo: 'Dar de alta el celular', texto: 'Una sola vez. La caja confirma «¿Es este?» antes de que el celular quede activo.', pasos: ['«Escanear el código de la caja» y toca la franja.', '«Continuar»: Android pide «Dispositivos cercanos».', 'Ya habló con la caja: «Esperando a la caja · Se conectó un Pixel 8 Pro». Toca «La caja: «Sí, es este»», lo que se toca en la caja.', 'Confirma con tu PIN del POS (una sola vez) y activa la huella. Mientras baja el catálogo ya se puede usar.', 'Con «Celular: De la tienda» no hay PIN ni huella, y el catálogo va sin existencias.'], prep() { S.pantalla = 'alta'; S.pasoAlta = 0; S.escanerAlta = false; S.hoja = null; } },
-  { id: 'perder', titulo: 'Si se pierde un celular', texto: 'Desde cualquier caja se le quita el acceso; al volver a verla, el celular lo borra todo.', pasos: ['Arriba, «Pasa: Quitar el acceso»: lo que hace la caja en Configuración › Celulares.', 'Con red, al momento: «Este celular ya no tiene acceso».', 'Ahora con «Red: Caída» antes: el celular sigue hasta que vuelve la red y entonces lo borra. Lo que no alcanzó a subir se pierde.', '«Dar de alta otra vez» empieza desde el código de la caja.'], prep() { S.modo = 'precio'; } },
+  { id: 'perder', titulo: 'Si se pierde un celular', texto: 'Desde cualquier caja se le quita el acceso; al volver a verla, el celular lo borra todo.', pasos: ['Arriba, «Pasa: Quitar el acceso»: lo que hace la caja en Configuración › Celulares.', 'Con red, al momento: «Este celular ya no tiene acceso».', 'Elige la tarea otra vez. Con «Red: Caída», cuenta algo en Conteo (queda por subir) y toca «Quitar el acceso»: el celular sigue hasta que vuelve la red. Con «Red: Buena» lo borra todo, y lo que no alcanzó a subir se pierde.', '«Dar de alta otra vez» empieza desde el código de la caja.'], prep() { S.pos = 'normal'; S.modo = 'precio'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
 ];
 function pintarGuia(dest) {
   const g = GUIA.find(x => x.id === S.guia);
-  let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, la tecla Espacio o la franja «leen» un código; arriba se elige cuál, la red, de quién es el celular y el tamaño de la pantalla.</p><h3>Tareas</h3><ol>`;
+  let h = `<h2>Qué probar</h2><p>Todo es ficticio. En la PC, Espacio o la franja leen el siguiente código de la tarea; arriba, «Leer» lee el que elijas. Arriba también se elige la red, de quién es el celular y el tamaño de la pantalla.</p><h3>Tareas</h3><ol>`;
   const item = t => `<li><button data-g="${t.id}" class="${S.guia === t.id ? 'on' : ''}"><strong>${t.titulo}</strong><small>${t.texto}</small></button>${S.guia === t.id && g ? `<div class="pasos"><ol>${g.pasos.map(p => `<li>${p}</li>`).join('')}</ol></div>` : ''}</li>`;
   h += GUIA.filter(t => t.grupo !== 'contar').map(item).join('');
   h += `</ol><h3 class="grupo-contar">Contar · la propuesta, todavía sin implementar</h3><ol>`;
@@ -2709,7 +2738,7 @@ function elegirGuia(id) {
   const keep = { tam: S.tam, tema: S.tema, letraGrande: S.letraGrande, verGesto: S.verGesto };   // lo de «Ver» se queda
   S = { ...INICIO(), ...keep, guia: id };
   CAJAS[0].esperan = 1; CAJAS[1].esperan = 0; CONTEOS = ESCENARIOS_CONTEO.normal(); DE_OTROS = DE_OTROS_INICIO(); DIA_DE_OTROS = DIA_DE_OTROS_INICIO();
-  t.prep();
+  t.prep(); cargarPistas();
   pintar(); pintarGuia($('#guia')); const c = $('#cortina'); if (!c.hidden) pintarCortina();
 }
 document.addEventListener('click', e => {
