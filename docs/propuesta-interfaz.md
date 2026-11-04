@@ -141,7 +141,7 @@ abanico). Los modos quedan bajo el velo.
 | Ticket | **Mandar a Caja 2**: abre «¿A qué caja?» | **Impresiones**, con cuántas hay por cobrar | **Buscar** y agregar |
 | Precio | **Enseñar al cliente**: el precio en grande | — | **Buscar** y ver el precio |
 | Conteo completo | **Guardar 13**: guarda lo de este lugar; el renglón de lo último ofrece «Quitar» | **Lo contado** | **Buscar** y contar |
-| Conteo del día | **Es todo · 37**: abre «Aplicar 37 / Falta un lugar» | **Lo contado** | **Buscar** y contar |
+| Conteo del día | **Es todo · 37**: abre «Aplicar 37 piezas / Falta un lugar» | **Lo contado** | **Buscar** y contar |
 
 - **Cada dirección quiere decir siempre lo mismo,** en los tres modos y en los dos celulares, para aprender el gesto una
   vez: ← busca; ↑ entrega lo que se tiene (el ticket a la caja, el precio al cliente, lo contado al POS); ↖ es lo propio
@@ -191,11 +191,11 @@ abanico). Los modos quedan bajo el velo.
   Ese retraso es para no estorbar a quien ya se sabe el gesto; aquí no estorba (tres opciones, lejos del pulgar) y
   verlas encenderse confirma lo que se va a elegir. El gesto no espera la animación: un deslizamiento rápido elige
   aunque los botones no hayan terminado de salir.
-- **El rebote no cuenta.** En el chico, «Mandar a Caja 2» va de 581 a 637 dp y «Aplicar 37» de 588 a 644. En el Pixel,
-  «Mandar» va de 856 a 912, y el dedo suelta ↑ entre 857 y 913. Un segundo toque por reflejo confirmaría. Por eso, por
-  300 ms desde que el botón elige o se cierra, solo él responde: la hoja que abrió (tarda 200 ms en subir), el precio en
-  grande, el panel y el aviso no aceptan toques que empiecen en ese tiempo. El botón principal de la hoja se enciende
-  al terminar; la × de arriba de la hoja sí responde.
+- **El rebote no cuenta.** En el chico, «Mandar a Caja 2» va de 581 a 637 dp y «Aplicar 37 piezas» de 588 a 644. En el
+  Pixel, «Mandar» va de 856 a 912, y el dedo suelta ↑ entre 857 y 913. Un segundo toque por reflejo confirmaría. Por
+  eso, por 300 ms desde que el botón elige o se cierra, solo él responde: la hoja que abrió (tarda 200 ms en subir), el
+  precio en grande, el panel y el aviso no aceptan toques que empiecen en ese tiempo. El botón principal de la hoja se
+  enciende al terminar; la × de arriba de la hoja sí responde.
 - **Las lecturas siguen contando con el menú abierto,** como al tocar − o +. El escáner no se toca: si lee, pinta su
   verde, y eso la app no lo puede callar; si lo leído no contara, el verde mentiría. Por eso el velo atenúa solo el
   panel y la franja sigue a la vista. Las etiquetas se ponen al día con cada lectura, sin perder el dedo («Guardar 13»
@@ -435,9 +435,8 @@ Modifier
 │ │ [foto]  Cuaderno profesional cuadro  │ │
 │ │         chico 100 hojas              │ │
 │ │         Escolar · 7509990100019      │ │
-│ │         $46.00                       │ │  el precio en grande
+│ │         $46.00        [+ Al ticket]  │ │  el precio en grande; a su lado, «Al ticket», como en el F9
 │ │ (Desde 12: $41.00 c/u) (Exist.: 8)   │ │  mayoreo y existencia
-│ │                       [+ Al ticket]  │ │  como «Agregarlo al ticket» del F9
 │ │ (Precio) (Ticket) (Conteo)    [···]  │ │  ↑ enseñar al cliente · ← buscar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
@@ -448,17 +447,18 @@ Modifier
 - **Escanear solo enseña.** Nada entra al ticket, como el F9 de la caja; el ámbar es el mismo.
 - **Lo que sale:** la foto (la de 240 px que guarda el POS, o las iniciales), el nombre, el departamento y el código, el
   precio en grande, la promoción de hoy, **el mayoreo** («Desde 12: $41.00 c/u») y la existencia («Quedan 1» en ámbar
-  cuando queda poco; en el celular de la tienda no sale, y lo que se está contando dice «Existencia oculta mientras
-  cuentas Escolar · Ya terminé», [a ciegas](#a-ciegas)). El precio es el de lo escaneado: el código de la caja de 12 da el de la caja y, al lado, el de
-  cada pieza. Sin redondeo: el redondeo al peso solo se aplica al cobrar en efectivo.
+  cuando queda poco; en el celular de la tienda no sale, y lo que se está contando dice «Existencia oculta · Ya
+  terminé», [a ciegas](#a-ciegas); TalkBack agrega qué se cuenta). El precio es el de lo escaneado: el código de la caja
+  de 12 da el de la caja y, al lado, el de cada pieza. Sin redondeo: el redondeo al peso solo se aplica al cobrar en
+  efectivo.
 - **El mayoreo** no lo enseña todavía el F9 de la caja, aunque su propuesta lo pide; en el piso es lo primero que se
   pregunta después del precio («¿y si llevo 12?»).
 - **↑ «Enseñar al cliente»** pone el nombre y el precio a pantalla completa, para voltear el celular: el producto que
   estaba en la tarjeta al bajar el dedo. Se toca para regresar. En Precio, ↖ queda vacío: el gesto no cambia nada.
-- **«Al ticket»,** un botón de la tarjeta como «Agregarlo al ticket» del F9, agrega uno sin salir de Precio. Va al final
-  de los datos, a la derecha (48 dp), y comparte renglón con el último dato si cabe. Su aviso sale arriba, para no tapar
-  el botón (otro toque agrega otro), y nombra el producto: «Cuaderno profesional… al ticket · 5 art. · $97.50», con
-  «Deshacer». En el celular de la tienda y sobre el bloqueo no está.
+- **«Al ticket»,** un botón de la tarjeta como «Agregarlo al ticket» del F9, agrega uno sin salir de Precio. Va a la
+  derecha del precio (48 dp): lo que se agregue abajo, como «Existencia oculta», no lo baja ni lo saca del panel. Su
+  aviso sale arriba, para no tapar el botón (otro toque agrega otro), y nombra el producto: «Cuaderno profesional… al
+  ticket · 5 art. · $97.50», con «Deshacer». En el celular de la tienda y sobre el bloqueo no está.
 - **Lo que no está en el catálogo** lo dice en rojo, con el código, y ofrece buscar por nombre.
 - **Cada consulta cuenta** para «lo más preguntado» de Productos, como en la caja (`POST /api/consultas`).
 
@@ -467,8 +467,8 @@ Modifier
 - **Cada lectura suma uno.** El mismo código suma a su renglón y lo sube; el último va arriba, resaltado, con − y +
   (en 1, el − es el bote; quitar se puede deshacer). Tocar la cantidad abre el teclado de números: «20» copias. Es lo
   que ya hace el modo venta de hoy, con nombres y precios.
-- **El renglón dice lo que importa:** el precio por pieza, «Mayoreo» cuando llega a la escala (el total ya va con el
-  precio de mayoreo, como en la caja) y «Quedan 1».
+- **El renglón dice lo que importa:** «Quedan 1» primero, para que no se corte en el chico; luego el precio por pieza y
+  «Mayoreo» cuando llega a la escala (el total ya va con el precio de mayoreo, como en la caja).
 - **Un código que no está en el catálogo** entra en rojo, «Código sin producto»: en la caja se da de alta o se cobra
   como artículo común. No se pierde.
 - **Los precios los pone la caja** al recibirlo, con su catálogo; el celular los enseña para que el cliente sepa cuánto
@@ -671,12 +671,13 @@ contar.
 - **El producto se toca entero** (no un enlace chico): sus capturas, con quién, dónde y a qué hora. Debajo del nombre,
   cuántas cajas y sueltas son y, en el completo, lo que ya contaron otros («Ya van 24: Ana, bodega»). Nunca lo que dice
   el sistema.
-- **Cuenta lo de aquí aunque ya vaya algo:** «Ya van» dice que alguien pasó, no que este lugar ya se contó. Lo dice la
-  pista la primera vez.
+- **Cuenta lo de aquí aunque ya vaya algo:** «Ya van» dice que alguien pasó, no que este lugar ya se contó. La primera
+  vez que sale «Ya van», el renglón de lo último lo dice: «Cuenta lo de aquí aunque ya vaya algo».
 - **El renglón de lo último,** fijo, encima de los modos. En el completo, «Antes: Goma blanca 1 · Quitar»; en el del
-  día, lo sin aplicar ([abajo](#el-conteo-del-día)). Es de una línea, con el nombre cortado, y se queda hasta el
-  siguiente guardado: no se va por tiempo ni lo tapa otro aviso. «Quitar» quita lo que decía al tocarlo, aunque en ese
-  momento llegue otra lectura. Antes del primer guardado dice la regla: «Escanear otro producto guarda este».
+  día, lo sin aplicar ([abajo](#el-conteo-del-día)). Es de una línea, con el nombre cortado (con la letra grande, de
+  dos: la cifra abajo), y se queda hasta el siguiente guardado: no se va por tiempo ni lo tapa otro aviso. «Quitar»
+  quita lo que decía al tocarlo, aunque en ese momento llegue otra lectura, y ahí mismo queda «Quitada: Goma blanca 1 ·
+  Deshacer». Antes del primer guardado dice la regla: «Escanear otro producto guarda este».
 - **Sin avisos flotantes en Conteo:** lo leído, lo rechazado y lo guardado tienen su lugar en el panel; lo de la red va
   arriba, en su chip. Nada sube a la franja.
 - **Cabe en el chico:** sin fila de botones, bajo la franja quedan unos 180 dp para el encabezado, el producto, el
@@ -710,11 +711,11 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 ```
 ┌──────────────────────────────────────────┐
 │ ╭──────────────────────────────────────╮ │
-│ │ Lápiz HB No. 2: 37 en total          │ │
-│ │ 13 aquí + 24 en bodega               │ │
+│ │ 37 piezas en total                   │ │  la cifra primero: no se corta
+│ │ Lápiz HB No. 2 · 13 aquí + 24 en bo… │ │
 │ │ Se aplica ya. Si quedó mal, es un    │ │
 │ │ ajuste en la caja.                   │ │
-│ │ [✓ Aplicar 37                      ] │ │  a la altura del pulgar
+│ │ [✓ Aplicar 37 piezas               ] │ │  a la altura del pulgar
 │ │ [  Falta un lugar                  ] │ │  se queda sin aplicar
 │ ╰──────────────────────────────────────╯ │
 └──────────────────────────────────────────┘
@@ -779,12 +780,12 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
    aquí + 24 en bodega»).
 4. **Escanear otro de los 15 no aplica el anterior:** el renglón de lo último lo dice al momento, con cuánto lleva
    («Goma: 4 · hace 3 min · ¿Es todo?»). Al volver a escanearlo, sigue donde iba. Antes del primero, el renglón dice la
-   regla: «Escanear otro no lo aplica; se aplica con Es todo».
+   regla: «Se aplica con «Es todo»; otro producto no lo aplica».
 5. **A los 10 minutos** el renglón se pone en ámbar y vibra una vez. También lo recuerdan un número en la pestaña
    Conteo, salir de Conteo, atrás y «Terminé mi parte».
-6. **↑ «Es todo · 37»,** o «¿Es todo?» del renglón, pide confirmar: «Aplicar 37» o «Falta un lugar» (sigue sin
-   aplicar). Quien ve los costos (de inicio, el dueño y el encargado) ve después lo que tenía el sistema y la
-   diferencia, como en la caja.
+6. **↑ «Es todo · 37»,** o «¿Es todo?» del renglón, pide confirmar: «Aplicar 37 piezas» o «Falta un lugar» (sigue sin
+   aplicar). Quien ve los costos (de inicio, el dueño y el encargado) ve después, en el renglón de lo último, lo que
+   tenía el sistema y la diferencia, como en la caja: «Aplicado: Lápiz HB No. 2 37 · sistema 40 · −3».
 7. **Lo que no se encuentra:** en lo contado › «Falta» se toca, se teclea 0 y se aplica: «no hay».
 8. **Lo que no va:** uno que no está en los 15 de hoy; uno que ya contó alguien («Ya lo contó Carmen a las 11:02»); uno
    de un departamento abierto («Escolar se está contando completo: se cuenta ahí»), que en «Falta» sale en gris.
@@ -829,8 +830,9 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 5. **Lo que ya contaron otros:** «Ya van 24: Ana, bodega». Se toca el producto: sus capturas, con quién, dónde y a qué
    hora. Las propias se quitan; las de otros, quien tiene «Conteo completo».
 6. **Lo de otro departamento** se queda en el lugar del producto hasta decidir, con la vibración de aviso:
-   - Si Oficina se está contando: «Contarlo para Oficina» (lo cuenta ahí, de paso, hasta escanear otro; luego se deja
-     donde está hasta que cierren Oficina: si se lleva a su lugar, se contaría dos veces) o «Lo llevo a su lugar».
+   - Si Oficina se está contando: «Contarlo para Oficina» (lo cuenta ahí, de paso, hasta escanear otro, y el producto
+     lleva «para Oficina» y «Déjalo aquí»: se deja donde está hasta que cierren Oficina, porque si se lleva a su lugar
+     se contaría dos veces) o «Lo llevo a su lugar».
    - Si Oficina no se ha contado: «Llévalo a su lugar».
    - Si Oficina ya se cerró (el POS dice cuándo): «Oficina se contó el 12/11: llévalo y avísale al encargado; es un
      ajuste».
@@ -898,14 +900,14 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 - **Ninguna pantalla de Conteo enseña lo que dice el sistema:** ni el panel, ni lo contado, ni ← Buscar, cuyos
   resultados van sin existencia y sin «Quedan».
 - **Tampoco a un toque, mientras se cuenta de verdad:** en Precio, en el ticket y al buscar desde ahí, lo que se está
-  contando sale «Existencia oculta mientras cuentas Escolar · Ya terminé». Del día, los que faltan de aplicar; del
-  completo, los del departamento elegido.
+  contando sale «Existencia oculta · Ya terminé» (TalkBack: «Existencia oculta mientras cuentas Escolar»). Del día, los
+  que faltan de aplicar; del completo, los del departamento elegido.
 - **Solo mientras se cuenta:** en Conteo y hasta 10 minutos después de la última lectura; lo del día sin aplicar, hasta
   aplicarlo o descartarlo. Luego la existencia vuelve a salir: el dueño la necesita para «¿te quedan 20?». «Ya terminé»
   hace lo de «Terminé mi parte».
 - **En el celular de la tienda, Precio nunca enseña la existencia:** es lo que ve el cliente.
 - **Lo que contaron otros sí se ve:** lo hace `/conteo` y dice que alguien ya pasó. No dice si fue este lugar: por eso
-  va el lugar con cada captura y la pista «cuenta lo de aquí aunque ya vaya algo».
+  va el lugar con cada captura y el renglón de lo último dice, la primera vez, «Cuenta lo de aquí aunque ya vaya algo».
 
 ### Sin red: la bandeja de salida
 
@@ -1028,8 +1030,9 @@ que decidirlo:
   32 dp de alto); las pestañas de lo contado y el «Quitar» del renglón de lo último, de 48.
 - **Con la letra grande** (hasta 200 %, la tabla no lineal de Android 14), el panel esconde en este orden: primero la
   barra de avance y la pista («Cada pieza suma una»); luego el encabezado pasa a corto («Escolar 37/120»); al último, el
-  desglose y «Ya van», que salen al tocar el producto. Nunca se esconden el nombre (en una línea), el −, el contador ni
-  el renglón de lo último. El panel no se desplaza mientras se escanea y nada sube a la franja.
+  desglose y «Ya van», que salen al tocar el producto. Nunca se esconden el nombre (en una línea), «para Oficina», el −,
+  el contador ni el renglón de lo último, que pasa a dos líneas: lo de antes y el nombre arriba, la cifra abajo. El
+  panel no se desplaza mientras se escanea y nada sube a la franja.
 - **El teclado,** con teclas de 52 dp y las casillas en dos columnas ([arriba](#cajas-y-sueltas-el-teclado)).
 - **Zurdos:** con «Botón rápido a la izquierda», el renglón del producto va en espejo: el contador y el − a la
   izquierda, junto al pulgar, y el botón del renglón de lo último también.
@@ -1211,8 +1214,8 @@ Vale a 360 y a 448 dp de ancho. Nada nuevo toca la franja.
 │ │ ────────────────────────── │ │ │ │ ────────────────────────── │ │
 │ └────────────────────────────┘ │ │ └────────────────────────────┘ │
 │ ╭──────────── ══ ────────────╮ │ │ ╭──────────── ══ ────────────╮ │
-│ │ Se cerró la sesión de Ana: │ │ │ │ Lápiz HB: 7, guardado a    │ │  fija hasta que alguien entre · lo de antes del cierre
-│ │ lo contado quedó a su      │ │ │ │ las 15:10 · Sigue sumando  │ │
+│ │ Se cerró la sesión de Ana: │ │ │ │ 7 guardadas a las 15:10:   │ │  fija hasta que alguien entre · lo de antes del cierre
+│ │ lo contado quedó a su      │ │ │ │ Lápiz HB · Sigue sumando   │ │
 │ │ nombre.  [Entrar]     [×]  │ │ │ │ Lápiz HB No. 2   [−] [× 8] │ │  sigue desde 7
 │ │ (Precio) (Conteo)    [···] │ │ │ │ (Precio) (Conteo)    [···] │ │
 │ ╰────────────────────────────╯ │ │ ╰────────────────────────────╯ │
@@ -1310,10 +1313,10 @@ Queda en la bitácora: «Dio de alta el Pixel 8 Pro como celular de Luis (Precio
   se queda a nombre de Ana: nadie más lo aplica, se le recuerda al volver y, si no vuelve ese día, se descarta con
   aviso. «Terminé mi parte y salir» sí pregunta: lo toca quien contó.
 - **Si se cierra sola a media cuenta,** lo que iba de ese producto se guarda a su nombre (en el completo, sube como una
-  captura; en el del día, sigue sin aplicar). Al volver, en el lugar del producto: «Lápiz HB: 7, guardado a las 15:10»,
-  con «Sigue sumando» y «Quitar». La siguiente lectura de ese producto sigue en 8 («8 · 7 guardadas + 1»), como al volver
-  a cualquier producto en el mismo lugar ([el lugar y el orden](#el-lugar-y-el-orden)); «Quitar» lo deja en 0. Así no
-  se cuenta dos veces el mismo anaquel.
+  captura; en el del día, sigue sin aplicar). Al volver, en el lugar del producto: «7 guardadas a las 15:10: Lápiz HB»,
+  con «Sigue sumando» y «Quitar». La siguiente lectura de ese producto sigue en 8 («8 · 7 guardadas + 1»), como al
+  volver a cualquier producto en el mismo lugar ([el lugar y el orden](#el-lugar-y-el-orden)); «Quitar» lo deja en 0.
+  Así no se cuenta dos veces el mismo anaquel.
 - **Mientras, Precio lo dice:** una franja fija, «Se cerró la sesión de Ana: lo contado quedó a su nombre · Entrar»,
   hasta que alguien entre o la quite con ×. La primera lectura después avisa «No se contó: estás en Precio».
 - **Las sesiones del de la tienda se guardan en la base de la caja principal,** con su inicio y su fin: un reinicio del

@@ -143,7 +143,7 @@ svg.i.ch { width: 20px; height: 20px; }
   .marco { position: static; transform: none !important; width: 100%; height: 100%; padding: 0; border-radius: 0; box-shadow: none; }
   .telefono, .telefono[data-tam] { width: 100%; height: 100%; border-radius: 0; --sb: 0px; --gb: 0px; }
   .barra-estado, .barra-gestos { display: none !important; }
-  .asa { display: flex; position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: rgba(21, 32, 42, .86); color: #e7edf3; font-size: 12px; border: 1px solid rgba(255, 255, 255, .18); }
+  .asa { display: flex; position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 96px); right: env(safe-area-inset-right, 0px); left: auto; transform: none; border-radius: 999px 0 0 999px !important; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: rgba(21, 32, 42, .86); color: #e7edf3; font-size: 12px; border: 1px solid rgba(255, 255, 255, .18); }
   .cortina { position: fixed; inset: 0; z-index: 70; overflow: auto; background: var(--sup); padding-block: calc(env(safe-area-inset-top, 0px) + 12px) 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .cortina .proto { display: flex; border-radius: 12px; margin-bottom: 12px; }
   .cortina .guia { width: auto; max-height: none; }
@@ -226,7 +226,7 @@ svg.i.ch { width: 20px; height: 20px; }
 .aviso-cierre .btn { flex: none; }
 .aviso-fijo { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 4px 4px 4px 12px; min-height: 48px; border-radius: 14px; background: var(--sup-2); font-size: 14px; }
 .aviso-fijo span { flex: 1; min-width: 0; }
-.aviso-fijo .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.aviso-fijo .btn { min-height: 48px; padding: 0 14px; font-size: 14px; }
 .fichas.rejilla { display: grid; grid-template-columns: repeat(3, 1fr); justify-items: center; gap: 12px 8px; }
 .ficha-sola { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 4px; }
 .ficha-sola .letra { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--pri); color: var(--en-pri); font-size: 21px; font-weight: 700; }
@@ -279,6 +279,7 @@ svg.i.ch { width: 20px; height: 20px; }
 .pista-rapido { position: absolute; z-index: 29; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 72px); max-width: 240px; padding: 8px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13.5px; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); pointer-events: none; }
 .pista-rapido::after { content: ""; position: absolute; right: 22px; bottom: -6px; width: 12px; height: 12px; background: #2b3135; transform: rotate(45deg); }
 .app.menu-abierto .pista-rapido { display: none; }
+.panel.modo-conteo ~ .pista-rapido { bottom: calc(var(--gb) + 124px); }
 .pista-deslizar { position: absolute; z-index: 32; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--gb) + 200px); padding: 6px 12px; border-radius: 12px; background: #2b3135; color: #eef2f5; font-size: 13px; display: none; pointer-events: none; }
 .app.menu-abierto .pista-deslizar.ver { display: block; }
 /* «Ver el gesto» (prototipo): el círculo de 32 dp y las fronteras de los sectores, desde donde se pulsó */
@@ -360,8 +361,8 @@ svg.i.ch { width: 20px; height: 20px; }
 /* En el panel de abajo, el nombre en un renglón: el completo se ve en el ticket o en el precio */
 .panel .linea.doble .nom { -webkit-line-clamp: 1; }
 .paso { display: inline-flex; align-items: center; border-radius: 26px; background: var(--sup); box-shadow: inset 0 0 0 1.5px var(--borde); }
-.paso button { width: 46px; height: 48px; display: grid; place-items: center; border-radius: 24px; }
-.paso .n { width: auto; min-width: 34px; padding: 0 2px; font-weight: 700; font-size: 18px; }
+.paso button { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 24px; }
+.paso .n { width: auto; min-width: 48px; padding: 0 2px; font-weight: 700; font-size: 18px; }
 .marca-mayoreo { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--exito-c); color: var(--en-exito-c); }
 .marca-quedan { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--aviso-c); color: var(--aviso); }
 .minis { display: inline-flex; gap: 3px; }
@@ -378,7 +379,8 @@ svg.i.ch { width: 20px; height: 20px; }
 
 /* Precio */
 .tarjeta-precio { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: start; padding: 4px 0 0; }
-.datos-precio .al-ticket { margin-left: auto; min-height: 48px; padding: 0 16px 0 12px; font-size: 15px; }
+.tarjeta-precio .monto { flex-wrap: wrap; row-gap: 4px; }
+.monto .al-ticket { margin-left: auto; align-self: center; min-height: 48px; padding: 0 14px 0 10px; font-size: 15px; }
 .tarjeta-precio .nombre { font-size: 18px; font-weight: 600; line-height: 1.25; }
 .tarjeta-precio .debajo { font-size: 13.5px; color: var(--suave); margin-top: 2px; }
 .tarjeta-precio .monto { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
@@ -418,7 +420,11 @@ svg.i.ch { width: 20px; height: 20px; }
 .producto-toca { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; min-height: 48px; padding: 2px 0; text-align: left; }
 .producto-toca .nom { max-width: 100%; font-size: 17px; font-weight: 600; line-height: 1.25; }
 .producto-toca .det { max-width: 100%; font-size: 13.5px; color: var(--suave); line-height: 1.3; }
-.producto-toca .suma { position: static; display: inline-block; margin-left: 6px; vertical-align: 1px; }
+.producto-toca .suma { position: static; display: inline-block; flex: none; }
+.panel .contando .producto-toca .nom { display: flex; align-items: baseline; gap: 6px; -webkit-line-clamp: unset; overflow: visible; }
+.producto-toca .nom .n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.producto-toca .chip-para { margin: 2px 0; }
+@container (max-width: 400px) { .producto-toca .det { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
 .zurdo .contando { grid-template-columns: auto minmax(0, 1fr); }
 .zurdo .contando > .cuenta-grande { grid-column: 1; flex-direction: row-reverse; }
 .zurdo .contando > .producto-toca { grid-column: 2; }
@@ -427,7 +433,9 @@ svg.i.ch { width: 20px; height: 20px; }
 .aviso-conteo.otro { background: var(--aviso-c); color: var(--aviso); }
 .aviso-conteo .fila-aviso { display: flex; align-items: flex-start; gap: 8px; }
 .aviso-conteo .ic { flex: none; padding-top: 3px; }
-.aviso-conteo .txt { flex: 1; min-width: 0; padding-top: 2px; font-size: 14.5px; line-height: 1.3; }
+.aviso-conteo .txt { flex: 1; min-width: 0; padding-top: 2px; font-size: 14.5px; line-height: 1.25; }
+.aviso-conteo.error { padding: 6px 4px 6px 12px; }
+.aviso-conteo.error .ic { display: none; }
 .aviso-conteo .txt b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .aviso-conteo .txt.una { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
 .aviso-conteo .txt.una b { display: inline; font-size: 15px; }
@@ -438,16 +446,19 @@ svg.i.ch { width: 20px; height: 20px; }
 .encabezado .lugar::before, .encabezado .avance::before, .encabezado .corto::before { content: ""; position: absolute; inset: -4px 0; }
 .aviso-conteo .acciones-aviso { display: flex; gap: 8px; margin-top: 8px; }
 .aviso-conteo .acciones-aviso .btn { min-height: 48px; padding: 0 10px; font-size: 14.5px; white-space: normal; line-height: 1.15; }
-.renglon-ultimo { flex: none; display: flex; align-items: center; gap: 8px; min-height: 48px; margin: 0 max(12px, env(safe-area-inset-right, 0px)) 4px max(12px, env(safe-area-inset-left, 0px)); padding: 0 4px 0 12px; border-radius: 14px; background: var(--sup-1); font-size: 14.5px; }
-.renglon-ultimo .txt { flex: 1; min-width: 0; display: flex; white-space: nowrap; }
+.renglon-ultimo { flex: none; display: flex; align-items: center; gap: 8px; min-height: 48px; padding-block: 0 !important; margin: 0 max(12px, env(safe-area-inset-right, 0px)) 4px max(12px, env(safe-area-inset-left, 0px)); padding: 0 4px 0 12px; border-radius: 14px; background: var(--sup-1); font-size: 14.5px; }
+.renglon-ultimo .txt { flex: 1; min-width: 0; display: flex; white-space: nowrap; overflow: hidden; }
+.letra-grande .renglon-ultimo .txt { flex-wrap: wrap; white-space: normal; line-height: 1.15; align-content: center; padding-block: 2px; }
+.letra-grande .renglon-ultimo .txt .nom { white-space: nowrap; flex: 1 1 0; }
+.letra-grande .renglon-ultimo .txt .nom ~ .fijo { flex-basis: 100%; }
 .renglon-ultimo .txt .nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.renglon-ultimo .txt .fijo { flex: none; }
-.renglon-ultimo .btn { flex: none; min-height: 40px; padding: 0 14px; font-size: 14px; }
+.renglon-ultimo .txt .fijo, .renglon-ultimo .txt .dp { flex: none; }
+.renglon-ultimo .btn { flex: none; min-height: 48px; padding: 0 14px; font-size: 14px; border-radius: 14px; }
 .renglon-ultimo.regla { color: var(--suave); }
 .renglon-ultimo.pregunta, .renglon-ultimo.vencido { background: var(--aviso-c); color: var(--aviso); font-weight: 600; }
 .renglon-ultimo.aplicado { background: var(--exito-c); color: var(--en-exito-c); font-weight: 600; }
 .zurdo .renglon-ultimo { flex-direction: row-reverse; padding: 0 12px 0 4px; }
-.modos .cuenta-ic.aviso { background: var(--aviso); color: #fff; }
+.modos .cuenta-ic.aviso { background: var(--aviso); color: var(--aviso-c); }
 .dato.oculta { flex-wrap: wrap; }
 .dato.oculta .enlace { min-height: 30px; font-size: 14px; }
 /* El teclado de contar: casillas en dos columnas y teclas de 52 dp; se cierra jalando su barra */
@@ -461,10 +472,13 @@ svg.i.ch { width: 20px; height: 20px; }
 .jalar::after { content: ""; position: absolute; left: 50%; top: 9px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--borde); }
 /* Lo contado y «¿Qué vas a contar?» */
 .pestanas { display: flex; gap: 8px; }
+.fila-botones { display: flex; gap: 8px; }
+.fila-botones .btn { white-space: normal; line-height: 1.15; text-align: center; }
+.letra-grande .fila-botones { flex-direction: column; }
 .pestanas button { flex: 1; min-width: 0; min-height: 48px; padding: 0 8px; border-radius: 24px; box-shadow: inset 0 0 0 1.5px var(--borde); font-size: 14px; font-weight: 600; }
 .pestanas button.on { background: var(--m-c); color: var(--en-m-c); box-shadow: inset 0 0 0 1.5px var(--m); }
 .cant.no-hay { color: var(--aviso); font-size: 15px; }
-.captura.gris { opacity: .55; }
+.captura.gris .nom, .captura.gris .det { color: var(--tenue); }
 .tareas.compactas { gap: 6px; }
 .tareas.compactas .tarea { min-height: 56px; padding: 6px 12px; }
 .tarea .avance { font-size: 13.5px; color: var(--suave); white-space: nowrap; }
@@ -478,7 +492,7 @@ svg.i.ch { width: 20px; height: 20px; }
 .letra-grande .encabezado.conteo .titulo, .letra-grande .encabezado.conteo .avance { display: none; }
 .letra-grande .encabezado.conteo .corto { display: inline-flex; align-items: center; font-size: 20px; font-weight: 700; color: var(--texto); }
 .letra-grande .producto-toca .det { display: none; }
-.letra-grande .producto-toca .nom { font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.letra-grande .producto-toca .nom { font-size: 24px; }
 .letra-grande .renglon-ultimo { font-size: 22px; }
 .letra-grande .hoja .barra h2 { font-size: 26px; }
 .letra-grande .hoja .barra h2 small { font-size: 18px; }
@@ -492,8 +506,10 @@ svg.i.ch { width: 20px; height: 20px; }
 .letra-grande .captura .det, .letra-grande .tarea small { font-size: 17px; }
 .letra-grande .pestanas button { font-size: 18px; }
 .suma { position: absolute; z-index: 1; right: -6px; bottom: -10px; padding: 2px 9px; border-radius: 11px; background: var(--m); color: var(--en-m); font-size: 14px; font-weight: 800; animation: entra .15s ease-out; pointer-events: none; }
-.chip-para { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--aviso-c); color: var(--aviso); font-size: 12.5px; font-weight: 600; vertical-align: middle; }
-.enlace { color: var(--m); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-align: left; font-size: 13.5px; min-height: 32px; padding: 0; }
+.chip-para { display: inline-flex; align-items: center; height: 22px; max-width: 100%; padding: 0 8px; border-radius: 11px; background: var(--aviso-c); color: var(--aviso); font-size: 12.5px; font-weight: 600; white-space: nowrap; vertical-align: middle; }
+.letra-grande .chip-para { height: 26px; border-radius: 13px; font-size: 16px; }
+.enlace::before { content: ""; position: absolute; inset: -9px -4px; }
+.enlace { position: relative; color: var(--m); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-align: left; font-size: 13.5px; min-height: 32px; padding: 0; }
 .captura.falta { width: 100%; text-align: left; }
 .captura.no-entro .nom, .captura.no-entro .cant { color: var(--error); }
 .nota.pendiente { color: var(--aviso); font-weight: 600; }
@@ -537,7 +553,8 @@ svg.i.ch { width: 20px; height: 20px; }
 .cajas { display: flex; flex-direction: column; gap: 8px; }
 .caja { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 72px; padding: 10px 14px; border-radius: 18px; background: var(--sup-1); text-align: left; box-shadow: inset 0 0 0 2px transparent; }
 .caja.on { box-shadow: inset 0 0 0 2px var(--m, var(--pri)); background: var(--m-c, var(--pri-c)); color: var(--en-m-c, var(--en-pri-c)); }
-.caja:disabled { opacity: .5; }
+.caja:disabled strong, .caja:disabled small { color: var(--tenue); }
+.caja:disabled .radio { opacity: .5; }
 .caja .radio { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--borde); }
 .caja.on .radio { box-shadow: inset 0 0 0 2px var(--m, var(--pri)), inset 0 0 0 6px var(--sup); background: var(--m, var(--pri)); }
 .caja strong { display: block; font-size: 17px; }
@@ -589,14 +606,14 @@ svg.i.ch { width: 20px; height: 20px; }
 
 /* Impresiones */
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; }
-.chip { flex: none; height: 40px; padding: 0 14px; border-radius: 20px; box-shadow: inset 0 0 0 1.5px var(--borde); font-size: 14.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.chip { flex: none; height: 48px; padding: 0 14px; border-radius: 20px; box-shadow: inset 0 0 0 1.5px var(--borde); font-size: 14.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
 .chip.on { background: var(--pri-c); color: var(--en-pri-c); box-shadow: inset 0 0 0 1.5px var(--pri); font-weight: 700; }
 .lote { margin-bottom: 14px; }
 .lote.junto { padding: 10px; border-radius: 18px; box-shadow: inset 0 0 0 1.5px var(--linea); }
 .lote-cabeza { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .lote-cabeza div { flex: 1; min-width: 0; font-size: 14px; color: var(--suave); }
 .lote-cabeza div b { color: var(--texto); }
-.lote-cabeza .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.lote-cabeza .btn { min-height: 48px; padding: 0 14px; font-size: 14px; }
 .trabajos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .trabajo { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; background: var(--sup-1); text-align: left; box-shadow: inset 0 0 0 2px transparent; }
 .trabajo.on { box-shadow: inset 0 0 0 3px var(--pri); background: var(--pri-c); color: var(--en-pri-c); }
@@ -694,7 +711,8 @@ svg.i.ch { width: 20px; height: 20px; }
 .toast.arriba { bottom: auto; top: calc(var(--sb) + 64px); }
 .app.menu-abierto ~ .toast { visibility: hidden; }
 .toast span { flex: 1; }
-.toast button { min-height: 40px; padding: 0 12px; border-radius: 20px; color: #8ecff0; font-weight: 700; }
+.toast button { min-height: 48px; padding: 0 12px; border-radius: 24px; color: #8ecff0; font-weight: 700; flex: none; }
+.toast.arriba span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .girando { width: 22px; height: 22px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: gira .8s linear infinite; }
 @keyframes gira { to { transform: rotate(360deg); } }
 </style>
@@ -1465,7 +1483,7 @@ function botonRapido() {
   };
   const d = S.zurdo ? FLECHAS_ZURDO : FLECHAS_DIESTRO;
   const c = S.conteo, vacio = S.modo === 'ticket' ? !piezasTicket() && !S.enviado : S.modo === 'precio' ? !S.precio : !(c.actual || c.aviso || c.ultimaGuardada || Object.keys(c.dia).length);
-  const pista = vacio && !(S.pistasVistas || {})[S.modo] && PISTAS[S.modo] ? `<div class="pista-rapido" aria-hidden="true">${PISTAS[S.modo](d)}</div>` : '';
+  const pista = vacio && !S.toast && !(S.pistasVistas || {})[S.modo] && PISTAS[S.modo] ? `<div class="pista-rapido" aria-hidden="true">${PISTAS[S.modo](d)}</div>` : '';
   const deslizar = (S.elegidasDeslizando || 0) < 3 ? `<div class="pista-deslizar ver" aria-hidden="true">Pulsa y desliza sin soltar</div>` : '';
   return `<div class="velo-rapido" data-a="cerrarMenuRapido"></div><button class="cierra-visor" data-a="cerrarMenuRapido" aria-label="Cerrar las opciones" tabindex="-1"></button>${pista}${deslizar}
     <div class="rapido modo-${S.modo}${S.menuRapido ? ' abierto' : ''}" id="rapido">
@@ -1484,7 +1502,7 @@ function lineaTicket(l, modo) {
   const pu = precioUnitario(p, l.cant);
   const may = p.mayoreo && l.cant >= p.mayoreo[0];
   const quedan = p.existencia != null && !p.sinInventario && p.existencia <= 2 && !existenciaOculta(p.codigo) ? `<span class="marca-quedan">Quedan ${p.existencia}</span>` : '';
-  return `<div class="linea doble${modo === 'actual' ? ' actual' : ''}"><span class="foto">${dibujo(p)}</span><div class="fila1"><div class="nom">${esc(p.nombre)}</div><span class="imp num">${dinero(importe(l))}</span></div><div class="fila2"><span class="det"><span class="num">${dinero(pu)} c/u</span>${may ? '<span class="marca-mayoreo">Mayoreo</span>' : ''}${quedan}</span>${paso(l)}</div></div>`;
+  return `<div class="linea doble${modo === 'actual' ? ' actual' : ''}"><span class="foto">${dibujo(p)}</span><div class="fila1"><div class="nom">${esc(p.nombre)}</div><span class="imp num">${dinero(importe(l))}</span></div><div class="fila2"><span class="det">${quedan}<span class="num">${dinero(pu)} c/u</span>${may ? '<span class="marca-mayoreo">Mayoreo</span>' : ''}</span>${paso(l)}</div></div>`;
 }
 function paso(l) {
   return `<span class="paso"><button data-a="menos" data-id="${l.id}" aria-label="${l.cant > 1 ? 'Uno menos' : 'Quitar'}">${ic(l.cant > 1 ? 'menos' : 'bote')}</button><button class="n num" data-a="teclearCant" data-id="${l.id}" aria-label="Cantidad: ${l.cant}. Tocar para teclearla">${l.cant}</button><button data-a="mas" data-id="${l.id}" aria-label="Uno más">${ic('mas')}</button></span>`;
@@ -1498,7 +1516,7 @@ function panelTicket() {
   } else if (!n) {
     c += `<div class="vacio"><strong>Escanea lo que lleva el cliente</strong>Cada código suma uno. Buscar, impresiones y mandar: en el botón de abajo a la derecha.</div>`;
   } else {
-    c += `<div class="encabezado"><span class="titulo">Ticket · <b class="num">${n}</b> art.</span><span class="espacio"></span><span class="total num">${dinero(totalTicket())}</span></div>`;
+    c += `<button class="encabezado" data-a="verTicket" aria-label="Ver el ticket completo" style="width:100%;text-align:left;min-height:48px"><span class="titulo">Ticket · <b class="num">${n}</b> art.</span><span class="espacio"></span><span class="total num">${dinero(totalTicket())}</span></button>`;
     c += `<div class="lineas">`;
     S.ticket.forEach((l, i) => { c += lineaTicket(l, i === 0 ? 'actual' : 'compacta'); });
     if (S.impresiones.length) c += lineaImpresiones(false);
@@ -1517,7 +1535,7 @@ function datosPrecio(p, publico) {
   if (p.promo) d += `<span class="dato promo">Promoción «${esc(p.promo)}»</span>`;
   if (p.mayoreo) d += `<span class="dato mayoreo">Desde ${p.mayoreo[0]}: ${dinero(p.mayoreo[1])} c/u</span>`;
   if (p.piezas) d += `<span class="dato">${dinero(Math.round(p.precio / p.piezas))} c/u</span>`;
-  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato oculta">Existencia oculta mientras cuentas ${esc(queCuentas())}${S.celular !== 'tienda' && !S.rapidoBloqueo && conteoActivo() ? ` <button class="enlace" data-a="yaTermine">Ya terminé</button>` : ''}</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
+  if (!publico && !p.sinInventario) d += existenciaOculta(p.codigo) ? `<span class="dato oculta" aria-label="Existencia oculta mientras cuentas ${esc(queCuentas())}">Existencia oculta${S.celular !== 'tienda' && !S.rapidoBloqueo && conteoActivo() ? ` · <button class="enlace" data-a="yaTermine">Ya terminé</button>` : ''}</span>` : p.existencia <= 2 ? `<span class="dato poco">Quedan ${p.existencia}</span>` : `<span class="dato">Existencia: ${p.existencia}</span>`;
   return d;
 }
 function tarjetaPrecio(publico) {
@@ -1525,7 +1543,7 @@ function tarjetaPrecio(publico) {
   const p = POR_CODIGO.get(codigo);
   if (!p) return `<div class="no-esta"><span class="ic">${ic('barras')}</span><div><strong>No está en el catálogo</strong><span class="codigo">${esc(codigo)}</span><div class="nota">Búscalo por nombre o pregúntale a quien da de alta los productos.</div></div></div>`;
   const alTicket = !publico && S.celular !== 'tienda' && !S.rapidoBloqueo ? `<button class="btn tonal al-ticket" data-a="agregarDePrecio">${ic('mas')}Al ticket</button>` : '';
-  return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}</div><div class="datos-precio">${datosPrecio(p, publico)}${alTicket}</div></div></div>`;
+  return `<div class="tarjeta-precio">${foto(p, true)}<div><div class="nombre">${esc(p.nombre)}</div><div class="debajo">${DEPTOS[p.depto] || 'Servicios'} · <span class="codigo">${p.codigo}</span>${p.cajon ? ' · etiqueta del cajón' : ''}</div><div class="monto"><b class="num">${dinero(p.precio)}</b>${p.piezas ? `<small>la caja con ${p.piezas}</small>` : ''}${alTicket}</div><div class="datos-precio">${datosPrecio(p, publico)}</div></div></div>`;
 }
 function panelPrecio() {
   const tienda = S.celular === 'tienda';
@@ -1554,12 +1572,12 @@ function panelConteo() {
   if (!dia && !c.aviso) h += `<div class="progreso" aria-hidden="true"><i style="width:${Math.round(100 * t.contados / t.total)}%"></i></div>`;
   if (c.aviso) h += bloqueAviso(c.aviso);
   else if (c.actual) h += bloqueProducto(t, c.actual);
-  else h += `<div class="vacio pista-conteo" style="margin-top:4px"><strong>Escanea ${dia ? 'uno de los 15' : 'el primer producto'}</strong>${dia ? 'Es el total de la tienda: anaquel, mostrador y bodega. ' : 'Cada pieza suma una y el código de la caja suma la caja; no se ve cuántas debería haber. '}${dia ? 'Es todo' : 'Guardar'}, lo contado y buscar: en el botón de abajo a la derecha.</div>`;
+  else h += `<div class="vacio pista-conteo" style="margin-top:4px"><strong>Escanea ${dia ? 'uno de los 15' : 'el primer producto'}</strong>${dia ? 'El total de la tienda, de todos los lugares.' : 'La pieza suma una; la caja, la caja. A ciegas.'} ${dia ? 'Es todo' : 'Guardar'}, lo contado y buscar: en el botón de abajo.</div>`;
   return h;
 }
 /* Lo que no va, en el lugar del producto: se queda hasta decidir (lo de otro departamento) o hasta la siguiente lectura */
 function bloqueAviso(v) {
-  if (v.tipo === 'retomar') return `<div class="aviso-conteo otro" role="status"><div class="fila-aviso"><span class="txt una"><b>${esc(v.nombre)}:</b> ${esc(v.texto)}</span></div><div class="acciones-aviso"><button class="btn lleno crece" data-a="sigueSumando" data-c="${v.codigo}">Sigue sumando</button><button class="btn borde crece" data-a="quitarRetomado" data-c="${v.codigo}">Quitar</button></div></div>`;
+  if (v.tipo === 'retomar') return `<div class="aviso-conteo otro" role="status"><div class="fila-aviso"><span class="txt una"><b>${esc(v.texto)}:</b> ${esc(v.nombre)}</span></div><div class="acciones-aviso"><button class="btn lleno crece" data-a="sigueSumando" data-c="${v.codigo}">Sigue sumando</button><button class="btn borde crece" data-a="quitarRetomado" data-c="${v.codigo}">Quitar</button></div></div>`;
   const otro = v.tipo === 'otro';
   const acciones = otro ? `<div class="acciones-aviso"><button class="btn lleno crece" data-a="contarParaOtro" data-c="${v.codigo}" data-d="${v.depto}">Contarlo para ${DEPTOS[v.depto]}</button><button class="btn borde crece" data-a="loLlevo">Lo llevo a su lugar</button></div>` : '';
   return `<div class="aviso-conteo ${otro ? 'otro' : 'error'}${v.desconocido ? ' desconocido' : ''}" role="alert"><div class="fila-aviso"><span class="ic">${ic(otro ? 'conteo' : 'barras')}</span>${otro ? `<span class="txt una"><b>${esc(v.corto)}</b> ${esc(v.nombre)}</span>` : `<span class="txt">${v.nombre ? `<b>${esc(v.nombre)}</b>` : ''}${esc(v.texto)}</span>`}${otro ? '' : `<button class="btn-ic" data-a="quitarAviso" aria-label="Entendido">${ic('cerrar')}</button>`}</div>${acciones}</div>`;
@@ -1578,16 +1596,16 @@ function bloqueProducto(t, a) {
     l1 = otros.length ? `${aqui} aquí + ${textoLugares(otros)}` : 'El total de la tienda: cuenta todos los lugares';
     l2 = desglose(p, sumarCuentas(a.baseCuentas, a.cuentas)) ? `${desglose(p, sumarCuentas(a.baseCuentas, a.cuentas))} aquí` : cada;
   } else {
-    l1 = a.base > 0 ? `${a.base} guardadas + ${nuevas}` : (desglose(p, a.cuentas) || cada);
+    l1 = a.base > 0 ? `${a.base} ${a.base === 1 ? 'guardada' : 'guardadas'} + ${nuevas}` : (desglose(p, a.cuentas) || cada);
     const otros = (DE_OTROS[a.codigo] || []).map(o => ({ q: quienDice(o.quien), cant: o.cant, lugar: o.lugar }))
       .concat(c.capturas.filter(k => k.codigo === a.codigo && k.lugar !== a.lugar && k.estado !== 'no-entro').map(k => ({ q: 'tú', cant: k.cant, lugar: k.lugar })));
     if (otros.length) {
       l2 = `Ya van ${redondo(otros.reduce((s, o) => s + o.cant, 0))}: ${otros.map(o => `${o.q}, ${o.lugar.toLowerCase()}`).join(' · ')}${S.red === 'caida' ? ' (hace 12 min)' : ''}`;
-      if (!S.pistaYaVan || S.pistaYaVan === a.codigo) { S.pistaYaVan = a.codigo; l2 += '. Cuenta lo de aquí aunque ya vaya algo'; }
+      if (!S.pistaYaVan || S.pistaYaVan === a.codigo) S.pistaYaVan = a.codigo;   // la pista de la primera vez: en el renglón de lo último
     } else l2 = 'Nadie más lo ha contado';
   }
   return `<div class="contando">
-    <button class="producto-toca" data-a="verCapturasProducto" data-c="${a.codigo}" aria-label="${esc(p.nombre)}: sus capturas"><span class="nom">${esc(p.nombre)}${a.para ? ` <span class="chip-para">para ${DEPTOS[a.para]}, de paso</span>` : ''}${suma}</span><span class="det">${l1}</span><span class="det">${l2}</span></button>
+    <button class="producto-toca" data-a="verCapturasProducto" data-c="${a.codigo}" aria-label="${esc(p.nombre)}${a.para ? `, para ${DEPTOS[a.para]}: déjalo aquí` : ''}. Sus capturas"><span class="nom"><span class="n">${esc(p.nombre)}</span>${suma}</span>${a.para ? `<span class="chip-para">para ${DEPTOS[a.para]}</span><span class="det">Déjalo aquí · ${l1} · ${l2}</span>` : `<span class="det">${l1}</span><span class="det">${l2}</span>`}</button>
     <div class="cuenta-grande"><button class="menos-uno num" data-a="menosConteo" aria-label="Quitar la última lectura" ${a.lecturas.length ? '' : 'disabled'}>${menos}</button><button class="contador num crece" data-a="teclearConteo" aria-label="${total}. Tocar para teclear"><small>×</small>${total}</button></div>
   </div>`;
 }
@@ -1596,7 +1614,7 @@ function renglonConteo() {
   const c = S.conteo, t = conteoActivo();
   if (!t || (S.pos === 'piloto' && !S.verConteo) || !PERSONAS[S.persona]) return '';
   const r = (texto, boton = '', clase = '') => `<div class="renglon-ultimo ${clase}" role="status"><span class="txt">${texto}</span>${boton}</div>`;
-  const t3 = (antes, nombre, despues) => `${antes ? `<span class="fijo">${antes}${antes === '¿' ? '' : '&nbsp;'}</span>` : ''}<span class="nom">${esc(nombre)}</span><span class="fijo">${/^[:]/.test(String(despues)) ? '' : '&nbsp;'}${despues}</span>`;
+  const t3 = (antes, nombre, despues) => `${antes ? `<span class="fijo">${antes}${antes === '¿' ? '' : '&nbsp;'}</span>` : ''}<span class="nom">${esc(nombre)}</span>${/^:/.test(String(despues)) ? `<span class="dp">:</span><span class="fijo">&nbsp;${String(despues).replace(/^:\s*/, '')}</span>` : `<span class="fijo">&nbsp;${despues}</span>`}`;
   const b = (etq, a, datos = '') => `<button class="btn tonal" data-a="${a}" ${datos}>${etq}</button>`;
   if (c.quitada) { const p = POR_CODIGO.get(c.quitada.codigo); return r(t3('Quitada:', p.nombre, c.quitada.cant === 0 ? 'no hay' : c.quitada.cant), b('Deshacer', 'deshacerQuitar')); }
   if (t.tipo === 'completo') {
@@ -1607,19 +1625,20 @@ function renglonConteo() {
       const p = POR_CODIGO.get(u.codigo), cant = u.cant === 0 ? 'no hay' : u.suma ? `+${u.cant} (${redondo(u.suma + u.cant)} aquí)` : u.cant;
       return r(t3('Antes:', p.nombre, `${cant}${u.estado === 'por-subir' ? ' · por subir' : ''}`), b('Quitar', 'quitarCaptura', `data-id="${u.id}" data-renglon="1"`));
     }
+    if (c.actual && S.pistaYaVan === c.actual.codigo && (DE_OTROS[c.actual.codigo] || []).length) return r('Cuenta lo de aquí aunque ya vaya algo', '', 'regla');
     return r('Escanear otro producto guarda este', '', 'regla');
   }
   const ap = c.ultimoAplicado;
   if (ap) {
     const p = POR_CODIGO.get(ap.codigo), ver = PERSONAS[S.persona].costos && S.celular !== 'tienda';
-    return r(t3(ap.porAplicar ? 'Por aplicar:' : 'Aplicado:', p.nombre, `${ap.total === 0 ? 'no hay' : ap.total}${ver && !ap.porAplicar ? ` · el sistema tenía ${ap.sistema}: ${ap.dif >= 0 ? '+' : ''}${ap.dif}` : ''}`), '', 'aplicado');
+    return r(t3(ap.porAplicar ? 'Por aplicar:' : 'Aplicado:', p.nombre, `${ap.total === 0 ? 'no hay' : ap.total}${ver && !ap.porAplicar ? ` · sistema ${ap.sistema} · ${ap.dif >= 0 ? '+' : '−'}${Math.abs(ap.dif)}` : ''}`), '', 'aplicado');
   }
   const pend = sinAplicar();
   if (pend.length) {
     const k = pend[0], d = c.dia[k], p = POR_CODIGO.get(k), min = minutosDesde(d.desde);
     return r(t3('', p.nombre, `: ${totalDia(k)} · hace ${min} min${pend.length > 1 ? ` · y ${pend.length - 1} más` : ''}`), b('¿Es todo?', 'esTodoDe', `data-c="${k}"`), min >= 10 ? 'vencido' : 'pendiente');
   }
-  return r('Escanear otro no lo aplica; se aplica con «Es todo»', '', 'regla');
+  return r('Se aplica con «Es todo»; otro producto no lo aplica', '', 'regla');
 }
 /* ——— Sobre el bloqueo: solo el precio, sin existencia ——— */
 function panelBloqueo() {
@@ -1684,7 +1703,7 @@ function hojaBuscar() {
   }
   const filas = ['qwertyuiop', 'asdfghjklñ', 'zxcvbnm'];
   const teclado = esCelular() ? '' : `<div class="teclado" aria-label="Teclado (prototipo)">${filas.map((f, i) => `<div class="fila">${f.split('').map(k => `<button data-a="tecla" data-k="${k}" tabindex="-1">${k}</button>`).join('')}${i === 2 ? `<button class="media" data-a="tecla" data-k="borrar" tabindex="-1" aria-label="Borrar">⌫</button>` : ''}</div>`).join('')}<div class="fila"><button class="ancha" data-a="tecla" data-k=" " tabindex="-1">espacio</button></div></div>`;
-  return `<div class="hoja completa modo-${m}"><div class="contenido">${barraHoja(titulo, '', 'cerrarHoja', 'atras')}<div class="desliza" style="display:flex;flex-direction:column"><div style="margin-top:auto">${lista}</div></div>
+  return `<div class="hoja completa modo-${m}"><div class="contenido">${barraHoja(titulo, '', 'cerrarHoja', 'atras')}<div class="desliza" style="display:flex;flex-direction:column-reverse"><div>${lista}</div></div>
     <div class="pie" style="border:0;padding-top:4px"><label class="campo">${ic('buscar')}<input id="busqueda" type="text" inputmode="search" autocomplete="off" enterkeyhint="search" placeholder="Nombre, pedazos de palabra o código" value="${esc(S.busqueda)}" aria-label="Buscar">${S.busqueda ? `<button class="btn-ic" data-a="limpiarBusqueda" aria-label="Borrar lo escrito">${ic('cerrar')}</button>` : ''}</label></div>${teclado}</div></div>`;
 }
 
@@ -1731,7 +1750,7 @@ function tarjetaTrabajo(t) {
 function hojaVerImpresiones() {
   const ts = trabajosElegidos();
   let h = `<div class="hoja modo-ticket"><div class="contenido">${barraHoja('Impresiones del ticket', `${ts.length} · ${dinero(totalImpresiones())}`)}<div class="desliza"><div class="trabajos">`;
-  h += ts.map(t => `<div class="trabajo"><span class="mini${t.color ? '' : ' bn'}">${miniatura(t.mini)}</span><span class="doc">${esc(t.doc)}</span><span class="abajo"><span>${t.hora}</span><b class="num">${dinero(t.precio)}</b></span><button class="btn peligro" style="min-height:44px" data-a="quitarTrabajo" data-id="${t.id}">${ic('bote', 'i ch')}Quitar</button></div>`).join('');
+  h += ts.map(t => `<div class="trabajo"><span class="mini${t.color ? '' : ' bn'}">${miniatura(t.mini)}</span><span class="doc">${esc(t.doc)}</span><span class="abajo"><span>${t.hora}</span><b class="num">${dinero(t.precio)}</b></span><button class="btn peligro" style="min-height:48px" data-a="quitarTrabajo" data-id="${t.id}">${ic('bote', 'i ch')}Quitar</button></div>`).join('');
   h += `</div></div></div></div>`;
   return h;
 }
@@ -1785,7 +1804,7 @@ function hojaCantidad() {
   const nada = !tecleado && aqui === 0 && !deOtros;
   const casillas = pres.map(x => `<button class="caja${fila.k === x.k ? ' on' : ''}" data-a="filaCifra" data-k="${x.k}" aria-pressed="${fila.k === x.k}"><strong>${x.nombre}</strong><span class="valor num">${esc(d.valores[x.k] || '0')}</span></button>`).join('');
   const pie = dia
-    ? `<div style="display:flex;gap:8px"><button class="btn borde crece" data-a="otroLugar" ${aqui > 0 || tecleado ? '' : 'disabled'}>Otro lugar</button><button class="btn lleno crece" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : `Es todo · ${redondo(aqui + deOtros)}`}</button></div>`
+    ? `<div class="fila-botones"><button class="btn borde crece" data-a="otroLugar" ${aqui > 0 || tecleado ? '' : 'disabled'}>Otro lugar</button><button class="btn lleno crece" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : `Es todo · ${redondo(aqui + deOtros)}`}</button></div>`
     : `<button class="btn lleno ancho" data-a="cifraLista" ${nada ? 'disabled' : ''}>${ic('check')}${nada ? 'Teclea cuántos hay' : aqui === 0 ? 'Guardar 0 · no hay' : `Guardar ${aqui}`}</button>`;
   const lugar = (a && a.lugar) || S.conteo.lugar || 'este lugar';
   return `<div class="hoja modo-conteo teclado-conteo"><div class="contenido"><button class="jalar" data-a="cerrarHoja" aria-label="Cerrar: se tira lo tecleado"></button>${barraHoja(esc(p.nombre), `Lo de ${esc(lugar)}${otros.length ? ` · ${textoLugares(otros)}` : ''}`)}<div class="desliza">
@@ -1884,7 +1903,7 @@ function hojaContado() {
     <div class="desliza" style="display:flex;flex-direction:column"><div class="capturas" style="margin-top:auto">${filas}</div></div>
     <div class="pie">
       <div class="pestanas" role="tablist">${pestana('mio', `Lo mío (${mio.length})`)}${pestana('falta', `Falta (${falta.length})`)}${fuera.length ? pestana('fuera', `Fuera (${fuera.length})`) : ''}</div>
-      <div style="display:flex;gap:8px"><button class="btn borde crece" data-a="contarOtraCosa">Contar otra cosa</button><button class="btn lleno crece" data-a="salirConteo">${tienda ? 'Terminé mi parte y salir' : 'Terminé mi parte'}</button></div>
+      <div class="fila-botones"><button class="btn borde crece" data-a="contarOtraCosa">Contar otra cosa</button><button class="btn lleno crece" data-a="salirConteo">${tienda ? 'Terminé mi parte y salir' : 'Terminé mi parte'}</button></div>
       <p class="nota centro" style="margin:0">Revisar y cerrar: en la caja (F4).</p>
     </div></div></div>`;
 }
@@ -1893,7 +1912,7 @@ function hojaAplicarDia() {
   const codigo = S.hojaDatos.codigo, p = POR_CODIGO.get(codigo), c = S.conteo;
   const total = totalDia(codigo), a = c.actual && c.actual.codigo === codigo ? c.actual : null, otros = otrosLugaresDia(codigo);
   const partes = (a ? [`${piezasDe(a)} aquí`] : []).concat(otros.map(([l, v]) => `${v} en ${l.toLowerCase()}`));
-  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(`${esc(p.nombre)}: ${unidad(p, total)} en total`, partes.join(' + ') || 'El total de la tienda')}<div class="desliza">
+  return `<div class="hoja modo-conteo"><div class="contenido">${barraHoja(`${unidad(p, total)} en total`, `${esc(p.nombre)}${partes.length ? ' · ' + partes.join(' + ') : ''}`)}<div class="desliza">
     <p style="margin:0 0 8px;font-size:16px">Se aplica ya. Si quedó mal, es un ajuste en la caja.</p>
     ${total === 0 ? '<p class="nota" style="margin:0">Dice «no hay»: no se encontró en ningún lugar.</p>' : ''}</div>
     <div class="pie"><button class="btn lleno ancho" data-a="aplicarDiaOk">${ic('check')}Aplicar ${unidad(p, total)}</button><button class="btn borde ancho" data-a="cerrarHoja">Falta un lugar</button></div></div></div>`;
@@ -1952,7 +1971,7 @@ function pantallaEntrada() {
         <p class="nota centro" style="margin:12px 0 0">Solo con tu huella: el PIN del celular no sirve aquí. Si alguien registra otra huella, la app vuelve a pedir tu PIN del POS. Sin red, entras con la huella.</p></div><div class="barra-gestos"></div>`;
     }
     h += `<p class="lead" style="text-align:center">Tu PIN del POS, de respaldo. Entras con la cuarta cifra.</p>` + puntosPin();
-    h += `<p class="nota centro"><button class="btn tonal" style="min-height:40px;font-size:14px" data-a="pedirHuella">${ic('huella')}Mejor con la huella</button></p>`;
+    h += `<p class="nota centro"><button class="btn tonal" style="min-height:48px;font-size:14px" data-a="pedirHuella">${ic('huella')}Mejor con la huella</button></p>`;
   } else if (!S.fichaElegida) {
     /* El de la tienda, paso 1: la ficha. Ninguna viene elegida, para que nadie le gaste los intentos a otra persona */
     h += `<div class="pantalla"><div class="cabeza-entrada"><button class="btn-ic" data-a="regresarDeEntrada" aria-label="Regresar a Precio">${ic('atras')}</button><h1>¿Quién cuenta?</h1></div><p class="lead">Toca tu ficha.</p><div class="fichas rejilla">`;
@@ -2065,7 +2084,7 @@ function entrarComo(nuevo) {
   if (S.celular === 'tienda') entrarAConteo();
   /* Si la sesión se cerró sola a media cuenta, el producto espera en su lugar: «Sigue sumando» o «Quitar» */
   const r = S.conteo.retomar;
-  if (S.celular === 'tienda' && r) { const p = POR_CODIGO.get(r.codigo); S.conteo.aviso = { tipo: 'retomar', nombre: p.nombre, codigo: r.codigo, texto: r.dia ? `${r.total}, sin aplicar desde las ${r.hora}` : `${r.total}, guardado a las ${r.hora}` }; S.conteo.retomar = null; return; }
+  if (S.celular === 'tienda' && r) { const p = POR_CODIGO.get(r.codigo); S.conteo.aviso = { tipo: 'retomar', nombre: p.nombre, codigo: r.codigo, texto: r.dia ? `${r.total} sin aplicar desde las ${r.hora}` : `${r.total} ${r.total === 1 ? 'guardada' : 'guardadas'} a las ${r.hora}` }; S.conteo.retomar = null; return; }
   /* Lo del día que dejó sin aplicar al salir: se le pregunta a quien lo contó, al volver */
   if (S.celular === 'tienda' && sinAplicar().length) { S.dialogo = 'sinAplicar'; S.despuesDialogo = null; }
 }
@@ -2312,7 +2331,7 @@ const A = {
     const p = POR_CODIGO.get(k.codigo), por = k.estado === 'por-subir' ? 'no había subido: nunca llega' : 'ya no se suma';
     anunciar(`Quitada: ${p.nombre}, ${k.cant}; ${por}`);
     if (d.renglon) c.quitada = k;
-    else toast(`Quitada: ${p.nombre} ${k.cant === 0 ? '(no hay)' : k.cant}; ${por}.`, 'Deshacer', () => A.deshacerQuitar(), 5000, true);
+    else toast(`Quitada: ${k.cant === 0 ? '«no hay»' : k.cant} de ${p.nombre}; ${por}.`, 'Deshacer', () => A.deshacerQuitar(), 5000, true);
     if (S.hoja === 'capturasProducto' && !c.capturas.some(x => x.codigo === k.codigo) && !DE_OTROS[k.codigo]) S.hoja = null;
     pintar();
   },
@@ -2373,7 +2392,7 @@ const A = {
   },
   entrarParaContar() { S.hoja = null; if (S.pos === 'piloto' && !S.verConteo) { S.modo = 'conteo'; pintar(); return; } pedirFicha(); pintar(); },
   regresarDeEntrada() { S.pantalla = 'escaner'; S.modo = 'precio'; S.pin = ''; S.pinError = ''; S.fichaElegida = null; pintar(); },
-  seguirSesion() { S.avisoCierre = false; toast('Sigues adentro.'); pintar(); },
+  seguirSesion() { S.avisoCierre = false; anunciar('Sigues adentro.'); pintar(); },
   quitarAvisoSesion() { S.cerradaSola = null; pintar(); },
   otraFicha() { S.fichaElegida = null; S.pin = ''; S.pinError = ''; pintar(); },
   ficha(d) { S.fichaElegida = d.id; S.pin = ''; S.pinError = ''; pintar(); },
@@ -2714,7 +2733,7 @@ const GUIA = [
   { id: 'conteo-arranque', grupo: 'contar', titulo: 'El conteo de arranque', texto: 'Todos los departamentos abiertos; cada quien toma uno.', pasos: ['Con Luis: «¿Qué vas a contar?» es una hoja con los cinco departamentos, cuántos van y quién está contando ahora.', 'Elige uno sin nadie (Papel o Regalos), el lugar, y cuenta.', 'En Escolar, ← Buscar «tijeras»: «Ya van 15: tú, anaquel · Beto, bodega»; Beto contó en /conteo.', 'Con «Celular: De la tienda», toca «Conteo» y entra Ana: no le sale «Abrir otro departamento».'], prep() { S.pos = 'normal'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.arranque(); S.hoja = 'elegirConteo'; } },
   { id: 'conteo-turnos', grupo: 'contar', titulo: 'Contar por turnos', texto: 'El celular de la tienda pasa de mano en mano; lo de cada quien es suyo.', pasos: ['Ana, en el del día: toca la franja tres veces (el lápiz, 14) y otra (la goma): el lápiz queda sin aplicar.', '«Salir», arriba junto a su ficha: no pregunta nada; lo del lápiz queda a nombre de Ana.', 'Toca «Conteo» y entra Carmen: empieza limpio y pregunta su lugar.', 'Sale Carmen («Salir», arriba, o abajo en «¿Qué vas a contar?») y entra Ana otra vez: le pregunta por lo suyo sin aplicar.', '«Terminé mi parte y salir», en lo contado, sí pregunta antes de salir.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.soloDia(); S.conteo.activo = 'dia'; S.conteo.lugar = 'Anaquel'; S.conteo.lugarDia = true; } },
   { id: 'tienda', titulo: 'El celular de la tienda', texto: 'A futuro: Precio sin entrar; para contar, la ficha y el PIN de quien cuenta.', pasos: ['Abre en Precio y sin nadie: arriba a la izquierda, el ícono de la tienda. Toca la franja: el precio, sin la existencia y sin «Al ticket».', 'Abajo solo hay Precio y Conteo; el botón rápido es el mismo que en el de Luis.', 'Toca «Conteo»: «¿Quién cuenta?», sin ninguna ficha elegida. Toca la de Ana; luego su PIN: 0000 es incorrecto («quedan 4 en este celular») y cualquier otro entra.', 'Toca afuera de «¿Qué vas a contar?» para cerrarla: arriba, la ficha de Ana y «Salir» (también abajo, en la hoja). «Salir» regresa a Precio sin nadie, con «Deshacer» unos segundos.', 'Entra otra vez y, arriba, «Pasa: 10 min sin uso»: la franja avisa con cuenta atrás y «Seguir»; si nadie la toca, se cierra sola.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = null; S.modo = 'precio'; S.precio = null; } },
-  { id: 'cierre', grupo: 'contar', titulo: 'La sesión se cierra sola', texto: 'En el de la tienda, a los 10 minutos sin usarse: lo contado queda a nombre de quien contó.', pasos: ['Ana cuenta en Escolar · Anaquel: toca la franja tres veces (el cuaderno, 3).', 'Arriba, «Pasa: 10 min sin uso»: la franja fija avisa con cuenta atrás y «Seguir». No la toques.', 'Se cerró: lo contado quedó a nombre de Ana y Precio lo dice hasta que alguien entre. Toca la franja: «No se contó: estás en Precio».', 'Toca «Conteo» y entra Ana: «Cuaderno…: 3, guardado a las …» con «Sigue sumando» y «Quitar».', 'Con «Red: Caída», «10 min sin uso» no la cierra; al volver la red, sale el aviso del minuto.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
+  { id: 'cierre', grupo: 'contar', titulo: 'La sesión se cierra sola', texto: 'En el de la tienda, a los 10 minutos sin usarse: lo contado queda a nombre de quien contó.', pasos: ['Ana cuenta en Escolar · Anaquel: toca la franja tres veces (el cuaderno, 3).', 'Arriba, «Pasa: 10 min sin uso»: la franja fija avisa con cuenta atrás y «Seguir». No la toques.', 'Se cerró: lo contado quedó a nombre de Ana y Precio lo dice hasta que alguien entre. Toca la franja: «No se contó: estás en Precio».', 'Toca «Conteo» y entra Ana: «3 guardadas a las …: Cuaderno…» con «Sigue sumando» y «Quitar».', 'Con «Red: Caída», «10 min sin uso» no la cierra; al volver la red, sale el aviso del minuto.'], prep() { S.pos = 'normal'; S.celular = 'tienda'; S.persona = 'ana'; S.modo = 'conteo'; CONTEOS = ESCENARIOS_CONTEO.normal(); S.conteo.activo = 'esc'; S.conteo.lugar = 'Anaquel'; } },
   { id: 'sinred', titulo: 'Sin red', texto: 'La red de la tienda se cae: el precio, la búsqueda y el ticket siguen.', pasos: ['Ya está «Red: Caída». Escanea en Precio: sale igual (de la copia).', 'En Ticket, botón rápido ↑: ofrece enseñarlo como QR para el lector de la caja.', 'En Conteo, lo contado queda «por subir» y se sube solo al volver la red (cambia a «Buena»).'], prep() { S.red = 'caida'; S.pos = 'normal'; S.modo = 'ticket'; S.ticket = [{ id: 90, codigo: '7509990100019', cant: 2 }, { id: 91, codigo: '7509990100026', cant: 12 }]; S.impresiones = []; S.enviado = null; } },
   { id: 'piloto', titulo: 'En el piloto', texto: 'Con eleventa en la caja 1: lo que cambia mientras dura.', pasos: ['En Ticket, botón rápido ↑: la caja 1 sigue con eleventa y no recibe tickets.', 'En Conteo dice que en el piloto no se cuenta; «Ver cómo se contará» enseña la propuesta.', 'El precio y las impresiones (las de la caja 2 y las de Control Print) funcionan igual.', 'Arriba, «POS: Sin eleventa» enseña cómo queda después.'], prep() { S.pos = 'piloto'; S.modo = 'ticket'; S.ticket = [{ id: 92, codigo: '7509990100125', cant: 3 }]; } },
   { id: 'bloqueo', titulo: 'Del bolsillo al precio', texto: 'El mosaico «Precio» abre el verificador sobre el bloqueo, sin el PIN.', pasos: ['Toca el mosaico «Precio».', 'Toca la franja: sale el precio, sin la existencia.', '«Abrir la app» pide desbloquear el celular y sigue en Precio.'], prep() { S.pantalla = 'bloqueo'; S.rapidoBloqueo = false; S.hoja = null; } },
