@@ -21,6 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 
 /** Alto mínimo de lo que se toca con el celular en una mano (docs/escaner.md, «Accesibilidad»). */
 val ALTO_TOCABLE = 56.dp
@@ -94,5 +98,27 @@ fun FilaDato(etiqueta: String, valor: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(etiqueta, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(valor, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** Un renglón que lleva a otra pantalla: se toca todo el renglón. */
+@Composable
+fun FilaNavegacion(titulo: String, alTocar: () -> Unit, modifier: Modifier = Modifier, descripcion: String? = null) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = ALTO_TOCABLE)
+            .clickable(role = Role.Button, onClick = alTocar)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(titulo, style = MaterialTheme.typography.bodyLarge)
+            if (descripcion != null) {
+                Text(descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

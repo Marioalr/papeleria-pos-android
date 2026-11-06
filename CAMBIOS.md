@@ -2,6 +2,31 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.2.0 (en curso)
+
+La primera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «La base»: la pantalla de la
+fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
+
+- Tres modos abajo, sobre el escáner del mismo tamaño: **Precio** (el verificador F9: escanear solo enseña el precio,
+  el mayoreo, la existencia y la promoción, con «Al ticket» junto al precio), **Ticket** (cada lectura suma; el último
+  renglón va resaltado con − y +, y tocar la cantidad abre el teclado) y **Conteo** (el de prueba de hoy, en el
+  celular). Cada modo tiene su color: ámbar, azul petróleo y violeta. La app abre en el último modo usado.
+- **El botón rápido**, abajo a la derecha, para una mano: un toque abre tres opciones; pulsar y deslizar hacia una la
+  elige al soltar. ← busca, ↑ entrega (en Precio, «Enseñar al cliente»: el precio en grande) y ↖ es lo del modo. Gana
+  la opción que queda bajo el dedo; un toque de rebote no confirma nada; vibra distinto al armarse, al cambiar y al
+  elegir; en zurdo va en espejo; TalkBack lo ofrece como acciones. «Mandar» e «Impresiones» se ven apagadas en su
+  lugar, con su razón: llegan con la conexión al POS.
+- **Buscar** con el campo abajo, junto al pulgar, y los resultados encima: pedazos de palabra en cualquier orden y sin
+  acentos («lus az»); sin escribir, los rápidos y lo más vendido.
+- **El ticket completo** (el asidero o el encabezado): todos los renglones con − y +, deshacer, el total y «Empezar otro
+  ticket». Se guarda en el celular.
+- Productos de prueba con nombre y precio (los del prototipo, ficticios), con el mayoreo como lo cobra la caja.
+- **Ajustes**, desde el botón de arriba a la izquierda: vibración, bip, linterna automática, «Botón rápido a la
+  izquierda», «Volver a ver las pistas» y el mosaico. Las herramientas de medición (el escáner, la sesión de prueba,
+  el banco y las pruebas de estrés), que eran cuatro de las cinco pestañas de abajo, bajan a Ajustes ›
+  «Herramientas de medición», junto con los contadores del botón rápido.
+- Los accesos directos son «Precio», «Ticket» y «Conteo»; el de «Venta» que ya estaba anclado abre el ticket.
+
 ## 0.1.0 (sin publicar)
 
 Primera versión de prueba: el escáner solo, sin conexión al POS.

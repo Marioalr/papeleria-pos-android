@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Atajos del ícono (mantener presionado). Existen desde API 25; en API 24 el archivo se ignora.
      El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído está guardado
-     (ListasCompartidas, en disco) y MainActivity solo aplica el modo. -->
+     (ListasCompartidas, en disco) y MainActivity solo aplica el modo. El id del ticket sigue siendo «escanear_venta»: así
+     el atajo que alguien ancló con la 0.1 (con el extra «venta») sigue siendo el mismo y abre el ticket. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:targetApi="25">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_escaner"
+        android:shortcutId="escanear_precio"
+        android:shortcutLongLabel="@string/atajo_precio_largo"
+        android:shortcutShortLabel="@string/atajo_precio_corto">
+        <intent
+            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:targetClass="mx.papeleriapos.android.MainActivity"
+            android:targetPackage="mx.papeleriapos.android">
+            <extra
+                android:name="modo"
+                android:value="precio" />
+        </intent>
+    </shortcut>
     <shortcut
         android:enabled="true"
         android:icon="@drawable/ic_escaner"
@@ -17,7 +33,7 @@
             android:targetPackage="mx.papeleriapos.android">
             <extra
                 android:name="modo"
-                android:value="venta" />
+                android:value="ticket" />
         </intent>
     </shortcut>
     <shortcut

@@ -1,6 +1,7 @@
 package mx.papeleriapos.android.principal
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import mx.papeleriapos.android.botonrapido.Lugar
 
 /**
@@ -9,19 +10,19 @@ import mx.papeleriapos.android.botonrapido.Lugar
  */
 class PreferenciasPiso(private val prefs: SharedPreferences) : AlmacenPiso {
     override fun leerModo(): ModoApp? = ModoApp.deNombre(prefs.getString(MODO, null))
-    override fun guardarModo(modo: ModoApp) = prefs.edit().putString(MODO, modo.name).apply()
+    override fun guardarModo(modo: ModoApp) = prefs.edit { putString(MODO, modo.name) }
 
     override fun leerZurdo(): Boolean = prefs.getBoolean(ZURDO, false)
-    override fun guardarZurdo(zurdo: Boolean) = prefs.edit().putBoolean(ZURDO, zurdo).apply()
+    override fun guardarZurdo(zurdo: Boolean) = prefs.edit { putBoolean(ZURDO, zurdo) }
 
     override fun leerPistasVistas(): Set<ModoApp> =
         prefs.getStringSet(PISTAS_VISTAS, null).orEmpty().mapNotNull { ModoApp.deNombre(it) }.toSet()
 
     override fun guardarPistasVistas(modos: Set<ModoApp>) =
-        prefs.edit().putStringSet(PISTAS_VISTAS, modos.map { it.name }.toSet()).apply()
+        prefs.edit { putStringSet(PISTAS_VISTAS, modos.map { it.name }.toSet()) }
 
     override fun leerElegidasDeslizando(): Int = prefs.getInt(ELEGIDAS_DESLIZANDO, 0)
-    override fun guardarElegidasDeslizando(veces: Int) = prefs.edit().putInt(ELEGIDAS_DESLIZANDO, veces).apply()
+    override fun guardarElegidasDeslizando(veces: Int) = prefs.edit { putInt(ELEGIDAS_DESLIZANDO, veces) }
 
     override fun leerContadores(): ContadoresRapido = ContadoresRapido(
         abiertoConToque = prefs.getInt(ABIERTO_CON_TOQUE, 0),
@@ -31,13 +32,14 @@ class PreferenciasPiso(private val prefs: SharedPreferences) : AlmacenPiso {
     )
 
     override fun guardarContadores(contadores: ContadoresRapido) {
-        val e = prefs.edit().putInt(ABIERTO_CON_TOQUE, contadores.abiertoConToque)
-        for (l in Lugar.entries) {
-            e.putInt(CON_GESTO + l.name, contadores.conGesto[l] ?: 0)
-            e.putInt(CON_TOQUE + l.name, contadores.conToque[l] ?: 0)
-            e.putInt(CERRADAS_PRONTO + l.name, contadores.cerradasPronto[l] ?: 0)
+        prefs.edit {
+            putInt(ABIERTO_CON_TOQUE, contadores.abiertoConToque)
+            for (l in Lugar.entries) {
+                putInt(CON_GESTO + l.name, contadores.conGesto[l] ?: 0)
+                putInt(CON_TOQUE + l.name, contadores.conToque[l] ?: 0)
+                putInt(CERRADAS_PRONTO + l.name, contadores.cerradasPronto[l] ?: 0)
+            }
         }
-        e.apply()
     }
 
     private fun porLugar(prefijo: String): Map<Lugar, Int> =

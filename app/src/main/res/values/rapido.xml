@@ -4,8 +4,10 @@
     <!-- 18 caracteres o menos: es la etiqueta del mosaico. -->
     <string name="mosaico_etiqueta">Escanear</string>
     <string name="rapido_nombre">Escaneo rápido</string>
-    <string name="atajo_venta_corto">Venta</string>
-    <string name="atajo_venta_largo">Escanear venta</string>
+    <string name="atajo_precio_corto">Precio</string>
+    <string name="atajo_precio_largo">Ver un precio</string>
+    <string name="atajo_venta_corto">Ticket</string>
+    <string name="atajo_venta_largo">Armar un ticket</string>
     <string name="atajo_conteo_corto">Conteo</string>
-    <string name="atajo_conteo_largo">Escanear conteo</string>
+    <string name="atajo_conteo_largo">Contar</string>
 </resources>

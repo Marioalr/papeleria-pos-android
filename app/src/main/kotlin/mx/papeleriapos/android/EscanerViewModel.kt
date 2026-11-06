@@ -10,7 +10,9 @@ import android.view.WindowInsets
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,12 +25,16 @@ import kotlinx.coroutines.withContext
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.camara.FichaCamara
 import mx.papeleriapos.android.camara.FichaLente
+import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.CatalogoPrueba
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.ListasCompartidas
 import mx.papeleriapos.android.medicion.MonitorDeSesion
+import mx.papeleriapos.android.principal.ModoApp
+import mx.papeleriapos.android.principal.Piso
+import mx.papeleriapos.android.principal.PreferenciasPiso
 import mx.papeleriapos.android.sesion.AlmacenSesion
 import mx.papeleriapos.android.sesion.AnotacionesSesion
 import mx.papeleriapos.android.sesion.Antirrebote
@@ -55,10 +61,10 @@ import mx.papeleriapos.escaner.rangoFpsPedido
 import kotlin.math.roundToInt
 
 /**
- * El estado de la app de prueba: el controlador del escáner (este ViewModel es su dueño: lo cierra en [onCleared]), los
- * ajustes, las listas de venta y conteo (guardadas en disco, ver [ListasCompartidas]) y la sesión de prueba. Cada lectura
- * aceptada suma en la lista del modo actual y, si hay sesión, queda como intento con lo que encontró en el catálogo de
- * prueba ([CatalogoPrueba]).
+ * El estado de la app: el controlador del escáner (este ViewModel es su dueño: lo cierra en [onCleared]), los ajustes, la
+ * pantalla principal ([piso]: los tres modos, el ticket y el conteo, guardados en disco por [ListasCompartidas]) y la
+ * sesión de prueba. Cada lectura aceptada va al modo actual y, si hay sesión, queda como intento con lo que encontró en
+ * el catálogo de prueba ([CatalogoPrueba]).
  */
 class EscanerViewModel(
     app: Application,
@@ -68,11 +74,23 @@ class EscanerViewModel(
     /** El que usa la app (con las listas del proceso); las pruebas pasan un controlador de muestra. */
     constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso(app))
 
-    private val preferencias = PreferenciasEscaner(app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE))
+    private val prefs = app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE)
+    private val preferencias = PreferenciasEscaner(prefs)
     private val _config = MutableStateFlow(preferencias.leer())
     val config: StateFlow<ConfigEscaner> = _config.asStateFlow()
 
     val controlador: ControladorEscaner = fabrica(app, _config.value)
+
+    /**
+     * La pantalla principal: abre en el último modo usado; una app que viene de la 0.1 abre en el modo de antes (venta
+     * era el ticket).
+     */
+    val piso = Piso(listas.venta, listas.conteo, PreferenciasPiso(prefs), ModoApp.deNucleo(_config.value.modo))
+
+    /** Los productos de prueba, en su hilo y una vez: después de la apertura o con la primera lectura que los necesite. */
+    private val productos = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+        CatalogoDeProductos.deCsv(app.assets.open(ARCHIVO_PRODUCTOS).bufferedReader().use { it.readText() })
+    }
 
     private val _venta = listas.venta
     val venta: StateFlow<ListaLecturas> = _venta.asStateFlow()
@@ -103,13 +121,32 @@ class EscanerViewModel(
             // La ficha de la cámara, una vez por proceso y fuera de la apertura: cuando ya se analizó el primer cuadro.
             controlador.estado.first { it.apertura.marcas.containsKey(PasoApertura.PRIMER_ANALISIS) }
             FichaCamara.asegurar(getApplication())
+            prepararProductos()
         }
+        // El modo del escáner sigue al de la pantalla (Precio y Ticket escanean como venta).
+        if (_config.value.modo != piso.modo.value.delNucleo) cambiarModo(piso.modo.value.delNucleo)
+        // Mientras una hoja o el precio en grande tapan el visor, el escáner no vibra ni suena: lo leído no cuenta.
+        viewModelScope.launch { piso.hoja.drop(1).collect { configurarControlador() } }
+    }
+
+    /** Los productos, si todavía no están: para Buscar y Precio antes de la primera lectura. */
+    fun prepararProductos() {
+        if (piso.catalogo.value != null) return
+        viewModelScope.launch { piso.cargarCatalogo(productos.await()) }
+    }
+
+    /** El modo de la pantalla principal (y el del escáner que le toca). */
+    fun cambiarModoApp(modo: ModoApp) {
+        piso.cambiarModo(modo)
+        cambiarModo(modo.delNucleo)
     }
 
     private suspend fun alLeer(e: EventoLectura) {
         val hora = System.currentTimeMillis()
         val codigo = e.aceptada.codigo
-        listaActual().update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
+        // La primera lectura no espera a la apertura: si los productos no están, se cargan ahora, en su hilo.
+        if (piso.catalogo.value == null) piso.cargarCatalogo(productos.await())
+        piso.alLeer(codigo.normalizado, codigo.simbologia, hora)
         val apertura = aperturaActual()
         // Lo del celular, en el momento de la lectura.
         val c = if (_sesion.value != null) contexto(hora, apertura) else null
@@ -134,8 +171,6 @@ class EscanerViewModel(
     fun alDetenerse() {
         RegistroAperturas.registrar(getApplication(), CsvAperturas.ORIGEN_APP, aperturaActual())
     }
-
-    private fun listaActual() = if (_config.value.modo == Modo.VENTA) _venta else _conteo
 
     private fun contexto(hora: Long, apertura: Apertura = aperturaActual()): Contexto {
         val estado = controlador.estado.value
@@ -163,7 +198,16 @@ class EscanerViewModel(
         if (nueva == _config.value) return
         _config.value = nueva
         preferencias.guardar(nueva)
-        controlador.configurar(nueva)
+        configurarControlador()
+    }
+
+    /**
+     * Lo guardado, salvo la vibración y el bip mientras algo tapa el visor (docs/propuesta-interfaz.md, «Cómo se usa»: no
+     * vibrar «leído» por lo que no cuenta). Cambiar solo eso no rehace el motor ni el Confirmador.
+     */
+    private fun configurarControlador() {
+        val c = _config.value
+        controlador.configurar(if (piso.hoja.value != null) c.copy(vibracion = false, sonido = false) else c)
     }
 
     fun cambiarModo(modo: Modo) = cambiarConfig(_config.value.copy(modo = modo))
@@ -178,7 +222,11 @@ class EscanerViewModel(
         c.enlazarTemprano(actividad, pantalla) { estimarVisor(actividad, descuentoAbajoDp, pantallaCompleta) }
     }
 
-    fun restablecerAjustes() = cambiarConfig(ConfigEscaner().copy(modo = _config.value.modo))
+    /** Las herramientas de medición vuelven a lo de fábrica; lo personal (bip, vibración, linterna) se queda. */
+    fun restablecerAjustes() {
+        val c = _config.value
+        cambiarConfig(ConfigEscaner().copy(modo = c.modo, sonido = c.sonido, vibracion = c.vibracion, linternaAutomatica = c.linternaAutomatica))
+    }
 
     // Catálogo de prueba (docs/escaner.md, «Búsqueda en el catálogo»)
 
@@ -202,15 +250,6 @@ class EscanerViewModel(
     fun prepararFicha() {
         viewModelScope.launch { FichaCamara.asegurar(getApplication()) }
     }
-
-    // Lista de venta o conteo (la del modo actual)
-
-    fun masUno() = listaActual().update { it.masUno(System.currentTimeMillis()) }
-    fun menosUno() = listaActual().update { it.menosUno() }
-    fun deshacer() = listaActual().update { it.deshacer() }
-
-    /** «Nueva venta» (o «Nuevo conteo»): vacía la lista del modo; se puede deshacer. */
-    fun vaciar() = listaActual().update { it.vaciar() }
 
     // Sesión de prueba
 
@@ -269,6 +308,9 @@ class EscanerViewModel(
  * La proporción del visor antes del primer layout: la ventana menos las barras del sistema y [descuentoAbajoDp]; con
  * [pantallaCompleta], la ventana entera (el visor va detrás de las barras).
  */
+/** Los productos de prueba con nombre y precio (los del prototipo, ficticios). */
+private const val ARCHIVO_PRODUCTOS = "productos-prueba.csv"
+
 internal fun estimarVisor(actividad: Activity, descuentoAbajoDp: Int, pantallaCompleta: Boolean): Proporcion? {
     val densidad = actividad.resources.displayMetrics.density
     val descuento = (descuentoAbajoDp * densidad).roundToInt()

@@ -26,35 +26,34 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeoutOrNull
+import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.android.ui.AppEscaner
-import mx.papeleriapos.android.ui.Pestana
+import mx.papeleriapos.android.ui.Destino
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.camara.ControladorCamara
-import mx.papeleriapos.escaner.nucleo.Modo
 import mx.papeleriapos.escaner.ui.LocalAlVisorListo
 import mx.papeleriapos.escaner.ui.LocalSoloVisor
 
 /**
- * La app de prueba. Para abrir al instante (docs/escaner.md, «Apertura»): marca cada paso, enlaza la cámara en
- * `onCreate` (abre en `onStart`, mientras Compose dibuja), el primer cuadro trae solo el visor sobre negro (como la
- * ventana, sin destello) y lo demás llega cuando el visor ya entregó su superficie, y el TTFD es el primer cuadro
- * analizado.
+ * La app. Para abrir al instante (docs/escaner.md, «Apertura»): marca cada paso, enlaza la cámara en `onCreate` (abre en
+ * `onStart`, mientras Compose dibuja), el primer cuadro trae solo el visor sobre negro (como la ventana, sin destello) y lo
+ * demás llega cuando el visor ya entregó su superficie, y el TTFD es el primer cuadro analizado.
  *
- * Los atajos «Escanear venta» y «Escanear conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea
- * con ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde.
+ * Los atajos «Precio», «Ticket» y «Conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea con
+ * ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde.
  *
  * Al restaurar con estado guardado (Android mató el proceso en segundo plano y el empleado toca el ícono: el frío más
- * común al sacar el celular del bolsillo) también enlaza en `onCreate` si la pestaña a la vista era la del escáner.
+ * común al sacar el celular del bolsillo) también enlaza en `onCreate` si la pantalla a la vista era la principal.
  */
 class MainActivity : ComponentActivity() {
     private val vm: EscanerViewModel by viewModels()
     private var detenida = false
     /**
-     * Si la pestaña a la vista es la del escáner, para guardarlo en el estado de la Activity. La interfaz completa llega
-     * en el segundo cuadro: hasta entonces vale lo restaurado.
+     * Si la pantalla a la vista es la principal (la del escáner), para guardarlo en el estado de la Activity. La interfaz
+     * completa llega en el segundo cuadro: hasta entonces vale lo restaurado.
      */
     private var escanerVisible = true
 
@@ -73,7 +72,7 @@ class MainActivity : ComponentActivity() {
         Arranque.marcarPrimerCuadroUi(window.decorView)
         setContent {
             ContenidoEnDosCuadros(controlador) {
-                TemaEscaner { AppEscaner(vm = vm, alCambiarPestana = { escanerVisible = it == Pestana.ESCANEAR }) }
+                TemaEscaner { AppEscaner(vm = vm, alCambiarDestino = { escanerVisible = it == Destino.PRINCIPAL }) }
             }
         }
     }
@@ -105,21 +104,22 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun aplicarModo(intent: Intent?) {
-        val modo = when (intent?.getStringExtra(EXTRA_MODO)) {
-            MODO_VENTA -> Modo.VENTA
-            MODO_CONTEO -> Modo.CONTEO
-            else -> return
-        }
-        vm.cambiarModo(modo)
+        val modo = ModoApp.deExtra(intent?.getStringExtra(EXTRA_MODO)) ?: return
+        vm.cambiarModoApp(modo)
     }
 
     companion object {
-        /** El modo con que abre (de los atajos): [MODO_VENTA] o [MODO_CONTEO]. */
+        /**
+         * El modo con que abre (de los atajos): [MODO_PRECIO], [MODO_TICKET] o [MODO_CONTEO]. [MODO_VENTA] es el de los
+         * atajos que se anclaron con la 0.1, y abre el ticket.
+         */
         const val EXTRA_MODO = "modo"
+        const val MODO_PRECIO = "precio"
+        const val MODO_TICKET = "ticket"
         const val MODO_VENTA = "venta"
         const val MODO_CONTEO = "conteo"
 
-        /** La barra de pestañas de abajo (`NavigationBar` de Material 3): para estimar el visor la primera vez. */
+        /** El hueco de abajo, donde van los modos (el alto de la barra de pestañas de antes): para estimar el visor la primera vez. */
         private const val ALTO_PESTANAS_DP = 80
 
         private const val CLAVE_ESCANER_VISIBLE = "escaner_visible"
@@ -127,9 +127,9 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Si se enlaza la cámara en `onCreate`: en un arranque nuevo siempre (abre en Escanear); al restaurar, solo si la pestaña
- * guardada era la del escáner ([escanerVisible]; null = no se guardó, p. ej. de una versión anterior). Si nadie confirma
- * lo enlazado, el controlador lo suelta solo.
+ * Si se enlaza la cámara en `onCreate`: en un arranque nuevo siempre (abre en la principal); al restaurar, solo si la
+ * pantalla guardada era la principal ([escanerVisible]; null = no se guardó, p. ej. de una versión anterior). Si nadie
+ * confirma lo enlazado, el controlador lo suelta solo.
  */
 internal fun enlazarAlCrear(restaurando: Boolean, escanerVisible: Boolean?): Boolean = !restaurando || escanerVisible == true
 
