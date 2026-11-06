@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    El oráculo de la búsqueda: compila las fuentes de C# del POS tal cual, desde su repositorio, sin copiarlas. Se le dice
+    dónde está con -p:Pos=/ruta/a/papeleria-pos (la carpeta con src/PapeleriaPos.Nucleo); cómo se corre, en Program.cs.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- El orden por nombre es el de es-MX con ICU, como en la tienda: nunca el modo invariante. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <NoWarn>$(NoWarn);CS1591;CS8618;CS0618</NoWarn>
+  </PropertyGroup>
+
+  <Target Name="SinElPos" BeforeTargets="BeforeBuild" Condition="'$(Pos)' == '' Or !Exists('$(Pos)/src/PapeleriaPos.Nucleo')">
+    <Error Text="Falta el repositorio del POS: -p:Pos=/ruta/a/papeleria-pos (la carpeta con src/PapeleriaPos.Nucleo)." />
+  </Target>
+
+  <ItemGroup Condition="'$(Pos)' != ''">
+    <!-- El núcleo completo (la búsqueda y lo que usa) y el generador de la base de prueba de sus pruebas. -->
+    <Compile Include="$(Pos)/src/PapeleriaPos.Nucleo/**/*.cs" Exclude="$(Pos)/src/PapeleriaPos.Nucleo/bin/**;$(Pos)/src/PapeleriaPos.Nucleo/obj/**" />
+    <Compile Include="$(Pos)/src/PapeleriaPos.Herramientas/Ficticios/*.cs" />
+    <Compile Include="$(Pos)/src/PapeleriaPos.Herramientas/Importacion/LoteDeDatos.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="casos-orden.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="alfabeto-orden.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="nombres-lector.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
