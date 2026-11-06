@@ -158,7 +158,10 @@ fun ContenidoAjustesPersonales(
         FilaNavegacion("Pruebas de estrés", { alAbrir(Destino.ESTRES) }, Modifier.testTag("abrir-estres"))
         Etiqueta("El botón rápido, en este celular")
         for ((que, cuantas) in contadores.renglones()) FilaDato(que, cuantas.toString())
-        Nota("Sin el nombre de nadie: sirven para mover las fronteras del gesto si ↖ junta los errores.")
+        Nota(
+            "Sin el nombre de nadie: sirven para mover las fronteras del gesto si ↖ junta los errores. Salen solo con la " +
+                "medición de la sesión de prueba (contadores-rapido.csv).",
+        )
         Nota("Versión ${BuildConfig.VERSION_NAME} · ${BuildConfig.COMMIT}")
     }
 }

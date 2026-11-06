@@ -101,6 +101,91 @@ class ListaLecturas private constructor(
     fun deshacer(): ListaLecturas =
         if (anteriores.isEmpty()) this else ListaLecturas(anteriores.last(), anteriores.dropLast(1), siguienteId)
 
+    // ---- Lo que deshace cada aviso (docs/propuesta-interfaz.md, «Ticket»: quitar se puede deshacer) ----
+    // El «Deshacer» de un aviso deshace lo que nombra el aviso aunque después se haya leído otra cosa: el último paso de
+    // la lista sería esa lectura. Cada uno es un paso más, que el «Deshacer» del ticket completo también regresa. Si ese
+    // «Deshacer» ya lo regresó, el del aviso no hace nada: lo haría dos veces.
+
+    /**
+     * «Quitado del ticket»: [quitado] regresa a su lugar como si no se hubiera quitado: entre los renglones que tenía
+     * arriba y abajo en [tras] (la lista justo después de quitarlo, donde le tocaba el lugar [indice]) y abajo de lo que se
+     * escaneó después, que [sumar] subió arriba. Por el lugar de antes en la lista de ahora no basta: con una lectura en
+     * medio quedaría arriba de un renglón que tenía arriba. Si mientras tanto se volvió a sumar su producto, lo quitado se le
+     * suma a ese renglón, que se queda donde está (no quedan dos renglones del mismo).
+     */
+    fun regresar(quitado: Renglon, indice: Int, tras: List<Renglon>): ListaLecturas {
+        // Ya está: el «Deshacer» del ticket completo lo regresó.
+        if (renglones.any { it.id == quitado.id && it.codigo == quitado.codigo }) return this
+        val lista = renglones.toMutableList()
+        val i = lista.indexOfFirst { it.mismoQue(quitado) }
+        if (i >= 0) {
+            val r = lista[i]
+            lista[i] = r.copy(cantidad = r.cantidad + quitado.cantidad, clave = r.clave ?: quitado.clave)
+            return cambiar(lista, siguienteId)
+        }
+        // Lo que no se movió desde que se quitó sigue en el orden de [tras], abajo; lo escaneado después quedó arriba de
+        // eso. De abajo hacia arriba, mientras el orden sea el de [tras], es lo de antes.
+        val lugarEnTras = tras.withIndex().associate { (k, r) -> r.id to k }
+        var desde = lista.size
+        var debajo = Int.MAX_VALUE
+        for (k in lista.indices.reversed()) {
+            val t = lugarEnTras[lista[k].id] ?: break
+            if (t >= debajo) break
+            debajo = t
+            desde = k
+        }
+        // Entre lo de antes, arriba del primero que tenía abajo.
+        val lugar = (desde until lista.size).firstOrNull { lugarEnTras.getValue(lista[it].id) >= indice } ?: lista.size
+        // Su id no se vuelve a dar (siguienteId solo crece); por si acaso, uno nuevo si ya lo trae otro.
+        val r = if (lista.any { it.id == quitado.id }) quitado.copy(id = siguienteId) else quitado
+        lista.add(lugar, r)
+        return cambiar(lista, maxOf(siguienteId, r.id + 1))
+    }
+
+    /** «… al ticket»: quita esa pieza del producto [clave] (en 1, el renglón). La misma lista si ya no está. */
+    fun quitarUna(clave: String): ListaLecturas {
+        val r = renglones.firstOrNull { it.clave == clave || it.codigo == clave } ?: return this
+        return menosUno(r.id)
+    }
+
+    /**
+     * «Ticket vacío: empieza otro»: regresa [antes], lo que había al vaciarlo, con lo que se sumó después arriba, como si
+     * se hubiera escaneado al último (lo mismo que [unir] con lo guardado): no se pierde lo leído después.
+     */
+    fun conLoDeAntes(antes: List<Renglon>): ListaLecturas {
+        if (antes.isEmpty()) return this
+        // Ya está: el «Deshacer» del ticket completo lo regresó (los renglones de antes traen su id).
+        if (antes.any { a -> renglones.any { it.id == a.id && it.codigo == a.codigo } }) return this
+        val lista = antes.toMutableList()
+        for (n in renglones.asReversed()) {
+            val i = lista.indexOfFirst { it.mismoQue(n) }
+            if (i < 0) {
+                lista.add(0, n)
+            } else {
+                val r = lista.removeAt(i)
+                lista.add(0, r.copy(cantidad = r.cantidad + n.cantidad, hora = n.hora, clave = r.clave ?: n.clave))
+            }
+        }
+        return cambiar(lista, maxOf(siguienteId, (lista.maxOfOrNull { it.id } ?: 0L) + 1))
+    }
+
+    /**
+     * Los renglones sin la clave del catálogo (lo que sumó el escaneo rápido, lo guardado por la 0.1) con la que diga
+     * [clave], sin un paso para deshacer: así lo mismo con otra variante del código, o elegido en Buscar, cae en su
+     * renglón. La misma lista si no cambia nada.
+     */
+    fun completarClaves(clave: (Renglon) -> String?): ListaLecturas {
+        if (renglones.none { it.clave == null }) return this
+        var cambio = false
+        val nuevos = renglones.map { r ->
+            if (r.clave != null) r else clave(r)?.let { cambio = true; r.copy(clave = it) } ?: r
+        }
+        return if (cambio) ListaLecturas(nuevos, anteriores, siguienteId) else this
+    }
+
+    /** El mismo código o el mismo producto del catálogo: como lo junta [sumar]. */
+    private fun Renglon.mismoQue(otro: Renglon) = codigo == otro.codigo || (otro.clave != null && clave == otro.clave)
+
     private fun cambiar(nuevos: List<Renglon>, id: Long) =
         ListaLecturas(nuevos, (anteriores + listOf(renglones)).takeLast(PASOS_PARA_DESHACER), id)
 

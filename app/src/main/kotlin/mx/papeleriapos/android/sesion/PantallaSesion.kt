@@ -102,7 +102,7 @@ fun PantallaSesion(vm: EscanerViewModel) {
             alExportarRecursos = {
                 alcance.launch {
                     val uris = ExportarSesion.medicion(contexto, s)
-                    if (uris.isNotEmpty()) Compartir.enviarVarios(contexto, uris, "Recursos y aperturas de la sesión ${s.nombre}")
+                    if (uris.isNotEmpty()) Compartir.enviarVarios(contexto, uris, "La medición de la sesión ${s.nombre}")
                 }
             },
             alDeshacerFallo = vm::deshacerFallo,

@@ -1,6 +1,7 @@
 package mx.papeleriapos.android.principal
 
 import mx.papeleriapos.android.botonrapido.Lugar
+import mx.papeleriapos.android.csv.Csv
 
 /**
  * Lo que la pantalla principal recuerda entre aperturas. Va por celular mientras la app no sepa quién la usa (en la
@@ -55,6 +56,17 @@ data class ContadoresRapido(
                 "${nombre(l)}: cerrada en menos de 2 s" to (cerradasPronto[l] ?: 0),
             )
         }
+
+    /**
+     * contadores-rapido.csv, el que sale con la medición de la sesión de prueba: un renglón por dato, en el orden de
+     * [renglones], con la marca de UTF-8 para que Excel lea las flechas.
+     */
+    fun csv(): String {
+        val sb = StringBuilder(Csv.BOM)
+        Csv.renglon(listOf("dato", "veces"), sb)
+        for ((que, cuantas) in renglones()) Csv.renglon(listOf(que, cuantas.toString()), sb)
+        return sb.toString()
+    }
 
     private fun Map<Lugar, Int>.mas(l: Lugar) = this + (l to ((this[l] ?: 0) + 1))
 

@@ -152,7 +152,11 @@ class GestoRapido(
     var resaltado: Resaltado = Resaltado.Nada
         private set
 
-    /** Se movió lo suficiente hacia una opción (o llegó encima de una): soltar ya no deja el menú abierto. */
+    /**
+     * El dedo va armado hacia una opción: a [MedidasGesto.ARMA] o más de donde se pulsó y, ya armado, hasta que baje de
+     * [MedidasGesto.DESARMA] (que el resaltado no tiemble en el borde de los 32). Como el `lugarDe` de «Cómo se hace»:
+     * mientras está armado, el ángulo se vuelve a mirar en cada movimiento, con la histéresis.
+     */
     var armado = false
         private set
 
@@ -166,18 +170,16 @@ class GestoRapido(
         val distancia = desdePulso.distancia()
         lejos = max(lejos, distancia)
         val antes = resaltado
-        var nuevo = antes
-        if (distancia >= MedidasGesto.ARMA) {
-            armado = true
-            nuevo = sectorDe(angulo(desdePulso), (antes as? Resaltado.Opcion)?.lugar)
-                ?.let { Resaltado.Opcion(it) } ?: Resaltado.Cancelar
-        } else if (distancia < MedidasGesto.DESARMA) {
-            nuevo = Resaltado.Nada
+        armado = distancia >= if (armado) MedidasGesto.DESARMA else MedidasGesto.ARMA
+        var nuevo: Resaltado = if (armado) {
+            sectorDe(angulo(desdePulso), (antes as? Resaltado.Opcion)?.lugar)?.let { Resaltado.Opcion(it) } ?: Resaltado.Cancelar
+        } else {
+            Resaltado.Nada
         }
-        // Con el dedo sobre una opción gana esa, aunque el ángulo desde donde se pulsó diga otra: quien apunta a lo que ve
-        // desde una esquina del botón encendía la de al lado.
+        // Con el dedo sobre una opción gana esa, aunque el ángulo desde donde se pulsó diga otra (o no esté armado): quien
+        // apunta a lo que ve desde una esquina del botón encendía la de al lado.
         CENTROS.entries.firstOrNull { (lugar, centro) -> lugar in hay && (desdeBoton - centro).distancia() <= MedidasGesto.ZONA }
-            ?.let { armado = true; nuevo = Resaltado.Opcion(it.key) }
+            ?.let { nuevo = Resaltado.Opcion(it.key) }
         // Un hueco (el modo no tiene opción ahí) se porta como cancelar: las demás no se recorren.
         if (nuevo is Resaltado.Opcion && nuevo.lugar !in hay) nuevo = Resaltado.Cancelar
         resaltado = nuevo
@@ -191,9 +193,10 @@ class GestoRapido(
     fun soltar(p: Punto, tMs: Long): Final {
         mover(p)
         val elegido = resaltado
-        if (armado && elegido is Resaltado.Opcion) return Final.Elegir(elegido.lugar)
+        if (elegido is Resaltado.Opcion) return Final.Elegir(elegido.lugar)
+        // Lo que se alejó más que el margen de un toque ya no es un toque, aunque haya vuelto al centro.
         val toque = lejos < slop && tMs - tPulsoMs < toqueMs
-        return if (armado || yaAbierto || !toque) Final.Cerrar else Final.DejarAbierto
+        return if (yaAbierto || !toque) Final.Cerrar else Final.DejarAbierto
     }
 }
 

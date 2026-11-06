@@ -244,4 +244,251 @@ class PisoTest {
         assertTrue(almacen.zurdo)
         assertTrue(piso().zurdo.value)
     }
+
+    // ---- El «Deshacer» de cada aviso deshace lo que nombra, aunque en medio entre otra lectura ----
+
+    private val goma = Producto("7509990100033", "Goma blanca chica", "Escolar", listOf(Escala(1, 500)), 63.0)
+    private val conGoma = CatalogoDeProductos(listOf(cuaderno, lapiz, caja, goma))
+
+    private fun claves() = venta.value.renglones.map { (it.clave ?: it.codigo) to it.cantidad }
+
+    @Test
+    fun `deshacer el quitado del ticket lo regresa a su lugar aunque despues se haya leido otro`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        p.menosUno(venta.value.actual!!.id)
+        val a = p.aviso.value!!
+        assertEquals("Quitado del ticket", a.texto)
+        // Con el aviso a la vista entra otra lectura: el último paso del ticket ya es esa.
+        p.alLeer(goma.clave, Simbologia.EAN_13, 3)
+        p.accionDelAviso(a.id)
+        // El lápiz vuelve como si no se hubiera quitado y la goma, que el escáner confirmó en verde, no se pierde: queda
+        // arriba, con su − y su +, porque se leyó después.
+        assertEquals(listOf(goma.clave to 1, lapiz.clave to 1, cuaderno.clave to 1), claves())
+    }
+
+    @Test
+    fun `el deshacer del ticket completo se lleva el aviso del paso que deshizo`() {
+        // «Quitado del ticket» con el bote del ticket completo: el aviso se ve encima, junto al deshacer de la hoja.
+        val p = piso()
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        p.abrir(Hoja.Ticket)
+        p.menosUno(venta.value.actual!!.id)
+        p.deshacerTicket()
+        assertNull("Ya se deshizo: su «Deshacer» regresaría el lápiz otra vez", p.aviso.value)
+        assertEquals(listOf(lapiz.clave to 1, cuaderno.clave to 1), claves())
+        // Un paso de después no se lleva el aviso: el suyo sigue sin deshacer.
+        p.menosUno(venta.value.actual!!.id)
+        val quitado = p.aviso.value!!
+        p.masUno(venta.value.actual!!.id)
+        p.deshacerTicket()
+        assertEquals(quitado, p.aviso.value)
+        p.accionDelAviso(quitado.id)
+        assertEquals(listOf(lapiz.clave to 1, cuaderno.clave to 1), claves())
+        // «Ticket vacío»: el deshacer de la hoja lo regresa y su aviso se va (no lo suma dos veces).
+        p.empezarOtroTicket()
+        p.deshacerTicket()
+        assertNull(p.aviso.value)
+        assertEquals(listOf(lapiz.clave to 1, cuaderno.clave to 1), claves())
+        // «… al ticket»: el deshacer de la hoja quita esa pieza y el aviso ya no quita otra.
+        p.cerrarHoja()
+        p.cambiarModo(ModoApp.PRECIO)
+        p.alTicket(lapiz)
+        p.abrir(Hoja.Ticket)
+        p.deshacerTicket()
+        assertNull(p.aviso.value)
+        assertEquals(listOf(lapiz.clave to 1, cuaderno.clave to 1), claves())
+    }
+
+    @Test
+    fun `deshacer el al ticket quita esa pieza aunque despues se haya leido otro`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.abrir(Hoja.Buscar)
+        p.elegirDeBusqueda(lapiz)
+        val a = p.aviso.value!!
+        assertTrue(a.texto.startsWith("Lápiz HB No. 2 al ticket (van 2)"))
+        p.alLeer(goma.clave, Simbologia.EAN_13, 2)
+        p.accionDelAviso(a.id)
+        assertEquals(listOf(goma.clave to 1, lapiz.clave to 1), claves())
+    }
+
+    @Test
+    fun `deshacer el ticket vacio regresa lo de antes con lo leido despues arriba`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        p.empezarOtroTicket()
+        val a = p.aviso.value!!
+        assertEquals("Ticket vacío: empieza otro", a.texto)
+        p.alLeer(goma.clave, Simbologia.EAN_13, 3)
+        p.accionDelAviso(a.id)
+        assertEquals(listOf(goma.clave to 1, lapiz.clave to 1, cuaderno.clave to 1), claves())
+    }
+
+    @Test
+    fun `sin nada en medio el deshacer del aviso regresa el ticket tal cual, con su orden`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
+        p.cambiarModo(ModoApp.PRECIO)
+        // «Al ticket» del lápiz, que ya estaba abajo: lo sube; deshacer lo regresa abajo, no solo le quita uno.
+        p.alTicket(lapiz)
+        p.accionDelAviso(p.aviso.value!!.id)
+        assertEquals(listOf(cuaderno.clave to 1, lapiz.clave to 1), claves())
+    }
+
+    @Test
+    fun `teclear cero quita el renglon con aviso y se deshace`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        val id = venta.value.actual!!.id
+        p.abrir(Hoja.Cantidad(id))
+        p.conCantidad(id, 0)
+        assertTrue(venta.value.renglones.isEmpty())
+        val a = p.aviso.value!!
+        assertEquals("Quitado del ticket", a.texto)
+        assertEquals("Deshacer", a.accion)
+        p.accionDelAviso(a.id)
+        assertEquals(listOf(lapiz.clave to 1), claves())
+    }
+
+    // ---- Las hojas se apilan ----
+
+    @Test
+    fun `lo que se abre desde el ticket completo regresa a el al cerrarse`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        val id = venta.value.actual!!.id
+        p.abrir(Hoja.Ticket)
+        // La cantidad: «Listo» regresa al ticket completo.
+        p.abrir(Hoja.Cantidad(id))
+        p.conCantidad(id, 3)
+        assertEquals(Hoja.Ticket, p.hoja.value)
+        // La × o atrás también.
+        p.abrir(Hoja.Cantidad(id))
+        p.cerrarHoja()
+        assertEquals(Hoja.Ticket, p.hoja.value)
+        // Buscar: elegir agrega y regresa al ticket completo.
+        p.abrir(Hoja.Buscar)
+        p.elegirDeBusqueda(cuaderno)
+        assertEquals(Hoja.Ticket, p.hoja.value)
+        assertEquals(4, venta.value.total)
+        // Y de ahí, a la pantalla principal.
+        p.cerrarHoja()
+        assertNull(p.hoja.value)
+        // Abiertas desde la pantalla principal, regresan a ella.
+        p.abrir(Hoja.Buscar)
+        p.cerrarHoja()
+        assertNull(p.hoja.value)
+    }
+
+    @Test
+    fun `cerrar pronto una hoja del boton solo cuenta al volver a la principal`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.abrir(Hoja.Ticket)
+        p.alElegir(Lugar.LADO, conGesto = true)
+        p.abrir(Hoja.Buscar)
+        p.cerrarHoja()
+        assertEquals("Regresó al ticket completo: no cuenta", 0, p.contadores.value.cerradasPronto.values.sum())
+    }
+
+    // ---- Los avisos y el menú ----
+
+    @Test
+    fun `un aviso que ya se veia se esconde al abrir el menu y sale completo al cerrarlo`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.menosUno(venta.value.actual!!.id)
+        val a = p.aviso.value!!
+        p.alAbrirMenu(conToque = false)
+        assertNull("Bajo el velo no se ve ni corre su tiempo", p.aviso.value)
+        assertTrue(p.menuAbierto)
+        // El de la pantalla se vence (su tiempo corría): no lo quita, porque ya no es el que se ve.
+        p.avisoVencido(a.id)
+        p.alCerrarMenu()
+        assertEquals(a, p.aviso.value)
+        assertTrue(!p.menuAbierto)
+        // Cerrar de más no hace nada.
+        p.alCerrarMenu()
+        assertEquals(a, p.aviso.value)
+    }
+
+    @Test
+    fun `con el precio en grande el aviso del ticket espera y sale completo al regresar`() {
+        val p = piso()
+        p.cambiarModo(ModoApp.PRECIO)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alTicket(cuaderno)
+        val a = p.aviso.value!!
+        // ↑ «Enseñar al cliente» con el gesto: el menú se abre, se cierra (el aviso vuelve) y sale el precio en grande.
+        p.alAbrirMenu(conToque = false)
+        p.alCerrarMenu()
+        p.ensenar(cuaderno)
+        assertNull("El cliente no ve el aviso del ticket", p.aviso.value)
+        // La pantalla vuelve a decir que el menú está cerrado: el aviso sigue esperando.
+        p.alCerrarMenu()
+        assertNull(p.aviso.value)
+        p.cerrarHoja()
+        assertEquals(a, p.aviso.value)
+    }
+
+    // ---- Lo que anuncia cada lectura (TalkBack) ----
+
+    @Test
+    fun `cada lectura anuncia lo que hizo en su modo`() {
+        val p = piso()
+        p.cambiarModo(ModoApp.PRECIO)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00", p.anuncio.value!!.texto)
+        val primero = p.anuncio.value!!.id
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
+        assertTrue("El mismo producto otra vez es otro anuncio", p.anuncio.value!!.id != primero)
+        p.alLeer("7509990100194", Simbologia.EAN_13, 3)
+        assertEquals("No está en el catálogo", p.anuncio.value!!.texto)
+        p.cambiarModo(ModoApp.TICKET)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 4)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 5)
+        assertEquals("Lápiz HB No. 2 al ticket, van 2. Total \$11.00", p.anuncio.value!!.texto)
+        p.cambiarModo(ModoApp.CONTEO)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 6)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 7)
+        assertEquals("Cuaderno profesional cuadro chico 100 hojas, van 2", p.anuncio.value!!.texto)
+        // Con una hoja encima no cuenta ni se anuncia.
+        val antes = p.anuncio.value
+        p.abrir(Hoja.Buscar)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 8)
+        assertEquals(antes, p.anuncio.value)
+    }
+
+    // ---- Lo que no trae clave (el escaneo rápido, lo de la 0.1) ----
+
+    @Test
+    fun `lo que no trae clave se busca por su codigo y la toma al cargar los productos`() {
+        venta.value = ListaLecturas().sumar(cuaderno.clave, Simbologia.EAN_13, 1)
+        val p = Piso(venta, conteo, almacen, ModoApp.TICKET) { ahora }
+        assertNull(venta.value.actual!!.clave)
+        assertEquals("Sin productos no se sabe: no suma", 0L, totalDe(venta.value, null))
+        p.cargarCatalogo(catalogo)
+        assertEquals(cuaderno.clave, venta.value.actual!!.clave)
+        assertEquals(4600L, totalDe(venta.value, catalogo))
+        // Y elegido en Buscar cae en su renglón.
+        p.abrir(Hoja.Buscar)
+        p.elegirDeBusqueda(cuaderno)
+        assertEquals(listOf(cuaderno.clave to 2), claves())
+    }
+
+    @Test
+    fun `los contadores del boton rapido salen en su csv`() {
+        val c = ContadoresRapido().alAbrirConToque().alElegir(Lugar.LADO, conElGesto = true).alCerrarPronto(Lugar.ARRIBA)
+        val csv = c.csv()
+        assertTrue(csv.startsWith("\uFEFFdato,veces\r\n"))
+        assertTrue(csv.contains("Abierto con un toque,1\r\n"))
+        assertTrue(csv.contains("←: con el gesto,1\r\n"))
+        assertTrue(csv.contains("↑: cerrada en menos de 2 s,1\r\n"))
+        assertEquals(1 + c.renglones().size, csv.trimEnd().lines().size)
+    }
 }

@@ -1,6 +1,7 @@
 package mx.papeleriapos.android.catalogo
 
 import mx.papeleriapos.android.csv.Csv
+import mx.papeleriapos.android.lista.Renglon
 import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.Simbologia
 import mx.papeleriapos.pos.Cantidad
@@ -99,11 +100,17 @@ data class Producto(
     }
 }
 
-/** Lo que hay en la tienda de [p], para la tarjeta y el ticket: «Quedan 1» cuando queda poco. */
+/** Lo que hay en la tienda de [p], para la tarjeta y el ticket: «Queda 1» o «Quedan 3» cuando queda poco. */
 fun quedanPocos(p: Producto): Boolean = p.existencia != null && p.existencia <= POCA_EXISTENCIA
 
-/** Con esto o menos, la tarjeta y el renglón dicen «Quedan N» en ámbar (la regla de «Poca existencia» de la caja). */
-const val POCA_EXISTENCIA = 2.0
+/**
+ * Con esto o menos, la tarjeta y el renglón lo dicen en ámbar: la regla de «Poca existencia» de la caja
+ * (`PocaExistencia.Hasta` = 3), que no tiene un mínimo propio por producto.
+ */
+const val POCA_EXISTENCIA = 3.0
+
+/** «Queda 1» con una sola y «Quedan 3» con más (docs/propuesta-interfaz.md, «Precio» y «Ticket»: «Queda 1» en ámbar). */
+fun quedan(existencia: Double): String = if (existencia == 1.0) "Queda 1" else "Quedan ${cantidadCorta(existencia)}"
 
 /** «$1,234.50», como los importes de la caja: con comas en los miles y siempre dos decimales. */
 fun pesos(centavos: Long): String {
@@ -143,6 +150,13 @@ class CatalogoDeProductos(productosSinSuelto: List<Producto>) {
         claves.buscarNormalizado(normalizado, simbologia)?.let { porClave[it.clave] } ?: porClave[normalizado]
 
     /**
+     * El producto de un renglón del ticket o del conteo: por su clave y, si no la trae (lo que sumó el escaneo rápido o
+     * lo que guardó la 0.1), por su código con la regla de UPC y EAN, como al escanearlo. Así un producto que sí está no
+     * sale en rojo ni deja de sumar al total.
+     */
+    fun de(r: Renglon): Producto? = r.clave?.let { porClave[it] } ?: porLectura(r.codigo, r.simbologia)
+
+    /**
      * Lo que se escribe en Buscar, con las reglas de la caja: pedazos de palabra en cualquier orden («lus az» da el papel
      * lustre azul), un error de dedo, lo que se eligió antes con ese texto ([elegido], su clave) primero y luego lo más
      * vendido; hasta [maximo]. Sin escribir nada, los rápidos y lo más vendido.
@@ -158,6 +172,9 @@ class CatalogoDeProductos(productosSinSuelto: List<Producto>) {
     companion object {
         /** Como la búsqueda de la caja: hasta 30. */
         const val MAXIMO_RESULTADOS = 30
+
+        /** Los productos de prueba (los del prototipo, ficticios), en assets: los leen la app y el escaneo rápido. */
+        const val ARCHIVO_DE_PRUEBA = "productos-prueba.csv"
 
         val VACIO = CatalogoDeProductos(emptyList())
 

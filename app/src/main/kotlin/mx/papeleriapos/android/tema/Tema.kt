@@ -39,6 +39,10 @@ private val Claro = lightColorScheme(
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFF9DEDC),
     onErrorContainer = Color(0xFF410E0B),
+    // Los avisos y las pistas: los de fábrica de Material son morados (su «Deshacer» salía lila, fuera del tema).
+    inversePrimary = Color(0xFF8ECFF0),
+    inverseSurface = Color(0xFF2D3135),
+    inverseOnSurface = Color(0xFFEEF1F4),
 )
 
 private val Oscuro = darkColorScheme(
@@ -65,13 +69,19 @@ private val Oscuro = darkColorScheme(
     onError = Color(0xFF601410),
     errorContainer = Color(0xFF8C1D18),
     onErrorContainer = Color(0xFFF9DEDC),
+    inversePrimary = Color(0xFF1D5C7A),
+    inverseSurface = Color(0xFFDFE3E7),
+    inverseOnSurface = Color(0xFF2D3135),
 )
 
-/** Colores de estado que Material no trae. */
+/**
+ * Colores de estado que Material no trae. El verde de claro da 4.6:1 sobre el panel (#ECEFF2): la promoción de la
+ * tarjeta, de 14 sp, pide 4.5.
+ */
 @Immutable
 data class ColoresEstado(val exito: Color, val enExito: Color, val aviso: Color, val enAviso: Color)
 
-private val EstadoClaro = ColoresEstado(Color(0xFF2E7D32), Color.White, Color(0xFF8A5A00), Color.White)
+private val EstadoClaro = ColoresEstado(Color(0xFF2B7A2F), Color.White, Color(0xFF8A5A00), Color.White)
 private val EstadoOscuro = ColoresEstado(Color(0xFF81C784), Color(0xFF0B2E0D), Color(0xFFFFC107), Color(0xFF2B1F00))
 
 val LocalColoresEstado = staticCompositionLocalOf { EstadoClaro }

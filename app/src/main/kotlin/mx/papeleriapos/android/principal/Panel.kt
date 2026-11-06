@@ -2,9 +2,12 @@ package mx.papeleriapos.android.principal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
@@ -33,23 +40,32 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.cantidadCorta
 import mx.papeleriapos.android.catalogo.pesos
+import mx.papeleriapos.android.catalogo.quedan
 import mx.papeleriapos.android.catalogo.quedanPocos
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.Renglon
@@ -76,6 +92,12 @@ class AccionesPanel(
     val vaciarConteo: () -> Unit = {},
 )
 
+/**
+ * Desde esta escala de la letra el panel se acomoda (docs/propuesta-interfaz.md, «Letra al 200 %»): en el chico, la
+ * tarjeta de Precio no cabe con el nombre en dos renglones y el precio a 40 sp.
+ */
+internal const val LETRA_GRANDE = 1.3f
+
 @Composable
 fun ContenidoPanel(
     modo: ModoApp,
@@ -85,40 +107,59 @@ fun ContenidoPanel(
     catalogo: CatalogoDeProductos?,
     acciones: AccionesPanel,
     modifier: Modifier = Modifier,
+    /** «Botón rápido a la izquierda»: el panel vacío dice dónde está. */
+    zurdo: Boolean = false,
 ) {
     val color = LocalColoresModo.current.de(modo)
     Column(modifier.fillMaxSize()) {
         when (modo) {
-            ModoApp.PRECIO -> PanelPrecio(precio, color, acciones)
-            ModoApp.TICKET -> PanelTicket(ticket, catalogo, color, acciones)
+            ModoApp.PRECIO -> PanelPrecio(precio, color, zurdo, acciones)
+            ModoApp.TICKET -> PanelTicket(ticket, catalogo, color, zurdo, acciones)
             ModoApp.CONTEO -> PanelConteo(conteo, catalogo, color, acciones)
         }
     }
 }
 
+/** Dónde está el botón rápido, para los textos del panel vacío («Cómo se aprende»). */
+internal fun ladoDelBoton(zurdo: Boolean): String = if (zurdo) "abajo a la izquierda" else "abajo a la derecha"
+
 // ---- Precio: el verificador (F9) en el celular ----
 
 @Composable
-private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, acciones: AccionesPanel) {
+private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, zurdo: Boolean, acciones: AccionesPanel) {
     when (precio) {
         null -> Vacio(
             "Escanea para ver el precio",
-            "Es el verificador (F9) de la caja: escanear no agrega nada. Enseñar y buscar: en el botón de abajo a la " +
-                "derecha. Si se lo lleva, «Al ticket» en la tarjeta.",
+            "Es el verificador (F9) de la caja: escanear no agrega nada. Enseñar y buscar: en el botón de " +
+                "${ladoDelBoton(zurdo)}. Si se lo lleva, «Al ticket» en la tarjeta.",
         )
         is ConsultaPrecio.NoEsta -> NoEstaEnElCatalogo(precio.codigo, acciones.buscar)
         is ConsultaPrecio.Encontrado -> TarjetaPrecio(precio.producto, color, acciones)
     }
 }
 
+/**
+ * La tarjeta del precio. Nada se pierde en el chico ni con la letra al 200 %: primero se acomoda (con la letra grande, el
+ * nombre en un renglón y el precio un poco más chico, lo que quepa junto a «Al ticket»; el mayoreo y la existencia se
+ * pasan al renglón de abajo si no caben) y, si aun así no cabe, la tarjeta se desplaza dentro del panel.
+ */
 @Composable
 private fun TarjetaPrecio(p: Producto, color: ColorModo, acciones: AccionesPanel) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).testTag("tarjeta-precio")) {
+    val grande = LocalDensity.current.fontScale >= LETRA_GRANDE
+    // Cada producto empieza arriba: el precio y «Al ticket» a la vista aunque el de antes se haya desplazado.
+    val desplazamiento = remember(p.clave) { ScrollState(0) }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(desplazamiento)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .testTag("tarjeta-precio"),
+    ) {
         Row(verticalAlignment = Alignment.Top) {
             Iniciales(p.nombre, color)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(p.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(p.nombre, style = MaterialTheme.typography.titleMedium, maxLines = if (grande) 1 else 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     "${p.departamento} · ${p.clave}",
                     style = MaterialTheme.typography.bodySmall,
@@ -133,9 +174,9 @@ private fun TarjetaPrecio(p: Producto, color: ColorModo, acciones: AccionesPanel
         Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 pesos(p.precio),
-                fontSize = 40.sp,
                 fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum", lineHeight = 1.15.em),
+                autoSize = TextAutoSize.StepBased(minFontSize = 20.sp, maxFontSize = if (grande) 32.sp else 40.sp),
                 modifier = Modifier.weight(1f).testTag("precio"),
                 maxLines = 1,
             )
@@ -145,15 +186,19 @@ private fun TarjetaPrecio(p: Producto, color: ColorModo, acciones: AccionesPanel
             ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Al ticket")
+                Text("Al ticket", maxLines = 1)
             }
         }
         val estado = LocalColoresEstado.current
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 2.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(top = 2.dp),
+        ) {
             if (p.piezas > 1) Dato("${pesos(p.precio / p.piezas)} c/u (${p.piezas})")
             p.mayoreo?.let { Dato("Desde ${it.desde}: ${pesos(it.centavos)} c/u", fondo = estado.exito.copy(alpha = 0.16f)) }
             p.existencia?.let { e ->
-                if (quedanPocos(p)) Dato("Quedan ${cantidadCorta(e)}", fondo = estado.aviso.copy(alpha = 0.18f))
+                if (quedanPocos(p)) Dato(quedan(e), fondo = estado.aviso.copy(alpha = 0.18f))
                 else Dato("Existencia: ${cantidadCorta(e)}")
             }
         }
@@ -169,7 +214,6 @@ private fun Dato(texto: String, fondo: Color = MaterialTheme.colorScheme.surface
         texto,
         style = MaterialTheme.typography.labelLarge,
         modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(fondo).padding(horizontal = 8.dp, vertical = 4.dp),
-        maxLines = 1,
     )
 }
 
@@ -200,13 +244,16 @@ private fun NoEstaEnElCatalogo(codigo: String, buscar: () -> Unit) {
 // ---- Ticket: la preventa ----
 
 @Composable
-private fun PanelTicket(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, color: ColorModo, acciones: AccionesPanel) {
-    val total = totalDe(ticket, catalogo)
-    // El encabezado (o el asidero) abre el ticket completo.
+private fun PanelTicket(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, color: ColorModo, zurdo: Boolean, acciones: AccionesPanel) {
+    // Mientras los productos se cargan (después de la apertura), lo guardado no sale en rojo ni el total en $0.00.
+    val cargando = catalogo == null
+    val verTicket = rememberUpdatedState(acciones.verTicket)
+    // El encabezado (o el asidero) abre el ticket completo: con un toque o al jalarlo.
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .jalarParaVerTodo(verTicket)
             .clickable(role = Role.Button, onClickLabel = "Ver el ticket completo", onClick = acciones.verTicket)
             .padding(horizontal = 16.dp)
             .semantics { heading() }
@@ -214,50 +261,68 @@ private fun PanelTicket(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, c
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("Ticket · ${ticket.total} art.", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        Text(pesos(total), fontSize = 24.sp, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
+        Text(
+            if (cargando && ticket.renglones.isNotEmpty()) "…" else pesos(totalDe(ticket, catalogo)),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+            modifier = Modifier.testTag("total-ticket"),
+        )
     }
-    if (ticket.renglones.isEmpty()) {
-        Vacio("Escanea lo que lleva el cliente", "Buscar, impresiones y mandar: en el botón de abajo a la derecha.")
+    val actual = ticket.actual
+    if (actual == null) {
+        Vacio("Escanea lo que lleva el cliente", "Buscar, impresiones y mandar: en el botón de ${ladoDelBoton(zurdo)}.")
         return
     }
-    LazyColumn(Modifier.fillMaxWidth()) {
-        items(ticket.renglones, key = { it.id }) { r ->
-            val p = r.clave?.let { catalogo?.porClave(it) }
-            if (r.id == ticket.actual?.id) RenglonActual(r, p, color, acciones) else RenglonCorto(r, p)
-        }
+    // Lo último va fijo bajo el encabezado, con − y +, y lo de antes abajo. En una lista con llave, el renglón nuevo
+    // entraría arriba de lo que se ve y quedaría oculto (la 0.1 regresaba la lista arriba con cada suma).
+    RenglonActual(actual, catalogo?.de(actual), cargando, color, acciones)
+    val resto = ticket.renglones.drop(1)
+    val lista = rememberLazyListState()
+    LaunchedEffect(actual.id, actual.cantidad) { if (resto.isNotEmpty()) lista.scrollToItem(0) }
+    LazyColumn(Modifier.fillMaxWidth().testTag("renglones-ticket"), state = lista) {
+        items(resto, key = { it.id }) { r -> RenglonCorto(r, catalogo?.de(r), cargando) }
     }
 }
 
-/** El total como lo calcula la caja; lo que no está en el catálogo no suma (la caja lo da de alta o lo cobra a mano). */
-internal fun totalDe(ticket: ListaLecturas, catalogo: CatalogoDeProductos?): Long =
-    ticket.renglones.sumOf { r -> r.clave?.let { catalogo?.porClave(it) }?.importe(r.cantidad) ?: 0L }
-
 /** Lo último, resaltado, con − y + (en 1, el − es el bote). Tocar la cantidad abre el teclado. */
 @Composable
-private fun RenglonActual(r: Renglon, p: Producto?, color: ColorModo, acciones: AccionesPanel) {
+private fun RenglonActual(r: Renglon, p: Producto?, cargando: Boolean, color: ColorModo, acciones: AccionesPanel) {
     val error = MaterialTheme.colorScheme.error
+    val sinProducto = p == null && !cargando
+    val tinta = when {
+        sinProducto -> error
+        p == null -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> color.enContenedor
+    }
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 2.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(if (p == null) MaterialTheme.colorScheme.errorContainer else color.contenedor)
+            .background(
+                when {
+                    sinProducto -> MaterialTheme.colorScheme.errorContainer
+                    p == null -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> color.contenedor
+                },
+            )
             .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
             .testTag("renglon-actual"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                p?.nombre ?: "Código sin producto",
+                p?.nombre ?: if (cargando) r.codigo else "Código sin producto",
                 style = MaterialTheme.typography.titleSmall,
-                color = if (p == null) error else color.enContenedor,
+                color = tinta,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                detalleDe(r, p),
+                detalleDe(r, p, cargando),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = if (p == null) error else color.enContenedor,
+                color = tinta,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -279,7 +344,7 @@ private fun RenglonActual(r: Renglon, p: Producto?, color: ColorModo, acciones: 
                 .padding(top = 10.dp)
                 .semantics { contentDescription = "${r.cantidad}. Tocar para teclear la cantidad" }
                 .testTag("cantidad"),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
         )
         IconButton(onClick = { acciones.masUno(r.id) }, modifier = Modifier.size(48.dp).testTag("mas-uno")) {
             Icon(Icons.Filled.Add, contentDescription = "Uno más")
@@ -287,11 +352,14 @@ private fun RenglonActual(r: Renglon, p: Producto?, color: ColorModo, acciones: 
     }
 }
 
-/** «Quedan 1» primero (para que no se corte en el chico), el precio por pieza y «Mayoreo» al llegar a la escala. */
-internal fun detalleDe(r: Renglon, p: Producto?): String {
-    if (p == null) return "${r.codigo} · en la caja se da de alta o se cobra aparte"
+/**
+ * «Queda 1» primero (para que no se corte en el chico), el precio por pieza y «Mayoreo» al llegar a la escala. Mientras
+ * los productos se cargan ([cargando]), solo «…»: todavía no se sabe si está.
+ */
+internal fun detalleDe(r: Renglon, p: Producto?, cargando: Boolean = false): String {
+    if (p == null) return if (cargando) "…" else "${r.codigo} · en la caja se da de alta o se cobra aparte"
     val partes = mutableListOf<String>()
-    if (quedanPocos(p)) partes += "Quedan ${cantidadCorta(p.existencia!!)}"
+    if (quedanPocos(p)) partes += quedan(p.existencia!!)
     partes += "${pesos(p.precioUnitario(r.cantidad))} c/u"
     if (p.esMayoreo(r.cantidad)) partes += "Mayoreo"
     partes += pesos(p.importe(r.cantidad))
@@ -299,25 +367,26 @@ internal fun detalleDe(r: Renglon, p: Producto?): String {
 }
 
 @Composable
-private fun RenglonCorto(r: Renglon, p: Producto?) {
+private fun RenglonCorto(r: Renglon, p: Producto?, cargando: Boolean) {
+    val sinProducto = p == null && !cargando
     Row(
         Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            p?.nombre ?: "Código sin producto · ${r.codigo}",
+            p?.nombre ?: if (cargando) r.codigo else "Código sin producto · ${r.codigo}",
             style = MaterialTheme.typography.bodyMedium,
-            color = if (p == null) MaterialTheme.colorScheme.error else Color.Unspecified,
+            color = if (sinProducto) MaterialTheme.colorScheme.error else Color.Unspecified,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text("×${r.cantidad}", style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"), modifier = Modifier.padding(horizontal = 8.dp))
         Text(
-            p?.let { pesos(it.importe(r.cantidad)) } ?: "—",
+            p?.let { pesos(it.importe(r.cantidad)) } ?: if (cargando) "…" else "—",
             style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
             modifier = Modifier.widthIn(min = 72.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            textAlign = TextAlign.End,
         )
     }
 }
@@ -326,6 +395,7 @@ private fun RenglonCorto(r: Renglon, p: Producto?) {
 
 @Composable
 private fun PanelConteo(conteo: ListaLecturas, catalogo: CatalogoDeProductos?, color: ColorModo, acciones: AccionesPanel) {
+    val cargando = catalogo == null
     Row(
         Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 16.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -346,18 +416,18 @@ private fun PanelConteo(conteo: ListaLecturas, catalogo: CatalogoDeProductos?, c
     if (actual == null) {
         Vacio(
             "Escanea para contar",
-            "Cada lectura suma una pieza, en este celular. Contar contra el POS (por lugares y a ciegas) llega después del piloto.",
+            "Cada lectura suma una pieza, en este celular. Contar contra el POS llega después del piloto.",
         )
         return
     }
-    val p = actual.clave?.let { catalogo?.porClave(it) }
+    val p = catalogo?.de(actual)
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(p?.nombre ?: actual.codigo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (p == null) Text("No está en el catálogo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            if (p == null && !cargando) Text("No está en el catálogo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         IconButton(onClick = acciones.menosUnoConteo, modifier = Modifier.size(52.dp).testTag("menos-uno-conteo")) {
             Icon(Icons.Filled.Remove, contentDescription = "Quitar la última lectura")
@@ -374,7 +444,7 @@ private fun PanelConteo(conteo: ListaLecturas, catalogo: CatalogoDeProductos?, c
     }
     LazyColumn(Modifier.fillMaxWidth()) {
         items(conteo.renglones.drop(1), key = { it.id }) { r ->
-            val q = r.clave?.let { catalogo?.porClave(it) }
+            val q = catalogo?.de(r)
             Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(q?.nombre ?: r.codigo, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("×${r.cantidad}", style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
@@ -392,14 +462,42 @@ private fun Vacio(titulo: String, texto: String) {
     }
 }
 
-/** El asidero: se toca (o se jala) para ver el modo completo. */
+/** Lo que hay que jalar hacia arriba, desde el asidero o el encabezado, para que abra lo completo. */
+private val JALAR = 32.dp
+
+/**
+ * Jalar hacia arriba abre lo completo (docs/propuesta-interfaz.md: «el asidero: se jala para ver todo»; el arrastre del
+ * panel vive en el asidero y el encabezado). Pasado el margen de un toque se queda con el dedo, así que un jalón no
+ * cuenta como toque. [alJalar] es un estado: un panel que se recompone a medio jalón no lo corta.
+ */
+private fun Modifier.jalarParaVerTodo(alJalar: State<() -> Unit>) = pointerInput(Unit) {
+    var arrastre = 0f
+    detectVerticalDragGestures(
+        onDragStart = { arrastre = 0f },
+        onDragEnd = { if (arrastre <= -JALAR.toPx()) alJalar.value() },
+        onDragCancel = { arrastre = 0f },
+    ) { cambio, dy ->
+        cambio.consume()
+        arrastre += dy
+    }
+}
+
+/**
+ * El asidero: se toca o se jala para ver el modo completo. No va en el árbol de TalkBack: es un botón sin nombre de
+ * 20 dp, y el encabezado, justo abajo, ya ofrece «Ver el ticket completo».
+ */
 @Composable
-fun Asidero(alTocar: (() -> Unit)?, modifier: Modifier = Modifier) {
+fun Asidero(alAbrir: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val accion = rememberUpdatedState(alAbrir ?: {})
     Box(
         modifier
             .fillMaxWidth()
             .height(20.dp)
-            .then(if (alTocar != null) Modifier.clickable(role = Role.Button, onClickLabel = "Ver todo", onClick = alTocar) else Modifier),
+            .then(
+                if (alAbrir == null) Modifier
+                else Modifier.jalarParaVerTodo(accion).pointerInput(Unit) { detectTapGestures { accion.value() } },
+            )
+            .testTag("asidero"),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(width = 32.dp, height = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)))

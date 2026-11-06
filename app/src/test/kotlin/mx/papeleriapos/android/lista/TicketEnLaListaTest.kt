@@ -137,4 +137,114 @@ class TicketEnLaListaTest {
         assertEquals(upcGuardado, u.actual!!.clave)
         assertEquals(2, u.total)
     }
+
+    // ---- Lo que deshace cada aviso, con una lectura en medio ----
+
+    private val goma = "7509990100033"
+
+    private val sacapuntas = "7509990100040"
+    private val pegamento = "7509990100057"
+
+    /** [l] sin el renglón [i]: lo quitado, su lugar y la lista justo después (lo que guarda el aviso). */
+    private fun quitar(l: ListaLecturas, i: Int): Triple<Renglon, Int, ListaLecturas> {
+        val r = l.renglones[i]
+        return Triple(r, i, l.quitar(r.id))
+    }
+
+    @Test
+    fun `regresar pone lo quitado en su lugar aunque despues se haya leido otra cosa`() {
+        var l = ListaLecturas()
+            .sumar(cuaderno, Simbologia.EAN_13, 1, clave = cuaderno)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+        val (quitado, i, tras) = quitar(l, 0)
+        l = tras.sumar(goma, Simbologia.EAN_13, 3, clave = goma)
+        l = l.regresar(quitado, i, tras.renglones)
+        // El lápiz vuelve, como si no se hubiera quitado: la goma, leída después, queda arriba (con su − y su +).
+        assertEquals(listOf(goma to 1, lapiz to 1, cuaderno to 1), l.codigos())
+        assertEquals(quitado.id, l.renglones[1].id)
+        assertTrue(l.renglones.map { it.id }.toSet().size == 3)
+        // Y el deshacer del ticket completo lo vuelve a quitar.
+        assertEquals(listOf(goma to 1, cuaderno to 1), l.deshacer().codigos())
+    }
+
+    @Test
+    fun `regresar lo de en medio lo deja entre los mismos renglones aunque en medio se lea otro`() {
+        // Cuaderno, lápiz y goma (la goma arriba); se quita el lápiz, que estaba en medio, y se lee el sacapuntas.
+        var l = ListaLecturas()
+            .sumar(cuaderno, Simbologia.EAN_13, 1, clave = cuaderno)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+            .sumar(goma, Simbologia.EAN_13, 3, clave = goma)
+        val (quitado, i, tras) = quitar(l, 1)
+        l = tras.sumar(sacapuntas, Simbologia.EAN_13, 4, clave = sacapuntas)
+        // Por su lugar de antes (el 1) quedaría arriba de la goma, que tenía arriba.
+        assertEquals(listOf(sacapuntas to 1, goma to 1, lapiz to 1, cuaderno to 1), l.regresar(quitado, i, tras.renglones).codigos())
+        // Si en medio se volvió a leer el de abajo (subió), regresa abajo de lo que sigue en su orden.
+        val releido = tras.sumar(cuaderno, Simbologia.EAN_13, 5, clave = cuaderno)
+        assertEquals(listOf(cuaderno to 2, goma to 1, lapiz to 1), releido.regresar(quitado, i, tras.renglones).codigos())
+        // Y si se quitó también el de abajo, va al final.
+        val sinCuaderno = tras.quitar(tras.renglones.last().id).sumar(pegamento, Simbologia.EAN_13, 6, clave = pegamento)
+        assertEquals(listOf(pegamento to 1, goma to 1, lapiz to 1), sinCuaderno.regresar(quitado, i, tras.renglones).codigos())
+    }
+
+    @Test
+    fun `regresar no repite lo que ya regreso el deshacer del ticket completo`() {
+        val l = ListaLecturas()
+            .sumar(cuaderno, Simbologia.EAN_13, 1, clave = cuaderno)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+        val (quitado, i, tras) = quitar(l, 0)
+        val deshecha = tras.deshacer()
+        assertSame(deshecha, deshecha.regresar(quitado, i, tras.renglones))
+        // Lo de antes de vaciar tampoco se suma dos veces.
+        val vaciada = l.vaciar().deshacer()
+        assertSame(vaciada, vaciada.conLoDeAntes(l.renglones))
+    }
+
+    @Test
+    fun `regresar suma a su renglon si el producto se volvio a leer`() {
+        var l = ListaLecturas().sumar(lapiz, Simbologia.EAN_13, 1, clave = lapiz).conCantidad(1, 5, 2)
+        val quitado = l.renglones[0]
+        val tras = l.conCantidad(quitado.id, 0, 3)
+        l = tras.sumar(lapiz, Simbologia.EAN_13, 4, clave = lapiz)
+        l = l.regresar(quitado, 0, tras.renglones)
+        assertEquals(listOf(lapiz to 6), l.codigos())
+    }
+
+    @Test
+    fun `quitar una pieza deshace el al ticket aunque haya otra lectura arriba`() {
+        var l = ListaLecturas().agregarDelCatalogo(lapiz, 1).agregarDelCatalogo(lapiz, 2)
+        l = l.sumar(goma, Simbologia.EAN_13, 3, clave = goma)
+        l = l.quitarUna(lapiz)
+        assertEquals(listOf(goma to 1, lapiz to 1), l.codigos())
+        l = l.quitarUna(lapiz)
+        assertEquals(listOf(goma to 1), l.codigos())
+        assertSame("Si ya no está, nada cambia", l, l.quitarUna(lapiz))
+    }
+
+    @Test
+    fun `lo de antes de vaciar regresa con lo leido despues arriba`() {
+        val antes = ListaLecturas()
+            .sumar(cuaderno, Simbologia.EAN_13, 1, clave = cuaderno)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+        var l = antes.vaciar()
+        l = l.sumar(goma, Simbologia.EAN_13, 3, clave = goma).sumar(cuaderno, Simbologia.EAN_13, 4, clave = cuaderno)
+        l = l.conLoDeAntes(antes.renglones)
+        // Como unir: lo de después va arriba, en su orden, y el cuaderno de antes y el de después son un renglón.
+        assertEquals(listOf(cuaderno to 2, goma to 1, lapiz to 1), l.codigos())
+        assertEquals(l.renglones.size, l.renglones.map { it.id }.toSet().size)
+        // Lo que sigue ya no repite ids.
+        val siguiente = l.sumar("7509990100040", Simbologia.EAN_13, 5)
+        assertEquals(siguiente.renglones.size, siguiente.renglones.map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `completar las claves no agrega un paso y junta lo buscado con lo del rapido`() {
+        // Lo que sumó el escaneo rápido: sin clave, con el código como lo da la cámara.
+        val rapido = ListaLecturas().sumar(upcLeido, Simbologia.UPC_A, 1)
+        val completa = rapido.completarClaves { if (it.codigo == upcLeido) upcGuardado else null }
+        assertEquals(upcGuardado, completa.actual!!.clave)
+        // No es un paso para deshacer: deshacer regresa a lo de antes de la lectura, no a la lectura sin clave.
+        assertTrue(completa.deshacer().renglones.isEmpty())
+        assertEquals(listOf(upcLeido to 2), completa.agregarDelCatalogo(upcGuardado, 2).codigos())
+        assertSame("Sin nada que completar, la misma lista", completa, completa.completarClaves { upcGuardado })
+    }
 }

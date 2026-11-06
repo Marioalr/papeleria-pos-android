@@ -1,97 +1,37 @@
 package mx.papeleriapos.android.principal
 
-import android.Manifest
 import android.app.Application
-import android.graphics.Bitmap
-import android.os.Looper
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import mx.papeleriapos.android.EscanerViewModel
-import mx.papeleriapos.android.lista.ListasCompartidas
-import mx.papeleriapos.android.tema.TemaEscaner
-import mx.papeleriapos.escaner.ui.ControladorDeMuestra
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.io.File
 
 /**
- * La pantalla principal sin celular: Robolectric la dibuja de verdad (gráficos nativos) a 360 × 740 dp, el chico de la
- * propuesta, con el controlador de muestra en lugar de la cámara. Revisa lo principal de cada modo y deja una captura de
- * cada estado en build/capturas, para verla sin emulador. La Application de la app no corre (calienta CameraX).
+ * La pantalla principal sin celular: Robolectric la dibuja de verdad (gráficos nativos) con la geometría del chico de la
+ * propuesta (360 × 740 dp con barras de 24 + 24; ver [PruebaDePantalla]), con el controlador de muestra en lugar de la
+ * cámara. Revisa lo principal de cada modo y deja una captura de cada estado en build/capturas, para verla sin emulador;
+ * las de la letra al 200 % llevan «-200». La Application de la app no corre (calienta CameraX).
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = Application::class, qualifiers = "w360dp-h740dp-xxhdpi")
+@Config(application = Application::class, qualifiers = CHICO)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class PantallaPrincipalCapturasTest {
-    @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
-
-    private lateinit var vm: EscanerViewModel
-    private val controlador get() = vm.controlador as ControladorDeMuestra
-
-    /** Como el Scaffold de la app: la barra de estado arriba y el hueco de los modos (80 dp) con la barra de gestos abajo. */
-    private val relleno = PaddingValues(top = 24.dp, bottom = 80.dp + 24.dp)
-
-    private fun abrir(modo: ModoApp) {
-        val app = ApplicationProvider.getApplicationContext<Application>()
-        shadowOf(app).grantPermissions(Manifest.permission.CAMERA)
-        vm = EscanerViewModel(app, { _, c -> ControladorDeMuestra(config = c) }, ListasCompartidas())
-        vm.cambiarModoApp(modo)
-        compose.setContent {
-            TemaEscaner(oscuro = false) {
-                Box(Modifier.fillMaxSize()) { PantallaPrincipal(vm, relleno) {} }
-            }
-        }
-        compose.waitForIdle()
-        vm.prepararProductos()
-        // Los productos se leen en su hilo y vuelven al principal, que en Robolectric solo avanza cuando se le pide.
-        compose.waitUntil(5_000) {
-            shadowOf(Looper.getMainLooper()).idle()
-            vm.piso.catalogo.value != null
-        }
-    }
-
-    private fun leer(codigo: String) {
-        controlador.emitirLectura(codigo)
-        shadowOf(Looper.getMainLooper()).idle()
-        compose.waitForIdle()
-    }
-
-    /** Dibuja la ventana en un Bitmap (captureToImage espera un cuadro que Robolectric no entrega). */
-    private fun captura(nombre: String) {
-        shadowOf(Looper.getMainLooper()).idle()
-        compose.waitForIdle()
-        val vista = compose.activity.window.decorView
-        val imagen = Bitmap.createBitmap(vista.width, vista.height, Bitmap.Config.ARGB_8888)
-        compose.runOnUiThread { vista.draw(android.graphics.Canvas(imagen)) }
-        val carpeta = File("build/capturas").apply { mkdirs() }
-        File(carpeta, "$nombre.png").outputStream().use { imagen.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    }
+class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
     fun `precio ensena la tarjeta y al ticket agrega sin salir`() {
         abrir(ModoApp.PRECIO)
         compose.onNodeWithTag("panel-vacio").assertIsDisplayed()
         captura("01-precio-vacio")
-        leer("7509990100019")
+        leer(CUADERNO)
         compose.onNodeWithTag("tarjeta-precio").assertIsDisplayed()
         compose.onNodeWithText("\$46.00").assertIsDisplayed()
         captura("02-precio-cuaderno")
@@ -102,19 +42,21 @@ class PantallaPrincipalCapturasTest {
         captura("03-precio-al-ticket")
         leer("7509990100200")
         captura("04-precio-caja")
-        leer("7509990100194")
+        leer(NO_ESTA)
         compose.onNodeWithTag("no-esta").assertIsDisplayed()
         captura("05-precio-no-esta")
+        leer(SACAPUNTAS)
+        captura("06-precio-queda-1")
     }
 
     @Test
     fun `ticket suma cada lectura y el renglon de arriba lleva menos y mas`() {
         abrir(ModoApp.TICKET)
         captura("10-ticket-vacio")
-        leer("7509990100019")
-        leer("7509990100026")
-        leer("7509990100026")
-        leer("7509990100194")
+        leer(CUADERNO)
+        leer(LAPIZ)
+        leer(LAPIZ)
+        leer(NO_ESTA)
         assertEquals(4, vm.venta.value.total)
         compose.onNodeWithTag("encabezado-ticket").assertIsDisplayed()
         compose.onNodeWithTag("renglon-actual").assertIsDisplayed()
@@ -123,12 +65,16 @@ class PantallaPrincipalCapturasTest {
         compose.waitForIdle()
         assertEquals(3, vm.venta.value.total)
         captura("12-ticket-quitado")
+        // Seis productos distintos: lo último sigue a la vista, con su − y su +.
+        for (c in listOf(GOMA, SACAPUNTAS, PEGAMENTO, TIJERAS, FOLDER)) leer(c)
+        compose.onNodeWithTag("renglon-actual").assertIsDisplayed()
+        captura("13-ticket-seis")
     }
 
     @Test
     fun `el boton rapido se abre con un toque y busca`() {
         abrir(ModoApp.TICKET)
-        leer("7509990100019")
+        leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput {
             down(center)
             up()
@@ -146,7 +92,7 @@ class PantallaPrincipalCapturasTest {
     @Test
     fun `deslizar hacia arriba desde el boton elige arriba`() {
         abrir(ModoApp.PRECIO)
-        leer("7509990100019")
+        leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput {
             down(center)
             moveBy(androidx.compose.ui.geometry.Offset(0f, -50.dp.toPx()))
@@ -158,10 +104,20 @@ class PantallaPrincipalCapturasTest {
     }
 
     @Test
+    fun `zurdo el boton y el menu van en espejo`() {
+        abrir(ModoApp.PRECIO) { it.piso.cambiarZurdo(true) }
+        captura("23-zurdo-precio-vacio")
+        leer(CUADERNO)
+        compose.onNodeWithTag("boton-rapido").performTouchInput { down(center); up() }
+        idle()
+        captura("24-zurdo-menu")
+    }
+
+    @Test
     fun `las hojas del ticket`() {
         abrir(ModoApp.TICKET)
-        leer("7509990100019")
-        leer("7509990100026")
+        leer(CUADERNO)
+        leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
         compose.waitForIdle()
         compose.onNodeWithTag("hoja-ticket").assertIsDisplayed()
@@ -170,16 +126,52 @@ class PantallaPrincipalCapturasTest {
         compose.waitForIdle()
         compose.onNodeWithTag("hoja-cantidad").assertIsDisplayed()
         captura("31-cantidad")
+        compose.onNodeWithTag("tecla-0").performClick()
+        compose.onNodeWithTag("cantidad-listo").performClick()
+        idle()
+        // «Quitar» regresa al ticket completo con «Quitado del ticket · Deshacer» encima.
+        assertEquals(Hoja.Ticket, vm.piso.hoja.value)
+        captura("32-ticket-completo-quitado")
     }
 
     @Test
     fun `conteo de prueba`() {
         abrir(ModoApp.CONTEO)
         captura("40-conteo-vacio")
-        leer("7509990100019")
-        leer("7509990100019")
-        leer("7509990100026")
+        leer(CUADERNO)
+        leer(CUADERNO)
+        leer(LAPIZ)
         compose.onNodeWithTag("contador").assertIsDisplayed()
         captura("41-conteo")
+    }
+
+    // ---- Con la letra al 200 % ----
+
+    @Test
+    @Config(fontScale = 2.0f)
+    fun `con la letra al 200 por ciento`() {
+        abrir(ModoApp.PRECIO)
+        captura("50-precio-vacio-200")
+        leer(CUADERNO)
+        captura("51-precio-cuaderno-200")
+        leer(GOMA)
+        captura("52-precio-goma-200")
+        compose.onNodeWithTag("boton-rapido").performTouchInput { down(center); up() }
+        idle()
+        captura("53-menu-precio-200")
+        atras()
+        vm.cambiarModoApp(ModoApp.TICKET)
+        idle()
+        captura("54-ticket-vacio-200")
+        for (c in listOf(CUADERNO, LAPIZ, LAPIZ, SACAPUNTAS)) leer(c)
+        captura("55-ticket-200")
+        vm.piso.abrir(Hoja.Ticket)
+        idle()
+        captura("56-ticket-completo-200")
+        vm.piso.cerrarHoja()
+        vm.cambiarModoApp(ModoApp.CONTEO)
+        idle()
+        leer(CUADERNO)
+        captura("57-conteo-200")
     }
 }

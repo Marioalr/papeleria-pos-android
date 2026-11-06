@@ -89,7 +89,7 @@ class EscanerViewModel(
 
     /** Los productos de prueba, en su hilo y una vez: después de la apertura o con la primera lectura que los necesite. */
     private val productos = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
-        CatalogoDeProductos.deCsv(app.assets.open(ARCHIVO_PRODUCTOS).bufferedReader().use { it.readText() })
+        CatalogoDeProductos.deCsv(app.assets.open(CatalogoDeProductos.ARCHIVO_DE_PRUEBA).bufferedReader().use { it.readText() })
     }
 
     private val _venta = listas.venta
@@ -146,10 +146,12 @@ class EscanerViewModel(
         val codigo = e.aceptada.codigo
         // La primera lectura no espera a la apertura: si los productos no están, se cargan ahora, en su hilo.
         if (piso.catalogo.value == null) piso.cargarCatalogo(productos.await())
-        piso.alLeer(codigo.normalizado, codigo.simbologia, hora)
+        val conto = piso.alLeer(codigo.normalizado, codigo.simbologia, hora)
         val apertura = aperturaActual()
-        // Lo del celular, en el momento de la lectura.
-        val c = if (_sesion.value != null) contexto(hora, apertura) else null
+        // Lo del celular, en el momento de la lectura. Con una hoja o el precio en grande encima la lectura no contó: la
+        // sesión de prueba no la anota (el operador no la vio, no vibró y su barra queda bajo la hoja: no la podría
+        // marcar) y las columnas de la apertura pasan al siguiente intento que sí cuente.
+        val c = if (_sesion.value != null && conto) contexto(hora, apertura) else null
         // La apertura ya está completa (sacar del bolsillo → primera lectura): a aperturas.csv si hay sesión.
         if (apertura.marcas.containsKey(PasoApertura.PRIMERA_LECTURA)) {
             RegistroAperturas.registrar(getApplication(), CsvAperturas.ORIGEN_APP, apertura)
@@ -308,9 +310,6 @@ class EscanerViewModel(
  * La proporción del visor antes del primer layout: la ventana menos las barras del sistema y [descuentoAbajoDp]; con
  * [pantallaCompleta], la ventana entera (el visor va detrás de las barras).
  */
-/** Los productos de prueba con nombre y precio (los del prototipo, ficticios). */
-private const val ARCHIVO_PRODUCTOS = "productos-prueba.csv"
-
 internal fun estimarVisor(actividad: Activity, descuentoAbajoDp: Int, pantallaCompleta: Boolean): Proporcion? {
     val densidad = actividad.resources.displayMetrics.density
     val descuento = (descuentoAbajoDp * densidad).roundToInt()

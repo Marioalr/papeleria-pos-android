@@ -171,4 +171,30 @@ class ProductosTest {
         assertEquals(listOf("Papel lustre azul", "Papel lustre rojo", "Papel china verde", "Papel para regalo, pliego").sorted(), r.map { it.nombre }.sorted())
         assertEquals(r.sortedByDescending { it.vendidos }, r)
     }
+
+    // ---- La existencia y los renglones sin clave ----
+
+    @Test
+    fun `poca existencia es la regla de la caja, tres o menos, y con una sola dice queda 1`() {
+        fun con(existencia: Double?) = p("7509990100040").copy(existencia = existencia)
+        assertTrue(quedanPocos(con(3.0)))
+        assertTrue(quedanPocos(con(1.0)))
+        assertFalse(quedanPocos(con(4.0)))
+        assertFalse("Sin inventario no se dice", quedanPocos(con(null)))
+        assertEquals("Queda 1", quedan(1.0))
+        assertEquals("Quedan 3", quedan(3.0))
+        assertEquals("Quedan 2.5", quedan(2.5))
+        // El sacapuntas de prueba tiene uno: «Queda 1», no «Quedan 1».
+        assertEquals("Queda 1", quedan(p("7509990100040").existencia!!))
+    }
+
+    @Test
+    fun `un renglon sin clave se encuentra por su codigo con la regla de upc y ean`() {
+        // Lo que sumó el escaneo rápido o guardó la 0.1: el código como lo da la cámara, sin la clave del catálogo.
+        val rapido = mx.papeleriapos.android.lista.Renglon(1, "7509990100019", Simbologia.EAN_13, 2, 0L)
+        assertEquals("7509990100019", catalogo.de(rapido)?.clave)
+        val conClave = rapido.copy(codigo = "loquesea", clave = "7509990100026")
+        assertEquals("Con clave manda la clave", "7509990100026", catalogo.de(conClave)?.clave)
+        assertNull(catalogo.de(rapido.copy(codigo = "7509990100194")))
+    }
 }

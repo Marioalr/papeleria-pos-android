@@ -2,16 +2,24 @@ package mx.papeleriapos.android.botonrapido
 
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -30,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -43,15 +52,19 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -90,6 +103,12 @@ class EstadoBotonRapido {
     var conToque by mutableStateOf(false)
         private set
 
+    /**
+     * El dedo está abajo en el botón (desde que baja hasta que el gesto decide). Mientras tanto, lo que se encienda se
+     * decide con lo que había al bajar el dedo: ↑ «Enseñar» no se enciende por un producto leído a medio gesto.
+     */
+    var pulsando by mutableStateOf(false)
+
     var resaltado by mutableStateOf<Resaltado>(Resaltado.Nada)
 
     /** El centro del hueco del botón, respecto a la capa (px). */
@@ -100,6 +119,9 @@ class EstadoBotonRapido {
 
     /** Mientras se abrió con el teclado, el foco va a la primera opción. */
     var enfocarPrimera by mutableStateOf(false)
+
+    /** Se abrió con el teclado: al cerrarse (Esc, atrás o al elegir con Enter), el foco regresa al botón. */
+    var conTeclado by mutableStateOf(false)
 
     val rebote = Rebote()
 
@@ -134,9 +156,15 @@ class AccionesBotonRapido(
     val alElegir: (OpcionRapida, conGesto: Boolean) -> Unit,
     /** Se soltó (o se tocó) una apagada: el aviso dice por qué. */
     val alRechazar: (OpcionRapida) -> Unit,
+    /** Bajó el dedo en el botón (también con el menú ya abierto): lo de la tarjeta en ese momento es lo que enseña ↑. */
+    val alPulsar: () -> Unit = {},
 )
 
-/** El botón: 56 dp, esquinas de 16, del color del modo; su zona de toque, 64. Sin opciones, el lugar queda vacío. */
+/**
+ * El botón: 56 dp, esquinas de 16, del color del modo; su zona de toque, 64. Sin opciones, el lugar queda vacío. Con una
+ * hoja o el precio en grande encima, la pantalla no lo compone (ni su exclusión del gesto de atrás, que dejaría ese
+ * «atrás» a la hoja).
+ */
 @Composable
 fun BotonRapido(
     estado: EstadoBotonRapido,
@@ -153,6 +181,16 @@ fun BotonRapido(
     val accionesActuales by rememberUpdatedState(acciones)
     val hay = opciones.map { it.lugar }.toSet()
     val foco = remember { FocusRequester() }
+    val fuente = remember { MutableInteractionSource() }
+    val enfocado by fuente.collectIsFocusedAsState()
+    // Esc, «atrás» o elegir con Enter: el menú abierto con el teclado devuelve el foco al botón («Esc cierra y regresa
+    // al botón»). Si lo que se eligió abrió una hoja, el botón sale de la composición y la hoja se queda con el foco.
+    LaunchedEffect(estado.abierto) {
+        if (!estado.abierto && estado.conTeclado) {
+            estado.conTeclado = false
+            runCatching { foco.requestFocus() }
+        }
+    }
     Box(
         modifier
             .size(ZONA_DE_TOQUE)
@@ -161,56 +199,65 @@ fun BotonRapido(
                 awaitEachGesture {
                     val abajo = awaitFirstDown(requireUnconsumed = false)
                     abajo.consume() // el panel no se arrastra
-                    val yaAbierto = estado.abierto
-                    if (!yaAbierto) {
-                        estado.abrir() // al instante, como pidió el dueño
-                        accionesActuales.alAbrir(false)
-                    }
-                    val centro = Offset(size.width / 2f, size.height / 2f)
-                    val enDp = { o: Offset -> Punto(o.x / density, o.y / density) }
-                    val gesto = GestoRapido(
-                        pulso = enDp(abajo.position - centro),
-                        tPulsoMs = abajo.uptimeMillis,
-                        hay = hay,
-                        yaAbierto = yaAbierto,
-                        zurdo = zurdo,
-                        slop = viewConfiguration.touchSlop / density,
-                        toqueMs = viewConfiguration.longPressTimeoutMillis,
-                    )
-                    var final: Final = Final.Cerrar
-                    while (true) {
-                        val evento = awaitPointerEvent()
-                        val c = evento.changes.firstOrNull { it.id == abajo.id }
-                        // El sistema se llevó el dedo (un gesto de atrás o de inicio): se cierra sin hacer nada.
-                        if (c == null || (!c.pressed && c.isConsumed)) break
-                        if (c.pressed) {
-                            val v = gesto.mover(enDp(c.position - centro))
-                            estado.resaltado = gesto.resaltado
-                            val sobre = (gesto.resaltado as? Resaltado.Opcion)?.lugar
-                            val apagada = opcionesActuales.firstOrNull { it.lugar == sobre }?.encendida == false
-                            if (v != null && !(v == Vibracion.ARMARSE && apagada)) vista.vibrar(v)
-                            c.consume()
-                        } else {
-                            final = gesto.soltar(enDp(c.position - centro), c.uptimeMillis)
-                            c.consume()
-                            break
+                    try {
+                        estado.pulsando = true
+                        accionesActuales.alPulsar()
+                        val yaAbierto = estado.abierto
+                        if (!yaAbierto) {
+                            estado.abrir() // al instante, como pidió el dueño
+                            accionesActuales.alAbrir(false)
                         }
-                    }
-                    when (val f = final) {
-                        is Final.Elegir -> elegir(f.lugar, conGesto = true, estado, opcionesActuales, accionesActuales, vista)
-                        Final.DejarAbierto -> {
-                            estado.quedarseAbierto()
-                            accionesActuales.alAbrir(true)
+                        val centro = Offset(size.width / 2f, size.height / 2f)
+                        val enDp = { o: Offset -> Punto(o.x / density, o.y / density) }
+                        val gesto = GestoRapido(
+                            pulso = enDp(abajo.position - centro),
+                            tPulsoMs = abajo.uptimeMillis,
+                            hay = hay,
+                            yaAbierto = yaAbierto,
+                            zurdo = zurdo,
+                            slop = viewConfiguration.touchSlop / density,
+                            toqueMs = viewConfiguration.longPressTimeoutMillis,
+                        )
+                        var final: Final = Final.Cerrar
+                        while (true) {
+                            val evento = awaitPointerEvent()
+                            // Otro dedo cerró el menú (tocó fuera o eligió una opción): este gesto ya no elige nada.
+                            if (!estado.abierto) break
+                            val c = evento.changes.firstOrNull { it.id == abajo.id }
+                            // El sistema se llevó el dedo (un gesto de atrás o de inicio): se cierra sin hacer nada.
+                            if (c == null || (!c.pressed && c.isConsumed)) break
+                            if (c.pressed) {
+                                val v = gesto.mover(enDp(c.position - centro))
+                                estado.resaltado = gesto.resaltado
+                                val sobre = (gesto.resaltado as? Resaltado.Opcion)?.lugar
+                                val apagada = opcionesActuales.firstOrNull { it.lugar == sobre }?.encendida == false
+                                if (v != null && !(v == Vibracion.ARMARSE && apagada)) vista.vibrar(v)
+                                c.consume()
+                            } else {
+                                final = gesto.soltar(enDp(c.position - centro), c.uptimeMillis)
+                                c.consume()
+                                break
+                            }
                         }
-                        Final.Cerrar -> {
-                            estado.cerrar()
-                            accionesActuales.alCerrar()
+                        if (!estado.abierto) final = Final.Cerrar
+                        when (val f = final) {
+                            is Final.Elegir -> elegir(f.lugar, conGesto = true, estado, opcionesActuales, accionesActuales, vista)
+                            Final.DejarAbierto -> {
+                                estado.quedarseAbierto()
+                                accionesActuales.alAbrir(true)
+                            }
+                            Final.Cerrar -> {
+                                if (estado.abierto) estado.cerrar()
+                                accionesActuales.alCerrar()
+                            }
                         }
+                    } finally {
+                        estado.pulsando = false
                     }
                 }
             }
             .focusRequester(foco)
-            .focusable()
+            .focusable(interactionSource = fuente)
             .onKeyEvent {
                 val tecla = it.key == Key.Enter || it.key == Key.NumPadEnter || it.key == Key.Spacebar
                 if (tecla && it.type == KeyEventType.KeyUp) {
@@ -220,12 +267,22 @@ fun BotonRapido(
                     } else {
                         estado.abrir()
                         estado.enfocarPrimera = true
+                        estado.conTeclado = true
                         accionesActuales.alAbrir(false)
                     }
                 }
+                // Esc cierra aquí mismo, sin esperar a que el sistema lo convierta en «atrás».
+                if (it.key == Key.Escape && estado.abierto) {
+                    if (it.type == KeyEventType.KeyUp) {
+                        estado.cerrar(marcarRebote = false)
+                        accionesActuales.alCerrar()
+                    }
+                    return@onKeyEvent true
+                }
                 tecla // se queda con la tecla al bajar y al subir
             }
-            .semantics {
+            // Un solo nodo para TalkBack (con su Surface adentro): así entra al orden del grupo del menú.
+            .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = nombre
                 stateDescription = if (estado.abierto) "abiertas: " + opciones.joinToString { it.nombre } else "cerradas"
@@ -251,11 +308,17 @@ fun BotonRapido(
             .testTag("boton-rapido"),
         contentAlignment = Alignment.Center,
     ) {
+        // Hacia cancelar se marca la ×: un anillo de 3 dp en el color del modo, en la orilla de la zona de toque.
+        if (estado.abierto && estado.resaltado == Resaltado.Cancelar) {
+            Box(Modifier.fillMaxSize().border(3.dp, color.color, RoundedCornerShape(20.dp)).testTag("boton-rapido-cancela"))
+        }
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = color.color,
             contentColor = color.enColor,
             shadowElevation = 3.dp,
+            // Con el teclado, el foco se ve: un borde del color del texto.
+            border = if (enfocado) BorderStroke(3.dp, MaterialTheme.colorScheme.onSurface) else null,
             modifier = Modifier.size(56.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -302,9 +365,16 @@ private fun Abanico(color: Color, zurdo: Boolean) {
     }
 }
 
+/** Lo que tardan las opciones en salir del botón a su lugar (docs/propuesta-interfaz.md, «Lo que se ve y se siente»). */
+const val MS_SALIR = 150
+
 /**
  * El menú abierto: el velo sobre el panel (la franja sigue a la vista), una capa invisible que cierra al tocar fuera sin
  * enfocar el visor, las tres opciones con su etiqueta y, mientras se abra con toques, «Pulsa y desliza sin soltar».
+ *
+ * Las opciones salen del botón hacia su lugar en [MS_SALIR] ms: la animación enseña la dirección del gesto, que no la
+ * espera (decide con las posiciones finales). Si el sistema quitó las animaciones (Accesibilidad o la escala de
+ * animaciones en 0), aparecen de golpe.
  */
 @Composable
 fun MenuRapido(
@@ -318,15 +388,26 @@ fun MenuRapido(
     pistaDeslizar: Boolean,
     acciones: AccionesBotonRapido,
 ) {
-    if (!estado.abierto || estado.centro == Offset.Unspecified) return
+    // Sin opciones no hay menú (en Conteo): la pantalla además lo cierra al cambiar de modo.
+    if (!estado.abierto || estado.centro == Offset.Unspecified || opciones.isEmpty()) return
     val vista = LocalView.current
     val densidad = LocalDensity.current
     val velo = MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f)
     val primera = remember { FocusRequester() }
-    BackHandler {
+    val salida = remember { Animatable(0f) }
+    val contexto = LocalContext.current
+    LaunchedEffect(Unit) {
+        // «Quitar animaciones» (Accesibilidad) deja la escala de las animaciones en 0: aparecen de golpe.
+        val escala = Settings.Global.getFloat(contexto.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        if (escala == 0f) salida.snapTo(1f) else salida.animateTo(1f, tween(MS_SALIR, easing = FastOutSlowInEasing))
+    }
+    // El alto de la etiqueta de ↑, medido: con la letra al 200 % mide unos 49 dp, no 32.
+    var altoEtiquetaArriba by remember { mutableIntStateOf(with(densidad) { 32.dp.roundToPx() }) }
+    val cerrarConTeclado = {
         estado.cerrar(marcarRebote = false)
         acciones.alCerrar()
     }
+    BackHandler { cerrarConTeclado() }
     Box(
         Modifier
             .fillMaxSize()
@@ -336,20 +417,32 @@ fun MenuRapido(
                     acciones.alCerrar()
                 }
             }
+            .onPreviewKeyEvent {
+                // Esc cierra (y el foco regresa al botón), sin depender de que el sistema lo convierta en «atrás».
+                if (it.key != Key.Escape) return@onPreviewKeyEvent false
+                if (it.type == KeyEventType.KeyUp) cerrarConTeclado()
+                true
+            }
             .drawBehindPanel(panel, velo)
             .semantics { isTraversalGroup = true }
             .testTag("menu-rapido"),
     ) {
         val sx = if (zurdo) -1f else 1f
+        val avance = salida.value
         opciones.forEachIndexed { i, o ->
             val c = CENTROS.getValue(o.lugar)
-            val centro = estado.centro + with(densidad) { Offset(c.x.dp.toPx() * sx, c.y.dp.toPx()) }
+            val destino = estado.centro + with(densidad) { Offset(c.x.dp.toPx() * sx, c.y.dp.toPx()) }
+            val centro = estado.centro + (destino - estado.centro) * avance
             val elegida = (estado.resaltado as? Resaltado.Opcion)?.lugar == o.lugar
-            OpcionDelMenu(o, centro, elegida, color, zurdo, i, estado, acciones, vista, if (i == 0) primera else null)
+            OpcionDelMenu(
+                o, centro, elegida, color, zurdo, i, estado, acciones, vista, if (i == 0) primera else null,
+                alMedirEtiqueta = if (o.lugar == Lugar.ARRIBA) ({ altoEtiquetaArriba = it }) else null,
+            )
         }
         if (pistaDeslizar && estado.conToque) {
-            // Arriba de la etiqueta de ↑ (su botón a 88 dp, 24 de radio, 8 de aire y la etiqueta de 32), sin encimarse.
-            val arriba = estado.centro + with(densidad) { Offset(0f, (CENTROS.getValue(Lugar.ARRIBA).y - 24f - 8f - 32f - 8f).dp.toPx()) }
+            // Arriba de la etiqueta de ↑ (su botón a 88 dp, 24 de radio, 8 de aire y la etiqueta, medida), sin encimarse.
+            val sobreArriba = with(densidad) { (CENTROS.getValue(Lugar.ARRIBA).y - 24f - 8f).dp.toPx() - altoEtiquetaArriba - 8.dp.toPx() }
+            val arriba = estado.centro + Offset(0f, sobreArriba)
             Text(
                 PISTA_DESLIZAR,
                 style = MaterialTheme.typography.labelLarge,
@@ -358,7 +451,10 @@ fun MenuRapido(
                     .anclado(arriba, margen = 16.dp) { tam -> IntOffset(-tam.width / 2, -tam.height) }
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.inverseSurface)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .testTag("pista-deslizar")
+                    // Es una pista del gesto con el dedo: para TalkBack el orden del menú es ↑, ↖, ← y la ×.
+                    .clearAndSetSemantics { },
             )
         }
     }
@@ -380,6 +476,8 @@ private fun OpcionDelMenu(
     vista: View,
     /** La primera, con el teclado: Enter abre y lleva el foco aquí. */
     foco: FocusRequester?,
+    /** El alto de su etiqueta, en px (la pista se acomoda arriba de la de ↑). */
+    alMedirEtiqueta: ((Int) -> Unit)?,
 ) {
     val lado = if (elegida) 56.dp else 48.dp
     val fondo = when {
@@ -392,12 +490,19 @@ private fun OpcionDelMenu(
         elegida -> color.enColor
         else -> color.enContenedor
     }
+    // En oscuro, los círculos apenas se separan del panel atenuado (unos 2:1): un borde de 1 dp en outline.
+    val borde = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+        Modifier.border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+    } else {
+        Modifier
+    }
     Box(
         Modifier
             .anclado(centro) { tam -> IntOffset(-tam.width / 2, -tam.height / 2) }
             .size(lado)
             .clip(CircleShape)
             .background(fondo)
+            .then(borde)
             .then(if (foco != null) Modifier.focusRequester(foco) else Modifier)
             .clickable(role = Role.Button, onClickLabel = o.nombre) {
                 elegir(o.lugar, conGesto = false, estado, listOf(o), acciones, vista)
@@ -429,10 +534,12 @@ private fun OpcionDelMenu(
                     else -> IntOffset((-radio - separacion).roundToInt() - tam.width, -tam.height / 2)
                 }
             }
+            .then(if (alMedirEtiqueta != null) Modifier.onSizeChanged { alMedirEtiqueta(it.height) } else Modifier)
             .heightIn(min = 32.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(if (elegida) color.color else MaterialTheme.colorScheme.inverseSurface)
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .testTag("etiqueta-${o.lugar.name.lowercase()}")
             .clearAndSetSemantics { }, // TalkBack ya lo lee en la opción
     )
 }

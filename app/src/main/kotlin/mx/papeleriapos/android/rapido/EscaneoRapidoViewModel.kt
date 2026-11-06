@@ -6,29 +6,37 @@ import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
+import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.estimarVisor
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.ListasCompartidas
+import mx.papeleriapos.android.principal.ModoApp
+import mx.papeleriapos.android.principal.PreferenciasPiso
 import mx.papeleriapos.android.sesion.CsvAperturas
 import mx.papeleriapos.android.sesion.RegistroAperturas
 import mx.papeleriapos.android.sesion.aperturaMasReciente
+import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.MarcasApertura
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.camara.ControladorCamara
-import mx.papeleriapos.escaner.nucleo.Modo
 
 /**
- * El escaneo rápido: solo el escáner con los ajustes guardados. Lo leído suma en la lista del modo actual (la misma de
- * la app, guardada en disco), pero en pantalla solo se ve lo de esta apertura ([aqui]): puede estar sobre el bloqueo y
- * la venta completa no se le muestra a cualquiera. Sin sesión de prueba, sin ajustes y sin exportar; sus aperturas sí
+ * El escaneo rápido: solo el escáner con los ajustes guardados, en el modo de la app ([modo]). En Ticket y en Conteo lo
+ * leído suma en la lista del modo (la misma de la app, guardada en disco), pero en pantalla solo se ve lo de esta
+ * apertura ([aqui]): puede estar sobre el bloqueo y la venta completa no se le muestra a cualquiera. En Precio solo
+ * enseña lo leído, con su nombre y su precio: «Escanear solo enseña. Nada entra al ticket» (docs/propuesta-interfaz.md,
+ * «Precio»), y el núcleo guarda Precio como venta. Sin sesión de prueba, sin ajustes y sin exportar; sus aperturas sí
  * quedan en aperturas.csv de la sesión activa (solo en archivo).
  *
  * Su controlador es propio (este ViewModel es su dueño y lo cierra en [onCleared]): si la app también está abierta en
@@ -37,18 +45,36 @@ import mx.papeleriapos.escaner.nucleo.Modo
  * su tamaño o su ciclo: si el escaneo rápido se lo llevara, al volver a la app la cámara quedaría ligada a una Activity
  * cerrada. El costo dura lo que dure el escaneo rápido arriba (se cierra solo, ver [msParaCerrar]).
  */
-class EscaneoRapidoViewModel(app: Application) : AndroidViewModel(app) {
+class EscaneoRapidoViewModel(
+    app: Application,
+    fabrica: (Context, ConfigEscaner) -> ControladorEscaner,
+    listas: () -> ListasCompartidas,
+) : AndroidViewModel(app) {
+    /** El que usa la app; las pruebas pasan un controlador de muestra y listas sin disco. */
+    constructor(app: Application) : this(app, ::crearControlador, { ListasCompartidas.delProceso(app) })
+
     // El archivo de los ajustes ya lo empezó a leer la Application en otro hilo: aquí no se espera al disco.
     private val prefs = app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE)
     private val config = PreferenciasEscaner(prefs).leer()
-    val controlador: ControladorEscaner = crearControlador(app, config)
-    val modo: Modo = config.modo
-    private val listaModo = ListasCompartidas.delProceso(app).de(modo)
+    val controlador: ControladorEscaner = fabrica(app, config)
+
+    /** El de la app (el núcleo solo sabe de venta y conteo: Precio y Ticket escanean como venta). */
+    val modo: ModoApp = PreferenciasPiso(prefs).leerModo() ?: ModoApp.deNucleo(config.modo)
+
+    /** En Precio, ninguna: nada entra al ticket. */
+    private val listaModo: MutableStateFlow<ListaLecturas>? = if (modo == ModoApp.PRECIO) null else listas().de(modo.delNucleo)
 
     private val _aqui = MutableStateFlow(ListaLecturas())
 
     /** Lo leído en esta apertura del escaneo rápido (lo único que se muestra). */
     val aqui: StateFlow<ListaLecturas> = _aqui.asStateFlow()
+
+    /** Los productos de prueba, para el nombre y el precio en Precio; se leen con la primera lectura, en su hilo. */
+    private val productos = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+        CatalogoDeProductos.deCsv(app.assets.open(CatalogoDeProductos.ARCHIVO_DE_PRUEBA).bufferedReader().use { it.readText() })
+    }
+    private val _catalogo = MutableStateFlow<CatalogoDeProductos?>(null)
+    val catalogo: StateFlow<CatalogoDeProductos?> = _catalogo.asStateFlow()
 
     /** Minutos sin escanear para cerrarse sola (0 = nunca, salvo con el celular bloqueado). */
     val minutosParaCerrar: Int = minutosParaCerrar(prefs)
@@ -61,13 +87,14 @@ class EscaneoRapidoViewModel(app: Application) : AndroidViewModel(app) {
             controlador.eventos.collect { e ->
                 val codigo = e.aceptada.codigo
                 val hora = System.currentTimeMillis()
-                listaModo.update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
+                listaModo?.update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
                 _aqui.update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
                 ultimaActividad = SystemClock.elapsedRealtime()
                 val apertura = aperturaMasReciente(controlador.estado.value.apertura, MarcasApertura.apertura)
                 if (apertura.marcas.containsKey(PasoApertura.PRIMERA_LECTURA)) {
                     RegistroAperturas.registrar(app, CsvAperturas.ORIGEN_RAPIDO, apertura)
                 }
+                if (modo == ModoApp.PRECIO && _catalogo.value == null) _catalogo.value = productos.await()
             }
         }
     }

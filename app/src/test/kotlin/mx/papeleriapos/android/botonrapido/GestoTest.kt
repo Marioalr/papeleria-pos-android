@@ -154,18 +154,40 @@ class GestoTest {
     fun `volver al centro despues de armarse cierra`() {
         val g = gesto()
         g.mover(Punto(0f, -40f))
+        assertTrue(g.armado)
         g.mover(Punto(0f, -10f))
         assertEquals(Resaltado.Nada, g.resaltado)
-        assertTrue(g.armado)
+        assertFalse("Bajo 24 dp se desarma", g.armado)
+        // Se alejó más que un toque: cierra, no deja el menú abierto.
         assertEquals(Final.Cerrar, g.soltar(Punto(0f, -10f), 1_400L))
     }
 
     @Test
-    fun `entre 24 y 32 dp se queda lo que habia`() {
+    fun `armado entre 24 y 32 dp vuelve a mirar el angulo con la histeresis`() {
+        // Como el lugarDe de «Cómo se hace»: ya armado, de 24 dp para arriba el ángulo sigue mandando.
         val g = gesto()
         g.mover(Punto(0f, -40f))
         g.mover(Punto(0f, -28f))
         assertEquals(Resaltado.Opcion(Lugar.ARRIBA), g.resaltado)
+        assertTrue(g.armado)
+        // Hacia la orilla sin bajar de 24 (26.9 dp, a 21.8°): cancela.
+        val orilla = gesto()
+        orilla.mover(Punto(0f, -33f))
+        orilla.mover(Punto(25f, -10f))
+        assertEquals(Resaltado.Cancelar, orilla.resaltado)
+        assertEquals(Final.Cerrar, orilla.soltar(Punto(25f, -10f), 1_300L))
+        // Hacia ↖ sin bajar de 24 (29.7 dp, a 135°): elige ↖.
+        val diagonal = gesto()
+        diagonal.mover(Punto(0f, -33f))
+        assertEquals(Final.Elegir(Lugar.DIAGONAL), diagonal.deslizar(Punto(0f, -33f), Punto(-21f, -21f)))
+        // A 116° (pasó la frontera de 112.5 por menos de 4°) sigue en ↑, como a 40 dp.
+        val r = 28.0
+        val a = Math.toRadians(116.0)
+        val frontera = gesto()
+        frontera.mover(Punto(0f, -40f))
+        frontera.mover(Punto((r * Math.cos(a)).toFloat(), (-r * Math.sin(a)).toFloat()))
+        assertEquals(Resaltado.Opcion(Lugar.ARRIBA), frontera.resaltado)
+        // Sin armarse antes, a 28 dp todavía no hay nada.
         val h = gesto()
         h.mover(Punto(0f, -28f))
         assertEquals(Resaltado.Nada, h.resaltado)

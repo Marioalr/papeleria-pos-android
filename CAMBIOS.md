@@ -18,14 +18,32 @@ fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
   lugar, con su razón: llegan con la conexión al POS.
 - **Buscar** con el campo abajo, junto al pulgar, y los resultados encima: pedazos de palabra en cualquier orden y sin
   acentos («lus az»); sin escribir, los rápidos y lo más vendido.
-- **El ticket completo** (el asidero o el encabezado): todos los renglones con − y +, deshacer, el total y «Empezar otro
-  ticket». Se guarda en el celular.
+- **El ticket completo** (se jala o se toca el asidero o el encabezado): todos los renglones con − y +, deshacer,
+  «Buscar», el total, «Mandar a una caja» e «Impresiones» (apagadas, con su razón) y «Empezar otro ticket». La cantidad y
+  Buscar que se abren desde ahí regresan ahí. Se guarda en el celular.
+- **Cada «Deshacer» deshace lo que dice su aviso**, aunque mientras tanto se haya escaneado otra cosa: lo quitado regresa a
+  su lugar, entre los mismos renglones, «… al ticket» quita esa pieza y «Ticket vacío» regresa lo de antes; lo escaneado
+  después queda arriba. Si el deshacer del ticket completo ya lo deshizo, el aviso se va (no lo hace dos veces). Teclear 0
+  también avisa «Quitado del ticket». Con el precio en grande, que es para el cliente, los avisos esperan a que se regrese.
+- **TalkBack y el teclado:** cada lectura se anuncia (en Precio, el producto y su precio; en Ticket, lo que se sumó y el
+  total; en Conteo, el producto y cuántos van); Buscar dice cuántos encontró y lee los resultados del mejor al peor; los
+  avisos duran lo que pida «Tiempo para actuar»; con el menú abierto el foco no sale de él, Esc lo cierra y regresa al
+  botón, y el botón enfocado se ve. Con la letra al 200 % la tarjeta de Precio se acomoda y, si no cabe, se desplaza:
+  nada desaparece.
 - Productos de prueba con nombre y precio (los del prototipo, ficticios), con el mayoreo como lo cobra la caja.
 - **Ajustes**, desde el botón de arriba a la izquierda: vibración, bip, linterna automática, «Botón rápido a la
   izquierda», «Volver a ver las pistas» y el mosaico. Las herramientas de medición (el escáner, la sesión de prueba,
   el banco y las pruebas de estrés), que eran cuatro de las cinco pestañas de abajo, bajan a Ajustes ›
   «Herramientas de medición», junto con los contadores del botón rápido.
 - Los accesos directos son «Precio», «Ticket» y «Conteo»; el de «Venta» que ya estaba anclado abre el ticket.
+- **El escaneo rápido** (el mosaico) sigue el modo de la app: en Precio solo enseña lo leído con su nombre y su precio, y
+  nada entra al ticket.
+- **Los contadores del botón rápido** salen con la medición de la sesión de prueba (contadores-rapido.csv).
+
+**Pendiente antes de publicar la 0.2.0:** volver a generar los perfiles de arranque
+(`app/src/main/generated/baselineProfiles`, con `./gradlew :app:generateBaselineProfile` en el Pixel o en un emulador
+con API 33 o más; [pruebas](docs/pruebas.md#arranque-y-perfil)). Los de ahora son de la 0.1: traen la pestaña del escáner,
+que ya no existe, y nada de la pantalla principal ni del botón rápido. No se editan a mano.
 
 ## 0.1.0 (sin publicar)
 

@@ -37,26 +37,36 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.papeleriapos.android.catalogo.CatalogoDeProductos
+import mx.papeleriapos.android.catalogo.pesos
 import mx.papeleriapos.android.lista.ListaLecturas
-import mx.papeleriapos.escaner.nucleo.Modo
+import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.escaner.ui.PantallaEscaner
 
 /** El escáner a pantalla completa con lo leído en esta apertura abajo y la salida a la app completa. */
 @Composable
 internal fun PantallaRapida(vm: EscaneoRapidoViewModel, alAbrirApp: () -> Unit, alCerrar: () -> Unit) {
     val aqui by vm.aqui.collectAsStateWithLifecycle()
+    val catalogo by vm.catalogo.collectAsStateWithLifecycle()
     PantallaEscaner(vm.controlador, Modifier.fillMaxSize()) {
-        PanelRapido(vm.modo, aqui, alAbrirApp, alCerrar)
+        PanelRapido(vm.modo, aqui, catalogo, alAbrirApp, alCerrar)
     }
 }
 
 /**
  * Lo mínimo sobre el bloqueo: cuántas piezas se leyeron en esta apertura y la última (para confirmar lo que se escaneó).
- * La venta o el conteo completos (que pueden traer lecturas de antes) solo se ven en la app, ya desbloqueada; ahí
- * también se corrige, se vacía o se exporta. No pasa del 31 % del alto para no tapar la franja (del 32 % al 68 %).
+ * El ticket o el conteo completos (que pueden traer lecturas de antes) solo se ven en la app, ya desbloqueada; ahí
+ * también se corrige, se vacía o se exporta. En Precio, lo leído con su nombre y su precio (si ya están los productos):
+ * nada se suma. No pasa del 31 % del alto para no tapar la franja (del 32 % al 68 %).
  */
 @Composable
-private fun BoxScope.PanelRapido(modo: Modo, lista: ListaLecturas, alAbrirApp: () -> Unit, alCerrar: () -> Unit) {
+private fun BoxScope.PanelRapido(
+    modo: ModoApp,
+    lista: ListaLecturas,
+    catalogo: CatalogoDeProductos?,
+    alAbrirApp: () -> Unit,
+    alCerrar: () -> Unit,
+) {
     BoxWithConstraints(Modifier.matchParentSize()) {
         Surface(
             modifier = Modifier
@@ -73,13 +83,25 @@ private fun BoxScope.PanelRapido(modo: Modo, lista: ListaLecturas, alAbrirApp: (
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    "${if (modo == Modo.VENTA) "Venta" else "Conteo"} · ${lista.total} pzs leídas ahora",
+                    if (modo == ModoApp.PRECIO) modo.nombre else "${modo.nombre} · ${lista.total} pzs leídas ahora",
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.testTag("rapido-total"),
                 )
                 val actual = lista.actual
+                val producto = if (modo == ModoApp.PRECIO && actual != null) catalogo?.de(actual) else null
                 Box(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-                    if (actual != null) {
+                    if (producto != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                producto.nombre,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).testTag("rapido-producto"),
+                            )
+                            Text(pesos(producto.precio), fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("rapido-precio"))
+                        }
+                    } else if (actual != null) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 actual.codigo,
@@ -90,7 +112,9 @@ private fun BoxScope.PanelRapido(modo: Modo, lista: ListaLecturas, alAbrirApp: (
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f).testTag("rapido-ultimo"),
                             )
-                            Text("×${actual.cantidad}", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            // En Precio no se cuenta: si no está (o los productos no llegan), solo el código.
+                            if (modo != ModoApp.PRECIO) Text("×${actual.cantidad}", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            else if (catalogo != null) Text("No está", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                         }
                     } else {
                         Text("Apunta a un código de barras", style = MaterialTheme.typography.bodyLarge)

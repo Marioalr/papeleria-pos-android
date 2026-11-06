@@ -31,9 +31,13 @@ export JAVA_HOME=/opt/android-studio/jbr
   prototipo (`GestoTest`), lo que lleva cada modo (`OpcionesTest`), el estado de los modos, el ticket, las hojas, los
   avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`).
 - **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
-  (gráficos nativos) a 360 × 740 dp, con el controlador de muestra en lugar de la cámara: lee códigos, toca el botón
-  rápido y desliza, abre las hojas y revisa lo principal de cada modo. Deja una captura de cada estado en
-  `app/build/capturas` para verla sin emulador.
+  (gráficos nativos) con la geometría del chico (360 × 740 dp con barras de 24 + 24: como Robolectric no da la barra de
+  gestos, la ventana mide 716 y abajo va solo el hueco de los modos, así el panel mide lo mismo que en el celular), con el
+  controlador de muestra en lugar de la cámara: lee códigos, toca el botón rápido y desliza, abre las hojas y revisa lo
+  principal de cada modo, también con la letra al 200 %. Deja una captura de cada estado en `app/build/capturas` para
+  verla sin emulador (las de la letra al 200 % llevan «-200»). `PantallaPrincipalRegresionTest`,
+  `PantallaPrincipalAccesibleTest` (TalkBack, mirado en el proveedor de accesibilidad de Compose, y el teclado) y
+  `PantallaPrincipalLetraGrandeTest` guardan lo que encontró la revisión de la entrega 1, cada caso como prueba.
 
 **Escenas sintéticas.** `Lienzo` (en `nucleo`) dibuja un código en un plano de luminancia como lo vería la cámara:
 posición, tamaño, giro, perspectiva, desenfoque, movimiento, ruido, poca luz y reflejo. Lo usan las pruebas, el banco
