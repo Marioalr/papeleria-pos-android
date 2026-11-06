@@ -23,7 +23,7 @@ app ──► escaner ──► nucleo
  │        │           └─ Kotlin puro (se prueba en la JVM): GTIN, codificadores, escenas sintéticas,
  │        │              geometría, localizador, guía, validación y consenso, búsqueda en el catálogo
  │        └─ Android: cámara (CameraX), motores (ML Kit, zxing-cpp), pantalla del escáner, bip y vibración
- └─ la app de prueba: modo venta y modo conteo, ajustes, catálogo de prueba, sesión de prueba (CSV) y
+ └─ la app: Precio, Ticket y Conteo con el botón rápido, ajustes, catálogo de prueba, sesión de prueba (CSV) y
     banco de pruebas
 ```
 
@@ -324,7 +324,7 @@ Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los camino
   la apertura. Se valida una vez por proceso en segundo plano; si la cámara lo rechazó, queda «automático» para siempre
   en ese celular.
 - El motor se crea y se calienta en paralelo con la cámara; ML Kit empieza a cargar su modelo al crearse.
-- Al cambiar de pestaña la cámara se apaga y al volver abre **una sola vez**. El visor que sale avisa al controlador
+- Al ir a Ajustes la cámara se apaga y al volver abre **una sola vez**. El visor que sale avisa al controlador
   (`visorRetirado`) y, ya con la cámara detenida, se pide otra solicitud de superficie para la vista previa. Antes la
   cámara abría con la solicitud del visor que ya no existía y CameraX rearmaba la sesión dos veces al llegar la del
   visor nuevo: abría, cerraba y volvía a abrir en ~350 ms, y lo que se apuntaba en ese momento se perdía.

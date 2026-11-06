@@ -38,7 +38,8 @@ con el nombre de quien escanea.
 **Los intentos (1 a 2 h en total):**
 
 - Mínimo **200 intentos**, alternando el motor cada 25 en orden ABBA (Automático, ML Kit, ML Kit, Automático…; el
-  Automático ya incluye a zxing-cpp) y la mitad en modo venta y la mitad en modo conteo. El motor se cambia en Ajustes.
+  Automático ya incluye a zxing-cpp) y la mitad en Ticket y la mitad en Conteo. El motor se cambia en Ajustes ›
+  Herramientas de medición › El escáner.
 - **Qué códigos:**
 
   | Tipo | Ejemplos en la tienda |
@@ -64,7 +65,8 @@ con el nombre de quien escanea.
   «falso positivo»; si contó dos veces la misma pieza, «duplicado»; si no leyó en unos 5 segundos, «no leyó».
   Sostener la misma pieza más de 1.5 s la cuenta otra vez (así está pensado): también se marca «duplicado», para medir
   cuántas veces pasa.
-- **Al cerrar cada tanda** (al cambiar la condición), leer su resumen en la pestaña Sesión, debajo de los contadores:
+- **Al cerrar cada tanda** (al cambiar la condición), leer su resumen en Ajustes › Herramientas de medición › Sesión de prueba,
+  debajo de los contadores:
   cuántos leyó bien y a qué distancia (si la cámara da el enfoque calibrado), la lectura típica y la p90, lecturas por
   minuto, falsas (deben ser 0), con y sin linterna, y por lente. Si algo sorprende, es el momento de repetir la tanda
   o anotarlo. Lo mismo sale en resumen.csv junto con los intentos al exportar; cada intento lleva además el lente, la
@@ -92,13 +94,13 @@ con el nombre de quien escanea.
    la sesión guarda además las marcas internas de cada apertura (tipo de arranque y ms de cada paso, en aperturas.csv).
 
 **Batería y calor (20 min), con el monitor de recursos de la sesión:** sin cable, brillo fijo, y la batería entre 80 %
-y 60 %. Primero 3 minutos sin escanear (en la pestaña Sesión: es la línea base), luego 10 a 15 minutos escaneando de
+y 60 %. Primero 3 minutos sin escanear (en la Sesión de prueba: es la línea base), luego 10 a 15 minutos escaneando de
 corrido. El costo de escanear es la potencia escaneando menos la de la línea base. Si da tiempo, repetir con cada motor
 en orden ABBA. La sesión exporta recursos.csv (una fila por segundo: CPU, memoria, corriente, potencia, temperatura,
 estado térmico, cuadros por segundo) y ficha-camara.csv (una fila por lente trasera: focal, sensor, desde dónde enfoca,
 zoom, resoluciones; dice con qué cámara se midió) además de los intentos.
 
-**Estrés (si sobra tiempo):** la pestaña Estrés: 200 ciclos de abrir y cerrar la cámara, la ráfaga de zoom y
+**Estrés (si sobra tiempo):** Ajustes › Herramientas de medición › Pruebas de estrés: 200 ciclos de abrir y cerrar la cámara, la ráfaga de zoom y
 linterna, 50 cambios de motor y 15 minutos de escaneo continuo. Cada prueba dice si pasa y exporta su CSV.
 
 **Al terminar:** exportar los CSV de la sesión (intentos y resumen por tanda; recursos, aperturas y ficha de la cámara)

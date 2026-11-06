@@ -25,8 +25,15 @@ export JAVA_HOME=/opt/android-studio/jbr
   zxing-cpp).
 - **`escaner`:** las marcas de la apertura, la máquina de estados y las políticas de la cámara, y el turno del respaldo
   de ML Kit (si lee en su turno, corre también en el cuadro siguiente para la segunda lectura).
-- **`app`:** la sesión de prueba y su CSV, el banco de pruebas, las listas de venta y conteo y el catálogo de prueba
-  (el de ejemplo trae un caso por variante; copiar el archivo, reabrir y volver al de ejemplo).
+- **`app`:** la sesión de prueba y su CSV, el banco de pruebas, las listas del ticket y del conteo (con la clave del
+  catálogo y los cambios por renglón) y el catálogo de prueba (el de ejemplo trae un caso por variante; copiar el
+  archivo, reabrir y volver al de ejemplo). De la pantalla principal: el gesto del botón rápido con los casos del
+  prototipo (`GestoTest`), lo que lleva cada modo (`OpcionesTest`), el estado de los modos, el ticket, las hojas, los
+  avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`).
+- **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
+  (gráficos nativos) a 360 × 740 dp, con el controlador de muestra en lugar de la cámara: lee códigos, toca el botón
+  rápido y desliza, abre las hojas y revisa lo principal de cada modo. Deja una captura de cada estado en
+  `app/build/capturas` para verla sin emulador.
 
 **Escenas sintéticas.** `Lienzo` (en `nucleo`) dibuja un código en un plano de luminancia como lo vería la cámara:
 posición, tamaño, giro, perspectiva, desenfoque, movimiento, ruido, poca luz y reflejo. Lo usan las pruebas, el banco
@@ -96,8 +103,8 @@ Las latencias del emulador sirven para comparar, no como meta: las de verdad se 
 Sin ir a la tienda: cualquier producto de la casa, las etiquetas del POS impresas o un código en otra pantalla.
 
 1. Instalar el APK en un celular propio (`adb install -r …` o el APK de la corrida de GitHub Actions).
-2. **Escanear** en modo venta y en modo conteo; en Ajustes se cambia el motor y se puede ver el diagnóstico (cuadros por
-   segundo, milisegundos, px por módulo, nitidez, brillo).
+2. **Escanear** en Precio, Ticket y Conteo; en Ajustes › Herramientas de medición › El escáner se cambia el motor y se
+   puede ver el diagnóstico (cuadros por segundo, milisegundos, px por módulo, nitidez, brillo).
 3. **Banco de pruebas:** compara los dos motores en ese celular con escenas sintéticas, sin depender de la mano.
 4. **Sesión de prueba:** registra cada intento con sus tiempos y si está en el catálogo de prueba, y exporta un CSV,
    igual que en la tienda. Con el catálogo de ejemplo, los códigos de los carteles del emulador salen «si».
@@ -245,7 +252,8 @@ adb shell locksettings clear --old 1234      # al terminar
 
 ## Estrés
 
-La pestaña **Estrés** de la app corre sobre la cámara real y dice si cada prueba pasa, con su CSV:
+Ajustes › Herramientas de medición › **Pruebas de estrés** corre sobre la cámara real y dice si cada prueba pasa, con
+su CSV:
 
 - **Ciclos:** abrir → cámara abierta → primer cuadro → cerrar, 200 veces (con un controlador nuevo por ciclo o el mismo
   yendo y volviendo de segundo plano). Pasa si los ciclos con error son a lo más el 1 %, el p95 del final no pasa de
@@ -256,7 +264,8 @@ La pestaña **Estrés** de la app corre sobre la cámara real y dice si cada pru
   térmico moderado o más, margen ≥ 0.85, cuadros de análisis < 85 % del primer minuto o CPU por cuadro +25 %).
 
 En el emulador también hay pruebas instrumentadas de ciclos (`CiclosCamaraTest`) y de navegación de la app
-(`NavegacionTest`: cada pestaña y de vuelta al escáner, que debe volver a escanear; `ControladorCamaraTest` revisa que
+(`NavegacionTest`: los tres modos, Ajustes y cada herramienta de medición, y de vuelta al escáner, que debe volver a
+escanear; `ControladorCamaraTest` revisa que
 al volver la cámara abra una sola vez). Las pruebas con UiAutomator, el perfil y Macrobenchmark esperan el id
 `escaneando`, que aparece con el primer cuadro analizado. Monkey para lo inesperado:
 
