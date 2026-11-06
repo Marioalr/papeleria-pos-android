@@ -9,6 +9,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.CompositionLocalProvider
+import mx.papeleriapos.android.principal.ModoApp
 
 /**
  * Colores propios, sobrios (azul petróleo y grises) y sin los dinámicos del sistema: así la app se ve igual en todos los
@@ -75,9 +76,45 @@ private val EstadoOscuro = ColoresEstado(Color(0xFF81C784), Color(0xFF0B2E0D), C
 
 val LocalColoresEstado = staticCompositionLocalOf { EstadoClaro }
 
+/** Un color de modo con su texto encima y su contenedor (el fondo claro del renglón resaltado). */
+@Immutable
+data class ColorModo(val color: Color, val enColor: Color, val contenedor: Color, val enContenedor: Color)
+
+/**
+ * Un color por modo (docs/propuesta-interfaz.md, «Colores, letras y tamaños»): Precio en ámbar (el del verificador de la
+ * caja), Ticket en el azul petróleo del tema y Conteo en violeta. Va en la pestaña del modo, el botón principal y el
+ * renglón resaltado; nunca en la retícula, donde el verde de «leído» y el ámbar de «viendo» son del escáner. Son los del
+ * prototipo.
+ */
+@Immutable
+data class ColoresModo(val precio: ColorModo, val ticket: ColorModo, val conteo: ColorModo) {
+    fun de(modo: ModoApp): ColorModo = when (modo) {
+        ModoApp.PRECIO -> precio
+        ModoApp.TICKET -> ticket
+        ModoApp.CONTEO -> conteo
+    }
+}
+
+private val ModoClaro = ColoresModo(
+    precio = ColorModo(Color(0xFF8A5300), Color.White, Color(0xFFFFE2B0), Color(0xFF2B1700)),
+    ticket = ColorModo(Claro.primary, Claro.onPrimary, Claro.primaryContainer, Claro.onPrimaryContainer),
+    conteo = ColorModo(Color(0xFF5F5A7D), Color.White, Color(0xFFE5DEFB), Color(0xFF1B1736)),
+)
+
+private val ModoOscuro = ColoresModo(
+    precio = ColorModo(Color(0xFFFFB951), Color(0xFF2B1700), Color(0xFF4D3200), Color(0xFFFFDFB0)),
+    ticket = ColorModo(Oscuro.primary, Oscuro.onPrimary, Oscuro.primaryContainer, Oscuro.onPrimaryContainer),
+    conteo = ColorModo(Color(0xFFC9C1EA), Color(0xFF312C4C), Color(0xFF47426A), Color(0xFFE5DEFB)),
+)
+
+val LocalColoresModo = staticCompositionLocalOf { ModoClaro }
+
 @Composable
 fun TemaEscaner(oscuro: Boolean = isSystemInDarkTheme(), contenido: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalColoresEstado provides if (oscuro) EstadoOscuro else EstadoClaro) {
+    CompositionLocalProvider(
+        LocalColoresEstado provides if (oscuro) EstadoOscuro else EstadoClaro,
+        LocalColoresModo provides if (oscuro) ModoOscuro else ModoClaro,
+    ) {
         MaterialTheme(colorScheme = if (oscuro) Oscuro else Claro, content = contenido)
     }
 }
