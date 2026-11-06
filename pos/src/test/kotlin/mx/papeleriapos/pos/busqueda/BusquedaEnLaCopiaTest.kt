@@ -221,9 +221,8 @@ class BusquedaEnLaCopiaTest {
             val (escrito, huella) = renglon.split('|').map { BaseDePrueba.desescapar(it) }
             val texto = escrito.removePrefix("200:")
             val maximo = if (escrito.startsWith("200:")) 200 else 30
-            val a = Familias.agrupar(copia.buscar(texto, maximo, null, BaseDePrueba::vendidos), { it.articulo.partes }) {
-                BaseDePrueba.vendidos(it.articulo.varianteId)
-            }
+            val encontrados = copia.buscar(texto, maximo, null, BaseDePrueba::vendidos)
+            val a = Familias.agrupar(encontrados, { it.articulo.partes }, { BaseDePrueba.vendidos(it.articulo.varianteId) })
             val enTexto = "${BaseDePrueba.ejeDelPos(a.eje)}|${a.ejes.joinToString(",") { BaseDePrueba.ejeDelPos(it) }}|" +
                 a.renglones.joinToString(" ; ") { r ->
                     "${BaseDePrueba.ejeDelPos(r.eje)}~${r.titulo ?: ""}~${r.masVendido}~" +
