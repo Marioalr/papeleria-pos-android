@@ -242,8 +242,8 @@ piloto.
 **Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
 app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
 tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes, y deja de decir «Nada se conecta al
-servicio de la tienda» (con eleventa sigue sin conectarse). De lo que decidió el POS, el celular deja de darse de alta
-como caja y lleva copia del catálogo. Lo demás se queda.
+servicio de la tienda» (con eleventa sigue sin conectarse). De la decisión del POS cambian dos cosas: el celular deja
+de darse de alta como caja y lleva copia del catálogo. Lo demás se queda.
 
 Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
 las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celular comprar para la tienda**,

@@ -180,7 +180,7 @@ abanico). Los modos quedan bajo el velo.
 | Pulsa, desliza hacia una opción (32 dp o más, o hasta quedar encima de ella) y suelta | Se abre esa opción |
 | Pulsa y lo sostiene, o se mueve un poco, y suelta sin llegar a una opción | Se cierra sin hacer nada |
 | Desliza y suelta en el centro, abajo, a la derecha o en un hueco | Se cierra sin hacer nada |
-| Suelta en una opción apagada | Se cierra; vibra de rechazo y un aviso dice por qué (en Conteo, la razón sale en el lugar del producto, como lo que no va, y TalkBack la lee; nunca encima del renglón de lo último) |
+| Suelta en una opción apagada | Se cierra; vibra de rechazo y un aviso dice por qué (en Conteo, la razón sale en el lugar del producto, como lo que no va, y el lector de pantalla la lee; nunca encima del renglón de lo último) |
 | Con el menú abierto, toca una opción | Se abre |
 | Con el menú abierto, toca la ×, fuera o «atrás» | Se cierra |
 | Con el menú abierto, pulsa la × y desliza | Elige, igual que desde cerrado |
@@ -295,7 +295,8 @@ abanico). Los modos quedan bajo el velo.
 
 - **El panel vacío lo nombra por lo que hace:** «Escanea lo que lleva el cliente. Buscar, impresiones y mandar: en el
   botón de abajo a la derecha.» En Precio, «Enseñar y buscar: en el botón de abajo a la derecha» (y, en el de Luis, «Si
-  se lo lleva, “Al ticket” en la tarjeta»). En Conteo, igual con lo suyo.
+  se lo lleva, “Al ticket” en la tarjeta»). En Conteo, igual con lo suyo. Con «Botón rápido a la izquierda», el texto
+  dice «abajo a la izquierda».
 - **La primera vez en cada modo,** una burbuja sobre el botón dice sus direcciones («Pulsa y desliza: ↑ mandar ·
   ↖ impresiones · ← buscar»; en Precio, «↑ enseñar · ← buscar»; en el conteo del día, «↑ es todo»). Se va al abrir el
   menú en ese modo.
@@ -531,13 +532,13 @@ Modifier
 - **Sin red no se ven:** viven en el servicio (y en Control Print), y la caja tampoco cobra impresiones sin conexión. Se
   agregan en la caja con F2.
 - **Que dos no tomen la misma:** hoy nada aparta una impresión elegida. Si el celular la pone en un ticket y otra caja
-  la cobra antes, al cobrar el segundo la caja avisa y hay que quitarla. Con las de Control Print, al revés no avisa
-  nadie: el POS solo las lee, así que la que se cobra en la caja 2 sigue «por cobrar» en Control Print, y en la
-  PRINCIPAL se puede cobrar otra vez (F2 lo advierte arriba de su lista y luego enseña «Cobradas dos veces»). Apartarla
-  tampoco llega a Control Print. Se propone apartarla mientras está en un ticket del celular (F2 diría «en el ticket de
-  Luis») y cerrar un hueco del cobro: el POS revisa que una impresión suya siga por cobrar *antes* de tomar el candado
-  de la base, así que dos cobros al mismo tiempo podrían cobrarla dos veces. En el piloto no pasa (solo cobra la caja
-  2), pero con dos cajas sí.
+  la cobra antes, al cobrar el segundo la caja avisa y hay que quitarla. Se propone apartarla mientras está en un ticket
+  del celular (F2 diría «en el ticket de Luis») y cerrar un hueco del cobro: el POS revisa que una impresión suya siga
+  por cobrar *antes* de tomar el candado de la base, así que dos cobros al mismo tiempo podrían cobrarla dos veces. En
+  el piloto no pasa (solo cobra la caja 2), pero con dos cajas sí.
+- **Con las de Control Print, al revés, nadie avisa:** el POS solo las lee, así que la que se cobra en la caja 2 sigue
+  «por cobrar» en Control Print, y en la PRINCIPAL se puede cobrar otra vez (F2 lo advierte arriba de su lista y luego
+  enseña «Cobradas dos veces»). Esto ya puede pasar en el piloto, y apartarla tampoco llega a Control Print.
 
 #### Mandar a una caja
 
@@ -557,9 +558,9 @@ Modifier
   - Las impresiones no van en el QR: se agregan en la caja con F2.
   - Después de «Ya lo leyeron», el ticket se vacía y ya no se manda por la red.
   - **Falta probarlo en la tienda:** que el lector de la caja 2 lea QR y mande cada renglón con su Enter. El
-    decodificador del puerto separa por renglón con «Fin» automático (lo recomendado) o CRLF; con «Fin» en CR o en LF,
-    el otro salto se ignora y los renglones se pegan. Por eso el QR separa cada renglón con CR+LF, que entra con «Fin»
-    automático, CR, LF o CRLF. Acepta hasta 64 caracteres por código; cada renglón usa unos 16.
+    decodificador del puerto acepta hasta 64 caracteres por código (cada renglón usa unos 16) y separa por renglón con
+    «Fin» automático (lo recomendado) o CRLF; con «Fin» en CR o en LF, el otro salto se ignora y los renglones se
+    pegan. Por eso el QR separa cada renglón con CR+LF, que entra con «Fin» automático, CR, LF o CRLF.
 
 ### Conteo
 
@@ -766,11 +767,12 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 - **Volver a un producto en el mismo lugar sigue la cuenta:** «14 · 13 guardadas + 1». Lo nuevo sube como otra captura
   y se suma; nadie vuelve a contar desde cero. Al teclear, el número es lo de este lugar y reemplaza lo guardado (se
   quita la captura y sube la nueva, como corrige el POS).
-- **Corregir un lugar ya contado corre la comparación:** si se teclea (se quita la captura y sube otra) o se quita la
-  captura más vieja de un producto que ya tiene capturas de otro lugar, el POS compara contra la siguiente, y lo vendido
-  desde esa se descuenta dos veces. El sistema dice 50: el anaquel da 20 a las 10:00 y la bodega 30 a las 10:30; se
-  venden 2 y a las 10:40 se teclea 18 en el anaquel: al cerrar queda 48 + (48 − 50) = 46, cuando hay 48. En ese caso la
-  app lo dice al teclear o al tocar «Quitar» y pide volver a contar los lugares que se contaron después (la bodega).
+- **Corregir un lugar ya contado corre la comparación:** si se quita la captura más vieja de un producto que ya tiene
+  capturas de otro lugar (con «Quitar», o al teclear, que la quita y sube otra), el POS compara contra la siguiente, y
+  lo vendido desde esa se descuenta dos veces. El sistema dice 50: el anaquel da 20 a las 10:00 y la bodega 30 a las
+  10:30; se venden 2 y a las 10:40 se teclea 18 en el anaquel: al cerrar queda 48 + (48 − 50) = 46, cuando hay 48. En
+  ese caso la app lo dice al teclear o al tocar «Quitar» y pide volver a contar los lugares que se contaron después (la
+  bodega).
 - **Una lectura de más en medio:** si el mismo producto vuelve en menos de 30 s y en medio hubo una sola lectura de
   otro, el renglón de lo último pregunta «¿La goma (1) fue de más? · Quitar».
 - **El del día también va por lugares:** «13 aquí + 24 en bodega = 37». El orden es el mismo; con C4, el POS compara
@@ -878,7 +880,7 @@ Las mismas direcciones que en los otros modos ([el botón rápido](#el-botón-r�
 │ Anaquel · 14:47 · subida           [x]   │
 │                                          │
 │ (Lo mío 12)  (Falta 83)  (Fuera 1)       │  abajo, junto al pulgar; de 48 dp
-│ [Contar otra cosa] [Terminé mi parte ]   │
+│ [Contar otra cosa] [Terminé mi parte]    │
 └──────────────────────────────────────────┘
 ```
 
@@ -1470,8 +1472,8 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
 - **El mosaico de Ajustes rápidos pasa a ser «Precio»:** abre el escáner sobre la pantalla de bloqueo, sin el PIN del
   celular, en modo Precio. Es el camino de apertura que ya se midió (la cámara enlaza antes que la interfaz).
 - **Sobre el bloqueo solo se ve el precio:** nombre, precio, mayoreo y promoción; ni la existencia, ni el ticket, ni el
-  conteo. «Abrir la app» pide desbloquear y sigue en Precio con ese producto; en el de Luis, si su sesión está cerrada,
-  antes pide su huella ([sobre el bloqueo](#sobre-el-bloqueo)).
+  conteo. «Abrir la app» pide desbloquear y sigue en Precio con ese producto (el de la tienda, sin bloqueo, abre
+  directo); en el de Luis, si su sesión está cerrada, antes pide su huella ([sobre el bloqueo](#sobre-el-bloqueo)).
 - **Sale de la copia del catálogo,** así que no espera a la red: del bolsillo al precio en lo que tarda la lectura.
 - **Los accesos directos del ícono,** dinámicos (`ShortcutManagerCompat`; hoy están fijos en `shortcuts.xml` y solo
   cambian con otra versión): «Revisar precio», «Armar ticket» y «Contar» en el de Luis; «Revisar precio» y «Contar» en
@@ -1559,7 +1561,7 @@ Nada de esto existe hoy en `papeleria-pos`; cada punto dice qué entrega de aqu�
 | # | Qué | Por qué | Para la entrega |
 |---|---|---|---|
 | 1 | **Celulares:** alta con un QR de un solo uso desde la caja (lleva la llave pública del servicio), que la caja confirma («¿Es este?»); llave propia, sin serie de folios ni turno; de una persona o de la tienda, con sus modos; lo que deja cada llave (quién hace cada cosa sale de la llave o de la sesión, nunca del `usuarioId` que manda el celular); la sesión del de la tienda; Configuración › Celulares; los permisos «Usar la app en su celular» y «Mandar tickets desde el celular». Detalle: de 1a a 1e, [los celulares](#lo-que-pide-al-pos-para-los-celulares), y C10 | Un celular dado de alta como caja tiene serie, sale en el corte del día y en la red de cajas, y su llave abre toda la API de su caja; con «La única caja» no se puede dar de alta. Hoy la API cree el `usuarioId` que le mandan. Cambia lo aprobado en la propuesta del POS (2026-10-10): ahí el celular se da de alta como una caja | 2, 4 y 6 |
-| 2 | **La copia del catálogo para el celular:** la de las cajas (`/api/cajas/{id}/paquete` y `/cambios`), con el departamento de cada producto (id y nombre; hoy ni la copia ni `/api/productos/codigo` ni `/api/productos/buscar` lo traen), sin usuarios ni el hash de sus PIN, clientes, costos, folios, efectivo ni reglas; la del de la tienda, además, sin existencias (2a) | La de hoy trae el hash del PIN de cada usuario (un PIN de 4 cifras sale de ahí en minutos) y los clientes; en un celular que se puede perder, no. Sin el departamento, la tarjeta de Precio, «Falta» y el conteo sin red no saben de cuál es cada producto. Cambia lo aprobado en la propuesta del POS (2026-10-10): ahí el celular no lleva base | 2 y 6.3 |
+| 2 | **La copia del catálogo para el celular:** la de las cajas (`/api/cajas/{id}/paquete` y `/cambios`), con el departamento de cada producto (id y nombre; hoy ni la copia ni `/api/productos/codigo` ni `/api/productos/buscar` lo traen), sin usuarios ni el hash de sus PIN, clientes, costos, folios, efectivo ni reglas; la del de la tienda, además, sin existencias (2a) | La de hoy trae el hash del PIN de cada usuario (un PIN de 4 cifras sale de ahí en minutos) y los clientes; en un celular que se puede perder, no. Sin el departamento, la tarjeta de Precio, «Falta» y el conteo sin red no saben de cuál es cada producto. Cambia lo aprobado en la propuesta del POS (2026-10-10): ahí el celular no lleva base y trabaja por Wi-Fi contra la caja principal | 2 y 6 |
 | 3 | **La regla de los códigos** (las variantes de UPC y EAN) en el servicio y en la copia de las cajas | Se decidió el 2026-10-11 y está en el núcleo de esta app, pero el POS todavía busca el código tal cual | 2 |
 | 4 | **Mandar un ticket a una caja:** recibirlo, avisarle a esa caja por su canal de avisos (con acuse) y que entre en espera con quien lo mandó; el permiso «Mandar tickets desde el celular» | Es la entrega 12 de la propuesta del POS; los tickets en espera hoy viven solo dentro de cada caja | 4 |
 | 5 | **Las cajas para el celular:** quién atiende, cuántos tickets esperan y si está prendida | Hoy la caja no le dice al servicio quién atiende ni cuántos esperan | 4 |
