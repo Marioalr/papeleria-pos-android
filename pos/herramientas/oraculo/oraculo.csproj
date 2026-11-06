@@ -29,6 +29,8 @@
     <None Update="casos-orden.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Update="alfabeto-orden.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Update="nombres-lector.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- La tabla de orden de Kotlin, para sacar de ella los rangos de las cadenas al azar. -->
+    <None Include="../../src/main/kotlin/mx/papeleriapos/pos/busqueda/TablaDeOrden.kt" Link="TablaDeOrden.kt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

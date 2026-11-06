@@ -1,6 +1,7 @@
 package mx.papeleriapos.pos.busqueda
 
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.math.RoundingMode
 
 /** Lo que puede cambiar entre productos que por lo demás se llaman igual, en el orden del POS (la API lo manda como número). */
@@ -280,13 +281,70 @@ class LectorDeNombres(nombres: Iterable<String>, marcas: Iterable<String>? = nul
 
         /**
          * «1.0» es «1», «0.70» es «0.7» y «.5» es «0.5»: hasta tres decimales, redondeando la mitad hacia arriba (`decimal` con
-         * "0.###" en el POS). Los ceros del final se quitan del texto y no con `stripTrailingZeros`, que en Android deja el
-         * cero como «0.000». Con dígitos que no son ASCII el POS truena; aquí valen por su número.
+         * "0.###" en el POS), del número como lo guarda el `decimal` ([comoDecimal]): con 29 cifras o más ya viene
+         * redondeado, y «1.00049999999999999999999999999» es «1.001». Los ceros del final se quitan del texto y no con
+         * `stripTrailingZeros`, que en Android deja el cero como «0.000». Con dígitos que no son ASCII o un número que no cabe
+         * en un `decimal` el POS truena; aquí valen por su número.
          */
         private fun numero(texto: String): String {
             val t = digitosAscii(texto).replace(',', '.')
-            val plano = BigDecimal(if (t.startsWith('.')) "0$t" else t).setScale(3, RoundingMode.HALF_UP).toPlainString()
-            return plano.trimEnd('0').trimEnd('.')
+            val escrito = if (t.startsWith('.')) "0$t" else t
+            val valor = comoDecimal(escrito) ?: BigDecimal(escrito)
+            return valor.setScale(3, RoundingMode.HALF_UP).toPlainString().trimEnd('0').trimEnd('.')
+        }
+
+        /** Lo más que guarda un `decimal`: 96 bits. */
+        private val MAXIMO_DECIMAL = BigInteger.ONE.shiftLeft(96).subtract(BigInteger.ONE)
+
+        /** Lo que deja .NET cuando redondear [MAXIMO_DECIMAL] hacia arriba se pasa: 2^96 entre 10 (hacia arriba), un decimal menos. */
+        private val DECIMO_DEL_MAXIMO = BigInteger("19999999999999999999999A", 16)
+
+        /**
+         * [escrito] (cifras ASCII y a lo más un punto) como lo guarda `decimal.Parse` (`Number.TryNumberToDecimal` de .NET): desde
+         * la primera cifra que no es cero, todas las que quepan en 96 bits y hasta 28 decimales. La siguiente redondea: hacia
+         * arriba desde el 5, salvo un 5 seguido solo de ceros con lo guardado par, que se queda (al par). .NET guarda 30 cifras
+         * y de las demás solo si alguna no es cero, que es lo que pesa al redondear. Null si no cabe (el POS truena).
+         */
+        private fun comoDecimal(escrito: String): BigDecimal? {
+            val cifras = StringBuilder()
+            var escala = 0 // cuántas cifras van antes del punto (negativo: ceros después del punto)
+            var colaConCifras = false
+            var enDecimales = false
+            for (c in escrito) {
+                if (c == '.') {
+                    enDecimales = true
+                } else if (c != '0' || cifras.isNotEmpty()) {
+                    if (cifras.length < 30) cifras.append(c) else if (c != '0') colaConCifras = true
+                    if (!enDecimales) escala++
+                } else if (enDecimales) {
+                    escala--
+                }
+            }
+            if (cifras.isEmpty()) return BigDecimal.ZERO
+            if (escala > 29) return null
+            var guardado = BigInteger.ZERO
+            var e = escala
+            var p = 0
+            // Cifra por cifra (y ceros, si se acaban antes del punto) mientras quepa.
+            while (e > 0 || (p < cifras.length && e > -28)) {
+                val cifra = if (p < cifras.length) (cifras[p] - '0').toLong() else 0L
+                val siguiente = guardado.multiply(BigInteger.TEN).add(BigInteger.valueOf(cifra))
+                if (siguiente > MAXIMO_DECIMAL) break
+                guardado = siguiente
+                if (p < cifras.length) p++
+                e--
+            }
+            val redondea = p < cifras.length && cifras[p] >= '5' &&
+                (cifras[p] > '5' || guardado.testBit(0) || colaConCifras || (p + 1 until cifras.length).any { cifras[it] != '0' })
+            if (redondea) {
+                guardado = guardado.add(BigInteger.ONE)
+                if (guardado > MAXIMO_DECIMAL) {
+                    guardado = DECIMO_DEL_MAXIMO
+                    e++
+                }
+            }
+            if (e > 0) return null
+            return if (e <= -29) BigDecimal.ZERO else BigDecimal(guardado, -e)
         }
 
         /** Un número como lo lee `double.Parse`, para ordenar las medidas. */

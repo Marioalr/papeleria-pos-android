@@ -257,8 +257,9 @@ void Ordenar(string archivo, IEnumerable<string> cadenas)
         w.WriteLine((i > 0 && Comparar(lugares[i - 1].Llave, lugares[i].Llave) == 0 ? "=" : "<") + lugares[i].Indice);
 }
 Ordenar("orden-casos.txt", File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "casos-orden.txt")).Select(Desescapar));
-// Para revisar la tabla de Kotlin con muchas cadenas al azar (no van a las pruebas): con lo que puede traer un nombre, y con
-// puntos de todos los rangos de la tabla (con letras y signos en medio).
+// Para revisar la tabla de Kotlin con muchas cadenas al azar (no van a las pruebas): con lo que puede traer un nombre, con
+// puntos de todos los rangos de la tabla (con letras y signos en medio), y con lo que ICU no cuenta y la ñ escrita por partes.
+// Los rangos salen de la tabla misma (TablaDeOrden.kt), para que no se queden atrás cuando cambie.
 {
     var r = new Random(7);
     var alfabeto = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "alfabeto-orden.txt")).Trim('\n').Split('\n').Select(Desescapar).ToArray();
@@ -275,9 +276,7 @@ Ordenar("orden-casos.txt", File.ReadAllLines(Path.Combine(AppContext.BaseDirecto
 }
 {
     var r = new Random(11);
-    int[][] rangos = [[0x0000, 0x024F], [0x02B0, 0x036F], [0x0370, 0x03FF], [0x1E00, 0x1EFF], [0x2000, 0x20C0], [0x2100, 0x23FF],
-        [0x2460, 0x24FF], [0x25A0, 0x27BF], [0xFB00, 0xFB06]];
-    var puntos = rangos.SelectMany(x => Enumerable.Range(x[0], x[1] - x[0] + 1)).Where(n => n is < 0xD800 or > 0xDFFF).ToArray();
+    var puntos = DeLaTabla("RANGOS");
     var comunes = "aeiounlsrtcdmpbgvhfjqxyzñ áéíóú.,-/()#0123456789".ToCharArray();
     var azar = new List<string>();
     for (var i = 0; i < 60000; i++)
@@ -289,6 +288,55 @@ Ordenar("orden-casos.txt", File.ReadAllLines(Path.Combine(AppContext.BaseDirecto
         azar.Add(sb.ToString());
     }
     Ordenar("orden-azar2.txt", azar);
+}
+{
+    // Lo que no cuenta, metido en palabras, y la ñ escrita por partes: una letra con que empieza una contracción, marcas que
+    // conoce la tabla (las de abajo no tapan la tilde, las de arriba sí) y la tilde, en cualquier orden.
+    var r = new Random(13);
+    var noCuentan = DeLaTabla("IGNORABLES");
+    var conocidos = new HashSet<int>(DeLaTabla("RANGOS").Concat(noCuentan));
+    var acentos = conocidos.Where(n => CharUnicodeInfo.GetUnicodeCategory((char)n) == UnicodeCategory.NonSpacingMark).Order().ToArray();
+    int[] abajo = [0x0323, 0x0327, 0x0331, 0x032D, 0x0328, 0x0316, 0x0329, 0x0334, 0x0338, 0x1DCE, 0x1DFA, 0x0591];
+    int[] arriba = [0x0301, 0x0300, 0x0308, 0x0345, 0x035C, 0x035D, 0x1DC0, 0x20D0, 0xFE20];
+    var inicios = "nN\u0145\u0146\u1E46\u1E47\u1E48\u1E49\u1E4A\u1E4B\u00F1lLoa".ToCharArray();
+    string[] palabras = ["Agenda", "Ano", "Año", "Anzo", "Cuaderno A", "Cuaderno B", "n", "ñ", "na", "nz", "l·l"];
+    var comunes = "aeiounlsrtcdmpbgvhfjqxyzñ áéíóú.,-/()#0123456789".ToCharArray();
+    var azar = new List<string>();
+    for (var i = 0; i < 30000; i++)
+    {
+        var p = palabras[r.Next(palabras.Length)];
+        for (var k = r.Next(1, 3); k > 0; k--)
+        {
+            var donde = r.Next(p.Length + 1);
+            p = p[..donde] + (r.Next(4) == 0 ? '\u0303' : (char)noCuentan[r.Next(noCuentan.Length)]) + p[donde..];
+        }
+        azar.Add(p);
+    }
+    for (var i = 0; i < 30000; i++)
+    {
+        var sb = new StringBuilder(r.Next(2) == 0 ? "A" : "");
+        sb.Append(inicios[r.Next(inicios.Length)]);
+        for (var k = r.Next(0, 4); k > 0; k--)
+        {
+            var t = r.Next(10);
+            sb.Append((char)(t < 4 ? abajo[r.Next(abajo.Length)] : t < 6 ? arriba[r.Next(arriba.Length)] : t < 9 ? 0x0303 : acentos[r.Next(acentos.Length)]));
+        }
+        if (r.Next(3) != 0) sb.Append(comunes[r.Next(comunes.Length)]);
+        azar.Add(sb.ToString());
+    }
+    Ordenar("orden-azar3.txt", azar);
+}
+
+// Los puntos de una lista de rangos de TablaDeOrden.kt (desde, hasta, …), sin los sustitutos.
+static int[] DeLaTabla(string lista)
+{
+    var tabla = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TablaDeOrden.kt"));
+    var inicio = tabla.IndexOf($"val {lista} = intArrayOf(", StringComparison.Ordinal);
+    var desde = tabla.IndexOf('(', inicio) + 1;
+    var numeros = tabla[desde..tabla.IndexOf(')', desde)].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(x => Convert.ToInt32(x, 16)).ToArray();
+    return Enumerable.Range(0, numeros.Length / 2).SelectMany(k => Enumerable.Range(numeros[2 * k], numeros[2 * k + 1] - numeros[2 * k] + 1))
+        .Where(n => n is < 0xD800 or > 0xDFFF).ToArray();
 }
 
 // Lo que .NET hace con cada carácter del plano básico, para revisar los de Kotlin (no va a las pruebas): Texto.Normalizar
