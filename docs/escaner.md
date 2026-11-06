@@ -312,7 +312,9 @@ Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los camino
    leído; «Abrir la app» pide desbloquear. Se cierra sola tras 5 minutos sin escanear o cuando la cámara se apaga por
    inactividad, y la pantalla solo se mantiene encendida mientras escanea. El mosaico es «no activo»: el sistema arranca
    el proceso al abrir el panel, antes del toque. En la primera versión de Android 14 el sistema todavía pedía el PIN.
-4. **El ícono** o sus accesos directos «Escanear venta» y «Escanear conteo».
+4. **El ícono** o sus accesos directos «Precio», «Ticket» y «Conteo». Abren como el ícono (acción MAIN y categoría
+   LAUNCHER, con el modo en un extra): después de usar uno, el ícono trae la misma tarea y no apila otra pantalla con
+   su cámara.
 
 **Cómo abre rápido:**
 

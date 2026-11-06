@@ -26,6 +26,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
@@ -311,6 +312,26 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
     }
 
     @Test
+    fun `tras el deshacer del aviso el renglon actual es lo ultimo leido aunque ya estuviera arriba`() {
+        abrir(ModoApp.TICKET)
+        leer(LAPIZ)
+        leer(GOMA) // por error
+        // El bote del renglón actual (la goma, en 1) y, con el aviso a la vista, el segundo lápiz.
+        compose.onNodeWithTag("menos-uno").performClick()
+        idle()
+        assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
+        leer(LAPIZ)
+        compose.onNodeWithTag("aviso-accion").performClick()
+        idle()
+        assertEquals(listOf(LAPIZ to 2, GOMA to 1), claves())
+        // El − y el + del panel son del lápiz: el siguiente + es otro lápiz.
+        assertEquals(1, compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText(nombreDe(LAPIZ)), useUnmergedTree = true).fetchSemanticsNodes().size)
+        compose.onNodeWithTag("mas-uno").performClick()
+        idle()
+        assertEquals(listOf(LAPIZ to 3, GOMA to 1), claves())
+    }
+
+    @Test
     fun `el deshacer del ticket completo se lleva el aviso de lo que deshizo`() {
         abrir(ModoApp.TICKET)
         leer(CUADERNO)
@@ -472,6 +493,86 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         assertEquals(listOf(LAPIZ to 1, CUADERNO to 1), claves())
     }
 
+    /** El −, el bote y el + de los renglones del ticket completo que se ven, en dp: los botones enteros, que es lo que se toca. */
+    private fun botonesDelTicket(): List<Rect> =
+        compose.onAllNodes(
+            (hasContentDescription("Uno más") or hasContentDescription("Uno menos") or hasContentDescription("Quitar")) and
+                hasAnyAncestor(hasTestTag("hoja-ticket")),
+        ).fetchSemanticsNodes().map { enDp(it.boundsInRoot) }.filter { it.height > 0f }
+
+    private fun masDelPrimerRenglon() =
+        compose.onAllNodes(hasContentDescription("Uno más") and hasAnyAncestor(hasTestTag("hoja-ticket")))[0]
+
+    private fun assertNoTapaLosRenglones(caso: String) {
+        val aviso = limites("aviso")!!
+        val tapados = botonesDelTicket().filter { it.overlaps(aviso) }
+        assertTrue("$caso: el aviso ($aviso) tapa $tapados", tapados.isEmpty())
+    }
+
+    @Test
+    fun `el aviso sobre el ticket completo no tapa el menos ni el mas del primer renglon`() {
+        abrir(ModoApp.TICKET)
+        leer(CUADERNO)
+        leer(LAPIZ)
+        leer(GOMA)
+        vm.piso.abrir(Hoja.Ticket)
+        idle()
+        // El bote de la goma (el primer renglón): el lápiz pasa a ser el primero, y su + queda donde salió el aviso.
+        compose.onAllNodes(hasContentDescription("Quitar") and hasAnyAncestor(hasTestTag("hoja-ticket")))[0].performClick()
+        idle()
+        assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
+        assertNoTapaLosRenglones("Con el bote")
+        captura("regresion/aviso-sobre-ticket-completo-renglones")
+        // Su + suma, no deshace: el lápiz lleva otro y la goma no regresa.
+        masDelPrimerRenglon().performClick()
+        idle()
+        assertEquals(listOf(LAPIZ to 2, CUADERNO to 1), claves())
+        // Buscar desde el ticket completo y elegir: regresa con «… al ticket» encima y lo elegido como primer renglón.
+        compose.onNodeWithTag("buscar-ticket").performClick()
+        idle()
+        compose.onNodeWithTag("campo-buscar").performTextInput("goma")
+        idle()
+        compose.onNodeWithTag("resultado-$GOMA").performClick()
+        idle()
+        assertEquals(Hoja.Ticket, vm.piso.hoja.value)
+        assertTrue(vm.piso.aviso.value!!.texto.contains("al ticket"))
+        assertNoTapaLosRenglones("Con Buscar")
+        masDelPrimerRenglon().performClick()
+        idle()
+        assertEquals("Dos gomas: el + no la quita", listOf(GOMA to 2, LAPIZ to 2, CUADERNO to 1), claves())
+        // Al irse el aviso, la lista vuelve a empezar bajo la barra.
+        val conAviso = limites("lista-ticket")!!.top
+        compose.mainClock.advanceTimeBy(6_000)
+        idle()
+        assertFalse(existe("aviso"))
+        assertTrue("La lista sube (${limites("lista-ticket")!!.top} contra $conAviso)", limites("lista-ticket")!!.top < conAviso)
+    }
+
+    @Test
+    fun `con el ticket completo desplazado el aviso tampoco tapa los renglones que se ven`() {
+        abrir(ModoApp.TICKET)
+        val codigos = listOf(CUADERNO, LAPIZ, GOMA, SACAPUNTAS, PEGAMENTO, TIJERAS, FOLDER) +
+            listOf("7509990100088", "7509990100095", "7509990100101", "7509990100118", "7509990100125")
+        for (c in codigos) leer(c)
+        vm.piso.abrir(Hoja.Ticket)
+        idle()
+        compose.onNodeWithTag("lista-ticket").performScrollToNode(hasTestTag("buscar-ticket"))
+        idle()
+        // Desplazada: el primer renglón (lo último leído) ya no se ve entero. Un relleno arriba de su contenido no bastaría.
+        val arriba = compose.onAllNodes(hasText(nombreDe(codigos.last())) and hasAnyAncestor(hasTestTag("hoja-ticket")), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertTrue("La lista no se desplazó", arriba.isEmpty() || enDp(arriba.single().boundsInRoot).height < sinRecorte(arriba.single()).height - 0.5f)
+        // El bote del primero que se ve entero.
+        val lista = limites("lista-ticket")!!
+        compose.onAllNodes(hasContentDescription("Quitar") and hasAnyAncestor(hasTestTag("hoja-ticket"))).fetchSemanticsNodes()
+            .first { enDp(it.boundsInRoot).let { b -> b.top >= lista.top && b.height >= 47f } }
+            .let { n -> compose.onRoot().performTouchInput { click(n.boundsInRoot.center) } }
+        idle()
+        assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
+        assertNoTapaLosRenglones("Desplazado")
+        captura("regresion/aviso-sobre-ticket-completo-desplazado")
+    }
+
     @Test
     fun `el aviso de al ticket no sale encima del precio en grande y espera a que se regrese`() {
         abrir(ModoApp.PRECIO)
@@ -528,6 +629,48 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         assertEquals("A la barra de estado + 72: 4 dp abajo de Ajustes y la linterna", 24f + 72f, aviso.top, 1f)
         assertTrue("Bajo Ajustes", aviso.top >= ajustes.bottom)
         assertTrue("A lo más el relleno de arriba de la indicación (${aviso.bottom} > ${indicacion.top})", aviso.bottom <= indicacion.top + 8.5f)
+    }
+
+    @Test
+    fun `con la sesion de prueba el aviso de arriba no tapa no leyo ni su deshacer`() {
+        abrir(ModoApp.PRECIO)
+        vm.iniciarSesion("prueba")
+        idle()
+        leer(CUADERNO)
+        compose.mainClock.advanceTimeBy(1_500)
+        idle()
+        compose.onNodeWithTag("al-ticket").performClick()
+        idle()
+        assertNotNull(vm.piso.aviso.value)
+        fun noLosTapa(caso: String) {
+            val aviso = limites("aviso")!!
+            for (tag in listOf("fallo-TIMEOUT", "deshacer-fallo")) {
+                assertFalse("$caso: el aviso ($aviso) tapa $tag (${limites(tag)})", limites(tag)!!.overlaps(aviso))
+            }
+        }
+        noLosTapa("En Precio")
+        captura("regresion/aviso-con-sesion")
+        // Un toque al centro de «No leyó» registra el intento (antes se lo quedaba el aviso).
+        val antes = vm.sesion.value!!.intentos.size
+        compose.onNodeWithTag("fallo-TIMEOUT").performClick()
+        idle()
+        assertEquals(antes + 1, vm.sesion.value!!.intentos.size)
+        // Y otro toque al centro de «Al ticket» agrega otro: el aviso de abajo no lo tapa.
+        compose.onNodeWithTag("al-ticket").performClick()
+        idle()
+        assertEquals(listOf(CUADERNO to 2), claves())
+        // En Ticket, lo elegido en Buscar desde el panel también avisa arriba.
+        compose.mainClock.advanceTimeBy(30_000)
+        idle()
+        vm.cambiarModoApp(ModoApp.TICKET)
+        idle()
+        vm.piso.abrir(Hoja.Buscar)
+        idle()
+        compose.onNodeWithTag("resultado-$LAPIZ").performClick()
+        idle()
+        assertTrue(vm.piso.aviso.value!!.texto.contains("al ticket"))
+        noLosTapa("En Ticket")
+        vm.terminarSesion()
     }
 
     @Test
@@ -709,6 +852,42 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         leer(SACAPUNTAS)
         val detalle = compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText("Queda 1", substring = true), useUnmergedTree = true)
         assertEquals("Queda 1 · \$9.00 c/u · \$9.00", textoDe(detalle.fetchSemanticsNodes().single()))
+    }
+
+    @Test
+    fun `de a uno dice pza, va, encontrado e intento en singular`() {
+        abrir(ModoApp.CONTEO)
+        leer(GOMA)
+        assertEquals(1, compose.onAllNodes(hasText("Conteo de prueba · 1 pza"), useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals("Goma blanca chica, va 1", vm.piso.anuncio.value?.texto)
+        leer(GOMA)
+        assertEquals(1, compose.onAllNodes(hasText("Conteo de prueba · 2 pzs"), useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals("Goma blanca chica, van 2", vm.piso.anuncio.value?.texto)
+        // Buscar con un solo resultado.
+        vm.piso.abrir(Hoja.Buscar)
+        idle()
+        assertEquals(1, vm.piso.buscar("calculadora").size)
+        compose.onNodeWithTag("campo-buscar").performTextInput("calculadora")
+        idle()
+        assertEquals("1 encontrado", compose.onNodeWithTag("campo-buscar").fetchSemanticsNode().config[SemanticsProperties.StateDescription])
+        vm.piso.cerrarHoja()
+        idle()
+        // La barra de la sesión de prueba con su primer intento.
+        vm.iniciarSesion("prueba")
+        idle()
+        compose.onNodeWithTag("fallo-TIMEOUT").performClick()
+        idle()
+        assertEquals(1, vm.sesion.value!!.intentos.size)
+        assertEquals(1, compose.onAllNodes(hasText("Prueba · 1 intento · ", substring = true), useUnmergedTree = true).fetchSemanticsNodes().size)
+        vm.terminarSesion()
+        idle()
+        // El teclado de la cantidad de un renglón con una pieza.
+        vm.cambiarModoApp(ModoApp.TICKET)
+        idle()
+        leer(LAPIZ)
+        vm.piso.abrir(Hoja.Cantidad(vm.venta.value.actual!!.id))
+        idle()
+        assertEquals(1, compose.onAllNodes(hasText("Va 1: teclea cuántos lleva"), useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
     @Test

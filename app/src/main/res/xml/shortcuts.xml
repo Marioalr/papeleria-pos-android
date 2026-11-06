@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Atajos del ícono (mantener presionado). Existen desde API 25; en API 24 el archivo se ignora.
+     Abren con la acción MAIN y la categoría LAUNCHER, como el ícono: el sistema compara el intent que llega con el de la
+     raíz de la tarea sin los extras (filterEquals), y con el mismo filtro el siguiente toque en el ícono solo trae la tarea.
+     Con otra acción apilaba otra MainActivity encima, con su ViewModel y su controlador de cámara. MainActivity lee el modo
+     del extra «modo», sin mirar la acción.
      El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído está guardado
      (ListasCompartidas, en disco) y MainActivity solo aplica el modo. El id del ticket sigue siendo «escanear_venta»: así
      el atajo que alguien ancló con la 0.1 (con el extra «venta») sigue siendo el mismo y abre el ticket. -->
@@ -13,9 +17,10 @@
         android:shortcutLongLabel="@string/atajo_precio_largo"
         android:shortcutShortLabel="@string/atajo_precio_corto">
         <intent
-            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:action="android.intent.action.MAIN"
             android:targetClass="mx.papeleriapos.android.MainActivity"
             android:targetPackage="mx.papeleriapos.android">
+            <categories android:name="android.intent.category.LAUNCHER" />
             <extra
                 android:name="modo"
                 android:value="precio" />
@@ -28,9 +33,10 @@
         android:shortcutLongLabel="@string/atajo_venta_largo"
         android:shortcutShortLabel="@string/atajo_venta_corto">
         <intent
-            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:action="android.intent.action.MAIN"
             android:targetClass="mx.papeleriapos.android.MainActivity"
             android:targetPackage="mx.papeleriapos.android">
+            <categories android:name="android.intent.category.LAUNCHER" />
             <extra
                 android:name="modo"
                 android:value="ticket" />
@@ -43,9 +49,10 @@
         android:shortcutLongLabel="@string/atajo_conteo_largo"
         android:shortcutShortLabel="@string/atajo_conteo_corto">
         <intent
-            android:action="mx.papeleriapos.android.action.ESCANEAR"
+            android:action="android.intent.action.MAIN"
             android:targetClass="mx.papeleriapos.android.MainActivity"
             android:targetPackage="mx.papeleriapos.android">
+            <categories android:name="android.intent.category.LAUNCHER" />
             <extra
                 android:name="modo"
                 android:value="conteo" />

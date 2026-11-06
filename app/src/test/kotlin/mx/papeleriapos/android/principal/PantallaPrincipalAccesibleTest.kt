@@ -15,7 +15,9 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -268,10 +270,17 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
     }
 
     @Test
+    @Config(qualifiers = HOJA_DEL_CHICO)
     fun `buscar dice cuantos encontro`() {
         abrir(ModoApp.TICKET, talkBack = true)
         vm.piso.abrir(Hoja.Buscar)
         idle()
+        // Como en el celular, el resultado de más arriba queda entero bajo el subtítulo: sin la barra encima, TalkBack no lo
+        // vería. Con 24 dp de más de hoja no quedaba debajo y la prueba pasaba sin eso.
+        val bajoLaBarra = sinRecorte(compose.onNode(hasText("Los rápidos y lo más vendido"), useUnmergedTree = true).fetchSemanticsNode())
+        val deMasArriba = compose.onAllNodes(SemanticsMatcher("un resultado") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("resultado-") == true })
+            .fetchSemanticsNodes().map { sinRecorte(it) }.minBy { it.top }
+        assertTrue("El de más arriba ($deMasArriba) no queda bajo el subtítulo ($bajoLaBarra)", deMasArriba.top <= bajoLaBarra.top && deMasArriba.bottom >= bajoLaBarra.bottom)
         val visibles = nodosAccesibles().map { (it.info.text ?: it.info.contentDescription)?.toString() }
         assertTrue("El subtítulo llega a TalkBack: $visibles", "Los rápidos y lo más vendido" in visibles)
         compose.onNodeWithTag("campo-buscar").performTextInput("lapiz")

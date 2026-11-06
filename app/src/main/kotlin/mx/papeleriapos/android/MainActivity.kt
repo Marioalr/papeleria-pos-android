@@ -43,7 +43,9 @@ import mx.papeleriapos.escaner.ui.LocalSoloVisor
  * demás llega cuando el visor ya entregó su superficie, y el TTFD es el primer cuadro analizado.
  *
  * Los atajos «Precio», «Ticket» y «Conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea con
- * ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde.
+ * ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde. Abren con la
+ * acción y la categoría del ícono (MAIN y LAUNCHER), para que después el ícono traiga esta misma tarea y no apile otra
+ * MainActivity; el modo se lee del extra, sin mirar la acción.
  *
  * Al restaurar con estado guardado (Android mató el proceso en segundo plano y el empleado toca el ícono: el frío más
  * común al sacar el celular del bolsillo) también enlaza en `onCreate` si la pantalla a la vista era la principal.

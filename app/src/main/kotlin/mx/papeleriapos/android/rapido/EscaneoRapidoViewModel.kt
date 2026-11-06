@@ -39,6 +39,10 @@ import mx.papeleriapos.escaner.camara.ControladorCamara
  * «Precio»), y el núcleo guarda Precio como venta. Sin sesión de prueba, sin ajustes y sin exportar; sus aperturas sí
  * quedan en aperturas.csv de la sesión activa (solo en archivo).
  *
+ * La Activity es singleTask y sigue viva en segundo plano (hasta que caduca): el mosaico la trae con este mismo ViewModel.
+ * Por eso el modo no se lee una sola vez, sino cada vez que la pantalla vuelve ([alVolver]): mientras tanto la app pudo
+ * pasar a Precio, y lo leído ahí no debe entrar al ticket.
+ *
  * Su controlador es propio (este ViewModel es su dueño y lo cierra en [onCleared]): si la app también está abierta en
  * otra tarea hay dos motores cargados (ML Kit con sus modelos, zxing-cpp y un hilo de análisis cada uno). No se comparte
  * uno por proceso porque el controlador sigue a un solo dueño y la pantalla de la app solo llama a `abrir` cuando cambia
@@ -58,11 +62,13 @@ class EscaneoRapidoViewModel(
     private val config = PreferenciasEscaner(prefs).leer()
     val controlador: ControladorEscaner = fabrica(app, config)
 
-    /** El de la app (el núcleo solo sabe de venta y conteo: Precio y Ticket escanean como venta). */
-    val modo: ModoApp = PreferenciasPiso(prefs).leerModo() ?: ModoApp.deNucleo(config.modo)
+    private val _modo = MutableStateFlow(modoDeLaApp())
 
-    /** En Precio, ninguna: nada entra al ticket. */
-    private val listaModo: MutableStateFlow<ListaLecturas>? = if (modo == ModoApp.PRECIO) null else listas().de(modo.delNucleo)
+    /**
+     * El de la app al abrir o al volver ([alVolver]); el núcleo solo sabe de venta y conteo: Precio y Ticket escanean
+     * como venta. Cada lectura suma en la lista de este modo (en Precio, en ninguna).
+     */
+    val modo: StateFlow<ModoApp> = _modo.asStateFlow()
 
     private val _aqui = MutableStateFlow(ListaLecturas())
 
@@ -87,16 +93,34 @@ class EscaneoRapidoViewModel(
             controlador.eventos.collect { e ->
                 val codigo = e.aceptada.codigo
                 val hora = System.currentTimeMillis()
-                listaModo?.update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
+                val m = _modo.value
+                // La lista del modo de ahora; en Precio, ninguna: nada entra al ticket.
+                if (m != ModoApp.PRECIO) listas().de(m.delNucleo).update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
                 _aqui.update { it.sumar(codigo.normalizado, codigo.simbologia, hora) }
                 ultimaActividad = SystemClock.elapsedRealtime()
                 val apertura = aperturaMasReciente(controlador.estado.value.apertura, MarcasApertura.apertura)
                 if (apertura.marcas.containsKey(PasoApertura.PRIMERA_LECTURA)) {
                     RegistroAperturas.registrar(app, CsvAperturas.ORIGEN_RAPIDO, apertura)
                 }
-                if (modo == ModoApp.PRECIO && _catalogo.value == null) _catalogo.value = productos.await()
+                if (m == ModoApp.PRECIO && _catalogo.value == null) _catalogo.value = productos.await()
             }
         }
+    }
+
+    /** El que guardó la app (la pantalla principal lo guarda al cambiarlo); el de antes de la 0.2, por el del núcleo. */
+    private fun modoDeLaApp(): ModoApp = PreferenciasPiso(prefs).leerModo() ?: ModoApp.deNucleo(PreferenciasEscaner(prefs).leer().modo)
+
+    /**
+     * La pantalla volvió: el mosaico la trajo otra vez (`onNewIntent`) o volvió a verse, p. ej. al encender la pantalla
+     * (`onRestart`). Es otra apertura: lo de [aqui] empieza de cero y el modo es el de la app ahora. Si cambió, el
+     * escáner toma los ajustes guardados, que ya traen el modo del núcleo que le toca.
+     */
+    fun alVolver() {
+        _aqui.value = ListaLecturas()
+        val m = modoDeLaApp()
+        if (m == _modo.value) return
+        _modo.value = m
+        controlador.configurar(PreferenciasEscaner(prefs).leer())
     }
 
     fun msParaCerrar(bloqueado: Boolean): Long =

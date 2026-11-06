@@ -200,7 +200,8 @@ class Piso(
             }
             ModoApp.CONTEO -> {
                 val l = conteo.updateAndGet { it.completarClaves(::claveDe).sumar(normalizado, simbologia, hora, clave = producto?.clave) }
-                "${producto?.nombre ?: "No está en el catálogo"}, van ${l.actual?.cantidad ?: 1}"
+                val van = l.actual?.cantidad ?: 1
+                "${producto?.nombre ?: "No está en el catálogo"}, ${if (van == 1) "va" else "van"} $van"
             }
         }
         _anuncio.value = Anuncio(siguienteAnuncio++, texto)

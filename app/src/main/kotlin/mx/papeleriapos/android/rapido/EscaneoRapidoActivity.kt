@@ -33,6 +33,7 @@ import mx.papeleriapos.android.tema.TemaEscaner
  * corto). Por eso se cierra sola: tras [minutosParaCerrar] sin escanear (un minuto con el celular bloqueado, ver
  * [msParaCerrar]) o en cuanto la cámara se apaga por inactividad. Si no, abriría la cámara en cada encendido y dejaría
  * la pantalla encendida con lo leído a la vista sobre el bloqueo. Lo que muestra es lo mínimo: lo leído en esta apertura.
+ * Cada vez que vuelve (el mosaico otra vez o la pantalla que se enciende) es otra apertura, en el modo de la app de ahora.
  */
 class EscaneoRapidoActivity : ComponentActivity() {
     private val vm: EscaneoRapidoViewModel by viewModels()
@@ -63,13 +64,27 @@ class EscaneoRapidoActivity : ComponentActivity() {
         cerrarAlApagarseLaCamara()
     }
 
+    /**
+     * El mosaico la trajo otra vez (singleTask: la misma Activity y el mismo ViewModel). Mientras estuvo en segundo plano la
+     * app pudo cambiar de modo: se vuelve a leer ([EscaneoRapidoViewModel.alVolver]). Si estaba detenida, en Android 9 o
+     * más llega después de [onRestart] y en 7 y 8 antes: las dos veces da lo mismo. Si [onRestart] la cerró, ya no.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (!isFinishing) vm.alVolver()
+    }
+
     override fun onRestart() {
         super.onRestart()
         // Volvió a verse (p. ej. al encender la pantalla) después de mucho sin escanear: se cierra sin abrir la cámara.
         if (vm.msParaCerrar(bloqueado()) <= 0L) {
             vm.controlador.cerrar()
             finish()
+            return
         }
+        // Si no, es otra apertura, con el modo de la app de ahora.
+        vm.alVolver()
     }
 
     override fun onStart() {

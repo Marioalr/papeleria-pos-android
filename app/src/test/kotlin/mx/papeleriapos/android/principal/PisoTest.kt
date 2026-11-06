@@ -269,6 +269,46 @@ class PisoTest {
     }
 
     @Test
+    fun `deshacer el quitado deja arriba lo que se volvio a leer aunque ya estuviera arriba`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.alLeer(goma.clave, Simbologia.EAN_13, 2) // por error
+        p.menosUno(venta.value.actual!!.id) // el bote del renglón actual: «Quitado del ticket · Deshacer»
+        val a = p.aviso.value!!
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 3) // el segundo lápiz, con el aviso a la vista
+        p.accionDelAviso(a.id)
+        // El renglón actual (el del − y el +) es lo último leído: el lápiz.
+        assertEquals(listOf(lapiz.clave to 2, goma.clave to 1), claves())
+    }
+
+    @Test
+    fun `deshacer el quitado despues del mas regresa lo quitado arriba, donde estaba`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.alLeer(goma.clave, Simbologia.EAN_13, 2)
+        p.menosUno(venta.value.actual!!.id)
+        val a = p.aviso.value!!
+        // El + del lápiz (el que subió) no es una lectura: no mueve nada.
+        p.masUno(venta.value.actual!!.id)
+        p.accionDelAviso(a.id)
+        assertEquals(listOf(goma.clave to 1, lapiz.clave to 2), claves())
+    }
+
+    @Test
+    fun `deshacer el quitado con tres deja arriba lo leido despues en su orden`() {
+        val p = piso().also { it.cargarCatalogo(conGoma) }
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        p.alLeer(goma.clave, Simbologia.EAN_13, 3)
+        p.menosUno(venta.value.actual!!.id)
+        val a = p.aviso.value!!
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 4)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 5)
+        p.accionDelAviso(a.id)
+        assertEquals(listOf(cuaderno.clave to 2, lapiz.clave to 2, goma.clave to 1), claves())
+    }
+
+    @Test
     fun `el deshacer del ticket completo se lleva el aviso del paso que deshizo`() {
         // «Quitado del ticket» con el bote del ticket completo: el aviso se ve encima, junto al deshacer de la hoja.
         val p = piso()
@@ -455,6 +495,7 @@ class PisoTest {
         assertEquals("Lápiz HB No. 2 al ticket, van 2. Total \$11.00", p.anuncio.value!!.texto)
         p.cambiarModo(ModoApp.CONTEO)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 6)
+        assertEquals("De uno, en singular", "Cuaderno profesional cuadro chico 100 hojas, va 1", p.anuncio.value!!.texto)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 7)
         assertEquals("Cuaderno profesional cuadro chico 100 hojas, van 2", p.anuncio.value!!.texto)
         // Con una hoja encima no cuenta ni se anuncia.

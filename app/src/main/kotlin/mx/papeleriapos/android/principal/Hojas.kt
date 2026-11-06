@@ -84,6 +84,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -185,7 +186,11 @@ fun HojaBuscar(
         ModoApp.CONTEO -> "Contar un producto"
     }
     HojaCompleta("hoja-buscar") {
-        val cuantos = if (texto.isEmpty()) "Los rápidos y lo más vendido" else "${resultados.size} encontrados"
+        val cuantos = when {
+            texto.isEmpty() -> "Los rápidos y lo más vendido"
+            resultados.size == 1 -> "1 encontrado"
+            else -> "${resultados.size} encontrados"
+        }
         BarraHoja(titulo, cuantos, alCerrar, subtituloVivo = true)
         LazyColumn(
             Modifier
@@ -289,7 +294,8 @@ fun HojaCantidad(renglon: Renglon, producto: Producto?, alListo: (Int) -> Unit, 
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("hoja-cantidad"),
         ) {
             Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = 8.dp)) {
-                BarraHoja(producto?.nombre ?: renglon.codigo, "Van ${renglon.cantidad}: teclea cuántos lleva", alCerrar)
+                val van = if (renglon.cantidad == 1) "Va 1" else "Van ${renglon.cantidad}"
+                BarraHoja(producto?.nombre ?: renglon.codigo, "$van: teclea cuántos lleva", alCerrar)
                 Text(
                     tecleado.ifEmpty { renglon.cantidad.toString() },
                     fontSize = 48.sp,
@@ -349,9 +355,19 @@ class AccionesTicket(
  * en el color del modo) y «Empezar otro ticket». «Mandar» e «Impresiones» se ven apagadas en su lugar, con su razón:
  * llegan con la conexión al POS (docs/propuesta-interfaz.md, «Entregas»). Lo que se abre desde aquí (la cantidad,
  * Buscar) regresa aquí al cerrarse.
+ *
+ * [huecoArriba]: lo que tapa el aviso que sale encima, bajo la barra («Quitado del ticket», «… al ticket»). La lista
+ * empieza abajo de él mientras se ve (también desplazada: no es un relleno de su contenido), para que un toque al − o al
+ * + del primer renglón no le caiga al «Deshacer» del aviso, que haría lo contrario.
  */
 @Composable
-fun HojaTicket(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, acciones: AccionesTicket, alCerrar: () -> Unit) {
+fun HojaTicket(
+    ticket: ListaLecturas,
+    catalogo: CatalogoDeProductos?,
+    acciones: AccionesTicket,
+    huecoArriba: Dp = 0.dp,
+    alCerrar: () -> Unit,
+) {
     val color = LocalColoresModo.current.ticket
     val cargando = catalogo == null
     // Las razones de lo apagado, las mismas del botón rápido.
@@ -362,7 +378,7 @@ fun HojaTicket(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, acciones: 
                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Deshacer lo último")
             }
         }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("lista-ticket")) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(top = huecoArriba).testTag("lista-ticket")) {
             if (ticket.renglones.isEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {

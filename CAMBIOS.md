@@ -2,7 +2,7 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
-## 0.2.0 (en curso)
+## 0.2.0 (sin publicar)
 
 La primera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «La base»: la pantalla de la
 fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
@@ -35,9 +35,12 @@ fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
   izquierda», «Volver a ver las pistas» y el mosaico. Las herramientas de medición (el escáner, la sesión de prueba,
   el banco y las pruebas de estrés), que eran cuatro de las cinco pestañas de abajo, bajan a Ajustes ›
   «Herramientas de medición», junto con los contadores del botón rápido.
-- Los accesos directos son «Precio», «Ticket» y «Conteo»; el de «Venta» que ya estaba anclado abre el ticket.
-- **El escaneo rápido** (el mosaico) sigue el modo de la app: en Precio solo enseña lo leído con su nombre y su precio, y
-  nada entra al ticket.
+- Los accesos directos son «Precio», «Ticket» y «Conteo», y abren como el ícono: después de usar uno, el ícono regresa a
+  la app abierta en lugar de abrir otra encima. El de «Venta» que ya estaba anclado abre el ticket.
+- **El escaneo rápido** (el mosaico) sigue el modo de la app, también si se quedó abierto: cada vez que vuelve (el
+  mosaico otra vez, o al encender la pantalla) toma el modo de ese momento y lo de esa apertura empieza de cero. En
+  Precio solo enseña lo leído con su nombre y su precio, y nada entra al ticket; TalkBack lo dice cada vez, también si
+  es el mismo producto. Con la letra grande sus botones no se encogen.
 - **Los contadores del botón rápido** salen con la medición de la sesión de prueba (contadores-rapido.csv).
 
 **Pendiente antes de publicar la 0.2.0:** volver a generar los perfiles de arranque

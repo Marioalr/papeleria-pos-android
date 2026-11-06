@@ -115,7 +115,8 @@ class TicketEnLaListaTest {
     fun `la clave se guarda y se recupera`() {
         val l = tres().sumar("ZZP0042x", Simbologia.CODE_128, 4)
         val r = ListaLecturas.deTexto(l.aTexto())
-        assertEquals(l.renglones, r.renglones)
+        // Todo menos la llegada, que no va a disco.
+        assertEquals(l.renglones.map { it.copy(llegada = 0) }, r.renglones.map { it.copy(llegada = 0) })
         assertTrue(l.aTexto().startsWith("id,codigo,simbologia,cantidad,hora,clave"))
     }
 
@@ -184,6 +185,58 @@ class TicketEnLaListaTest {
         // Y si se quitó también el de abajo, va al final.
         val sinCuaderno = tras.quitar(tras.renglones.last().id).sumar(pegamento, Simbologia.EAN_13, 6, clave = pegamento)
         assertEquals(listOf(pegamento to 1, goma to 1, lapiz to 1), sinCuaderno.regresar(quitado, i, tras.renglones).codigos())
+    }
+
+    @Test
+    fun `regresar deja arriba lo que se volvio a leer aunque ya estuviera arriba`() {
+        // El lápiz y, por error, la goma: se quita la goma (el renglón actual) y se lee el segundo lápiz, que ya quedó
+        // arriba y no se mueve. Lo escaneado después queda arriba: el lápiz, con su − y su +.
+        val l = ListaLecturas()
+            .sumar(lapiz, Simbologia.EAN_13, 1, clave = lapiz)
+            .sumar(goma, Simbologia.EAN_13, 2, clave = goma)
+        val (quitado, i, tras) = quitar(l, 0)
+        val releido = tras.sumar(lapiz, Simbologia.EAN_13, 3, clave = lapiz)
+        assertEquals(listOf(lapiz to 2, goma to 1), releido.regresar(quitado, i, tras.renglones).codigos())
+        // Con varios lápices pasa igual.
+        val varios = ListaLecturas()
+            .sumar(lapiz, Simbologia.EAN_13, 1, clave = lapiz)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+            .sumar(goma, Simbologia.EAN_13, 3, clave = goma)
+        val (q, k, t) = quitar(varios, 0)
+        assertEquals(listOf(lapiz to 3, goma to 1), t.sumar(lapiz, Simbologia.EAN_13, 4, clave = lapiz).regresar(q, k, t.renglones).codigos())
+        // El + del ticket completo no es una lectura y no mueve nada: la goma regresa arriba, donde estaba. Deja la misma
+        // lista de renglones que leer el lápiz; solo la llegada los distingue.
+        val conMas = tras.masUno(tras.renglones[0].id, 3)
+        assertEquals(releido.codigos(), conMas.codigos())
+        assertEquals(listOf(goma to 1, lapiz to 2), conMas.regresar(quitado, i, tras.renglones).codigos())
+    }
+
+    @Test
+    fun `regresar con tres deja lo leido despues arriba en el orden en que se leyo`() {
+        // Cuaderno, lápiz y goma; se quita la goma y se leen el lápiz y luego el cuaderno.
+        val l = ListaLecturas()
+            .sumar(cuaderno, Simbologia.EAN_13, 1, clave = cuaderno)
+            .sumar(lapiz, Simbologia.EAN_13, 2, clave = lapiz)
+            .sumar(goma, Simbologia.EAN_13, 3, clave = goma)
+        val (quitado, i, tras) = quitar(l, 0)
+        val despues = tras.sumar(lapiz, Simbologia.EAN_13, 4, clave = lapiz).sumar(cuaderno, Simbologia.EAN_13, 5, clave = cuaderno)
+        assertEquals(listOf(cuaderno to 2, lapiz to 2, goma to 1), despues.regresar(quitado, i, tras.renglones).codigos())
+        // Si solo se leyó el cuaderno (el de abajo), la goma regresa arriba del lápiz, que no se movió.
+        val soloCuaderno = tras.sumar(cuaderno, Simbologia.EAN_13, 4, clave = cuaderno)
+        assertEquals(listOf(cuaderno to 2, goma to 1, lapiz to 1), soloCuaderno.regresar(quitado, i, tras.renglones).codigos())
+    }
+
+    @Test
+    fun `regresar en lo leido del disco tambien deja arriba lo que se volvio a leer`() {
+        // La llegada no va a disco: al leerlo sale del orden de la lista.
+        val guardada = ListaLecturas.deTexto(
+            ListaLecturas().sumar(lapiz, Simbologia.EAN_13, 1, clave = lapiz).sumar(goma, Simbologia.EAN_13, 2, clave = goma).aTexto(),
+        )
+        assertEquals(listOf(goma to 1, lapiz to 1), guardada.codigos())
+        val (quitado, i, tras) = quitar(guardada, 0)
+        val releido = tras.sumar(lapiz, Simbologia.EAN_13, 3, clave = lapiz)
+        assertEquals(listOf(lapiz to 2, goma to 1), releido.regresar(quitado, i, tras.renglones).codigos())
+        assertEquals(listOf(goma to 1, lapiz to 2), tras.masUno(tras.renglones[0].id, 3).regresar(quitado, i, tras.renglones).codigos())
     }
 
     @Test

@@ -19,6 +19,12 @@ data class Renglon(
      * (docs/propuesta-interfaz.md, «Mandar a una caja»): así la caja lo encuentra aunque no pruebe las variantes.
      */
     val clave: String? = null,
+    /**
+     * El orden en que llegó a donde está: solo [ListaLecturas.sumar] lo da (y sube el renglón), así que es mayor arriba.
+     * Con él, el «Deshacer» de «Quitado del ticket» sabe qué se escaneó después aunque los renglones sean los mismos: el
+     * + del ticket completo no mueve nada y no lo cambia. No va a disco; al leerlo, sale del orden de la lista.
+     */
+    val llegada: Long = 0,
 )
 
 /**
@@ -31,8 +37,10 @@ class ListaLecturas private constructor(
     val renglones: List<Renglon>,
     private val anteriores: List<List<Renglon>>,
     private val siguienteId: Long,
+    /** La [Renglon.llegada] de la próxima suma: solo crece, también al deshacer (como [siguienteId]). */
+    private val siguienteLlegada: Long,
 ) {
-    constructor() : this(emptyList(), emptyList(), 1)
+    constructor() : this(emptyList(), emptyList(), 1, 1)
 
     val actual: Renglon? get() = renglones.firstOrNull()
     val total: Int get() = renglones.sumOf { it.cantidad }
@@ -46,12 +54,12 @@ class ListaLecturas private constructor(
     fun sumar(codigo: String, simbologia: Simbologia, hora: Long, cantidad: Int = 1, clave: String? = null): ListaLecturas {
         val i = renglones.indexOfFirst { it.codigo == codigo || (clave != null && it.clave == clave) }
         if (i < 0) {
-            val nuevo = Renglon(siguienteId, codigo, simbologia, cantidad, hora, clave)
-            return cambiar(listOf(nuevo) + renglones, siguienteId + 1)
+            val nuevo = Renglon(siguienteId, codigo, simbologia, cantidad, hora, clave, llegada = siguienteLlegada)
+            return cambiar(listOf(nuevo) + renglones, siguienteId + 1, siguienteLlegada + 1)
         }
         val r = renglones[i]
-        val sumado = r.copy(cantidad = r.cantidad + cantidad, hora = hora, clave = r.clave ?: clave)
-        return cambiar(listOf(sumado) + renglones.filterIndexed { k, _ -> k != i }, siguienteId)
+        val sumado = r.copy(cantidad = r.cantidad + cantidad, hora = hora, clave = r.clave ?: clave, llegada = siguienteLlegada)
+        return cambiar(listOf(sumado) + renglones.filterIndexed { k, _ -> k != i }, siguienteId, siguienteLlegada + 1)
     }
 
     /** Agrega lo que se eligió al buscar en el catálogo, por su [clave]: suma como una lectura de ese producto. */
@@ -99,7 +107,7 @@ class ListaLecturas private constructor(
 
     /** Regresa al estado de antes del último paso. */
     fun deshacer(): ListaLecturas =
-        if (anteriores.isEmpty()) this else ListaLecturas(anteriores.last(), anteriores.dropLast(1), siguienteId)
+        if (anteriores.isEmpty()) this else ListaLecturas(anteriores.last(), anteriores.dropLast(1), siguienteId, siguienteLlegada)
 
     // ---- Lo que deshace cada aviso (docs/propuesta-interfaz.md, «Ticket»: quitar se puede deshacer) ----
     // El «Deshacer» de un aviso deshace lo que nombra el aviso aunque después se haya leído otra cosa: el último paso de
@@ -109,9 +117,10 @@ class ListaLecturas private constructor(
     /**
      * «Quitado del ticket»: [quitado] regresa a su lugar como si no se hubiera quitado: entre los renglones que tenía
      * arriba y abajo en [tras] (la lista justo después de quitarlo, donde le tocaba el lugar [indice]) y abajo de lo que se
-     * escaneó después, que [sumar] subió arriba. Por el lugar de antes en la lista de ahora no basta: con una lectura en
-     * medio quedaría arriba de un renglón que tenía arriba. Si mientras tanto se volvió a sumar su producto, lo quitado se le
-     * suma a ese renglón, que se queda donde está (no quedan dos renglones del mismo).
+     * escaneó después, que [sumar] subió arriba («lo escaneado después queda arriba»), aunque sea un renglón que ya estaba
+     * arriba y no se movió. Por el lugar de antes en la lista de ahora no basta: con una lectura en medio quedaría arriba
+     * de un renglón que tenía arriba. Si mientras tanto se volvió a sumar su producto, lo quitado se le suma a ese renglón,
+     * que se queda donde está (no quedan dos renglones del mismo).
      */
     fun regresar(quitado: Renglon, indice: Int, tras: List<Renglon>): ListaLecturas {
         // Ya está: el «Deshacer» del ticket completo lo regresó.
@@ -123,12 +132,16 @@ class ListaLecturas private constructor(
             lista[i] = r.copy(cantidad = r.cantidad + quitado.cantidad, clave = r.clave ?: quitado.clave)
             return cambiar(lista, siguienteId)
         }
-        // Lo que no se movió desde que se quitó sigue en el orden de [tras], abajo; lo escaneado después quedó arriba de
-        // eso. De abajo hacia arriba, mientras el orden sea el de [tras], es lo de antes.
+        // Lo escaneado después quedó arriba, con una llegada más nueva que todo lo que había al quitarlo. Por los ids no se
+        // sabe: releer el que quedó arriba no lo mueve, y deja la misma lista que tocar su +.
+        val alQuitar = maxOf(quitado.llegada, tras.maxOfOrNull { it.llegada } ?: 0L)
+        val despues = lista.indexOfFirst { it.llegada <= alQuitar }.let { if (it < 0) lista.size else it }
+        // Abajo de eso, lo que no se movió sigue en el orden de [tras]. De abajo hacia arriba, mientras el orden sea el de
+        // [tras], es lo de antes.
         val lugarEnTras = tras.withIndex().associate { (k, r) -> r.id to k }
         var desde = lista.size
         var debajo = Int.MAX_VALUE
-        for (k in lista.indices.reversed()) {
+        for (k in (despues until lista.size).reversed()) {
             val t = lugarEnTras[lista[k].id] ?: break
             if (t >= debajo) break
             debajo = t
@@ -163,7 +176,7 @@ class ListaLecturas private constructor(
                 lista.add(0, n)
             } else {
                 val r = lista.removeAt(i)
-                lista.add(0, r.copy(cantidad = r.cantidad + n.cantidad, hora = n.hora, clave = r.clave ?: n.clave))
+                lista.add(0, r.copy(cantidad = r.cantidad + n.cantidad, hora = n.hora, clave = r.clave ?: n.clave, llegada = n.llegada))
             }
         }
         return cambiar(lista, maxOf(siguienteId, (lista.maxOfOrNull { it.id } ?: 0L) + 1))
@@ -180,14 +193,14 @@ class ListaLecturas private constructor(
         val nuevos = renglones.map { r ->
             if (r.clave != null) r else clave(r)?.let { cambio = true; r.copy(clave = it) } ?: r
         }
-        return if (cambio) ListaLecturas(nuevos, anteriores, siguienteId) else this
+        return if (cambio) ListaLecturas(nuevos, anteriores, siguienteId, siguienteLlegada) else this
     }
 
     /** El mismo código o el mismo producto del catálogo: como lo junta [sumar]. */
     private fun Renglon.mismoQue(otro: Renglon) = codigo == otro.codigo || (otro.clave != null && clave == otro.clave)
 
-    private fun cambiar(nuevos: List<Renglon>, id: Long) =
-        ListaLecturas(nuevos, (anteriores + listOf(renglones)).takeLast(PASOS_PARA_DESHACER), id)
+    private fun cambiar(nuevos: List<Renglon>, id: Long, llegada: Long = siguienteLlegada) =
+        ListaLecturas(nuevos, (anteriores + listOf(renglones)).takeLast(PASOS_PARA_DESHACER), id, llegada)
 
     /** Para guardarla en disco: un CSV con un renglón por código (sin lo de deshacer, que no sobrevive al proceso). */
     fun aTexto(): String {
@@ -211,11 +224,14 @@ class ListaLecturas private constructor(
         /** Las de la versión 0.1, sin la clave: lo que quedó guardado se sigue leyendo al actualizar la app. */
         private val COLUMNAS_SIN_CLAVE = COLUMNAS.dropLast(1)
 
-        /** Lo contrario de [aTexto]; un renglón que no se entiende se salta. Sin pasos para deshacer. */
+        /**
+         * Lo contrario de [aTexto]; un renglón que no se entiende se salta. Sin pasos para deshacer, y la
+         * [Renglon.llegada] de cada uno sale de su lugar (la de arriba es la mayor).
+         */
         fun deTexto(texto: String): ListaLecturas {
             val filas = Csv.leer(texto)
             if (filas.isEmpty() || (filas[0] != COLUMNAS && filas[0] != COLUMNAS_SIN_CLAVE)) return ListaLecturas()
-            val renglones = filas.drop(1).mapNotNull { f ->
+            val leidos = filas.drop(1).mapNotNull { f ->
                 if (f.size < COLUMNAS_SIN_CLAVE.size) return@mapNotNull null
                 val id = f[0].toLongOrNull() ?: return@mapNotNull null
                 val simbologia = Simbologia.entries.firstOrNull { it.name == f[2] } ?: return@mapNotNull null
@@ -223,7 +239,8 @@ class ListaLecturas private constructor(
                 val clave = f.getOrNull(5)?.takeIf { it.isNotEmpty() }
                 Renglon(id, f[1], simbologia, cantidad, f[4].toLongOrNull() ?: 0L, clave)
             }.distinctBy { it.codigo }
-            return ListaLecturas(renglones, emptyList(), (renglones.maxOfOrNull { it.id } ?: 0L) + 1)
+            val renglones = leidos.mapIndexed { k, r -> r.copy(llegada = (leidos.size - k).toLong()) }
+            return ListaLecturas(renglones, emptyList(), (renglones.maxOfOrNull { it.id } ?: 0L) + 1, renglones.size + 1L)
         }
 
         /**

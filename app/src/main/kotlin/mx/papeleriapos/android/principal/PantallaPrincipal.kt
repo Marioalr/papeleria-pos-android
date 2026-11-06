@@ -59,6 +59,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
@@ -417,12 +418,18 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
 
         // ---- Lo que tapa el visor ----
         val h = hoja
+        // El alto del aviso, medido. Con una hoja va bajo su barra (a 64 dp, la barra mide 56 o más): el ticket completo le
+        // deja ese lugar arriba de su lista, para que no tape el − y el + del primer renglón que se ve.
+        var altoAviso by remember { mutableStateOf(0.dp) }
         if (h != null) {
             val reportarEquis = remember(h) { { r: Rect -> zonaCerrar.fijar(h, r) } }
             CompositionLocalProvider(LocalZonaCerrarHoja provides reportarEquis) {
                 when (h) {
                     Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::buscar, piso::elegirDeBusqueda) { piso.cerrarHoja() }
-                    Hoja.Ticket -> HojaTicket(ticket, catalogo, accionesTicket) { piso.cerrarHoja() }
+                    Hoja.Ticket -> HojaTicket(
+                        ticket, catalogo, accionesTicket,
+                        huecoArriba = if (aviso != null) altoAviso + 8.dp else 0.dp,
+                    ) { piso.cerrarHoja() }
                     is Hoja.Cantidad -> {
                         val r = ticket.renglones.firstOrNull { it.id == h.idRenglon }
                         if (r == null) {
@@ -439,6 +446,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
         // ---- El aviso, encima de todo: arriba del panel (para no tapar el botón que se tocó) o abajo, sobre los modos;
         // con una hoja, bajo su barra, sin tapar su acción principal (abajo) ----
         aviso?.let { a ->
+            // Con la sesión de prueba, arriba va su barra: el aviso le taparía «No leyó» y su «Deshacer» y se quedaría con
+            // el toque, sin que nada lo diga. Entonces el de arriba sale abajo, sobre los modos, como los demás (bajo la barra
+            // taparía la indicación del escáner), y sigue compacto: así tapa menos de la tarjeta de Precio.
+            val vaArriba = a.arriba && sesion == null
             AvisoFlotante(
                 aviso = a,
                 maxLineas = if (a.arriba) 2 else 4,
@@ -449,9 +460,9 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                     h != null -> Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.statusBars).padding(top = 64.dp)
                     // Bajo Ajustes y la linterna (a la barra + 12, de 56 dp), 4 dp abajo de ellos; a lo más dos renglones
                     // compactos, para que no llegue a la franja: tapa a lo más el relleno de arriba de la indicación.
-                    a.arriba -> Modifier.align(Alignment.TopCenter).padding(top = arriba + 72.dp)
+                    vaArriba -> Modifier.align(Alignment.TopCenter).padding(top = arriba + 72.dp)
                     else -> Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = ALTO_BARRA_MODOS + 8.dp)
-                },
+                }.onSizeChanged { altoAviso = with(densidad) { it.height.toDp() } },
             )
         }
     }

@@ -449,10 +449,11 @@ fun MenuRapido(
                 color = MaterialTheme.colorScheme.inverseOnSurface,
                 modifier = Modifier
                     .anclado(arriba, margen = 16.dp) { tam -> IntOffset(-tam.width / 2, -tam.height) }
+                    // Antes del relleno: sus límites son los de la ficha que se ve, no los del texto.
+                    .testTag("pista-deslizar")
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.inverseSurface)
                     .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .testTag("pista-deslizar")
                     // Es una pista del gesto con el dedo: para TalkBack el orden del menú es ↑, ↖, ← y la ×.
                     .clearAndSetSemantics { },
             )
@@ -536,10 +537,11 @@ private fun OpcionDelMenu(
             }
             .then(if (alMedirEtiqueta != null) Modifier.onSizeChanged { alMedirEtiqueta(it.height) } else Modifier)
             .heightIn(min = 32.dp)
+            // Antes del relleno: sus límites son los de la ficha que se ve, no los del texto.
+            .testTag("etiqueta-${o.lugar.name.lowercase()}")
             .clip(RoundedCornerShape(16.dp))
             .background(if (elegida) color.color else MaterialTheme.colorScheme.inverseSurface)
             .padding(horizontal = 12.dp, vertical = 6.dp)
-            .testTag("etiqueta-${o.lugar.name.lowercase()}")
             .clearAndSetSemantics { }, // TalkBack ya lo lee en la opción
     )
 }

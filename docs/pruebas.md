@@ -29,7 +29,10 @@ export JAVA_HOME=/opt/android-studio/jbr
   catálogo y los cambios por renglón) y el catálogo de prueba (el de ejemplo trae un caso por variante; copiar el
   archivo, reabrir y volver al de ejemplo). De la pantalla principal: el gesto del botón rápido con los casos del
   prototipo (`GestoTest`), lo que lleva cada modo (`OpcionesTest`), el estado de los modos, el ticket, las hojas, los
-  avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`).
+  avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`). El escaneo
+  rápido en el modo de la app, también cuando el mosaico lo trae otra vez (`EscaneoRapidoTest`, y
+  `EscaneoRapidoActividadTest` con la Activity de verdad), con la letra grande (`PantallaRapidaLetraGrandeTest`), y los
+  atajos del ícono leídos como los lee el sistema (`AtajosDelIconoTest`).
 - **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
   (gráficos nativos) con la geometría del chico (360 × 740 dp con barras de 24 + 24: como Robolectric no da la barra de
   gestos, la ventana mide 716 y abajo va solo el hueco de los modos, así el panel mide lo mismo que en el celular), con el
@@ -252,6 +255,14 @@ adb shell cmd statusbar add-tile mx.papeleriapos.android/.rapido.MosaicoEscanerS
 adb shell input keyevent KEYCODE_SLEEP; adb shell input keyevent KEYCODE_WAKEUP
 adb shell cmd statusbar expand-settings      # y tocar el mosaico
 adb shell locksettings clear --old 1234      # al terminar
+```
+
+**Los atajos del ícono** (Robolectric no tiene tareas: `AtajosDelIconoTest` solo revisa que abran con el mismo filtro
+que el ícono). Abrir con un atajo (mantener presionado el ícono › «Precio»), ir a Inicio, tocar el ícono y contar las
+MainActivity de la tarea: debe haber una, en Precio.
+
+```
+adb shell dumpsys activity activities | grep Hist | grep -c mx.papeleriapos.android/.MainActivity
 ```
 
 ## Estrés

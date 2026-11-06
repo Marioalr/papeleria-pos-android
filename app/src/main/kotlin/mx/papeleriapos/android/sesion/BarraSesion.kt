@@ -95,8 +95,9 @@ fun BarraSesion(
             val u = sesion.ultimo
             if (!compacta) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val intentos = if (sesion.intentos.size == 1) "1 intento" else "${sesion.intentos.size} intentos"
                     Text(
-                        "Prueba · ${sesion.intentos.size} intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
+                        "Prueba · $intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

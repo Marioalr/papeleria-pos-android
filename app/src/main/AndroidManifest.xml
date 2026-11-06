@@ -40,7 +40,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Atajos «Escanear venta» y «Escanear conteo» al mantener presionado el ícono. -->
+            <!-- Atajos «Precio», «Ticket» y «Conteo» al mantener presionado el ícono (abren como él: MAIN y LAUNCHER). -->
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />

@@ -112,6 +112,9 @@ const val POCA_EXISTENCIA = 3.0
 /** «Queda 1» con una sola y «Quedan 3» con más (docs/propuesta-interfaz.md, «Precio» y «Ticket»: «Queda 1» en ámbar). */
 fun quedan(existencia: Double): String = if (existencia == 1.0) "Queda 1" else "Quedan ${cantidadCorta(existencia)}"
 
+/** Lo contado o lo leído, abreviado: «1 pza» con una sola y «3 pzs» con más (también «0 pzs»). */
+fun pzs(n: Int): String = if (n == 1) "1 pza" else "$n pzs"
+
 /** «$1,234.50», como los importes de la caja: con comas en los miles y siempre dos decimales. */
 fun pesos(centavos: Long): String {
     val negativo = centavos < 0

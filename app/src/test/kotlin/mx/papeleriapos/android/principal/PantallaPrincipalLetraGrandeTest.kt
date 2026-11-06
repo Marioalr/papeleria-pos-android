@@ -84,9 +84,11 @@ class PantallaPrincipalLetraGrandeTest : PruebaDePantalla() {
             vm.piso.cambiarZurdo(zurdo)
             idle()
             tocarBoton()
+            // Las fichas que se ven (con su relleno), no sus textos: entre los textos quedan 12 dp que taparían un encime.
             val pista = limites("pista-deslizar")!!
             val etiqueta = limites("etiqueta-arriba")!!
             assertTrue("Zurdo=$zurdo: la pista ($pista) pisa la etiqueta de ↑ ($etiqueta)", pista.bottom <= etiqueta.top)
+            assertEquals("Zurdo=$zurdo: con 8 dp de aire entre las dos", 8f, etiqueta.top - pista.bottom, 0.5f)
             assertTrue("Dentro del margen de 16 dp", pista.left >= 16f - 0.5f && pista.right <= 360f - 16f + 0.5f)
             captura("regresion/menu-200-${if (zurdo) "zurdo" else "diestro"}")
             atras()

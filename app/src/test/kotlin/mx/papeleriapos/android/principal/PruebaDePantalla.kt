@@ -46,6 +46,13 @@ import java.io.File
 /** El chico: 360 × 740 dp menos los 24 de la barra de gestos, que Robolectric no da. */
 internal const val CHICO = "w360dp-h716dp-xxhdpi"
 
+/**
+ * Las hojas a pantalla completa del chico: 740 dp menos la barra de estado y la de gestos (24 + 24), que la hoja deja
+ * libres sola y Robolectric no da. Con [CHICO] la hoja mediría 24 dp de más (la pantalla principal descuenta la barra de
+ * estado con su relleno; la hoja no lo usa).
+ */
+internal const val HOJA_DEL_CHICO = "w360dp-h692dp-xxhdpi"
+
 internal const val CUADERNO = "7509990100019"
 internal const val LAPIZ = "7509990100026"
 internal const val GOMA = "7509990100033"

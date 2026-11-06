@@ -65,6 +65,7 @@ import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.cantidadCorta
 import mx.papeleriapos.android.catalogo.pesos
+import mx.papeleriapos.android.catalogo.pzs
 import mx.papeleriapos.android.catalogo.quedan
 import mx.papeleriapos.android.catalogo.quedanPocos
 import mx.papeleriapos.android.lista.ListaLecturas
@@ -401,7 +402,7 @@ private fun PanelConteo(conteo: ListaLecturas, catalogo: CatalogoDeProductos?, c
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "Conteo de prueba · ${conteo.total} pzs",
+            "Conteo de prueba · ${pzs(conteo.total)}",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
