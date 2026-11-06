@@ -18,7 +18,8 @@ class PisoTest {
 
     private val cuaderno = Producto("7509990100019", "Cuaderno profesional cuadro chico 100 hojas", "Escolar", listOf(Escala(1, 4600), Escala(12, 4100)), 8.0)
     private val lapiz = Producto("7509990100026", "Lápiz HB No. 2", "Escolar", listOf(Escala(1, 550), Escala(12, 450)), 140.0)
-    private val catalogo = CatalogoDeProductos(listOf(cuaderno, lapiz))
+    private val caja = Producto("7509990100200", "Lápiz HB No. 2 · caja con 12", "Escolar", listOf(Escala(1, 5400)), 140.0, piezas = 12, base = lapiz.clave)
+    private val catalogo = CatalogoDeProductos(listOf(cuaderno, lapiz, caja))
 
     /** Lo que guardaría el celular, en memoria. */
     private class AlmacenEnMemoria : AlmacenPiso {
@@ -129,6 +130,19 @@ class PisoTest {
         p.cambiarModo(ModoApp.CONTEO)
         p.elegirDeBusqueda(cuaderno)
         assertEquals(1, conteo.value.total)
+    }
+
+    @Test
+    fun `lo elegido antes con el mismo texto sale primero la proxima vez`() {
+        val p = piso()
+        val primero = p.buscar("hb").first()
+        val otro = p.buscar("hb").last()
+        assertTrue(primero != otro)
+        p.abrir(Hoja.Buscar)
+        p.elegirDeBusqueda(otro, "hb")
+        assertEquals(otro, p.buscar("hb").first())
+        // Con otro texto, no.
+        assertEquals(p.buscar("lapiz hb").first(), p.buscar("lapiz hb").first())
     }
 
     @Test

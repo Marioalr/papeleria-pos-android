@@ -3,7 +3,13 @@ package mx.papeleriapos.android.catalogo
 import mx.papeleriapos.android.csv.Csv
 import mx.papeleriapos.escaner.nucleo.Catalogo
 import mx.papeleriapos.escaner.nucleo.Simbologia
-import java.text.Normalizer
+import mx.papeleriapos.pos.Cantidad
+import mx.papeleriapos.pos.busqueda.IndiceDeBusqueda
+import mx.papeleriapos.pos.busqueda.ProductoParaBuscar
+import mx.papeleriapos.pos.precio.CalculoPrecio
+import mx.papeleriapos.pos.precio.Precio
+import mx.papeleriapos.pos.precio.PrecioAplicado
+import mx.papeleriapos.pos.precio.Presentacion
 
 /*
  * Los productos con nombre y precio para la entrega 1 (docs/propuesta-interfaz.md, «Entregas»: «la búsqueda y el ticket
@@ -50,22 +56,47 @@ data class Producto(
     val vendidos: Int = 0,
     /** Los rápidos (Copia B/N, CURP): salen en Buscar sin escribir nada. */
     val rapido: Boolean = false,
+    /**
+     * Las escalas del suelto, si esto es una presentación: el POS cobra la caja con su precio propio, pero nunca más caro
+     * que sus piezas a menudeo, y para eso necesita las del suelto. Las pone [CatalogoDeProductos].
+     */
+    val escalasDelSuelto: List<Escala> = emptyList(),
 ) {
     val precio: Long get() = escalas.first().centavos
 
     /** La primera escala de mayoreo, la que enseña la tarjeta («Desde 12: $41.00 c/u»). */
     val mayoreo: Escala? get() = escalas.getOrNull(1)
 
-    /**
-     * El precio de cada una al llevar [cantidad]: la escala más alta que alcanza, como en la caja, y nunca más caro que
-     * el menudeo aunque las escalas estén capturadas fuera de orden.
-     */
-    fun precioUnitario(cantidad: Int): Long = escalas.filter { it.desde <= cantidad }.minOfOrNull { it.centavos } ?: precio
+    /** Como la ve el POS: la variante (el suelto) y esta presentación, con las piezas que trae. */
+    private val presentacion = Presentacion(id = clave, varianteId = base ?: clave, factor = Cantidad.piezas(piezas.toLong()))
 
-    fun importe(cantidad: Int): Long = precioUnitario(cantidad) * cantidad
+    /** Los precios como los guarda el POS: por pieza del suelto (con sus escalas) y, en una presentación, el suyo propio. */
+    private val precios: List<Precio> = if (base == null) {
+        escalas.map { Precio(varianteId = clave, precioCentavos = it.centavos, cantidadMinima = Cantidad.piezas(it.desde.toLong())) }
+    } else {
+        escalas.map { Precio(varianteId = base, precioCentavos = it.centavos, cantidadMinima = Cantidad.piezas(it.desde.toLong()), presentacionId = clave) } +
+            escalasDelSuelto.map { Precio(varianteId = base, precioCentavos = it.centavos, cantidadMinima = Cantidad.piezas(it.desde.toLong())) }
+    }
+
+    /**
+     * El precio de llevar [cantidad], calculado como la caja ([CalculoPrecio], el del núcleo del POS): la escala más alta
+     * que alcanza, el precio propio de la presentación y nunca más caro que a menudeo. null si no tiene precio.
+     */
+    private fun aplicado(cantidad: Int): PrecioAplicado? =
+        CalculoPrecio.calcular(precios, SUCURSAL, presentacion, Cantidad.piezas(cantidad.toLong()))
+
+    /** El precio de cada una al llevar [cantidad] (como va en el renglón de la venta). */
+    fun precioUnitario(cantidad: Int): Long = aplicado(cantidad)?.precioPorPresentacion(presentacion) ?: precio
+
+    fun importe(cantidad: Int): Long = aplicado(cantidad)?.importeCentavos ?: (precio * cantidad)
 
     /** Si con [cantidad] ya entra el mayoreo (el renglón dice «Mayoreo» y el total ya va con ese precio). */
-    fun esMayoreo(cantidad: Int): Boolean = precioUnitario(cantidad) < precio
+    fun esMayoreo(cantidad: Int): Boolean = aplicado(cantidad)?.esMayoreo == true
+
+    private companion object {
+        /** Los productos de prueba no tienen sucursal: todos sus precios son los base. */
+        const val SUCURSAL = "00000000-0000-0000-0000-000000000000"
+    }
 }
 
 /** Lo que hay en la tienda de [p], para la tarjeta y el ticket: «Quedan 1» cuando queda poco. */
@@ -86,13 +117,22 @@ fun pesos(centavos: Long): String {
 fun cantidadCorta(n: Double): String = if (n == Math.floor(n)) n.toLong().toString() else n.toString()
 
 /**
- * Los productos, con la regla de UPC y EAN del núcleo para encontrar lo escaneado ([porLectura]) y una búsqueda por
- * nombre para lo que no se escanea.
+ * Los productos, con la regla de UPC y EAN del núcleo para encontrar lo escaneado ([porLectura]) y la búsqueda del POS
+ * ([IndiceDeBusqueda], portada de su núcleo) para lo que no se escanea.
  */
-class CatalogoDeProductos(val productos: List<Producto>) {
+class CatalogoDeProductos(productosSinSuelto: List<Producto>) {
+    /** Cada presentación con las escalas de su suelto, para que el precio se calcule como en la caja. */
+    val productos: List<Producto> = productosSinSuelto.let { lista ->
+        val escalas = lista.associate { it.clave to it.escalas }
+        lista.map { p -> if (p.base == null) p else p.copy(escalasDelSuelto = escalas[p.base].orEmpty()) }
+    }
     private val porClave = productos.associateBy { it.clave }
     private val claves: Catalogo = Catalogo.deLineas(sequenceOf("codigo") + productos.asSequence().map { it.clave })
-    private val nombres = productos.associate { it.clave to normalizar(it.nombre) }
+    private val indice = IndiceDeBusqueda.armar(
+        productos.map { ProductoParaBuscar(varianteId = it.clave, descripcion = it.nombre, codigo = it.clave, codigos = listOf(it.clave)) },
+        marcas = null,
+        sinonimos = null,
+    )
 
     val tamano: Int get() = productos.size
 
@@ -103,17 +143,16 @@ class CatalogoDeProductos(val productos: List<Producto>) {
         claves.buscarNormalizado(normalizado, simbologia)?.let { porClave[it.clave] } ?: porClave[normalizado]
 
     /**
-     * Lo que se escribe en Buscar: cada pedazo de palabra, en cualquier orden, tiene que estar en el nombre («lus az» da
-     * el papel lustre azul); lo más vendido primero, hasta [maximo]. Sin escribir nada, los rápidos y lo más vendido.
+     * Lo que se escribe en Buscar, con las reglas de la caja: pedazos de palabra en cualquier orden («lus az» da el papel
+     * lustre azul), un error de dedo, lo que se eligió antes con ese texto ([elegido], su clave) primero y luego lo más
+     * vendido; hasta [maximo]. Sin escribir nada, los rápidos y lo más vendido.
      */
-    fun buscar(texto: String, maximo: Int = MAXIMO_RESULTADOS): List<Producto> {
-        val pedazos = normalizar(texto).split(' ').filter { it.isNotEmpty() }
-        val ordenados = productos.sortedWith(compareByDescending<Producto> { it.rapido && pedazos.isEmpty() }.thenByDescending { it.vendidos })
-        if (pedazos.isEmpty()) return ordenados.take(maximo)
-        return ordenados.filter { p ->
-            val nombre = nombres.getValue(p.clave)
-            pedazos.all { pedazo -> nombre.split(' ').any { it.startsWith(pedazo) } || p.clave.startsWith(pedazo) }
-        }.take(maximo)
+    fun buscar(texto: String, maximo: Int = MAXIMO_RESULTADOS, elegido: String? = null): List<Producto> {
+        if (texto.isBlank()) {
+            return productos.sortedWith(compareByDescending<Producto> { it.rapido }.thenByDescending { it.vendidos }).take(maximo)
+        }
+        return indice.buscar(texto, maximo, elegido) { clave -> porClave[clave]?.vendidos ?: 0 }
+            .mapNotNull { porClave[it.articulo.varianteId] }
     }
 
     companion object {
@@ -167,12 +206,5 @@ class CatalogoDeProductos(val productos: List<Producto>) {
             val decimales = partes.getOrNull(1)?.padEnd(2, '0')?.take(2)?.toLong() ?: 0L
             return pesos * 100 + decimales
         }
-
-        /** Sin acentos ni mayúsculas, con un espacio entre palabras: «Lápiz  HB» → «lapiz hb». */
-        internal fun normalizar(texto: String): String =
-            Normalizer.normalize(texto.lowercase(), Normalizer.Form.NFD)
-                .replace(Regex("\\p{Mn}+"), "")
-                .replace(Regex("[^a-z0-9ñ.]+"), " ")
-                .trim()
     }
 }

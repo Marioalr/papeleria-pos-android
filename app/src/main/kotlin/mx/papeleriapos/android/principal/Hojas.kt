@@ -115,9 +115,16 @@ private fun HojaCompleta(etiqueta: String, contenido: @Composable ColumnScope.()
  * Conteo cuenta.
  */
 @Composable
-fun HojaBuscar(modo: ModoApp, catalogo: CatalogoDeProductos?, alElegir: (Producto) -> Unit, alCerrar: () -> Unit) {
+fun HojaBuscar(
+    modo: ModoApp,
+    /** Para volver a buscar cuando llegan los productos. */
+    catalogo: CatalogoDeProductos?,
+    buscar: (String) -> List<Producto>,
+    alElegir: (Producto, texto: String) -> Unit,
+    alCerrar: () -> Unit,
+) {
     var texto by rememberSaveable { mutableStateOf("") }
-    val resultados = remember(texto, catalogo) { catalogo?.buscar(texto).orEmpty() }
+    val resultados = remember(texto, catalogo) { buscar(texto) }
     val foco = remember { FocusRequester() }
     val titulo = when (modo) {
         ModoApp.TICKET -> "Agregar al ticket"
@@ -127,7 +134,7 @@ fun HojaBuscar(modo: ModoApp, catalogo: CatalogoDeProductos?, alElegir: (Product
     HojaCompleta("hoja-buscar") {
         BarraHoja(titulo, if (texto.isEmpty()) "Los rápidos y lo más vendido" else "${resultados.size} encontrados", alCerrar)
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), reverseLayout = true) {
-            items(resultados, key = { it.clave }) { p -> Resultado(p, modo, texto) { alElegir(p) } }
+            items(resultados, key = { it.clave }) { p -> Resultado(p, modo) { alElegir(p, texto) } }
         }
         if (catalogo != null && resultados.isEmpty()) {
             Text(
@@ -149,7 +156,7 @@ fun HojaBuscar(modo: ModoApp, catalogo: CatalogoDeProductos?, alElegir: (Product
                 }
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { resultados.firstOrNull()?.let(alElegir) }),
+            keyboardActions = KeyboardActions(onSearch = { resultados.firstOrNull()?.let { alElegir(it, texto) } }),
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
@@ -163,7 +170,7 @@ fun HojaBuscar(modo: ModoApp, catalogo: CatalogoDeProductos?, alElegir: (Product
 }
 
 @Composable
-private fun Resultado(p: Producto, modo: ModoApp, texto: String, alTocar: () -> Unit) {
+private fun Resultado(p: Producto, modo: ModoApp, alTocar: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()

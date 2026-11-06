@@ -328,7 +328,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
         // ---- Lo que tapa el visor ----
         when (val h = hoja) {
             null -> Unit
-            Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::elegirDeBusqueda) { piso.cerrarHoja() }
+            Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::buscar, piso::elegirDeBusqueda) { piso.cerrarHoja() }
             Hoja.Ticket -> HojaTicket(
                 ticket,
                 catalogo,

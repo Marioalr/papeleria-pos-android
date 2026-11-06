@@ -11,6 +11,7 @@ import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.pesos
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.escaner.nucleo.Simbologia
+import mx.papeleriapos.pos.busqueda.IndiceDeBusqueda
 
 /*
  * El estado de la pantalla principal (docs/propuesta-interfaz.md, «La pantalla principal: el escáner con tres modos»),
@@ -103,6 +104,9 @@ class Piso(
     /** Lo que abrió la última opción elegida y cuándo, para contar las que se cierran pronto sin hacer nada. */
     private var abiertaPor: Pair<Lugar, Long>? = null
 
+    /** Lo que se eligió con cada texto de Buscar (por su clave guardada): sale primero la próxima vez, como en la caja. */
+    private val elegidos = HashMap<String, String>()
+
     fun cargarCatalogo(c: CatalogoDeProductos) {
         _catalogo.value = c
     }
@@ -139,9 +143,17 @@ class Piso(
     /** ↑ «Enseñar al cliente», con el producto que estaba en la tarjeta al bajar el dedo. */
     fun ensenar(p: Producto) = abrir(Hoja.PrecioGrande(p))
 
-    // ---- Lo que se eligió en Buscar: en Ticket agrega, en Precio enseña y en Conteo cuenta ----
+    // ---- Buscar: en Ticket agrega, en Precio enseña y en Conteo cuenta ----
 
-    fun elegirDeBusqueda(p: Producto) {
+    /** Lo que encuentra [texto], con lo que se eligió antes con él primero; vacío mientras no hay productos. */
+    fun buscar(texto: String): List<Producto> {
+        val c = _catalogo.value ?: return emptyList()
+        return c.buscar(texto, elegido = if (texto.isBlank()) null else elegidos[IndiceDeBusqueda.claveGuardada(texto)])
+    }
+
+    /** Se eligió [p] en Buscar después de escribir [texto] (vacío: de los rápidos o lo más vendido). */
+    fun elegirDeBusqueda(p: Producto, texto: String = "") {
+        if (texto.isNotBlank()) elegidos[IndiceDeBusqueda.claveGuardada(texto)] = p.clave
         cerrarHoja(hizoAlgo = true)
         when (_modo.value) {
             ModoApp.PRECIO -> _precio.value = ConsultaPrecio.Encontrado(p)

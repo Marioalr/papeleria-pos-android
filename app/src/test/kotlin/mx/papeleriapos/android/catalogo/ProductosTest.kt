@@ -98,6 +98,22 @@ class ProductosTest {
         assertEquals("10 metros", Unidad.METRO.de(10))
     }
 
+    @Test
+    fun `la caja se cobra con su precio propio pero nunca mas cara que sus piezas, como en la caja`() {
+        val caja = p("7509990100200")
+        assertEquals(5400L, caja.importe(1))
+        assertEquals(5400L, caja.precioUnitario(1))
+        assertEquals(10800L, caja.importe(2))
+        // Una caja capturada más cara que sus 12 piezas a menudeo ($66.00) se cobra por sus piezas (CalculoPrecio del POS).
+        val cara = CatalogoDeProductos(
+            listOf(
+                Producto("7509990100026", "Lápiz", "Escolar", listOf(Escala(1, 550)), 140.0),
+                Producto("7509990100200", "Lápiz · caja con 12", "Escolar", listOf(Escala(1, 7000)), 140.0, piezas = 12, base = "7509990100026"),
+            ),
+        )
+        assertEquals(6600L, cara.porClave("7509990100200")!!.importe(1))
+    }
+
     // ---- Lo escaneado ----
 
     @Test
@@ -125,6 +141,19 @@ class ProductosTest {
         assertEquals("Papel lustre azul", catalogo.buscar("AZ lus").first().nombre)
         assertTrue(catalogo.buscar("lapiz").all { it.nombre.startsWith("Lápiz") })
         assertTrue(catalogo.buscar("xyzw").isEmpty())
+    }
+
+    @Test
+    fun `un error de dedo tambien encuentra, como en la caja`() {
+        assertTrue(catalogo.buscar("lapis").any { it.nombre == "Lápiz HB No. 2" })
+        assertTrue(catalogo.buscar("cuadreno").any { it.nombre.startsWith("Cuaderno") })
+    }
+
+    @Test
+    fun `lo elegido antes con ese texto sale primero`() {
+        val caja = "7509990100200"
+        assertTrue(catalogo.buscar("lapiz").first().clave != caja)
+        assertEquals(caja, catalogo.buscar("lapiz", elegido = caja).first().clave)
     }
 
     @Test

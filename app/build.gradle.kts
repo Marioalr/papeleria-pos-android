@@ -153,6 +153,8 @@ dependencies {
         implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
     }
     implementation(project(":escaner"))
+    // La lógica del POS en el celular: su búsqueda y su cálculo del precio, portados (docs/propuesta-interfaz.md, «Lo que cambia por dentro»).
+    implementation(project(":pos"))
     // Para la configuración de CameraX desde la Application y calentar el proveedor.
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
