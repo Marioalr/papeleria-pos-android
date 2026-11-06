@@ -34,17 +34,10 @@ escanea lo que hoy pasa por el lector de la caja (contar, recibir mercancía, co
 | Distribución | APK firmado que se instala a mano, con cable o desde la versión de GitHub; no va a Play Store. La llave (generada el 2026-10-09) vive fuera del repo y en GitHub como secretos; si se pierde, hay que desinstalar la app (y sus datos) para instalar la nueva |
 | Idioma | Todo en español: documentos, código, commits y PRs, como en el POS |
 
-**El escáner, nativo; cómo se une, cuando el POS llegue a Android.** El [plan del POS](https://github.com/Marioalr/papeleria-pos/blob/main/docs/plan.md)
-dice «App Android: .NET MAUI con la misma interfaz» (la interfaz Blazor compartida con la caja y el panel). El escáner
-es la parte que más depende de la cámara: analiza hasta 30 cuadros por segundo, cambia el zoom, el enfoque y la
-linterna, y dibuja la guía encima del video. Aun dentro de MAUI eso sería código nativo (las bibliotecas de MAUI para
-leer códigos envuelven a ML Kit o a ZXing); escrito directo en Kotlin se usan CameraX y ML Kit sin capa intermedia y se
-mide y ajusta cada milisegundo. Por eso el escáner queda en su propio módulo y, cuando toque, se une sin rehacerlo:
-
-- **MAUI con la interfaz Blazor del POS,** como dice su plan, y el escáner como biblioteca de Android (AAR) que abre su
-  pantalla con un `Intent` y devuelve lo leído; o
-- **la app completa nativa,** que habla con el servicio de la caja principal por la red de la tienda (como hoy el conteo
-  desde el navegador del celular).
+**El escáner, nativo; la app también.** El
+[plan del POS](https://github.com/Marioalr/papeleria-pos/blob/main/docs/plan.md) lo decidió el 2026-10-10: «App Android:
+nativa en Kotlin, con la misma API del servicio» (antes decía .NET MAUI con la interfaz Blazor). El escáner sigue en su
+módulo y la app habla con el servicio de la caja principal ([fase 2](#fase-2-la-app-conectada-al-pos)).
 
 ## Forma de trabajar
 
@@ -222,8 +215,9 @@ permisos por rol, y adaptar el escáner a los celulares del personal.
 ## Fase 2: la app conectada al POS
 
 Desde el 2026-11-03 ([arriba](#plan-de-la-app-android)). **Cómo se une al POS ya está decidido:** app nativa en Kotlin
-que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10). El escáner sigue en su
-módulo, sin cambios.
+que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10); la propuesta cambia dos
+cosas de esa decisión, pendientes de aprobar: el celular deja de darse de alta como caja y lleva copia del catálogo. El
+escáner sigue en su módulo, sin cambios.
 
 Lo que hace la app: armar tickets en el piso y mandarlos a una caja (la preventa), revisar precios (el verificador, F9),
 contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). Lo demás de
@@ -232,8 +226,9 @@ cada modo va en un solo botón, abajo a la derecha, que se usa con un toque o pu
 [prototipo navegable](propuesta-interfaz/prototipo.html). **Estado:** propuesta, para aprobar.
 
 **Quién tiene la app** (dueño, 2026-11-03): en la primera versión, solo personas de alta confianza, como el dueño, cada
-quien en su celular y entrando con su huella; a futuro, quizá un celular de la tienda con solo Precio y Conteo, por
-turnos. Contar está completo en la propuesta, aunque se entrega después del piloto.
+quien en su celular; a futuro, quizá un celular de la tienda con solo Precio y Conteo. Lo propuesto, por aprobar: entrar
+con la huella y, en el de la tienda, por turnos. Contar está completo en la propuesta, aunque se entrega después del
+piloto.
 
 | # | Entrega | Qué trae | Necesita del POS |
 |---|---|---|---|
@@ -246,7 +241,9 @@ turnos. Contar está completo en la propuesta, aunque se entrega después del pi
 
 **Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
 app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
-tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes. Lo demás se queda.
+tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes, y deja de decir «Nada se conecta al
+servicio de la tienda» (con eleventa sigue sin conectarse). De lo que decidió el POS, el celular deja de darse de alta
+como caja y lleva copia del catálogo. Lo demás se queda.
 
 Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
 las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celular comprar para la tienda**,

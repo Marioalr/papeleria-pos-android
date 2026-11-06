@@ -57,7 +57,7 @@ código de barras: [pruebas](docs/pruebas.md).
 | Documento | Contenido |
 |---|---|
 | [Plan](docs/plan.md) | Alcance (el Pixel 8 Pro), decisiones, forma de trabajar (en la tienda solo sábado y domingo), versiones, entregas y la línea base con sus experimentos |
-| [Propuesta de interfaz](docs/propuesta-interfaz.md) | La app conectada al POS (fase 2), para aprobar: los modos Precio, Ticket y Conteo sobre el escáner, el botón rápido con su gesto, las impresiones, mandar a una caja, contar (completo, aunque se entrega después del piloto), quién tiene la app, sin red, lo que pide al POS y las entregas; con un [prototipo](docs/propuesta-interfaz/prototipo.html) que se abre con doble clic |
+| [Propuesta de interfaz](docs/propuesta-interfaz.md) | La app conectada al POS (fase 2), para aprobar: los modos Precio, Ticket y Conteo sobre el escáner, el botón rápido con su gesto, las impresiones, mandar a una caja, contar (toda la propuesta, aunque se entrega después del piloto), quién tiene la app, sin red, lo que pide al POS y las entregas; con un [prototipo](docs/propuesta-interfaz/prototipo.html) que se abre con doble clic |
 | [El escáner](docs/escaner.md) | Cómo lee, cómo guía y cómo confirma: cámara, motores, localizador, umbrales y estados |
 | [Investigación](docs/investigacion-escaner.md) | Motores, APIs, UX y pruebas, con fuentes verificadas el 2026-10-09 |
 | [Pruebas](docs/pruebas.md) | Pruebas automáticas, emulador, banco de pruebas y pruebas con cualquier código |
