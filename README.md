@@ -5,9 +5,13 @@ que hoy pasa por el lector de la caja.
 
 > **Alcance: lo máximo en un Pixel 8 Pro.** El escáner lee EAN-13, UPC-A, UPC-E, EAN-8, ITF-14, Code 128 y QR, guía
 > para que el código se lea (muévete, acércate, aléjate, mantén firme, luz, reflejo) y confirma cada lectura con
-> vibración y verde (el bip, si se enciende). No usa la red: sus únicos permisos son la cámara y la vibración. Aquí se exprime y se mide en un solo celular, el equipo de referencia; con eso se decide cómo se
-> une al POS cuando el POS llegue a su fase de Android. Todavía no se conecta al POS. El [plan](docs/plan.md) tiene las
+> vibración y verde (el bip, si se enciende). No usa la red: sus únicos permisos son la cámara y la vibración. Aquí se exprime y se mide en un solo celular, el equipo de referencia. Todavía no se conecta al POS. El [plan](docs/plan.md) tiene las
 > decisiones y la línea base.
+>
+> **Lo que sigue (2026-11-03): conectarla al POS.** Armar tickets en el piso y mandarlos a una caja, revisar precios (el
+> F9 de la caja), contar inventario y agregar las impresiones por cobrar, sin tocar el núcleo de reconocimiento, que
+> salió bien en las pruebas. La [propuesta de interfaz](docs/propuesta-interfaz.md) y su
+> [prototipo navegable](docs/propuesta-interfaz/prototipo.html) están para aprobar.
 
 ## Desarrollo
 
@@ -44,7 +48,8 @@ código de barras: [pruebas](docs/pruebas.md).
 |---|---|
 | `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso, búsqueda en el catálogo |
 | `escaner` | Android: la cámara (CameraX), los motores (ML Kit y zxing-cpp) y la pantalla del escáner con su guía, bip y vibración |
-| `app` | La app de prueba: modo venta y modo conteo, escaneo rápido sobre el bloqueo (mosaico y accesos directos), ajustes, catálogo de prueba, sesión de prueba con CSV, banco de pruebas y pruebas de estrés |
+| `pos` | Kotlin puro, probado en la JVM: lo del núcleo del POS que el celular hace igual que la caja, portado del C# con sus pruebas y comparado contra él: la búsqueda del catálogo (pedazos de palabra, error de dedo, sinónimos, familias y el orden en español) y el cálculo del precio (escalas de mayoreo, presentaciones y promociones) |
+| `app` | La app: la pantalla principal con Precio, Ticket y Conteo y el botón rápido, la búsqueda, los productos de prueba, el verificador sobre el bloqueo (el mosaico «Precio»), los accesos directos del ícono y Ajustes, con las herramientas de medición (sesión de prueba con CSV, banco de pruebas y pruebas de estrés) |
 | `baselineprofile` | Genera el perfil de arranque (Baseline Profile y Startup Profile) que precompila la apertura |
 | `benchmark` | Macrobenchmark de la apertura: frío, tibio y caliente hasta el primer cuadro analizado |
 
@@ -53,6 +58,7 @@ código de barras: [pruebas](docs/pruebas.md).
 | Documento | Contenido |
 |---|---|
 | [Plan](docs/plan.md) | Alcance (el Pixel 8 Pro), decisiones, forma de trabajar (en la tienda solo sábado y domingo), versiones, entregas y la línea base con sus experimentos |
+| [Propuesta de interfaz](docs/propuesta-interfaz.md) | La app conectada al POS (fase 2), para aprobar: los modos Precio, Ticket y Conteo sobre el escáner, el botón rápido con su gesto, las impresiones, mandar a una caja, contar (toda la propuesta, aunque se entrega después del piloto), quién tiene la app, sin red, lo que pide al POS y las entregas; con un [prototipo](docs/propuesta-interfaz/prototipo.html) que se abre con doble clic |
 | [El escáner](docs/escaner.md) | Cómo lee, cómo guía y cómo confirma: cámara, motores, localizador, umbrales y estados |
 | [Investigación](docs/investigacion-escaner.md) | Motores, APIs, UX y pruebas, con fuentes verificadas el 2026-10-09 |
 | [Pruebas](docs/pruebas.md) | Pruebas automáticas, emulador, banco de pruebas y pruebas con cualquier código |

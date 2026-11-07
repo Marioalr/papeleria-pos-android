@@ -12,6 +12,11 @@ escanea lo que hoy pasa por el lector de la caja (contar, recibir mercancía, co
 > celular, a qué distancia y a qué ritmo, sin una sola lectura falsa. Con eso se decide si el celular basta para contar
 > y para la preventa o hace falta un lector, y de qué tamaño imprime el POS sus etiquetas. La interfaz se congela hasta
 > tener esas mediciones.
+>
+> **Desde el 2026-11-03, la app se conecta al POS** ([fase 2](#fase-2-la-app-conectada-al-pos)). Las pruebas de la cámara
+> (velocidades) salieron bien (dueño, 2026-11-03), y el POS se acerca al piloto: la interfaz se descongela para armar
+> tickets, revisar precios (el F9 de la caja), contar y agregar las impresiones. El núcleo de reconocimiento se queda
+> como se midió. Primero, la [propuesta de interfaz](propuesta-interfaz.md), con su prototipo, para aprobar.
 
 ## Decisiones
 
@@ -29,17 +34,10 @@ escanea lo que hoy pasa por el lector de la caja (contar, recibir mercancía, co
 | Distribución | APK firmado que se instala a mano, con cable o desde la versión de GitHub; no va a Play Store. La llave (generada el 2026-10-09) vive fuera del repo y en GitHub como secretos; si se pierde, hay que desinstalar la app (y sus datos) para instalar la nueva |
 | Idioma | Todo en español: documentos, código, commits y PRs, como en el POS |
 
-**El escáner, nativo; cómo se une, cuando el POS llegue a Android.** El [plan del POS](https://github.com/Marioalr/papeleria-pos/blob/main/docs/plan.md)
-dice «App Android: .NET MAUI con la misma interfaz» (la interfaz Blazor compartida con la caja y el panel). El escáner
-es la parte que más depende de la cámara: analiza hasta 30 cuadros por segundo, cambia el zoom, el enfoque y la
-linterna, y dibuja la guía encima del video. Aun dentro de MAUI eso sería código nativo (las bibliotecas de MAUI para
-leer códigos envuelven a ML Kit o a ZXing); escrito directo en Kotlin se usan CameraX y ML Kit sin capa intermedia y se
-mide y ajusta cada milisegundo. Por eso el escáner queda en su propio módulo y, cuando toque, se une sin rehacerlo:
-
-- **MAUI con la interfaz Blazor del POS,** como dice su plan, y el escáner como biblioteca de Android (AAR) que abre su
-  pantalla con un `Intent` y devuelve lo leído; o
-- **la app completa nativa,** que habla con el servicio de la caja principal por la red de la tienda (como hoy el conteo
-  desde el navegador del celular).
+**El escáner, nativo; la app también.** El
+[plan del POS](https://github.com/Marioalr/papeleria-pos/blob/main/docs/plan.md) lo decidió el 2026-10-10: «App Android:
+nativa en Kotlin, con la misma API del servicio» (antes decía .NET MAUI con la interfaz Blazor). El escáner sigue en su
+módulo y la app habla con el servicio de la caja principal ([fase 2](#fase-2-la-app-conectada-al-pos)).
 
 ## Forma de trabajar
 
@@ -214,15 +212,43 @@ ser 0), si la linterna ayuda y qué lente conviene.
 **Fuera de esta fase:** buscar el producto en el POS, vender, contar o recibir con el POS, el inicio de sesión y los
 permisos por rol, y adaptar el escáner a los celulares del personal.
 
-## Cuando el POS llegue a su fase de Android
+## Fase 2: la app conectada al POS
 
-Con lo medido en el Pixel se decide:
+Desde el 2026-11-03 ([arriba](#plan-de-la-app-android)). **Cómo se une al POS ya está decidido:** app nativa en Kotlin
+que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10); la propuesta cambia dos
+cosas de esa decisión, pendientes de aprobar: el celular deja de darse de alta como caja y lleva copia del catálogo. El
+escáner sigue en su módulo, sin cambios.
 
-- **Cómo se une al POS:** app nativa que habla con el servicio de la caja principal, o el escáner como AAR dentro de
-  una app MAUI.
-- **El motor y los umbrales** de la guía, con los CSV del Pixel en la tienda.
-- **Qué celulares necesita el personal:** cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU,
-  Android reciente) se mide entonces en los celulares del personal, con las mismas herramientas.
+Lo que hace la app: armar tickets en el piso y mandarlos a una caja (la preventa), revisar precios (el verificador, F9),
+contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). Lo demás de
+cada modo va en un solo botón, abajo a la derecha, que se usa con un toque o pulsando y deslizando (decisión del dueño,
+2026-11-03). La interfaz, sus pantallas y lo que le pide al POS están en la [propuesta](propuesta-interfaz.md), con un
+[prototipo navegable](propuesta-interfaz/prototipo.html). **Estado:** propuesta, para aprobar.
+
+**Quién tiene la app** (dueño, 2026-11-03): en la primera versión, solo personas de alta confianza, como el dueño, cada
+quien en su celular; a futuro, quizá un celular de la tienda con solo Precio y Conteo. Lo propuesto, por aprobar: entrar
+con la huella y, en el de la tienda, por turnos. Contar está completo en la propuesta, aunque se entrega después del
+piloto.
+
+| # | Entrega | Qué trae | Necesita del POS |
+|---|---|---|---|
+| 1 | **La base** | Los modos Precio, Ticket y Conteo sobre el escáner de hoy, el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
+| 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda con la API; la copia del catálogo cuando el POS la sirva. Mientras, una caja nueva, con red | Celulares (de quién es, sus modos, lo que deja cada llave), los permisos nuevos, la regla de los códigos; luego la copia sin PIN ni clientes |
+| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos | — |
+| 4 | **Mandar el ticket** | Elegir la caja, mandarlo y el QR sin red | Recibir tickets del celular (su entrega 12), las cajas con quién atiende |
+| 5 | **Impresiones** | Las impresiones por cobrar con miniaturas y lotes | Apartarlas; cobrar una sola vez |
+| 6 | **Conteo** | El completo, el del día y el celular de la tienda, con el lugar y la bandeja de salida (después del piloto) | Capturas ligeras, que los conteos no se pisen, quién cuenta de la sesión, el lugar; el conteo de arranque |
+
+**Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
+app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
+tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes, y deja de decir «Nada se conecta al
+servicio de la tienda» (con eleventa sigue sin conectarse). De la decisión del POS cambian dos cosas: el celular deja
+de darse de alta como caja y lleva copia del catálogo. Lo demás se queda.
+
+Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
+las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celular comprar para la tienda**,
+si se decide tenerlo: cuánto de lo logrado depende de un celular como el Pixel (cámaras, CPU, Android reciente) se mide
+en el modelo antes de comprarlo, con las mismas herramientas; el escáner solo se ha medido en el Pixel 8 Pro.
 
 ## Por definir
 

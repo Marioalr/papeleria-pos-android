@@ -1,6 +1,11 @@
 package mx.papeleriapos.android.rapido
 
 import android.app.StatusBarManager
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import mx.papeleriapos.android.Arranque
 import mx.papeleriapos.escaner.Fase
 import org.junit.Assert.assertEquals
@@ -64,6 +69,29 @@ class CaducidadTest {
         assertFalse(camaraApagadaPorInactividad(Fase.ABRIENDO, haySuperficie = false, huboSuperficie = false))
         assertFalse(camaraApagadaPorInactividad(Fase.ABRIENDO, haySuperficie = false, huboSuperficie = true))
         assertFalse(camaraApagadaPorInactividad(Fase.PAUSADO, haySuperficie = false, huboSuperficie = false))
+    }
+
+    @Test
+    fun `la camara apagada no la cierra mientras espera el pin`() = runTest {
+        val superficie = MutableStateFlow<Any?>(null)
+        var fase = Fase.ABRIENDO
+        var pidiendoElPin = false
+        val espera = async(start = CoroutineStart.UNDISPATCHED) { esperarCamaraApagada(superficie, { fase }, { pidiendoElPin }) }
+        // Abre y escanea; luego, con el PIN de «Abrir la app» a la vista, se apaga por inactividad: no cuenta.
+        superficie.value = Any()
+        runCurrent()
+        pidiendoElPin = true
+        fase = Fase.PAUSADO
+        superficie.value = null
+        runCurrent()
+        assertFalse("Se cerraría con el PIN a medias y el aviso se perdería", espera.isCompleted)
+        // Cancelado el PIN, la cámara en pausa vuelve a abrir y se apaga otra vez: ahora sí se cierra.
+        pidiendoElPin = false
+        superficie.value = Any()
+        runCurrent()
+        superficie.value = null
+        runCurrent()
+        assertTrue(espera.isCompleted)
     }
 
     @Test

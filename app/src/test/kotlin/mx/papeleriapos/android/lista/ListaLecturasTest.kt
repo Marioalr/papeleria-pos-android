@@ -15,6 +15,9 @@ class ListaLecturasTest {
 
     private fun ListaLecturas.codigos() = renglones.map { it.codigo to it.cantidad }
 
+    /** Lo que va a disco: todo menos la llegada, que al leer sale del orden de la lista. */
+    private fun List<Renglon>.enDisco() = map { it.copy(llegada = 0) }
+
     @Test
     fun `un codigo nuevo agrega renglon arriba y el mismo suma uno y sube`() {
         val l = ListaLecturas()
@@ -97,7 +100,8 @@ class ListaLecturasTest {
             .sumar("a,b \"c\"", Simbologia.CODE_128, 2_000)
             .sumar(ean, Simbologia.EAN_13, 3_000)
         val r = ListaLecturas.deTexto(l.aTexto())
-        assertEquals(l.renglones, r.renglones)
+        assertEquals(l.renglones.enDisco(), r.renglones.enDisco())
+        assertEquals("La de arriba llegó al último", r.renglones.sortedByDescending { it.llegada }, r.renglones)
         assertEquals(l.total, r.total)
         assertFalse(r.puedeDeshacer)
         // Un código nuevo después de recuperar no repite id.
@@ -106,7 +110,7 @@ class ListaLecturasTest {
         // Lo que no se entiende se salta; un archivo ajeno da la lista vacía.
         assertTrue(ListaLecturas.deTexto("hola\r\n1,2").renglones.isEmpty())
         val roto = l.aTexto() + "x,7501,EAN_13,1,0\r\n9,7502,NO_EXISTE,1,0\r\n10,7503,EAN_13,0,0\r\n"
-        assertEquals(l.renglones, ListaLecturas.deTexto(roto).renglones)
+        assertEquals(l.renglones.enDisco(), ListaLecturas.deTexto(roto).renglones.enDisco())
     }
 
     @Test
@@ -132,8 +136,8 @@ class ListaLecturasTest {
             a.guardar(mx.papeleriapos.escaner.nucleo.Modo.CONTEO, conteo)
             // Otro almacén (como tras matar el proceso) lee lo mismo.
             val b = AlmacenListas { carpeta }
-            assertEquals(venta.renglones, b.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones)
-            assertEquals(conteo.renglones, b.leer(mx.papeleriapos.escaner.nucleo.Modo.CONTEO).renglones)
+            assertEquals(venta.renglones.enDisco(), b.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones.enDisco())
+            assertEquals(conteo.renglones.enDisco(), b.leer(mx.papeleriapos.escaner.nucleo.Modo.CONTEO).renglones.enDisco())
             // «Nueva venta» también se guarda.
             b.guardar(mx.papeleriapos.escaner.nucleo.Modo.VENTA, venta.vaciar())
             assertTrue(AlmacenListas { carpeta }.leer(mx.papeleriapos.escaner.nucleo.Modo.VENTA).renglones.isEmpty())

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>CS1591;CS8618;CS0618;CS8602;CS8604</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- El repositorio del POS, a un lado: dotnet run -p:Pos=/ruta/a/papeleria-pos -->
+    <Pos Condition="'$(Pos)' == ''">../../../../papeleria-pos</Pos>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(Pos)/src/PapeleriaPos.Nucleo/**/*.cs" Exclude="$(Pos)/src/PapeleriaPos.Nucleo/obj/**;$(Pos)/src/PapeleriaPos.Nucleo/bin/**" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -194,8 +194,10 @@ class EstresViewModel(app: Application) : AndroidViewModel(app) {
             }
             val (segundos, final) = RafagaControles(camara, SystemClock::elapsedRealtime, { delay(it) }).correr(
                 alSegundo = { s ->
+                    val zooms = if (s.ordenesZoom == 1) "1 zoom" else "${s.ordenesZoom} zooms"
+                    val linternas = if (s.ordenesLinterna == 1) "1 linterna" else "${s.ordenesLinterna} linternas"
                     _estado.update {
-                        it.copy(hechos = s.segundo, etiqueta = "${s.ordenesZoom} zooms, ${s.ordenesLinterna} linternas", segundosRafaga = it.segundosRafaga + s)
+                        it.copy(hechos = s.segundo, etiqueta = "$zooms, $linternas", segundosRafaga = it.segundosRafaga + s)
                     }
                 },
                 cancelado = { cancelar },

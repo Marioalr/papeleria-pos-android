@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -49,16 +48,17 @@ import mx.papeleriapos.escaner.ConfigEscaner
 import mx.papeleriapos.escaner.Lente
 import mx.papeleriapos.escaner.Motor
 import mx.papeleriapos.escaner.ResolucionAnalisis
-import mx.papeleriapos.escaner.nucleo.Modo
 import kotlin.math.roundToInt
 
+/**
+ * Ajustes › Herramientas de medición › El escáner: el motor, la franja, la cámara, el catálogo de prueba (los códigos de
+ * la sesión de prueba) y el diagnóstico. Lo personal (vibración, bip, linterna) está en [PantallaAjustes].
+ */
 @Composable
-fun PantallaAjustes(vm: EscanerViewModel) {
+fun PantallaAjustesEscaner(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
     val catalogo by vm.catalogo.collectAsStateWithLifecycle()
     val ficha by vm.ficha.collectAsStateWithLifecycle()
-    val contexto = LocalContext.current
-    var mensaje by remember { mutableStateOf<String?>(null) }
     // El catálogo y la ficha de la cámara se cargan perezosos: aquí, para mostrarlos.
     LaunchedEffect(Unit) {
         vm.prepararCatalogo()
@@ -72,15 +72,6 @@ fun PantallaAjustes(vm: EscanerViewModel) {
         config,
         alCambiar = vm::cambiarConfig,
         alRestablecer = vm::restablecerAjustes,
-        // Android 13+: el diálogo del sistema; antes no se puede pedir y la pantalla explica cómo agregarlo a mano.
-        alAgregarMosaico = if (!puedePedirMosaico()) null else {
-            {
-                mensaje = null
-                val pedido = pedirMosaico(contexto) { resultado -> mensaje = mensajeMosaico(resultado) }
-                if (!pedido) mensaje = "No se pudo pedir. $COMO_AGREGAR_MOSAICO_A_MANO"
-            }
-        },
-        mensajeMosaico = mensaje,
         catalogo = catalogo,
         alCargarCatalogo = { elegirCatalogo.launch(TIPOS_CATALOGO) },
         alUsarCatalogoDeEjemplo = vm::usarCatalogoDeEjemplo,
@@ -88,20 +79,30 @@ fun PantallaAjustes(vm: EscanerViewModel) {
     )
 }
 
+/** Ajustes rápidos › el mosaico: en Android 13+ el diálogo del sistema; antes se explica cómo agregarlo a mano. */
+@Composable
+internal fun rememberAgregarMosaico(alMensaje: (String?) -> Unit): (() -> Unit)? {
+    val contexto = LocalContext.current
+    if (!puedePedirMosaico()) return null
+    return remember(contexto) {
+        {
+            alMensaje(null)
+            val pedido = pedirMosaico(contexto) { resultado -> alMensaje(mensajeMosaico(resultado)) }
+            if (!pedido) alMensaje("No se pudo pedir. $COMO_AGREGAR_MOSAICO_A_MANO")
+        }
+    }
+}
+
 /** Texto o CSV (algunos proveedores dan el CSV como application/csv). */
 private val TIPOS_CATALOGO = arrayOf("text/*", "application/csv")
 
-/** Los ajustes del escáner; cada cambio se guarda y se aplica en caliente. */
+/** Los ajustes del escáner, para medir; cada cambio se guarda y se aplica en caliente. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ContenidoAjustes(
     config: ConfigEscaner,
     alCambiar: (ConfigEscaner) -> Unit,
     alRestablecer: () -> Unit,
-    /** null = el celular no deja pedirlo desde la app (antes de Android 13): se explica cómo agregarlo a mano. */
-    alAgregarMosaico: (() -> Unit)? = null,
-    /** Lo que contestó el sistema la última vez que se pidió. */
-    mensajeMosaico: String? = null,
     /** El catálogo de prueba cargado; null mientras carga. */
     catalogo: EstadoCatalogo? = null,
     alCargarCatalogo: () -> Unit = {},
@@ -125,8 +126,6 @@ fun ContenidoAjustes(
                     "de prueba y el diagnóstico dicen qué leyó cada uno y cuánto tardó. Más lento; solo para medir.",
             )
         }
-        Etiqueta("Modo")
-        Opciones(Modo.entries, config.modo, { it.etiqueta }, { alCambiar(config.copy(modo = it)) })
         Etiqueta("Simbologías")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for (s in PreferenciasEscaner.OFRECIDAS) {
@@ -184,13 +183,6 @@ fun ContenidoAjustes(
             alCambiar = { alCambiar(config.copy(fpsFijo = it)) },
         )
 
-        TituloSeccion("Confirmación")
-        FilaInterruptor("Sonido", config.sonido, { alCambiar(config.copy(sonido = it)) }, Modifier.testTag("ajuste-sonido"))
-        FilaInterruptor(
-            "Vibración", config.vibracion, { alCambiar(config.copy(vibracion = it)) },
-            descripcion = "Si el celular tiene apagada la respuesta táctil, no vibra.",
-        )
-
         TituloSeccion("Cámara")
         Etiqueta("Lente")
         Opciones(Lente.entries, config.lente, { it.etiqueta }, { alCambiar(config.copy(lente = it)) })
@@ -221,10 +213,6 @@ fun ContenidoAjustes(
             alCambiar = { alCambiar(config.copy(medirLuzEnMira = it)) },
             modifier = Modifier.testTag("ajuste-luz-mira"),
         )
-        FilaInterruptor(
-            "Linterna automática", config.linternaAutomatica, { alCambiar(config.copy(linternaAutomatica = it)) },
-            descripcion = "La enciende sola si hay poca luz.",
-        )
         Deslizador(
             titulo = "Pausar sin códigos a la vista",
             valor = config.segundosParaPausar.toFloat(),
@@ -233,21 +221,6 @@ fun ContenidoAjustes(
             texto = { if (it < 1f) "Nunca" else "Después de ${it.roundToInt()} s" },
             alTerminar = { alCambiar(config.copy(segundosParaPausar = it.roundToInt())) },
         )
-
-        TituloSeccion("Abrir rápido")
-        Nota(
-            "Un mosaico en Ajustes rápidos abre el escáner con un toque, aun con el celular bloqueado: desliza desde " +
-                "arriba y tócalo.",
-        )
-        if (alAgregarMosaico != null) {
-            OutlinedButton(
-                onClick = alAgregarMosaico,
-                modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).testTag("agregar-mosaico"),
-            ) { Text("Agregar a Ajustes rápidos") }
-        } else {
-            Nota("Este celular no deja agregarlo desde la app. $COMO_AGREGAR_MOSAICO_A_MANO")
-        }
-        mensajeMosaico?.let { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp).testTag("mensaje-mosaico")) }
 
         TituloSeccion("Catálogo de prueba")
         Text(textoCatalogo(catalogo), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("catalogo-cargado"))
@@ -279,7 +252,7 @@ fun ContenidoAjustes(
         OutlinedButton(
             onClick = alRestablecer,
             modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).padding(top = 12.dp),
-        ) { Text("Restablecer ajustes") }
+        ) { Text("Restablecer los ajustes del escáner") }
         Nota("Versión ${BuildConfig.VERSION_NAME} · ${BuildConfig.COMMIT}")
     }
 }
@@ -302,12 +275,12 @@ internal fun textoFicha(ficha: List<FichaLente>?): String = when {
 }
 
 @Composable
-private fun Etiqueta(texto: String) {
+internal fun Etiqueta(texto: String) {
     Text(texto, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 10.dp, bottom = 6.dp))
 }
 
 @Composable
-private fun Nota(texto: String) {
+internal fun Nota(texto: String) {
     Text(
         texto,
         style = MaterialTheme.typography.bodySmall,

@@ -11,9 +11,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.camara.FichaCamara
 import mx.papeleriapos.android.exportar.Compartir
 import mx.papeleriapos.android.medicion.MonitorDeSesion
+import mx.papeleriapos.android.principal.PreferenciasPiso
 
 /**
  * Cambia la condición del bloque o la nota de un intento y lo guarda fuera del hilo principal. Guardar no depende de la
@@ -76,14 +78,18 @@ object ExportarSesion {
 
     /**
      * La medición de la sesión: recursos.csv del monitor (una fila por segundo), aperturas.csv (una fila por apertura
-     * del escáner, también las del escaneo rápido) y ficha-camara.csv (una fila por lente trasera, para saber con qué
-     * cámara se midió). Los que no haya no van.
+     * del escáner, también las del escaneo rápido), ficha-camara.csv (una fila por lente trasera, para saber con qué
+     * cámara se midió) y contadores-rapido.csv (cómo se usa el botón rápido: docs/propuesta-interfaz.md, «Cómo se
+     * aprende»: los contadores «salen solo con el CSV de la sesión de prueba»; la app no manda estadísticas). Los que no
+     * haya no van.
      */
     suspend fun medicion(contexto: Context, sesion: SesionPrueba): List<Uri> = withContext(Dispatchers.IO) {
+        val prefs = contexto.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE)
         listOfNotNull(
             MonitorDeSesion.leer(contexto)?.let { Compartir.escribir(contexto, CsvSesion.nombreArchivo("recursos", sesion.clave()), it) },
             RegistroAperturas.leer(contexto)?.let { Compartir.escribir(contexto, CsvSesion.nombreArchivo("aperturas", sesion.clave()), it) },
             Compartir.escribir(contexto, CsvSesion.nombreArchivo("ficha-camara", sesion.clave()), FichaCamara.csv(contexto)),
+            Compartir.escribir(contexto, CsvSesion.nombreArchivo("contadores-rapido", sesion.clave()), PreferenciasPiso(prefs).leerContadores().csv()),
         )
     }
 }

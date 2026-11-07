@@ -9,7 +9,7 @@ plugins {
 }
 
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
-val versionApp = "0.1.0"
+val versionApp = "0.3.0"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
 
 // La llave de los APK de prueba (docs/plan.md, «Versiones»): en GitHub Actions llega por variables de entorno (de los
@@ -153,6 +153,8 @@ dependencies {
         implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
     }
     implementation(project(":escaner"))
+    // La lógica del POS en el celular: su búsqueda y su cálculo del precio, portados (docs/propuesta-interfaz.md, «Lo que cambia por dentro»).
+    implementation(project(":pos"))
     // Para la configuración de CameraX desde la Application y calentar el proveedor.
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)

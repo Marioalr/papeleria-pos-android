@@ -1,38 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Atajos del ícono (mantener presionado). Existen desde API 25; en API 24 el archivo se ignora.
-     El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea, así que lo leído está guardado
-     (ListasCompartidas, en disco) y MainActivity solo aplica el modo. -->
+<!-- Los accesos fijos del ícono (mantener presionado; docs/propuesta-interfaz.md, «Del bolsillo al precio»). Existen desde
+     API 25; en API 24 el archivo se ignora. «Armar ticket» y «Contar» no van aquí: son dinámicos (rapido/Accesos.kt),
+     porque solo esos se ponen y se quitan mientras la app corre, según lo que haga cada celular.
+     Los id de aquí son inmutables: cualquier llamada de ShortcutManager con ellos lanza IllegalArgumentException, así que
+     el código nunca los usa y los dinámicos llevan id nuevos.
+     Abren con la acción MAIN y la categoría LAUNCHER, como el ícono: el sistema compara el intent que llega con el de la
+     raíz de la tarea sin los extras (filterEquals), y con el mismo filtro el siguiente toque en el ícono solo trae la tarea.
+     Con otra acción apilaba otra MainActivity encima, con su ViewModel y su controlador de cámara. MainActivity lee el modo
+     del extra «modo», sin mirar la acción. El sistema les agrega NEW_TASK | CLEAR_TASK | TASK_ON_HOME: recrean la tarea,
+     así que lo leído está guardado (ListasCompartidas, en disco) y MainActivity solo aplica el modo. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:targetApi="25">
+    <!-- «Revisar precio»: fijo y siempre encendido. Sirve en los dos celulares, sale desde que se instala la app (antes de
+         abrirla) y va primero. El que se ancló con la 0.1 o la 0.2 sigue sirviendo: al instalar encima, el sistema le pone
+         esta definición; para eso tiene que seguir fijo y con este id. -->
     <shortcut
         android:enabled="true"
         android:icon="@drawable/ic_escaner"
+        android:shortcutId="escanear_precio"
+        android:shortcutLongLabel="@string/atajo_precio_largo"
+        android:shortcutShortLabel="@string/atajo_precio_corto">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="mx.papeleriapos.android.MainActivity"
+            android:targetPackage="mx.papeleriapos.android">
+            <categories android:name="android.intent.category.LAUNCHER" />
+            <extra
+                android:name="modo"
+                android:value="precio" />
+        </intent>
+    </shortcut>
+    <!-- «Ticket» y «Conteo» de la 0.1 y la 0.2: declarados apagados, solo para lo que alguien ancló. Al instalar encima, el
+         sistema le pone a esa copia esta definición (apagada, con su mensaje, sus etiquetas y su ícono); no salen en el
+         menú. Borrarlos de aquí la dejaría con los recursos del APK viejo. Esos anclados ya no vuelven: hay que anclar
+         «Armar ticket» o «Contar», que son otros. Sin intent (el sistema lo ignora en un apagado); sin shortcutShortLabel
+         ignoraría la entrada entera. -->
+    <shortcut
+        android:enabled="false"
+        android:icon="@drawable/ic_escaner"
+        android:shortcutDisabledMessage="@string/atajo_viejo_apagado"
         android:shortcutId="escanear_venta"
         android:shortcutLongLabel="@string/atajo_venta_largo"
-        android:shortcutShortLabel="@string/atajo_venta_corto">
-        <intent
-            android:action="mx.papeleriapos.android.action.ESCANEAR"
-            android:targetClass="mx.papeleriapos.android.MainActivity"
-            android:targetPackage="mx.papeleriapos.android">
-            <extra
-                android:name="modo"
-                android:value="venta" />
-        </intent>
-    </shortcut>
+        android:shortcutShortLabel="@string/atajo_venta_corto" />
     <shortcut
-        android:enabled="true"
+        android:enabled="false"
         android:icon="@drawable/ic_escaner"
+        android:shortcutDisabledMessage="@string/atajo_viejo_apagado"
         android:shortcutId="escanear_conteo"
         android:shortcutLongLabel="@string/atajo_conteo_largo"
-        android:shortcutShortLabel="@string/atajo_conteo_corto">
-        <intent
-            android:action="mx.papeleriapos.android.action.ESCANEAR"
-            android:targetClass="mx.papeleriapos.android.MainActivity"
-            android:targetPackage="mx.papeleriapos.android">
-            <extra
-                android:name="modo"
-                android:value="conteo" />
-        </intent>
-    </shortcut>
+        android:shortcutShortLabel="@string/atajo_conteo_corto" />
 </shortcuts>
