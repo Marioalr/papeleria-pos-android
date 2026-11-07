@@ -46,9 +46,14 @@ class GeneradorPerfil {
         // Más cuadros analizados: el camino caliente del análisis también se compila.
         Thread.sleep(MS_ESCANEANDO)
         // A otra pestaña (la cámara se apaga) y de vuelta al escáner (vuelve a abrir).
-        device.wait(Until.findObject(By.text("Sesión")), MS_ESPERA)?.click()
-        device.wait(Until.hasObject(By.textContains("Sesión de prueba")), MS_ESPERA)
-        device.wait(Until.findObject(By.text("Escanear")), MS_ESPERA)?.click()
+        // Los modos de la principal y, desde Ajustes, una herramienta; atrás regresa a la principal.
+        device.wait(Until.findObject(By.text("Ticket")), MS_ESPERA)?.click()
+        device.wait(Until.findObject(By.text("Precio")), MS_ESPERA)?.click()
+        device.wait(Until.findObject(By.desc("Ajustes")), MS_ESPERA)?.click()
+        device.wait(Until.findObject(By.text("Sesión de prueba")), MS_ESPERA)?.click()
+        device.wait(Until.hasObject(By.textContains("Iniciar sesión")), MS_ESPERA)
+        device.pressBack()
+        device.pressBack()
         if (!esperarEscaneando()) Log.w(ETIQUETA, "Al volver no apareció «$ESCANEANDO»")
         Thread.sleep(MS_ESCANEANDO)
     }

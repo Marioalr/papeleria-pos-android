@@ -174,7 +174,7 @@ fun ContenidoBanco(
             item {
                 TituloSeccion(if (e.cancelado) "Resultados (cancelado a la mitad)" else "Resultados")
                 Text(
-                    "Región: ${e.regionUsada} · ${e.simbologias.size} simbologías de Ajustes",
+                    "Región: ${e.regionUsada} · ${e.simbologias.size} ${if (e.simbologias.size == 1) "simbología" else "simbologías"} de Ajustes",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -168,14 +168,14 @@ object CriteriosCiclos {
         val sinRecuperar = erroresSinRecuperar(ciclos, nuevoPorCiclo)
         criterios += Criterio(
             if (nuevoPorCiclo) "Errores sin recuperar (controlador nuevo: todos cuentan)" else "Errores sin recuperar",
-            "$sinRecuperar (de $conError errores)",
+            "$sinRecuperar (de $conError ${if (conError == 1) "error" else "errores"})",
             "0",
             sinRecuperar == 0,
         )
         val nombreP95 = "p95 al primer cuadro (inicio → final, ms)"
         val buenos = buenosSinCalentamiento(ciclos).size
         if (buenos < MINIMO_PARA_P95) {
-            criterios += Criterio(nombreP95, "solo $buenos ciclos buenos", "≥ $MINIMO_PARA_P95 ciclos buenos", false)
+            criterios += Criterio(nombreP95, "solo $buenos ${if (buenos == 1) "ciclo bueno" else "ciclos buenos"}", "≥ $MINIMO_PARA_P95 ciclos buenos", false)
         } else {
             val (inicio, fin) = extremos(ciclos)
             val p0 = Cuentas.p95(inicio.map { it.primerCuadroMs })

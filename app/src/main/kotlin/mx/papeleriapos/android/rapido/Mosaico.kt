@@ -19,11 +19,16 @@ import mx.papeleriapos.android.Arranque
 import mx.papeleriapos.android.R
 
 /**
- * El mosaico «Escanear» de Ajustes rápidos: abre [EscaneoRapidoActivity], también con el celular bloqueado.
+ * El mosaico «Precio» de Ajustes rápidos (docs/propuesta-interfaz.md, «Del bolsillo al precio»): abre
+ * [EscaneoRapidoActivity], el verificador, también con el celular bloqueado.
  *
  * Modo NO activo a propósito (sin `ACTIVE_TILE`): el sistema enlaza el servicio cada vez que se abre el panel, lo que
  * arranca el proceso antes del toque (precalienta CameraX). En API 34+ el toque lo atiende SystemUI directo con
  * `activityLaunchForClick` (sin llamar a [onClick]); antes, [onClick] lanza la Activity.
+ *
+ * La clase conserva su nombre aunque el mosaico ya no diga «Escanear»: SystemUI guarda el mosaico por el paquete y la
+ * clase, y si al actualizar la clase ya no está, se lo quita del panel a quien ya lo tenía (TileServiceManager.java
+ * 15:287-318).
  */
 class MosaicoEscanerService : TileService() {
     override fun onCreate() {
@@ -35,6 +40,10 @@ class MosaicoEscanerService : TileService() {
     override fun onStartListening() {
         super.onStartListening()
         val mosaico = qsTile ?: return
+        // También la etiqueta: en Android 7 a 9 SystemUI toma la del manifiesto solo si el mosaico no tiene una, y uno que
+        // ya estaba agregado seguiría diciendo «Escanear» después de actualizar (CustomTile.java 9:113-114). Esto llega cada
+        // vez que se abre el panel.
+        mosaico.label = getString(R.string.mosaico_etiqueta)
         mosaico.state = Tile.STATE_INACTIVE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             mosaico.activityLaunchForClick = pendienteEscaneoRapido(this)
@@ -82,10 +91,10 @@ private const val CODIGO_MOSAICO = 1
 fun puedePedirMosaico(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
- * Muestra el diálogo del sistema para agregar el mosaico «Escanear» a Ajustes rápidos (API 33+). La app tiene que estar
- * en primer plano: llamarlo desde un botón. [alTerminar] recibe `StatusBarManager.TILE_ADD_REQUEST_RESULT_*` o un
+ * Muestra el diálogo del sistema para agregar el mosaico «Precio» a Ajustes rápidos (API 33+). La app tiene que estar en
+ * primer plano: llamarlo desde un botón. [alTerminar] recibe `StatusBarManager.TILE_ADD_REQUEST_RESULT_*` o un
  * `TILE_ADD_REQUEST_ERROR_*`. Devuelve false si el celular no lo permite (API < 33): entonces hay que explicar cómo
- * agregarlo a mano (bajar el panel, editar y arrastrar «Escanear» a los primeros lugares).
+ * agregarlo a mano (bajar el panel, editar y arrastrar «Precio» a los primeros lugares).
  */
 fun pedirMosaico(context: Context, alTerminar: (Int) -> Unit = {}): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
@@ -106,13 +115,13 @@ fun pedirMosaico(context: Context, alTerminar: (Int) -> Unit = {}): Boolean {
 
 /** Cómo agregarlo a mano (Android 7 a 12, o si el sistema no dejó pedirlo). */
 const val COMO_AGREGAR_MOSAICO_A_MANO =
-    "Para agregarlo a mano: desliza dos veces desde arriba, toca el lápiz (editar) y arrastra «Escanear» a los primeros lugares."
+    "Para agregarlo a mano: desliza dos veces desde arriba, toca el lápiz (editar) y arrastra «Precio» a los primeros lugares."
 
 /** Qué decirle al usuario según lo que contestó el sistema al pedir el mosaico (`TILE_ADD_REQUEST_*`). */
 @SuppressLint("InlinedApi") // Constantes: se copian al compilar; solo se usan con lo que devolvió [pedirMosaico] (API 33+).
 fun mensajeMosaico(resultado: Int): String = when (resultado) {
-    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "Listo: «Escanear» ya está en Ajustes rápidos."
-    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "«Escanear» ya estaba en Ajustes rápidos."
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "Listo: «Precio» ya está en Ajustes rápidos."
+    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "«Precio» ya estaba en Ajustes rápidos."
     StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> "No se agregó. Puedes volver a pedirlo. $COMO_AGREGAR_MOSAICO_A_MANO"
     else -> "El sistema no dejó agregarlo (código $resultado). $COMO_AGREGAR_MOSAICO_A_MANO"
 }

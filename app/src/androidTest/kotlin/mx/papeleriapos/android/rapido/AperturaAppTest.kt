@@ -2,6 +2,7 @@ package mx.papeleriapos.android.rapido
 
 import android.Manifest
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -77,8 +78,9 @@ class AperturaAppTest {
     }
 
     /**
-     * Como el atajo del ícono: el sistema lanza su intent con NEW_TASK | CLEAR_TASK | TASK_ON_HOME, que destruye la tarea
-     * abierta (Activity y ViewModel) y crea otra. Lo leído en venta sigue ahí (vive en el proceso y en disco).
+     * Como el atajo del ícono (res/xml/shortcuts.xml: la acción MAIN y la categoría LAUNCHER del ícono, con el extra del
+     * modo): el sistema lanza su intent con NEW_TASK | CLEAR_TASK | TASK_ON_HOME, que destruye la tarea abierta (Activity
+     * y ViewModel) y crea otra. Lo leído en venta sigue ahí (vive en el proceso y en disco).
      */
     @Test
     fun elAtajoDeConteoRecreaLaTareaSinPerderLoLeido() {
@@ -99,8 +101,7 @@ class AperturaAppTest {
             listas.venta.update { it.sumar("7509993456786", Simbologia.EAN_13, System.currentTimeMillis()) }
             val total = listas.venta.value.total
 
-            val atajo = Intent(ctx, MainActivity::class.java)
-                .setAction("mx.papeleriapos.android.action.ESCANEAR")
+            val atajo = Intent.makeMainActivity(ComponentName(ctx, MainActivity::class.java))
                 .putExtra(MainActivity.EXTRA_MODO, MainActivity.MODO_CONTEO)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_TASK_ON_HOME)
             ctx.startActivity(atajo)

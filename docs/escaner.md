@@ -23,7 +23,7 @@ app ──► escaner ──► nucleo
  │        │           └─ Kotlin puro (se prueba en la JVM): GTIN, codificadores, escenas sintéticas,
  │        │              geometría, localizador, guía, validación y consenso, búsqueda en el catálogo
  │        └─ Android: cámara (CameraX), motores (ML Kit, zxing-cpp), pantalla del escáner, bip y vibración
- └─ la app de prueba: modo venta y modo conteo, ajustes, catálogo de prueba, sesión de prueba (CSV) y
+ └─ la app: Precio, Ticket y Conteo con el botón rápido, ajustes, catálogo de prueba, sesión de prueba (CSV) y
     banco de pruebas
 ```
 
@@ -307,12 +307,17 @@ Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los camino
    bloqueo).
 2. **Un gesto del celular** configurado para abrir la app: Samsung (doble pulsación del botón lateral), Motorola (Quick
    Launch), Pixel (Toque rápido). Lo configura cada quien; la app no puede.
-3. **El mosaico «Escanear» de Ajustes rápidos:** abre el **escaneo rápido** sobre el bloqueo, sin pedir el PIN (la
-   Activity declara `showWhenLocked` en el manifiesto: en tiempo de ejecución no basta). Solo deja escanear y ver lo
-   leído; «Abrir la app» pide desbloquear. Se cierra sola tras 5 minutos sin escanear o cuando la cámara se apaga por
-   inactividad, y la pantalla solo se mantiene encendida mientras escanea. El mosaico es «no activo»: el sistema arranca
-   el proceso al abrir el panel, antes del toque. En la primera versión de Android 14 el sistema todavía pedía el PIN.
-4. **El ícono** o sus accesos directos «Escanear venta» y «Escanear conteo».
+3. **El mosaico «Precio» de Ajustes rápidos:** abre el **escaneo rápido** sobre el bloqueo, sin pedir el PIN (la
+   Activity declara `showWhenLocked` en el manifiesto: en tiempo de ejecución no basta). Es el verificador: siempre en
+   Precio, enseña de lo leído el nombre, el precio, el mayoreo y la promoción, y nada entra al ticket ni al conteo.
+   «Abrir la app» pide desbloquear y abre Precio con ese producto. Se cierra sola tras 5 minutos sin escanear (uno con
+   el celular bloqueado) o cuando la cámara se apaga por inactividad, nunca mientras se teclea el PIN, y la pantalla
+   solo se mantiene encendida mientras escanea. Un toque al mosaico siempre la abre, como una apertura nueva; al
+   encender la pantalla ya caducada, se cierra sin abrir la cámara. El mosaico es «no activo»: el sistema arranca el
+   proceso al abrir el panel, antes del toque. En la primera versión de Android 14 el sistema todavía pedía el PIN.
+4. **El ícono** o sus accesos directos: «Revisar precio» (fijo) y «Armar ticket» y «Contar» (dinámicos). Abren como
+   el ícono (acción MAIN y categoría LAUNCHER, con el modo en un extra): después de usar uno, el ícono trae la misma
+   tarea y no apila otra pantalla con su cámara.
 
 **Cómo abre rápido:**
 
@@ -324,7 +329,7 @@ Sacar el celular del bolsillo y escanear de inmediato, aun bloqueado. Los camino
   la apertura. Se valida una vez por proceso en segundo plano; si la cámara lo rechazó, queda «automático» para siempre
   en ese celular.
 - El motor se crea y se calienta en paralelo con la cámara; ML Kit empieza a cargar su modelo al crearse.
-- Al cambiar de pestaña la cámara se apaga y al volver abre **una sola vez**. El visor que sale avisa al controlador
+- Al ir a Ajustes la cámara se apaga y al volver abre **una sola vez**. El visor que sale avisa al controlador
   (`visorRetirado`) y, ya con la cámara detenida, se pide otra solicitud de superficie para la vista previa. Antes la
   cámara abría con la solicitud del visor que ya no existía y CameraX rearmaba la sesión dos veces al llegar la del
   visor nuevo: abría, cerraba y volvía a abrir en ~350 ms, y lo que se apuntaba en ese momento se perdía.

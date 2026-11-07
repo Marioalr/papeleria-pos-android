@@ -102,7 +102,7 @@ fun PantallaSesion(vm: EscanerViewModel) {
             alExportarRecursos = {
                 alcance.launch {
                     val uris = ExportarSesion.medicion(contexto, s)
-                    if (uris.isNotEmpty()) Compartir.enviarVarios(contexto, uris, "Recursos y aperturas de la sesión ${s.nombre}")
+                    if (uris.isNotEmpty()) Compartir.enviarVarios(contexto, uris, "La medición de la sesión ${s.nombre}")
                 }
             },
             alDeshacerFallo = vm::deshacerFallo,
@@ -313,7 +313,8 @@ fun ConSesion(
             onDismissRequest = { confirmarFin = false },
             title = { Text("¿Terminar la sesión?") },
             text = {
-                Text("Se borran los ${sesion.intentos.size} intentos de este celular. Si no has exportado el CSV, hazlo antes.")
+                val cuales = if (sesion.intentos.size == 1) "Se borra el intento" else "Se borran los ${sesion.intentos.size} intentos"
+                Text("$cuales de este celular. Si no has exportado el CSV, hazlo antes.")
             },
             confirmButton = {
                 TextButton(onClick = { confirmarFin = false; alTerminar() }, modifier = Modifier.testTag("confirmar-terminar")) {

@@ -4,10 +4,12 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -92,8 +95,9 @@ fun BarraSesion(
             val u = sesion.ultimo
             if (!compacta) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val intentos = if (sesion.intentos.size == 1) "1 intento" else "${sesion.intentos.size} intentos"
                     Text(
-                        "Prueba · ${sesion.intentos.size} intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
+                        "Prueba · $intentos" + (u?.let { " · #${it.n} ${it.resultado.etiqueta}" } ?: ""),
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -118,14 +122,16 @@ fun BarraSesion(
                 if (compacta) {
                     Text("#${sesion.intentos.size}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.testTag("intentos-compacta"))
                 }
-                BotonNoLeyo(alPulsar = { registrarFallo(ResultadoIntento.TIMEOUT) })
-                AssistChip(
+                // «No leyó» y su «Deshacer» caben juntos en los 180 dp que deja la barra en el chico (entre Ajustes y la
+                // linterna): son las dos acciones de cada intento; lo demás se desliza.
+                BotonNoLeyo(alPulsar = { registrarFallo(ResultadoIntento.TIMEOUT) }, contentPadding = PaddingValues(horizontal = 16.dp))
+                IconButton(
                     onClick = deshacerFallo,
                     enabled = sesion.puedeDeshacerFallo,
-                    label = { Text("Deshacer") },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null) },
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("deshacer-fallo"),
-                )
+                    modifier = Modifier.size(48.dp).testTag("deshacer-fallo"),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Deshacer el último fallo")
+                }
                 SelectorCondicion(notas.condicionActual, alElegir = { editor.condicion(sesion, it) })
                 for (r in MARCAS_DE_LECTURA) {
                     FilterChip(
@@ -168,13 +174,14 @@ fun BarraSesion(
  * pulgar. Un segundo toque a menos de 1 s no cuenta (lo ignora el ViewModel) y el último se puede deshacer.
  */
 @Composable
-fun BotonNoLeyo(alPulsar: () -> Unit, modifier: Modifier = Modifier) {
+fun BotonNoLeyo(alPulsar: () -> Unit, modifier: Modifier = Modifier, contentPadding: PaddingValues = ButtonDefaults.ContentPadding) {
     Button(
         onClick = alPulsar,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.error,
             contentColor = MaterialTheme.colorScheme.onError,
         ),
+        contentPadding = contentPadding,
         modifier = modifier.heightIn(min = 48.dp).testTag("fallo-TIMEOUT"),
     ) {
         Icon(Icons.Filled.TimerOff, contentDescription = null)
