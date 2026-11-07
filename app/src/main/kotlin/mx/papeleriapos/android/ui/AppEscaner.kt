@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -92,6 +93,16 @@ fun AppEscaner(
 ) {
     var destino by rememberSaveable { mutableStateOf(inicial) }
     SideEffect { alCambiarDestino(destino) }
+    // «Abrir la app» con un producto (desde el escaneo rápido) regresa a la principal, también desde Ajustes o las
+    // herramientas; una vez por cada uno: lo atendido se guarda con la pantalla, así que recrearla no vuelve a llevarla.
+    val deFuera by vm.piso.deFuera.collectAsStateWithLifecycle()
+    var atendido by rememberSaveable { mutableLongStateOf(deFuera) }
+    LaunchedEffect(deFuera) {
+        if (deFuera != 0L && deFuera != atendido) {
+            atendido = deFuera
+            destino = Destino.PRINCIPAL
+        }
+    }
     // Atrás sube un nivel; en la principal, lo maneja ella (cierra lo de encima) o sale de la app.
     BackHandler(enabled = destino != Destino.PRINCIPAL) { destino = destino.padre ?: Destino.PRINCIPAL }
     MonitorDeLaSesion(vm, destino)

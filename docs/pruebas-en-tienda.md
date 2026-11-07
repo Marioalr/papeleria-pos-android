@@ -87,7 +87,7 @@ con el nombre de quien escanea.
 
 **Apertura (15 min), con el PIN o la huella del Pixel:**
 
-1. El mosaico «Escanear» entre los primeros de Ajustes rápidos, para que se vea con un solo deslizamiento.
+1. El mosaico «Precio» entre los primeros de Ajustes rápidos, para que se vea con un solo deslizamiento.
 2. Toque rápido del Pixel (doble toque en la parte de atrás → Abrir app → Escáner). Anotar si abre sin desbloquear.
 3. Con el celular bloqueado en la bolsa, 10 veces cada camino: (a) mosaico, (b) Toque rápido, (c) desbloquear y tocar
    el ícono, (d) dejar el escáner abierto, apagar la pantalla y volver a encenderla. Cronometrar del bolsillo al bip;

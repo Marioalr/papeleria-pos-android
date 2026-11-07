@@ -112,6 +112,15 @@ const val POCA_EXISTENCIA = 3.0
 /** «Queda 1» con una sola y «Quedan 3» con más (docs/propuesta-interfaz.md, «Precio» y «Ticket»: «Queda 1» en ámbar). */
 fun quedan(existencia: Double): String = if (existencia == 1.0) "Queda 1" else "Quedan ${cantidadCorta(existencia)}"
 
+/**
+ * El precio por pieza de una presentación, como lo dice la tarjeta de Precio: «$4.50 c/u (12)» en la caja de 12 lápices;
+ * null en el suelto. También lo enseña el escaneo rápido, sobre el bloqueo.
+ */
+fun porPieza(p: Producto): String? = if (p.piezas > 1) "${pesos(p.precio / p.piezas)} c/u (${p.piezas})" else null
+
+/** La primera escala de mayoreo, como la dicen la tarjeta y el precio en grande: «Desde 12: $41.00 c/u»; null si no tiene. */
+fun desdeMayoreo(p: Producto): String? = p.mayoreo?.let { "Desde ${it.desde}: ${pesos(it.centavos)} c/u" }
+
 /** Lo contado o lo leído, abreviado: «1 pza» con una sola y «3 pzs» con más (también «0 pzs»). */
 fun pzs(n: Int): String = if (n == 1) "1 pza" else "$n pzs"
 
@@ -153,9 +162,9 @@ class CatalogoDeProductos(productosSinSuelto: List<Producto>) {
         claves.buscarNormalizado(normalizado, simbologia)?.let { porClave[it.clave] } ?: porClave[normalizado]
 
     /**
-     * El producto de un renglón del ticket o del conteo: por su clave y, si no la trae (lo que sumó el escaneo rápido o
-     * lo que guardó la 0.1), por su código con la regla de UPC y EAN, como al escanearlo. Así un producto que sí está no
-     * sale en rojo ni deja de sumar al total.
+     * El producto de un renglón del ticket o del conteo: por su clave y, si no la trae (lo que sumó el escaneo rápido
+     * antes de la 0.3 o lo que guardó la 0.1), por su código con la regla de UPC y EAN, como al escanearlo. Así un producto
+     * que sí está no sale en rojo ni deja de sumar al total.
      */
     fun de(r: Renglon): Producto? = r.clave?.let { porClave[it] } ?: porLectura(r.codigo, r.simbologia)
 

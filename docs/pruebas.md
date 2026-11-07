@@ -29,10 +29,27 @@ export JAVA_HOME=/opt/android-studio/jbr
   catálogo y los cambios por renglón) y el catálogo de prueba (el de ejemplo trae un caso por variante; copiar el
   archivo, reabrir y volver al de ejemplo). De la pantalla principal: el gesto del botón rápido con los casos del
   prototipo (`GestoTest`), lo que lleva cada modo (`OpcionesTest`), el estado de los modos, el ticket, las hojas, los
-  avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`). El escaneo
-  rápido en el modo de la app, también cuando el mosaico lo trae otra vez (`EscaneoRapidoTest`, y
-  `EscaneoRapidoActividadTest` con la Activity de verdad), con la letra grande (`PantallaRapidaLetraGrandeTest`), y los
-  atajos del ícono leídos como los lee el sistema (`AtajosDelIconoTest`).
+  avisos y las pistas (`PisoTest`) y los productos de prueba con su mayoreo y su búsqueda (`ProductosTest`).
+- **`app`, del bolsillo al precio** (la entrega 3):
+  - El escaneo rápido fijo en Precio: el nombre, el precio, el mayoreo, la promoción y el precio por pieza de una
+    presentación, nunca la existencia; nada entra a las listas aunque la app esté en Ticket o en Conteo; «No está en el
+    catálogo» con su código, y mientras cargan los productos solo el código; TalkBack dice cada lectura
+    (`EscaneoRapidoTest`), y con la letra grande lo leído cede y los botones no (`PantallaRapidaLetraGrandeTest`).
+  - La Activity de verdad, con el controlador de muestra (`EscaneoRapidoActividadTest`): el mosaico la abre aunque ya
+    hubiera caducado y es una apertura nueva, con el intent antes y después de `onRestart` (Android 7–9 y 10+), también
+    dejada en Inicio y traída ya con el bloqueo, como en el punto 8 de la revisión en el celular; al encender la
+    pantalla caducada se cierra sin que la cámara pase de CREATED; «Abrir la app» con ShadowKeyguardManager: el intent
+    (MAIN y LAUNCHER, `NEW_TASK | CLEAR_TOP | SINGLE_TOP`, el modo y el producto), un solo pedido aunque se toque dos
+    veces, no se cierra sola mientras espera el PIN, cancelado sigue ahí, y en API 25 abre directo.
+  - La app abierta con ese intent (`AbrirConUnProductoTest`, con la MainActivity de verdad): en `onCreate` y en
+    `onNewIntent`, nada si viene de Recientes o con estado guardado, y los accesos se publican después del primer cuadro
+    analizado; desde Ajustes o una herramienta regresa a la principal (`AppEscanerDeFueraTest`); cierra el menú y las
+    hojas y no toca el ticket (`PantallaPrincipalRegresionTest`), y TalkBack lo dice (`PantallaPrincipalAccesibleTest`).
+  - Los accesos del ícono: la regla de qué se publica, en JUnit (`PlanDeAccesosTest`); lo publicado, con el
+    ShadowShortcutManager de serie (`AccesosTest`); lo anclado, con `ShadowAtajosComoAosp`, que le suma las reglas de
+    AOSP que le faltan (`AccesosAncladosTest`); y shortcuts.xml leído como lo lee el sistema (`AtajosDelIconoTest`).
+  - El mosaico: «Precio» en el manifiesto y en `onStartListening`, su ícono (la etiqueta de precio) y sus textos
+    (`MosaicoTest`); el plazo y la cámara apagada mientras se pide el PIN (`CaducidadTest`).
 - **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
   (gráficos nativos) con la geometría del chico (360 × 740 dp con barras de 24 + 24: como Robolectric no da la barra de
   gestos, la ventana mide 716 y abajo va solo el hueco de los modos, así el panel mide lo mismo que en el celular), con el
@@ -247,7 +264,11 @@ La prueba de humo también es la que revisa el APK con R8 (`benchmarkRelease` es
 no llega a escanear. Así se encontró que ML Kit no arrancaba con R8 en modo completo (`app/proguard-rules.pro`). Se
 corre antes de cada versión.
 
-**El mosaico sobre el bloqueo** en el emulador:
+## En el Pixel 8 Pro o el emulador
+
+Del bolsillo al precio (la entrega 3) tiene lo que Robolectric no tiene: tareas, el lanzador, el bloqueo con PIN y
+SystemUI. Se revisa así antes de publicar la 0.3.0, en el Pixel (Android 17) y en el emulador con API 24, 25, 28 y 35.
+El mosaico sobre el bloqueo, en el emulador:
 
 ```
 adb shell locksettings set-pin 1234
@@ -257,13 +278,61 @@ adb shell cmd statusbar expand-settings      # y tocar el mosaico
 adb shell locksettings clear --old 1234      # al terminar
 ```
 
-**Los atajos del ícono** (Robolectric no tiene tareas: `AtajosDelIconoTest` solo revisa que abran con el mismo filtro
-que el ícono). Abrir con un atajo (mantener presionado el ícono › «Precio»), ir a Inicio, tocar el ícono y contar las
-MainActivity de la tarea: debe haber una, en Precio.
+Cuántas MainActivity tiene la tarea (debe haber una):
 
 ```
 adb shell dumpsys activity activities | grep Hist | grep -c mx.papeleriapos.android/.MainActivity
 ```
+
+Si el escaneo rápido sigue vivo aunque no se vea: el primero da 1 (0, ya se cerró) y el segundo, el número del proceso,
+el mismo que cuando se abrió (si el proceso murió, el primero sigue dando 1, pero el número cambia o no sale nada):
+
+```
+adb shell dumpsys activity activities | grep Hist | grep -c mx.papeleriapos.android/.rapido.EscaneoRapidoActivity
+adb shell pidof mx.papeleriapos.android
+```
+
+1. **Los accesos anclados de antes.** Con el APK de la 0.2, anclar «Precio», «Ticket» y «Conteo»; `adb shell dumpsys
+   shortcut` los da con `Im`, `Man` y `Pin`. Instalar la 0.3 encima: `escanear_venta` y `escanear_conteo` con `Dis`, `Im`
+   y `Pin`, `disabledReason=1` y su mensaje; `escanear_precio` con `Man`; y, ya abierta la app y escaneando, `ticket` y
+   `contar` con `Dyn`. Tocar los apagados: ¿sale el mensaje de la app o «El acceso directo no está disponible»? Anotar
+   la versión del lanzador (`adb shell cmd package resolve-activity -a android.intent.action.MAIN -c
+   android.intent.category.HOME`).
+2. **Que no se apile otra.** Abrir con «Revisar precio», ir a Inicio y tocar el ícono: una sola MainActivity (según el
+   código de AOSP, con la acción de la 0.1 se apilaba otra). Repetir con «Armar ticket» con la app abierta en Precio:
+   una sola, en Ticket.
+3. **«Contar» se apaga y vuelve.** Anclar «Contar»; instalar un APK de depuración con `EsteCelular.SE_PUEDE_CONTAR =
+   false` (rapido/Accesos.kt), abrir la app y tocar el anclado (apagado, «En el piloto no se cuenta»); volver al APK
+   normal: se enciende y regresa al menú. El límite de llamadas, con `adb shell cmd shortcut reset-throttling` y
+   `adb shell cmd shortcut override-config max_updates_per_interval=1` (`reset-config` lo regresa).
+4. **«Abrir la app» con PIN (API 35 a 37).** Bloquear, tocar el mosaico, leer un código, tocar «Abrir la app», teclear el
+   PIN: Precio con ese producto. Repetir con la app abierta desde el ícono, desde un acceso anclado, en Ajustes, con la
+   hoja de compartir abierta, sin la app abierta y después de `adb shell am kill mx.papeleriapos.android` con la app en
+   segundo plano. En cada caso, una sola MainActivity.
+5. **El PIN.** Cancelarlo con atrás: sigue el escaneo rápido. Quedarse más de un minuto en el PIN: no se cierra y al
+   desbloquear abre. Tocar «Abrir la app» dos veces seguidas: abre una sola vez.
+6. **API 24 y 25, en el emulador.** «Abrir la app» enseña el bloqueo normal y, al desbloquear, la app con el producto.
+7. **La etiqueta del mosaico.** Con la 0.2 instalada y el mosaico agregado, en API 28 y en 29 o 35, instalar la 0.3 sin
+   reiniciar y abrir el panel: «Precio», con la etiqueta de precio. `adb shell settings get secure sysui_qs_tiles` sigue
+   trayendo `custom(mx.papeleriapos.android/.rapido.MosaicoEscanerService)`.
+8. **Un toque al mosaico siempre abre,** también con el escaneo rápido vivo detrás y ya caducado: en el Pixel (el intent
+   llega después de `onRestart`) y en el emulador con API 24 o 25 (llega antes). Primero, `adb shell settings get global
+   always_finish_activities` debe dar 0 (con 1, al ir a Inicio la Activity se destruye aunque los comandos de arriba
+   digan que sigue) y la pantalla debe tardar 2 minutos en apagarse sola (anotar lo que da `adb shell settings get
+   system screen_off_timeout`, poner `adb shell settings put system screen_off_timeout 120000` y al terminar
+   regresarlo): en pausa el escaneo rápido deja que la pantalla se apague, y apagada no se cierra sola. Desbloqueado,
+   abrirlo con el mosaico, ir a Inicio enseguida y anotar el número del proceso. Apagar la pantalla más de un minuto (se
+   bloquea) y encenderla: sale el bloqueo, no el escaneo rápido, que sigue vivo detrás (los comandos de arriba: 1 y el
+   mismo número; si no, el toque sería una apertura nueva, que también sale bien con la 0.2: repetir). Bajar el panel y
+   tocar el mosaico: abre con la cámara y, sin leer nada, se cierra sola un minuto después del toque, no antes (con la
+   0.2 el toque se perdía). Repetir con la pantalla apagada unos 30 s: otra vez un minuto desde el toque (con la 0.2 se
+   cerraba al minuto de haberlo abierto). Aparte, dejarlo arriba y apagar la pantalla más de un minuto: al encenderla se
+   cierra sin abrir la cámara (no sale el punto verde).
+9. **Recientes.** Abrirlo desde el escaneo rápido con el celular bloqueado, con tres botones y con gestos: pide el PIN, y
+   en API 33+ la miniatura del escaneo rápido sale negra. Reiniciar con la tarea que creó «Abrir la app» y abrirla
+   desde Recientes: no vuelve el producto de entonces.
+10. **Tiempos,** si las banderas se deciden por milisegundos: Macrobenchmark de un acceso con `CLEAR_TASK` (los de hoy)
+    contra `CLEAR_TOP | SINGLE_TOP`.
 
 ## Estrés
 

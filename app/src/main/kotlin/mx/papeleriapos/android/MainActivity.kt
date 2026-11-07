@@ -2,6 +2,7 @@ package mx.papeleriapos.android
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,13 +25,21 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import mx.papeleriapos.android.principal.ModoApp
+import mx.papeleriapos.android.rapido.Accesos
+import mx.papeleriapos.android.rapido.EsteCelular
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.android.ui.AppEscaner
 import mx.papeleriapos.android.ui.Destino
 import mx.papeleriapos.escaner.ControladorEscaner
+import mx.papeleriapos.escaner.EstadoEscaner
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.PasoApertura
 import mx.papeleriapos.escaner.camara.ControladorCamara
@@ -42,10 +51,14 @@ import mx.papeleriapos.escaner.ui.LocalSoloVisor
  * `onStart`, mientras Compose dibuja), el primer cuadro trae solo el visor sobre negro (como la ventana, sin destello) y lo
  * demás llega cuando el visor ya entregó su superficie, y el TTFD es el primer cuadro analizado.
  *
- * Los atajos «Precio», «Ticket» y «Conteo» (res/xml/shortcuts.xml) traen [EXTRA_MODO]; el sistema recrea la tarea con
- * ellos, pero lo leído está guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde. Abren con la
- * acción y la categoría del ícono (MAIN y LAUNCHER), para que después el ícono traiga esta misma tarea y no apile otra
- * MainActivity; el modo se lee del extra, sin mirar la acción.
+ * Los accesos del ícono (el fijo «Revisar precio», en res/xml/shortcuts.xml, y los dinámicos «Armar ticket» y «Contar»,
+ * [mx.papeleriapos.android.rapido.Accesos]) traen [EXTRA_MODO]; el sistema recrea la tarea con ellos, pero lo leído está
+ * guardado ([mx.papeleriapos.android.lista.ListasCompartidas]) y no se pierde. Abren con la acción y la categoría del
+ * ícono (MAIN y LAUNCHER), para que después el ícono traiga esta misma tarea y no apile otra MainActivity; el modo se lee
+ * del extra, sin mirar la acción. Los dinámicos se revisan en cada apertura, después del primer cuadro analizado.
+ *
+ * «Abrir la app» del escaneo rápido trae además [EXTRA_PRODUCTO], con NEW_TASK | CLEAR_TOP | SINGLE_TOP: si la app ya
+ * está abierta, la misma instancia lo recibe en [onNewIntent] ([aplicarIntent]).
  *
  * Al restaurar con estado guardado (Android mató el proceso en segundo plano y el empleado toca el ícono: el frío más
  * común al sacar el celular del bolsillo) también enlaza en `onCreate` si la pantalla a la vista era la principal.
@@ -65,7 +78,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val controlador = vm.controlador
         Arranque.reportarAlPrimerAnalisis(this, controlador)
-        if (savedInstanceState == null) aplicarModo(intent)
+        if (savedInstanceState == null) aplicarIntent(intent, vm)
         val guardado = savedInstanceState?.takeIf { it.containsKey(CLAVE_ESCANER_VISIBLE) }?.getBoolean(CLAVE_ESCANER_VISIBLE)
         escanerVisible = guardado ?: (savedInstanceState == null)
         if (enlazarAlCrear(restaurando = savedInstanceState != null, escanerVisible = guardado)) {
@@ -77,6 +90,7 @@ class MainActivity : ComponentActivity() {
                 TemaEscaner { AppEscaner(vm = vm, alCambiarDestino = { escanerVisible = it == Destino.PRINCIPAL }) }
             }
         }
+        revisarAccesos(controlador)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -87,7 +101,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        aplicarModo(intent)
+        aplicarIntent(intent, vm)
     }
 
     override fun onStart() {
@@ -105,15 +119,33 @@ class MainActivity : ComponentActivity() {
         vm.alDetenerse()
     }
 
-    private fun aplicarModo(intent: Intent?) {
-        val modo = ModoApp.deExtra(intent?.getStringExtra(EXTRA_MODO)) ?: return
-        vm.cambiarModoApp(modo)
+    /**
+     * Los accesos dinámicos del ícono ([Accesos.sincronizar]), cada vez que se crea la Activity (la guía pide revisarlos
+     * en cada arranque: no pasan a un celular nuevo): después del primer cuadro analizado, para no estorbarle a la cámara
+     * (o en cuanto se sabe que no va a abrir: sin permiso o con error), y fuera del hilo principal, porque son llamadas al
+     * sistema. Solo publica si el menú cambió. No desde la Application: el proceso también arranca para el mosaico y para
+     * el escaneo rápido.
+     */
+    private fun revisarAccesos(controlador: ControladorEscaner) {
+        val app = applicationContext
+        lifecycleScope.launch {
+            controlador.estado.first(::listoParaLosAccesos)
+            withContext(Dispatchers.IO) {
+                try {
+                    Accesos.sincronizar(app, EsteCelular.ARMA_TICKETS, EsteCelular.SE_PUEDE_CONTAR)
+                } catch (e: RuntimeException) {
+                    // P. ej. con el usuario bloqueado; se revisa otra vez en la próxima apertura.
+                    Log.w("Escaner", "No se pudieron revisar los accesos del ícono", e)
+                }
+            }
+        }
     }
 
     companion object {
         /**
-         * El modo con que abre (de los atajos): [MODO_PRECIO], [MODO_TICKET] o [MODO_CONTEO]. [MODO_VENTA] es el de los
-         * atajos que se anclaron con la 0.1, y abre el ticket.
+         * El modo con que abre (de los accesos del ícono y de «Abrir la app»): [MODO_PRECIO], [MODO_TICKET] o
+         * [MODO_CONTEO]. [MODO_VENTA] es el de los accesos que se anclaron con la 0.1 (ya apagados en shortcuts.xml); se
+         * sigue entendiendo como el ticket.
          */
         const val EXTRA_MODO = "modo"
         const val MODO_PRECIO = "precio"
@@ -121,12 +153,38 @@ class MainActivity : ComponentActivity() {
         const val MODO_VENTA = "venta"
         const val MODO_CONTEO = "conteo"
 
+        /**
+         * De «Abrir la app» del escaneo rápido: la clave del producto que se veía o, si no estaba en el catálogo, el código
+         * que se leyó. La app lo enseña en Precio ([EscanerViewModel.ensenarDeFuera]).
+         */
+        const val EXTRA_PRODUCTO = "producto"
+
         /** El hueco de abajo, donde van los modos (el alto de la barra de pestañas de antes): para estimar el visor la primera vez. */
         private const val ALTO_PESTANAS_DP = 80
 
         private const val CLAVE_ESCANER_VISIBLE = "escaner_visible"
     }
 }
+
+/**
+ * Lo que trae el intent con que se abre o se trae la app: el modo ([MainActivity.EXTRA_MODO]) y, de «Abrir la app» del
+ * escaneo rápido, el producto ([MainActivity.EXTRA_PRODUCTO]), que lleva a la principal en Precio con él. Nada si
+ * Recientes relanzó una tarea vacía (`FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`, p. ej. después de reiniciar): su intent es
+ * el de entonces y traería un producto de hace días. La Activity lo aplica en `onCreate` sin estado guardado y en
+ * `onNewIntent`.
+ */
+internal fun aplicarIntent(intent: Intent?, vm: EscanerViewModel) {
+    if (intent == null || (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return
+    ModoApp.deExtra(intent.getStringExtra(MainActivity.EXTRA_MODO))?.let(vm::cambiarModoApp)
+    intent.getStringExtra(MainActivity.EXTRA_PRODUCTO)?.takeIf { it.isNotBlank() }?.let(vm::ensenarDeFuera)
+}
+
+/**
+ * Ya se pueden revisar los accesos del ícono: hubo un primer cuadro analizado (la cámara ya abrió y no se le estorba) o
+ * la cámara no va a abrir (sin permiso, con error).
+ */
+internal fun listoParaLosAccesos(e: EstadoEscaner): Boolean =
+    e.apertura.marcas.containsKey(PasoApertura.PRIMER_ANALISIS) || e.fase == Fase.SIN_PERMISO || e.fase == Fase.ERROR
 
 /**
  * Si se enlaza la cámara en `onCreate`: en un arranque nuevo siempre (abre en la principal); al restaurar, solo si la

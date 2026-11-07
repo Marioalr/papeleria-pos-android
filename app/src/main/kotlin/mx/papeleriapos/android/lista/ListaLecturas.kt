@@ -183,9 +183,9 @@ class ListaLecturas private constructor(
     }
 
     /**
-     * Los renglones sin la clave del catálogo (lo que sumó el escaneo rápido, lo guardado por la 0.1) con la que diga
-     * [clave], sin un paso para deshacer: así lo mismo con otra variante del código, o elegido en Buscar, cae en su
-     * renglón. La misma lista si no cambia nada.
+     * Los renglones sin la clave del catálogo (lo que sumó el escaneo rápido antes de la 0.3, lo guardado por la 0.1) con
+     * la que diga [clave], sin un paso para deshacer: así lo mismo con otra variante del código, o elegido en Buscar, cae
+     * en su renglón. La misma lista si no cambia nada.
      */
     fun completarClaves(clave: (Renglon) -> String?): ListaLecturas {
         if (renglones.none { it.clave == null }) return this

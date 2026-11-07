@@ -2,6 +2,38 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.3.0 (sin publicar)
+
+La tercera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#del-bolsillo-al-precio), «Del bolsillo al
+precio»: el verificador sobre el bloqueo y los accesos del ícono. No necesita nada del POS.
+
+- **El mosaico de Ajustes rápidos ahora es «Precio»,** con la etiqueta de precio del modo Precio por ícono (antes, un
+  código de barras). Quien ya lo tenía lo conserva: también en Android 7 a 9, donde la etiqueta nueva no llegaba sola.
+- **El escaneo rápido queda fijo en Precio:** aunque la app esté en Ticket o en Conteo, lo que se lee ahí no entra a
+  ninguna lista. Sobre el bloqueo solo se ve lo que el cliente ve en la tienda: el nombre, el precio, el mayoreo
+  («Desde 12: $41.00 c/u»), la promoción y, de una presentación, cuánto sale cada pieza («$4.50 c/u (12)»). Nunca la
+  existencia, el ticket ni el conteo. Lo que no está dice «No está en el catálogo» con su código (mientras cargan los
+  productos, solo el código). TalkBack dice cada lectura, también el mismo producto otra vez. Ya no lleva título, para
+  que todo quepa en su 31 % del alto; con la letra grande, lo leído se desplaza y los botones no se encogen.
+- **«Abrir la app» abre Precio con ese producto,** también si la app ya estaba abierta (antes solo la traía, como
+  estaba), y desde Ajustes o las herramientas regresa a la principal: cierra el menú y las hojas y enseña el producto
+  como si se hubiera leído, sin vibrar, sin anotarlo en la sesión de prueba y sin tocar el ticket; TalkBack lo dice,
+  también al volver de Ajustes. Pide el PIN una sola vez aunque se toque dos veces; mientras se teclea, el escaneo
+  rápido no se cierra solo, y si se cancela sigue ahí. Recientes no guarda su imagen (Android 13+).
+- **Un toque al mosaico siempre abre:** si el escaneo rápido se había quedado abierto y ya había caducado, el toque se
+  perdía (se cerraba al volver). Y traerlo con el mosaico cuenta como abrirlo otra vez: su plazo empieza de nuevo y ya
+  no se cierra a los pocos segundos. Al encender la pantalla con el plazo vencido se sigue cerrando sin abrir la cámara.
+- **Los accesos del ícono:** «Revisar precio» sigue fijo; «Armar ticket» y «Contar» son dinámicos, con id nuevos, y la
+  app los publica después de abrir la cámara, solo si el menú cambió. Hoy salen los dos (este celular arma tickets y
+  cuenta el conteo de prueba); con los perfiles, «Armar ticket» no saldrá en el celular de la tienda ni «Contar» en el
+  piloto. **Lo que se ancló de «Ticket» y «Conteo» con la 0.1 o la 0.2 queda apagado:** hay que anclar otra vez
+  «Armar ticket» o «Contar». Su mensaje («Este acceso cambió…») quizá no se vea en el lanzador.
+- **Buscar le deja su lugar al aviso:** un aviso que seguía a la vista al abrir Buscar (p. ej. «… al ticket» y luego ←)
+  tapaba los resultados de arriba; ahora la lista empieza abajo de él, como en el ticket completo.
+
+**Pendiente antes de publicar la 0.3.0:** los perfiles de arranque siguen siendo los de la 0.1 (ver la 0.2.0). Y lo que
+solo se prueba en el celular: [pruebas](docs/pruebas.md#en-el-pixel-8-pro-o-el-emulador).
+
 ## 0.2.0 (sin publicar)
 
 La primera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «La base»: la pantalla de la

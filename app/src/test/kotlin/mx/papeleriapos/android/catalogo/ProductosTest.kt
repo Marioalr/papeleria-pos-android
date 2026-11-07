@@ -57,6 +57,15 @@ class ProductosTest {
     }
 
     @Test
+    fun `el mayoreo y el precio por pieza se dicen igual en la tarjeta, el precio en grande y el escaneo rapido`() {
+        assertEquals("Desde 12: \$41.00 c/u", desdeMayoreo(p("7509990100019")))
+        assertNull("Sin mayoreo", desdeMayoreo(p("7509990100033")))
+        assertEquals("La caja de 12 lápices", "\$4.50 c/u (12)", porPieza(p("7509990100200")))
+        assertEquals("\$5.20 c/u (50)", porPieza(p("7509990100293")))
+        assertNull("El suelto", porPieza(p("7509990100026")))
+    }
+
+    @Test
     fun `un archivo ajeno o con renglones rotos no truena`() {
         assertEquals(0, CatalogoDeProductos.deCsv("hola,mundo\n1,2").tamano)
         val roto = archivo.readText() + "x\n,Sin clave,Escolar,1.00,,,,pieza,,,,,\n750,Sin precio,Escolar,,,,,pieza,,,,,\n"

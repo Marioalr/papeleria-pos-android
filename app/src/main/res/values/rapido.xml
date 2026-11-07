@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- La apertura rápida: el mosaico de Ajustes rápidos, el escaneo rápido y los atajos del ícono. -->
+<!-- Del bolsillo al precio (docs/propuesta-interfaz.md): el mosaico de Ajustes rápidos, el escaneo rápido y los accesos
+     del ícono. -->
 <resources>
     <!-- 18 caracteres o menos: es la etiqueta del mosaico. -->
-    <string name="mosaico_etiqueta">Escanear</string>
+    <string name="mosaico_etiqueta">Precio</string>
     <string name="rapido_nombre">Escaneo rápido</string>
+
+    <!-- Los accesos del ícono: la corta va en el anclado (10 caracteres o menos) y la larga en el menú (25 o menos). -->
+    <!-- El fijo (shortcuts.xml). -->
     <string name="atajo_precio_corto">Precio</string>
-    <string name="atajo_precio_largo">Ver un precio</string>
+    <string name="atajo_precio_largo">Revisar precio</string>
+    <!-- Los dinámicos (rapido/Accesos.kt), y con qué se apaga lo que alguien ancló cuando ya no va. -->
+    <string name="acceso_ticket_corto">Ticket</string>
+    <string name="acceso_ticket_largo">Armar ticket</string>
+    <string name="acceso_ticket_apagado">En este celular no se arman tickets</string>
+    <string name="acceso_contar_corto">Contar</string>
+    <string name="acceso_contar_largo">Contar</string>
+    <string name="acceso_contar_apagado">En el piloto no se cuenta</string>
+    <!-- Ticket y Conteo de la 0.1 y la 0.2, declarados apagados en shortcuts.xml: lo que alguien ancló se queda así, con
+         sus etiquetas de entonces y este mensaje. Sirve en los dos celulares (el de la tienda no tiene «Armar ticket»). -->
     <string name="atajo_venta_corto">Ticket</string>
     <string name="atajo_venta_largo">Armar un ticket</string>
     <string name="atajo_conteo_corto">Conteo</string>
     <string name="atajo_conteo_largo">Contar</string>
+    <string name="atajo_viejo_apagado">Este acceso cambió. Mantén presionado el ícono para ver los de ahora.</string>
 </resources>

@@ -143,6 +143,17 @@ class Piso(
     private val _contadores = MutableStateFlow(almacen.leerContadores())
     val contadores: StateFlow<ContadoresRapido> = _contadores.asStateFlow()
 
+    private val _deFuera = MutableStateFlow(0L)
+
+    /**
+     * Lo último que llegó de fuera con un producto ([ensenarDeFuera]), con un número que no se repite (ni entre procesos:
+     * sale del reloj); 0 si nada. La pantalla regresa a la principal y cierra el menú una vez por cada uno.
+     */
+    val deFuera: StateFlow<Long> = _deFuera.asStateFlow()
+
+    /** El producto que llegó de fuera antes que los productos: se enseña en cuanto lleguen ([cargarCatalogo]). */
+    private var pendienteDeFuera: String? = null
+
     /** Lo que la pantalla dice del menú del botón rápido: mientras está abierto, los avisos esperan. */
     var menuAbierto = false
         private set
@@ -154,6 +165,12 @@ class Piso(
     private var avisoEnEspera: Aviso? = null
     private var siguienteAviso = 1L
     private var siguienteAnuncio = 1L
+
+    /** La región viva de los anuncios está en la pantalla y TalkBack ya la conoce ([alConocerseLosAnuncios]). */
+    private var anunciosALaVista = false
+
+    /** Lo último que se anunció sin ella: se repite cuando vuelva. */
+    private var anuncioSinDecir = false
 
     /**
      * La hoja de abajo, si la de encima se abrió desde ella: la cantidad o Buscar desde el ticket completo. Al cerrarse
@@ -169,9 +186,14 @@ class Piso(
 
     fun cargarCatalogo(c: CatalogoDeProductos) {
         _catalogo.value = c
-        // Lo que ya estaba sin clave (del escaneo rápido o de la 0.1) la toma ahora, sin un paso para deshacer.
+        // Lo que ya estaba sin clave (de la 0.1 o del escaneo rápido de antes de la 0.3) la toma ahora, sin un paso para
+        // deshacer.
         venta.update { it.completarClaves(::claveDe) }
         conteo.update { it.completarClaves(::claveDe) }
+        pendienteDeFuera?.let {
+            pendienteDeFuera = null
+            mostrarDeFuera(it)
+        }
     }
 
     fun cambiarModo(m: ModoApp) {
@@ -204,7 +226,7 @@ class Piso(
                 "${producto?.nombre ?: "No está en el catálogo"}, ${if (van == 1) "va" else "van"} $van"
             }
         }
-        _anuncio.value = Anuncio(siguienteAnuncio++, texto)
+        anunciar(texto)
         return true
     }
 
@@ -220,6 +242,59 @@ class Piso(
 
     /** ↑ «Enseñar al cliente», con el producto que estaba en la tarjeta al bajar el dedo. */
     fun ensenar(p: Producto) = abrir(Hoja.PrecioGrande(p))
+
+    /**
+     * Lo que llegó de fuera: «Abrir la app» del escaneo rápido, que sigue en Precio con ese producto
+     * (docs/propuesta-interfaz.md, «Del bolsillo al precio»). [producto] es su clave del catálogo o, si no estaba, el código
+     * que se leyó. Se cierran las hojas (sin contarlas como «cerrada pronto»: no las cerró quien atiende), pasa a Precio y
+     * la tarjeta lo enseña como si se hubiera leído, con su anuncio para TalkBack; lo que no está, como «No está» con su
+     * código. No es una lectura: no vibra, la sesión de prueba no la anota y el ticket no cambia. Si los productos todavía
+     * no llegan, la tarjeta espera vacía y lo enseña al llegar.
+     */
+    fun ensenarDeFuera(producto: String) {
+        hojaDeAbajo = null
+        abiertaPor = null
+        _hoja.value = null
+        soltarAvisoEnEspera()
+        cambiarModo(ModoApp.PRECIO)
+        _deFuera.value = maxOf(reloj(), _deFuera.value + 1)
+        if (_catalogo.value == null) {
+            pendienteDeFuera = producto
+            _precio.value = null
+            return
+        }
+        mostrarDeFuera(producto)
+    }
+
+    private fun mostrarDeFuera(producto: String) {
+        val p = _catalogo.value?.porClave(producto)
+        _precio.value = p?.let { ConsultaPrecio.Encontrado(it) } ?: ConsultaPrecio.NoEsta(producto)
+        anunciar(p?.let { "${it.nombre}, ${pesos(it.precio)}" } ?: "No está en el catálogo")
+    }
+
+    // ---- Lo que se le dice a TalkBack ----
+
+    private fun anunciar(texto: String) {
+        _anuncio.value = Anuncio(siguienteAnuncio++, texto)
+        anuncioSinDecir = !anunciosALaVista
+    }
+
+    /**
+     * La región viva de los anuncios entró a la pantalla y TalkBack ya la conoce. Lo que se anunció mientras no estaba (lo
+     * que llegó de fuera con Ajustes a la vista) o en cuanto apareció se repite ahora: una región que aparece ya con su
+     * texto, o que lo cambia antes de que el delegado de accesibilidad la registre, no se anuncia.
+     */
+    fun alConocerseLosAnuncios() {
+        anunciosALaVista = true
+        if (!anuncioSinDecir) return
+        anuncioSinDecir = false
+        _anuncio.value?.let { _anuncio.value = it.copy(id = siguienteAnuncio++) }
+    }
+
+    /** La región viva de los anuncios salió de la pantalla (a Ajustes o a las herramientas). */
+    fun alOcultarseLosAnuncios() {
+        anunciosALaVista = false
+    }
 
     // ---- Buscar: en Ticket agrega, en Precio enseña y en Conteo cuenta ----
 

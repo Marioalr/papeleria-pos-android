@@ -64,7 +64,9 @@ import androidx.compose.ui.unit.sp
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.cantidadCorta
+import mx.papeleriapos.android.catalogo.desdeMayoreo
 import mx.papeleriapos.android.catalogo.pesos
+import mx.papeleriapos.android.catalogo.porPieza
 import mx.papeleriapos.android.catalogo.pzs
 import mx.papeleriapos.android.catalogo.quedan
 import mx.papeleriapos.android.catalogo.quedanPocos
@@ -196,8 +198,8 @@ private fun TarjetaPrecio(p: Producto, color: ColorModo, acciones: AccionesPanel
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(top = 2.dp),
         ) {
-            if (p.piezas > 1) Dato("${pesos(p.precio / p.piezas)} c/u (${p.piezas})")
-            p.mayoreo?.let { Dato("Desde ${it.desde}: ${pesos(it.centavos)} c/u", fondo = estado.exito.copy(alpha = 0.16f)) }
+            porPieza(p)?.let { Dato(it) }
+            desdeMayoreo(p)?.let { Dato(it, fondo = estado.exito.copy(alpha = 0.16f)) }
             p.existencia?.let { e ->
                 if (quedanPocos(p)) Dato(quedan(e), fondo = estado.aviso.copy(alpha = 0.18f))
                 else Dato("Existencia: ${cantidadCorta(e)}")

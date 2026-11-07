@@ -117,8 +117,8 @@ fun ContenidoAjustesPersonales(
 
         TituloSeccion("Abrir rápido")
         Nota(
-            "Un mosaico en Ajustes rápidos abre el escáner con un toque, aun con el celular bloqueado: desliza desde " +
-                "arriba y tócalo.",
+            "El mosaico «Precio» de Ajustes rápidos enseña un precio con un toque, aun con el celular bloqueado: desliza " +
+                "desde arriba y tócalo.",
         )
         if (alAgregarMosaico != null) {
             OutlinedButton(

@@ -94,6 +94,7 @@ import mx.papeleriapos.android.botonrapido.opcionesDe
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.cantidadCorta
+import mx.papeleriapos.android.catalogo.desdeMayoreo
 import mx.papeleriapos.android.catalogo.pesos
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.Renglon
@@ -167,6 +168,9 @@ private fun HojaCompleta(etiqueta: String, contenido: @Composable ColumnScope.()
  * teclado abierto, la mitad de arriba de la pantalla no se alcanza con una mano). En Ticket agrega, en Precio enseña y en
  * Conteo cuenta. TalkBack no va por la geometría (empezaría por el peor): lee la barra, el campo y luego los resultados
  * del mejor al peor.
+ *
+ * [huecoArriba]: lo que tapa el aviso que sigue a la vista bajo la barra (p. ej. «… al ticket» y luego ←), como en el
+ * ticket completo: la lista empieza abajo de él mientras se ve, para que no tape los resultados de arriba.
  */
 @Composable
 fun HojaBuscar(
@@ -175,6 +179,7 @@ fun HojaBuscar(
     catalogo: CatalogoDeProductos?,
     buscar: (String) -> List<Producto>,
     alElegir: (Producto, texto: String) -> Unit,
+    huecoArriba: Dp = 0.dp,
     alCerrar: () -> Unit,
 ) {
     var texto by rememberSaveable { mutableStateOf("") }
@@ -196,6 +201,8 @@ fun HojaBuscar(
             Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .padding(top = huecoArriba)
+                .testTag("resultados-buscar")
                 // Después del campo, aunque se dibuje encima de él.
                 .semantics {
                     isTraversalGroup = true
@@ -520,7 +527,7 @@ fun PrecioGrande(p: Producto, alCerrar: () -> Unit) {
                 style = MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"),
                 modifier = Modifier.padding(vertical = 12.dp),
             )
-            p.mayoreo?.let { Text("Desde ${it.desde}: ${pesos(it.centavos)} c/u", style = MaterialTheme.typography.headlineSmall) }
+            desdeMayoreo(p)?.let { Text(it, style = MaterialTheme.typography.headlineSmall) }
             p.promocion?.let { Text(it, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)) }
             Spacer(Modifier.height(32.dp))
             TextButton(onClick = alCerrar) { Text("Toca para regresar") }

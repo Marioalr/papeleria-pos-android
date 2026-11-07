@@ -505,6 +505,85 @@ class PisoTest {
         assertEquals(antes, p.anuncio.value)
     }
 
+    // ---- Lo que llega de fuera: «Abrir la app» del escaneo rápido (docs/propuesta-interfaz.md, «Del bolsillo al precio») ----
+
+    @Test
+    fun `lo que llega de fuera cierra las hojas, pasa a precio y lo ensena como leido sin tocar el ticket`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        val ticket = venta.value
+        p.abrir(Hoja.Ticket)
+        p.abrir(Hoja.Cantidad(ticket.actual!!.id))
+        val antes = p.deFuera.value
+        p.ensenarDeFuera(cuaderno.clave)
+        assertNull("Ni la cantidad ni el ticket completo de abajo", p.hoja.value)
+        assertEquals(ModoApp.PRECIO, p.modo.value)
+        assertEquals(ModoApp.PRECIO, almacen.modo)
+        assertEquals(ConsultaPrecio.Encontrado(cuaderno), p.precio.value)
+        assertEquals("TalkBack lo dice, como una lectura", "Cuaderno profesional cuadro chico 100 hojas, \$46.00", p.anuncio.value!!.texto)
+        assertTrue(ticket === venta.value)
+        assertTrue("La pantalla vuelve a la principal y cierra el menú una vez por cada uno", p.deFuera.value != antes)
+        // El mismo producto otra vez: otra vez a la principal, y se anuncia otra vez.
+        val primero = p.deFuera.value
+        val anuncio = p.anuncio.value!!.id
+        p.ensenarDeFuera(cuaderno.clave)
+        assertTrue(p.deFuera.value != primero)
+        assertTrue(p.anuncio.value!!.id != anuncio)
+    }
+
+    @Test
+    fun `lo que llega de fuera y no esta en el catalogo sale como no esta con su codigo`() {
+        val p = piso()
+        p.ensenarDeFuera("7509990100194")
+        assertEquals(ConsultaPrecio.NoEsta("7509990100194"), p.precio.value)
+        assertEquals("No está en el catálogo", p.anuncio.value!!.texto)
+    }
+
+    @Test
+    fun `si los productos no han llegado lo ensena al llegar`() {
+        val p = Piso(venta, conteo, almacen, ModoApp.TICKET) { ahora }
+        p.cambiarModo(ModoApp.PRECIO)
+        p.alLeer("7509990100194", Simbologia.EAN_13, 1)
+        p.ensenarDeFuera(caja.clave)
+        assertNull("La tarjeta espera vacía, sin lo de antes", p.precio.value)
+        assertNull(p.anuncio.value?.texto?.takeIf { it.contains("caja") })
+        p.cargarCatalogo(catalogo)
+        assertEquals(ConsultaPrecio.Encontrado(catalogo.porClave(caja.clave)!!), p.precio.value)
+        assertEquals("Lápiz HB No. 2 · caja con 12, \$54.00", p.anuncio.value!!.texto)
+    }
+
+    @Test
+    fun `lo que se anuncio sin la pantalla a la vista se repite cuando vuelve, una vez`() {
+        val p = piso()
+        // La principal a la vista y TalkBack ya conoce su región viva.
+        p.alConocerseLosAnuncios()
+        p.cambiarModo(ModoApp.PRECIO)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        val leido = p.anuncio.value
+        p.alConocerseLosAnuncios()
+        assertEquals("Ya se dijo: no se repite", leido, p.anuncio.value)
+        // A Ajustes, y llega un producto de fuera: la región viva no está.
+        p.alOcultarseLosAnuncios()
+        p.ensenarDeFuera(lapiz.clave)
+        val deFuera = p.anuncio.value!!
+        p.alConocerseLosAnuncios()
+        assertEquals(deFuera.texto, p.anuncio.value!!.texto)
+        assertTrue("Otro anuncio con lo mismo: TalkBack lo dice ahora", p.anuncio.value!!.id != deFuera.id)
+        val repetido = p.anuncio.value
+        p.alConocerseLosAnuncios()
+        assertEquals("Una sola vez", repetido, p.anuncio.value)
+    }
+
+    @Test
+    fun `cerrar las hojas por lo que llego de fuera no cuenta como cerrada pronto`() {
+        val p = piso()
+        p.alElegir(Lugar.LADO, conGesto = true)
+        p.abrir(Hoja.Buscar)
+        ahora += 500
+        p.ensenarDeFuera(cuaderno.clave)
+        assertEquals("No la cerró quien atiende", ContadoresRapido().alElegir(Lugar.LADO, conElGesto = true), p.contadores.value)
+    }
+
     // ---- Lo que no trae clave (el escaneo rápido, lo de la 0.1) ----
 
     @Test

@@ -116,6 +116,32 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
     }
 
     @Test
+    fun `lo que llega del escaneo rapido se anuncia como una lectura, tambien al volver de ajustes`() {
+        abrir(ModoApp.PRECIO, talkBack = true)
+        nodosAccesibles()
+        dejarQueSalganLosEventos()
+        vm.cambiarModoApp(ModoApp.TICKET)
+        dejarQueSalganLosEventos()
+        val antes = anunciosEnviados().size
+        // «Abrir la app» con la principal a la vista (y en Ticket: pasa a Precio).
+        vm.ensenarDeFuera(CUADERNO)
+        dejarQueSalganLosEventos()
+        // Con Ajustes a la vista: la principal no está y regresa con el producto ya en la tarjeta.
+        mostrar = false
+        idle()
+        vm.ensenarDeFuera(LAPIZ)
+        idle()
+        mostrar = true
+        idle()
+        dejarQueSalganLosEventos()
+        assertEquals(
+            listOf("Cuaderno profesional cuadro chico 100 hojas, \$46.00", "Lápiz HB No. 2, \$5.50"),
+            anunciosEnviados().drop(antes).filter { it.contains("Lápiz") || it.contains("Cuaderno") },
+        )
+        assertTrue(anuncioAccesible())
+    }
+
+    @Test
     fun `cada lectura anuncia lo que hizo por una region viva oculta`() {
         abrir(ModoApp.PRECIO, talkBack = true)
         leer(CUADERNO)

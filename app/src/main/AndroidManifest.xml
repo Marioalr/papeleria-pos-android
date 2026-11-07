@@ -40,15 +40,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Atajos «Precio», «Ticket» y «Conteo» al mantener presionado el ícono (abren como él: MAIN y LAUNCHER). -->
+            <!-- Los accesos fijos al mantener presionado el ícono: «Revisar precio» y, apagados, los «Ticket» y «Conteo» de la
+                 0.1 y la 0.2 que alguien ancló. «Armar ticket» y «Contar» son dinámicos (rapido/Accesos.kt). Todos abren
+                 como el ícono: MAIN y LAUNCHER. -->
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
 
-        <!-- El escaneo rápido. showWhenLocked EN EL MANIFIESTO: SystemUI lo lee de ActivityInfo para decidir si abre sin
-             pedir el PIN (en tiempo de ejecución no basta). exported=false: solo la abren nuestros PendingIntent. Tarea
-             propia y fuera de recientes; singleTask: tocar el mosaico otra vez la trae, no apila otra. -->
+        <!-- El escaneo rápido: el verificador sobre el bloqueo, siempre en Precio. showWhenLocked EN EL MANIFIESTO: SystemUI
+             lo lee de ActivityInfo para decidir si abre sin pedir el PIN (en tiempo de ejecución no basta).
+             exported=false: solo la abren nuestros PendingIntent. Tarea propia y fuera de recientes; singleTask: tocar el
+             mosaico otra vez la trae, no apila otra. -->
         <activity
             android:name=".rapido.EscaneoRapidoActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale"
@@ -62,8 +65,9 @@
             android:turnScreenOn="true"
             tools:targetApi="27" />
 
-        <!-- El mosaico «Escanear» de Ajustes rápidos. Sin ACTIVE_TILE a propósito: en modo no activo el sistema enlaza el
-             servicio al abrir el panel y precalienta el proceso. -->
+        <!-- El mosaico «Precio» de Ajustes rápidos. La clase conserva su nombre de cuando decía «Escanear»: SystemUI guarda
+             el mosaico por ella y, si cambiara, se lo quitaría del panel a quien ya lo tiene. Sin ACTIVE_TILE a propósito:
+             en modo no activo el sistema enlaza el servicio al abrir el panel y precalienta el proceso. -->
         <service
             android:name=".rapido.MosaicoEscanerService"
             android:exported="true"

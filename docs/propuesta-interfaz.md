@@ -1026,9 +1026,10 @@ que decidirlo:
 ### En el piloto
 
 - El POS no deja contar y no hay conteo del día. **En la app, Conteo no aparece,** como la caja, que no ofrece la tarea.
-- **Los accesos del ícono pasan a dinámicos** (`ShortcutManagerCompat`): hoy están fijos en `shortcuts.xml` y solo
-  cambian con otra versión de la app. «Contar» sale solo si se puede contar, y «Armar ticket» no sale en el celular de
-  la tienda. Los que alguien ya ancló se apagan con su mensaje («En el piloto no se cuenta»).
+- **«Contar» sale del menú del ícono.** Es un acceso dinámico (desde la 0.3.0): la app lo quita mientras no se pueda
+  contar, y el que alguien ancló se queda apagado con su mensaje («En el piloto no se cuenta») hasta que se pueda. El
+  «Conteo» que se ancló con la 0.1 o la 0.2 ya está apagado para siempre ([del bolsillo al
+  precio](#del-bolsillo-al-precio)). «Revisar precio» sigue, fijo.
 - Con la opción B del arranque, aparece solo el conteo completo, con «Se aplica al dejar eleventa».
 - En el prototipo sí está, con el aviso y «Ver cómo se contará», para revisarlo.
 
@@ -1470,15 +1471,31 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
 ## Del bolsillo al precio
 
 - **El mosaico de Ajustes rápidos pasa a ser «Precio»:** abre el escáner sobre la pantalla de bloqueo, sin el PIN del
-  celular, en modo Precio. Es el camino de apertura que ya se midió (la cámara enlaza antes que la interfaz).
-- **Sobre el bloqueo solo se ve el precio:** nombre, precio, mayoreo y promoción; ni la existencia, ni el ticket, ni el
-  conteo. «Abrir la app» pide desbloquear y sigue en Precio con ese producto (el de la tienda, sin bloqueo, abre
-  directo); en el de Luis, si su sesión está cerrada, antes pide su huella ([sobre el bloqueo](#sobre-el-bloqueo)).
+  celular, siempre en Precio: aunque la app esté en Ticket o en Conteo, lo leído ahí no entra a ninguna lista. Es el
+  camino de apertura que ya se midió (la cámara enlaza antes que la interfaz). Por dentro conserva el nombre de cuando
+  decía «Escanear»: el sistema guarda el mosaico por él, y con otro se lo quitaría del panel a quien ya lo tiene.
+- **Sobre el bloqueo solo se ve el precio:** nombre, precio, mayoreo y promoción y, de una presentación (la caja de 12),
+  cuánto sale cada pieza, como en la tarjeta; ni la existencia, ni el ticket, ni el conteo. Lo que no está dice «No está
+  en el catálogo» con su código. «Abrir la app» pide desbloquear y sigue en Precio con ese producto (el de la tienda,
+  sin bloqueo, abre directo); en el de Luis, si su sesión está cerrada, antes pide su huella ([sobre el
+  bloqueo](#sobre-el-bloqueo)). Mientras se teclea el PIN, el escaneo rápido no se cierra solo; si se cancela, sigue
+  ahí.
 - **Sale de la copia del catálogo,** así que no espera a la red: del bolsillo al precio en lo que tarda la lectura.
-- **Los accesos directos del ícono,** dinámicos (`ShortcutManagerCompat`; hoy están fijos en `shortcuts.xml` y solo
-  cambian con otra versión): «Revisar precio», «Armar ticket» y «Contar» en el de Luis; «Revisar precio» y «Contar» en
-  el de la tienda. «Contar» sale solo si se puede contar, y los que alguien ya ancló se apagan con su mensaje («En el
-  piloto no se cuenta»).
+- **Los accesos directos del ícono:** «Revisar precio» en los dos celulares, «Armar ticket» en el de Luis y «Contar»
+  solo si se puede contar. Los tres abren como el ícono, en su modo.
+  - **«Revisar precio» se queda fijo** (`shortcuts.xml`): sirve en los dos celulares y nunca se apaga, sale desde que
+    se instala la app (antes de abrirla) y el que alguien ancló con la 0.1 sigue sirviendo. Para eso tiene que seguir
+    fijo y con el mismo id.
+  - **«Armar ticket» y «Contar» son dinámicos** (`ShortcutManagerCompat`): solo esos se ponen y se quitan mientras la
+    app corre, según lo que haga cada celular. La app los revisa cada vez que arranca, después del primer cuadro
+    analizado (para no estorbarle a la cámara), y los vuelve a publicar solo si el menú cambió. Llevan id nuevos: los de
+    `shortcuts.xml` no se pueden tocar desde el código. Lo que alguien ancló de ellos se apaga con su mensaje cuando ya
+    no va («En este celular no se arman tickets», «En el piloto no se cuenta») y vuelve a servir cuando sí.
+  - **Lo que se ancló de «Ticket» y «Conteo» con la 0.1 o la 0.2 se apaga para siempre.** Se quedan declarados apagados
+    en `shortcuts.xml`, con el mensaje «Este acceso cambió. Mantén presionado el ícono para ver los de ahora.», y ya no
+    salen en el menú. Quien los quiera otra vez tiene que anclar «Armar ticket» o «Contar», que son otros. El mensaje
+    quizá no se vea: los lanzadores de Android 15 y 16 que se revisaron dicen solo «El acceso directo no está
+    disponible» (el del Pixel falta verlo), así que a Luis hay que decírselo por otro lado.
 
 ## Sin red
 
@@ -1540,7 +1557,9 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
   sesión: pide la huella en cada uso (solo lo que Android da por seguro, sin el PIN del celular) y Android la invalida
   si se registra otra huella o se quita el bloqueo; entonces la app pide el PIN del POS.
 - **`app`:** las pantallas nuevas sobre la de hoy; las de medición bajan a Ajustes. El botón rápido se excluye del gesto
-  de atrás (`Modifier.systemGestureExclusion()`) y los accesos directos del ícono pasan a dinámicos.
+  de atrás (`Modifier.systemGestureExclusion()`). De los accesos directos del ícono, «Armar ticket» y «Contar» pasan a
+  dinámicos, con id nuevos, y «Revisar precio» se queda fijo en `shortcuts.xml`, donde «Ticket» y «Conteo» de antes
+  siguen declarados, apagados ([del bolsillo al precio](#del-bolsillo-al-precio)).
 - **El contrato:** el POS todavía no publica OpenAPI. Mientras, los DTO se escriben a mano en Kotlin (camelCase, los
   enums como números, ignorando campos nuevos), con ejemplos de JSON sacados de las pruebas del POS. Cuando el POS
   publique OpenAPI con sus respuestas tipadas, el cliente se genera de ahí.
@@ -1551,8 +1570,8 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
     192.168.x). No manda nada a internet, ni estadísticas ni fotos de la cámara.
   - El servicio habla HTTP, sin cifrar (la llave y los PIN viajan así, como con las cajas), así que Android debe permitir
     HTTP a esa dirección. El POS ya pide que cajas y celulares no compartan la red con el público.
-- **Versiones:** `0.2.0` con la primera entrega de esta propuesta; `1.0.0` cuando se use en la tienda con el POS, como
-  dice el plan.
+- **Versiones:** `0.2.0` con la primera entrega de esta propuesta, `0.3.0` con «Del bolsillo al precio»; `1.0.0` cuando
+  se use en la tienda con el POS, como dice el plan.
 
 ## Lo que pide al POS
 
@@ -1581,7 +1600,7 @@ celular de la tienda.
 |---|---|---|---|
 | 1 | **La base** | Los tres modos sobre el escáner de hoy (Conteo, todavía el de prueba: el de verdad llega en la 6 y en el piloto no aparece), el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
 | 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda. Mientras el POS no tenga celulares, el respaldo: una caja nueva («Celular de Luis», serie L), con red y sin copia. La copia del catálogo y sin red, cuando el POS sirva el 2 | 1 (1a, 1b, 1d, 1e) y 3; luego 2 |
-| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos, dinámicos | — |
+| 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos: «Revisar precio» fijo, «Armar ticket» y «Contar» dinámicos | — |
 | 4 | **Mandar el ticket** | «¿A qué caja?», mandarlo, la confirmación y el QR sin red | 4, 5, 7 |
 | 5 | **Impresiones** | La hoja de impresiones con miniaturas y lotes, el renglón en el ticket | 6 |
 | 6 | **Conteo**, después del piloto | 6.1 el completo; 6.2 el del día; 6.3 el celular de la tienda, con Precio sin entrar y Conteo por turnos ([cómo se entregaría](#cómo-se-entregaría)) | 6.1: 1, C1, C2, C4, C5, C9, C10, C11 y, con B, C7 · 6.2: C3 y, con C, C7 · 6.3: 1a, 1b, 1c, 2a |

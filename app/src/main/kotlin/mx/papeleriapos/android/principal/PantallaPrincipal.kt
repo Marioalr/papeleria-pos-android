@@ -152,8 +152,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     }
     // Al salir de la app o apagarse la pantalla (docs/propuesta-interfaz.md, «Cómo se usa»).
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { cerrarMenu() }
-    // Al cambiar de modo (en Conteo no hay botón con qué cerrarlo) o si algo abrió una hoja con el menú abierto.
-    LaunchedEffect(modo, hoja) { if (boton.abierto) cerrarMenu() }
+    // Al cambiar de modo (en Conteo no hay botón con qué cerrarlo), si algo abrió una hoja con el menú abierto o si llegó
+    // un producto de fuera («Abrir la app» del escaneo rápido).
+    val deFuera by piso.deFuera.collectAsStateWithLifecycle()
+    LaunchedEffect(modo, hoja, deFuera) { if (boton.abierto) cerrarMenu() }
     // Un botón cerrado, también uno nuevo (la Activity se recreó con el menú abierto): Piso tampoco espera.
     LaunchedEffect(boton.abierto) { if (!boton.abierto) piso.alCerrarMenu() }
     // La pantalla sale con el menú abierto (a Ajustes con TalkBack o el teclado, o se recrea la Activity).
@@ -351,7 +353,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
         }
 
         // ---- Lo que hizo cada lectura, para TalkBack (fuera del panel: con el menú abierto las lecturas siguen contando) ----
-        AnuncioDeLectura(anuncio, Modifier.align(Alignment.TopStart).padding(top = inicioPanel))
+        AnuncioDeLectura(anuncio, piso, Modifier.align(Alignment.TopStart).padding(top = inicioPanel))
 
         // ---- La burbuja de la primera vez en cada modo, sobre el botón: solo con el panel vacío (no tapa renglones) ----
         val pista = pistaDe(modo, zurdo)
@@ -418,18 +420,19 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
 
         // ---- Lo que tapa el visor ----
         val h = hoja
-        // El alto del aviso, medido. Con una hoja va bajo su barra (a 64 dp, la barra mide 56 o más): el ticket completo le
-        // deja ese lugar arriba de su lista, para que no tape el − y el + del primer renglón que se ve.
+        // El alto del aviso, medido. Con una hoja va bajo su barra (a 64 dp, la barra mide 56 o más): el ticket completo y
+        // Buscar le dejan ese lugar arriba de su lista, para que no tape el − y el + del primer renglón que se ve ni los
+        // resultados de arriba.
         var altoAviso by remember { mutableStateOf(0.dp) }
         if (h != null) {
             val reportarEquis = remember(h) { { r: Rect -> zonaCerrar.fijar(h, r) } }
+            val huecoDelAviso = if (aviso != null) altoAviso + 8.dp else 0.dp
             CompositionLocalProvider(LocalZonaCerrarHoja provides reportarEquis) {
                 when (h) {
-                    Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::buscar, piso::elegirDeBusqueda) { piso.cerrarHoja() }
-                    Hoja.Ticket -> HojaTicket(
-                        ticket, catalogo, accionesTicket,
-                        huecoArriba = if (aviso != null) altoAviso + 8.dp else 0.dp,
-                    ) { piso.cerrarHoja() }
+                    Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::buscar, piso::elegirDeBusqueda, huecoArriba = huecoDelAviso) {
+                        piso.cerrarHoja()
+                    }
+                    Hoja.Ticket -> HojaTicket(ticket, catalogo, accionesTicket, huecoArriba = huecoDelAviso) { piso.cerrarHoja() }
                     is Hoja.Cantidad -> {
                         val r = ticket.renglones.firstOrNull { it.id == h.idRenglon }
                         if (r == null) {
@@ -488,9 +491,18 @@ private class ZonaCerrar {
  * Lo que hizo la última lectura, para TalkBack (docs/propuesta-interfaz.md, «Accesibilidad»): una región viva que no se
  * ve, de 1 dp, como el contador de la 0.1, que se anunciaba con cada lectura. Siempre está, así cada cambio se anuncia;
  * antes de la primera lectura no dice nada (sin descripción: no es una parada vacía al recorrer la pantalla).
+ *
+ * Al volver a la pantalla (de Ajustes, con un producto que llegó de fuera) aparece ya con su texto, y eso no se anuncia:
+ * cuando el delegado de accesibilidad de Compose ya la registró (junta los cambios cada 100 ms), [Piso] repite lo que se
+ * anunció sin ella ([Piso.alConocerseLosAnuncios]).
  */
 @Composable
-private fun AnuncioDeLectura(anuncio: Anuncio?, modifier: Modifier = Modifier) {
+private fun AnuncioDeLectura(anuncio: Anuncio?, piso: Piso, modifier: Modifier = Modifier) {
+    LaunchedEffect(piso) {
+        delay(MS_PARA_CONOCER_EL_ANUNCIO)
+        piso.alConocerseLosAnuncios()
+    }
+    DisposableEffect(piso) { onDispose { piso.alOcultarseLosAnuncios() } }
     // Un carácter que no se oye y cambia con cada lectura: el mismo producto otra vez en Precio se vuelve a anunciar.
     val texto = anuncio?.let { if (it.id % 2L == 0L) it.texto else it.texto + "\u200B" }
     Box(
@@ -503,6 +515,9 @@ private fun AnuncioDeLectura(anuncio: Anuncio?, modifier: Modifier = Modifier) {
             .testTag("anuncio"),
     )
 }
+
+/** Lo que tarda en repetir lo que se anunció sin la región viva: más que dos vueltas del delegado de accesibilidad. */
+private const val MS_PARA_CONOCER_EL_ANUNCIO = 250L
 
 /** Arriba a la izquierda, Ajustes (con la entrega 2, la ficha de quien entró y su menú, «Este celular»). */
 @Composable

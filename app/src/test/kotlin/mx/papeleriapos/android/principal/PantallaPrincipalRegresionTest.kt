@@ -573,6 +573,62 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         captura("regresion/aviso-sobre-ticket-completo-desplazado")
     }
 
+    /** Los resultados de Buscar que se ven, en dp. */
+    private fun resultadosVistos(): List<Rect> =
+        compose.onAllNodes(SemanticsMatcher("un resultado") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("resultado-") == true })
+            .fetchSemanticsNodes().map { enDp(it.boundsInRoot) }.filter { it.height > 0f }
+
+    @Test
+    fun `el aviso que sigue a la vista no tapa los resultados de buscar`() {
+        abrir(ModoApp.PRECIO)
+        leer(CUADERNO)
+        compose.onNodeWithTag("al-ticket").performClick()
+        idle()
+        assertTrue(vm.piso.aviso.value!!.texto.contains("al ticket"))
+        // ← Buscar con «… al ticket» todavía a la vista: sale bajo la barra de la hoja, como sobre el ticket completo.
+        vm.piso.abrir(Hoja.Buscar)
+        idle()
+        val aviso = limites("aviso")!!
+        val lista = limites("resultados-buscar")!!
+        assertTrue("La lista empieza bajo el aviso ($lista contra $aviso)", lista.top >= aviso.bottom - 0.5f)
+        val vistos = resultadosVistos()
+        assertTrue(vistos.isNotEmpty())
+        val tapados = vistos.filter { it.overlaps(aviso) }
+        assertTrue("El aviso ($aviso) tapa $tapados", tapados.isEmpty())
+        captura("regresion/aviso-sobre-buscar")
+        // Al irse el aviso, la lista vuelve a empezar bajo la barra.
+        compose.mainClock.advanceTimeBy(6_000)
+        idle()
+        assertFalse(existe("aviso"))
+        assertTrue("La lista sube (${limites("resultados-buscar")!!.top} contra ${lista.top})", limites("resultados-buscar")!!.top < lista.top)
+    }
+
+    // ---- Lo que llega de fuera: «Abrir la app» del escaneo rápido ----
+
+    @Test
+    fun `lo que llega de fuera cierra el menu y las hojas y ensena el producto sin tocar el ticket`() {
+        abrir(ModoApp.TICKET)
+        leer(LAPIZ)
+        val ticket = vm.venta.value
+        tocarBoton()
+        assertTrue(menuAbierto())
+        vm.ensenarDeFuera(CUADERNO)
+        idle()
+        assertFalse("El menú se cierra", menuAbierto())
+        assertEquals(ModoApp.PRECIO, vm.piso.modo.value)
+        compose.onNode(hasText(nombreDe(CUADERNO)) and hasAnyAncestor(hasTestTag("tarjeta-precio"))).assertExists()
+        assertTrue("El ticket no cambia", ticket === vm.venta.value)
+        // Con el precio en grande encima (una hoja), lo que no está: la hoja se cierra y sale «No está» con su código.
+        vm.piso.ensenar(vm.piso.catalogo.value!!.porClave(CUADERNO)!!)
+        idle()
+        assertTrue(hojaGrande() != null)
+        vm.ensenarDeFuera(NO_ESTA)
+        idle()
+        assertNull(vm.piso.hoja.value)
+        compose.onNode(hasText(NO_ESTA) and hasAnyAncestor(hasTestTag("no-esta"))).assertExists()
+        captura("regresion/de-fuera-no-esta")
+    }
+
     @Test
     fun `el aviso de al ticket no sale encima del precio en grande y espera a que se regrese`() {
         abrir(ModoApp.PRECIO)

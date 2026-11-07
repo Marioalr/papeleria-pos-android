@@ -141,6 +141,17 @@ class EscanerViewModel(
         cambiarModo(modo.delNucleo)
     }
 
+    /**
+     * «Abrir la app» desde el escaneo rápido con [producto] (su clave o, si no estaba en el catálogo, su código): Precio
+     * con ese producto en la tarjeta ([Piso.ensenarDeFuera]). No pasa por el escáner: no vibra, la sesión de prueba no lo
+     * anota y el ticket no cambia. Si los productos todavía no están (la app se acaba de abrir), la tarjeta lo enseña en
+     * cuanto lleguen; los pide la pantalla al dibujarse completa, como siempre, fuera de la apertura de la cámara.
+     */
+    fun ensenarDeFuera(producto: String) {
+        cambiarModoApp(ModoApp.PRECIO)
+        piso.ensenarDeFuera(producto)
+    }
+
     private suspend fun alLeer(e: EventoLectura) {
         val hora = System.currentTimeMillis()
         val codigo = e.aceptada.codigo
