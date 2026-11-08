@@ -1,11 +1,13 @@
 package mx.papeleriapos.android
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -32,6 +34,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import mx.papeleriapos.android.caja.Conexion
+import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.rapido.Accesos
 import mx.papeleriapos.android.rapido.EsteCelular
@@ -66,6 +70,12 @@ import mx.papeleriapos.escaner.ui.LocalSoloVisor
 class MainActivity : ComponentActivity() {
     private val vm: EscanerViewModel by viewModels()
     private var detenida = false
+
+    /** El PIN del celular con la pantalla de bloqueo (Android 8 y antes, o sin huella): si lo pasó, se entra. */
+    private val credencial = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) Entrada.desbloquear()
+    }
+    private val pedirCredencial: (Intent) -> Unit = { credencial.launch(it) }
     /**
      * Si la pantalla a la vista es la principal (la del escáner), para guardarlo en el estado de la Activity. La interfaz
      * completa llega en el segundo cuadro: hasta entonces vale lo restaurado.
@@ -87,10 +97,30 @@ class MainActivity : ComponentActivity() {
         Arranque.marcarPrimerCuadroUi(window.decorView)
         setContent {
             ContenidoEnDosCuadros(controlador) {
-                TemaEscaner { AppEscaner(vm = vm, alCambiarDestino = { escanerVisible = it == Destino.PRINCIPAL }) }
+                TemaEscaner {
+                    AppEscaner(
+                        vm = vm,
+                        alCambiarDestino = { escanerVisible = it == Destino.PRINCIPAL },
+                        alPedirEntrar = { Entrada.pedir(this, pedirCredencial) },
+                    )
+                }
             }
         }
         revisarAccesos(controlador)
+    }
+
+    /**
+     * La conexión con la caja principal late solo con la app al frente, y la entrada con la huella se pide al abrir con
+     * el celular dado de alta. Las dos leen el alta del disco en su hilo: aquí solo se espera a saber si hay alta, fuera
+     * de la apertura de la cámara (ya enlazada en onCreate).
+     */
+    private fun conexionAlFrente() {
+        val conexion = Conexion.del(applicationContext)
+        conexion.alFrente()
+        lifecycleScope.launch {
+            val estado = conexion.estado.first { it.leida }
+            Entrada.alFrente(this@MainActivity, conAlta = estado.alta != null, pedirCredencial = pedirCredencial)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -111,12 +141,15 @@ class MainActivity : ComponentActivity() {
             detenida = false
             Arranque.alVolver(window.decorView)
         }
+        conexionAlFrente()
     }
 
     override fun onStop() {
         super.onStop()
         detenida = true
         vm.alDetenerse()
+        Conexion.del(applicationContext).alFondo()
+        Entrada.alFondo()
     }
 
     /**

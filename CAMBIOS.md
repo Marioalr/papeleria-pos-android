@@ -2,6 +2,66 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.0 (sin publicar)
+
+La entrega 2 de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «El celular de Luis», con lo que decidió
+el dueño el 2026-11-08: **el celular se da de alta en el POS como una caja más y lleva la copia del catálogo de esa
+caja** ([el documento del POS](https://github.com/Marioalr/papeleria-pos/blob/celular/como-caja/docs/celular-como-caja.md),
+que manda sobre la propuesta). Ya no hay «celulares» aparte en el POS, ni llaves con solo los modos, ni Configuración ›
+Celulares, ni la sesión del celular de la tienda. Necesita el POS de la rama `celular/como-caja`.
+
+- **Ajustes › La conexión: el alta como caja,** igual que la caja de Windows. Busca la caja principal en el Wi-Fi de la
+  tienda (UDP a 5081) o se escribe su IP (solo direcciones privadas); el usuario y el PIN de quien tiene «Dar de alta y
+  quitar cajas» (el PIN no se guarda); el nombre («Celular de Luis») y la serie (CEL o, si ya existe, CEA, CEB…; el
+  servicio solo acepta de 1 a 3 letras), que se proponen y se editan como en la PC. Siempre crea una caja nueva: nunca le quita la llave a una que existe. La llave
+  queda cifrada con el Android Keystore. Quitarle el acceso se hace desde la caja: Configuración › Cajas › «Quitar PC»;
+  entonces la app borra la llave y la copia y lo dice.
+- **La copia del catálogo** (`GET /api/cajas/{id}/paquete`, varios MB) baja al dar de alta y se guarda como JSON propio
+  en la memoria de la app. Solo los productos con sus presentaciones, precios y existencia, todos los códigos, las
+  marcas, los sinónimos, lo más vendido, lo elegido en la búsqueda, las promociones y el nombre de la tienda. **Los
+  usuarios con el hash de su PIN, sus permisos y reglas, y los clientes con su crédito ni siquiera se leen del JSON**:
+  nunca tocan la memoria ni el disco (`CopiaTest` lo revisa). Mientras la app está al frente le avisa a la caja principal
+  cada 30 segundos (`GET /api/estado?caja=`); si cambió algo, pide solo lo que cambió (`/cambios`) y lo aplica como la
+  caja de Windows; si el servicio dice que se baje entera, la baja. Nunca en segundo plano. Sin red, Precio y Buscar
+  siguen con la copia.
+- **Precio, Buscar y el ticket con la copia:** cada variante es un producto y cada otra presentación (la caja de 12) es
+  otro, con su código y su precio. El precio se calcula con el mismo `CalculoPrecio` sobre los precios tal cual: el de la
+  sucursal manda sobre el general, las escalas de mayoreo, el precio propio de la presentación nunca más caro que sus
+  piezas, y la promoción que corre hoy (la tarjeta la dice: «Regreso a clases: lleva 3 y paga 2»). Un código que es de
+  dos productos no se adivina, como en el POS: la tarjeta dice «Ese código es de más de un producto: búscalo por nombre».
+  La tarjeta ya no trae el departamento (la copia no lo tiene), solo el código. Buscar es la búsqueda de la caja con las
+  marcas y los sinónimos de la tienda, lo que esa caja eligió antes primero y lo más vendido; sin escribir, lo más
+  vendido (los rápidos llegan después, con red). El mosaico «Precio» sobre el bloqueo también lee la copia.
+- **Entrar con la huella:** con el celular dado de alta, la app se bloquea al abrirse y al volver después de 10 minutos
+  en el fondo, y se entra con lo que el celular acepte (la huella o la cara; si no, el PIN, el patrón o la contraseña del
+  celular). Mientras, la pantalla queda tapada y las lecturas no cuentan ni vibran; la cámara sí se enlaza, así que al
+  entrar ya escanea. Sin bloqueo de pantalla no se da de alta: la app lo dice y abre la seguridad del celular. El mosaico
+  sobre el bloqueo no pide nada, como antes. Es local, del celular: la app no pide la sesión del POS (`POST /api/sesion`)
+  porque el precio y la búsqueda no la necesitan; llegará con lo que dependa de quién.
+- **Si la caja principal cambia de IP:** tras dos latidos sin respuesta la app pregunta por UDP y, antes de mandarle la
+  llave a la dirección nueva, le pide que pruebe quién es (`GET /api/identidad`: el HMAC con la huella de la llave y la
+  firma ECDSA del servicio), como la caja de Windows.
+- **Los productos de prueba** (los ficticios del prototipo) salen de Precio, Buscar y el ticket y quedan como herramienta:
+  Ajustes › Herramientas de medición › El escáner › «Productos de prueba», para medir y probar sin la caja principal
+  (también en el escaneo rápido). Ajustes dice si está encendida.
+- **Permisos:** vuelve Internet (la app solo acepta direcciones privadas de la red local; HTTP sin TLS como la caja de
+  Windows, en `res/xml/red_segura.xml`) y entra el de la huella (`USE_BIOMETRIC`, normal, sin diálogo); el estado de la
+  red sigue fuera. La revisión al armar cada APK (`verificarPermisos`) acepta cámara, vibración, Internet y la huella, y
+  nada más. Con targetSdk 36, Android 17 deja pasar a la red local con Internet;
+  al pasar a targetSdk 37 habrá que pedir `ACCESS_LOCAL_NETWORK` en tiempo de ejecución.
+- **Bibliotecas nuevas:** OkHttp 4.12 y kotlinx-serialization 1.9 (y MockWebServer en las pruebas). Ninguna manda nada
+  fuera de la red de la tienda.
+
+**Lo que no trae y por qué:** «Buscar cambios ahora» en Ajustes (el latido de 30 s basta; si en las pruebas de la tienda
+hace falta, se agrega), los rápidos (Copia B/N, CURP) en Buscar sin escribir (van por `GET /api/sucursales/{id}/rapidos`,
+con red; después), las fotos (la interfaz no las enseña), la red «lenta» con espera para mandar (no hay nada que mandar
+todavía) y `POST /api/sesion`.
+
+**Pendiente antes de publicar la 0.4.0:** probar en la PC contra el servicio del POS de la rama `celular/como-caja` con la
+base ficticia, y en la tienda un fin de semana con el dueño: el Pixel en el Wi-Fi, el alta en la caja principal, y el
+precio y la búsqueda con los productos reales ([pruebas](docs/pruebas.md#la-conexión-con-el-pos)). Medir en el Pixel
+cuánto tarda en armarse la copia de la tienda (el índice de la búsqueda) y que la apertura no empeore.
+
 ## 0.3.0 (sin publicar)
 
 La tercera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#del-bolsillo-al-precio), «Del bolsillo al

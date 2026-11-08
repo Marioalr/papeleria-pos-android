@@ -5,7 +5,7 @@ import java.io.IOException
 
 /**
  * Escribe a un temporal junto al destino y lo renombra: si la app muere a la mitad queda la versión anterior completa.
- * Lo usan las listas de venta y conteo, la sesión de prueba y el catálogo de prueba. Fuera del hilo principal.
+ * Lo usan las listas de venta y conteo, la sesión de prueba, el catálogo de prueba y la copia del catálogo. Fuera del hilo principal.
  */
 fun File.escribirAtomico(bytes: ByteArray) {
     val temporal = File(parentFile, "$name.tmp")

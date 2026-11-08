@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mx.papeleriapos.android.MainActivity
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.escaner.ControladorEscaner
 import mx.papeleriapos.escaner.EstadoEscaner
 import mx.papeleriapos.escaner.Fase
@@ -80,7 +81,7 @@ class EscaneoRapidoActividadTest {
             initializer {
                 EscaneoRapidoViewModel(app, { _, config ->
                     ControladorQueAnota(ControladorDeMuestra(EstadoEscaner(fase = Fase.PAUSADO), config)).also { controlador = it }
-                })
+                }) { FuenteDeProductos.dePrueba(app) }
             }
         }
         vm = ViewModelProvider(c.get().viewModelStore, fabrica)[EscaneoRapidoViewModel::class.java]

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El servicio de la caja principal habla HTTP sin TLS en la red de la tienda (puerto 5080), como con la caja de Windows.
+     Aquí solo se puede permitir por dominio, no por rango de IP: lo permite todo y la app no acepta más que direcciones
+     privadas (caja/RedLocal.kt). Sin certificados de usuario: no hay TLS que interceptar. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

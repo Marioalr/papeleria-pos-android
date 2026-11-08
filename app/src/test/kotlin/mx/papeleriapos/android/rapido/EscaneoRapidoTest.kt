@@ -26,6 +26,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.catalogo.Escala
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.lista.ListasCompartidas
@@ -72,8 +73,7 @@ class EscaneoRapidoTest {
     }
 
     private fun vm(productos: (suspend () -> CatalogoDeProductos)? = null): EscaneoRapidoViewModel =
-        if (productos == null) EscaneoRapidoViewModel(app, { _, c -> ControladorDeMuestra(config = c) })
-        else EscaneoRapidoViewModel(app, { _, c -> ControladorDeMuestra(config = c) }, productos)
+        EscaneoRapidoViewModel(app, { _, c -> ControladorDeMuestra(config = c) }, productos ?: { FuenteDeProductos.dePrueba(app) })
 
     private var mostrada = false
 

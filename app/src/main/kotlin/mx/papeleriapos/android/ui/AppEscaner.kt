@@ -42,6 +42,9 @@ import mx.papeleriapos.android.EscanerViewModel
 import mx.papeleriapos.android.ajustes.PantallaAjustes
 import mx.papeleriapos.android.ajustes.PantallaAjustesEscaner
 import mx.papeleriapos.android.banco.BancoViewModel
+import mx.papeleriapos.android.caja.PantallaConexion
+import mx.papeleriapos.android.entrada.Entrada
+import mx.papeleriapos.android.entrada.PantallaEntrada
 import mx.papeleriapos.android.banco.PantallaBanco
 import mx.papeleriapos.android.estres.EstresViewModel
 import mx.papeleriapos.android.estres.PantallaEstres
@@ -62,6 +65,7 @@ import java.util.Locale
 enum class Destino(val titulo: String, val padre: Destino?) {
     PRINCIPAL("Escanear", null),
     AJUSTES("Ajustes", PRINCIPAL),
+    CONEXION("La conexión", AJUSTES),
     ESCANER("El escáner", AJUSTES),
     SESION("Sesión de prueba", AJUSTES),
     BANCO("Banco de pruebas", AJUSTES),
@@ -90,8 +94,16 @@ fun AppEscaner(
     banco: BancoViewModel = viewModel(),
     estres: EstresViewModel = viewModel(),
     alCambiarDestino: (Destino) -> Unit = {},
+    /** Volver a pedir la huella desde el velo de entrada; null en las pruebas. */
+    alPedirEntrar: (() -> Unit)? = null,
 ) {
     var destino by rememberSaveable { mutableStateOf(inicial) }
+    // Mientras no se ha entrado con la huella, un velo opaco tapa todo (la cámara se enlaza igual, debajo).
+    val bloqueada by Entrada.bloqueada.collectAsStateWithLifecycle()
+    if (bloqueada && alPedirEntrar != null) {
+        PantallaEntrada(alEntrar = alPedirEntrar)
+        return
+    }
     SideEffect { alCambiarDestino(destino) }
     // «Abrir la app» con un producto (desde el escaneo rápido) regresa a la principal, también desde Ajustes o las
     // herramientas; una vez por cada uno: lo atendido se guarda con la pantalla, así que recrearla no vuelve a llevarla.
@@ -135,6 +147,7 @@ fun AppEscaner(
                 Box(Modifier.fillMaxSize().padding(relleno)) {
                     when (destino) {
                         Destino.AJUSTES -> PantallaAjustes(vm, alAbrir = { destino = it })
+                        Destino.CONEXION -> PantallaConexion()
                         Destino.ESCANER -> PantallaAjustesEscaner(vm)
                         Destino.SESION -> PantallaSesion(vm)
                         Destino.BANCO -> PantallaBanco(banco)

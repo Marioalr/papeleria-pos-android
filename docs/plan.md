@@ -29,8 +29,8 @@ escanea lo que hoy pasa por el lector de la caja (contar, recibir mercancía, co
 | Guía para moverse | Un localizador propio sobre la imagen en gris dice dónde está el código, su tamaño, si está borroso y la luz, aunque todavía no se pueda leer ([diseño](escaner.md#localizador)) |
 | Simbologías | Solo EAN-13 (incluidos los internos del POS, que empiezan con 2), UPC-A, UPC-E, EAN-8, ITF (los GTIN-14), Code 128 (las claves con letras, que el POS imprimirá en etiquetas) y QR (el folio del ticket). Menos formatos activos, menos lecturas falsas y más velocidad; las de verificación débil (Code 39, Codabar) no se leen |
 | Exactitud | Una lectura falsa es peor que una lenta: la meta es **0 falsas**. En 1D se acepta solo con 2 lecturas iguales seguidas y con su dígito verificador, nunca de un solo cuadro para ganar velocidad; un código del catálogo con el verificador mal no se lee, y no se «corrige» |
-| Red y privacidad | La app no usa la red: no manda cuadros, fotos ni códigos a ningún servidor, sin estadísticas, telemetría ni anuncios. Permisos: solo cámara y vibración (cada APK lo revisa al armarse). Lo medido se guarda en el celular y se exporta a mano; fotos, nunca por omisión |
-| Datos de la tienda | No entran al repositorio, ni a commits ni a PRs: los ejemplos y las pruebas usan códigos ficticios (EAN-13 válidos que empiezan con 750999). Para probar con los códigos reales, el dueño los exporta a un archivo fuera del repo y la app lo carga en el celular. Nada se conecta al servicio de la tienda ni a eleventa |
+| Red y privacidad | Solo la red de la tienda (desde la 0.4.0): la app habla únicamente con la caja principal en que se dio de alta, en una dirección privada, con HTTP como la caja de Windows. No manda cuadros, fotos ni códigos a ningún otro lado, sin estadísticas, telemetría ni anuncios. Permisos: cámara, vibración, Internet y la huella (para entrar), y nada más (cada APK lo revisa al armarse). Lo medido se guarda en el celular y se exporta a mano; fotos, nunca por omisión |
+| Datos de la tienda | No entran al repositorio, ni a commits ni a PRs: los ejemplos y las pruebas usan códigos ficticios (EAN-13 válidos que empiezan con 750999). La copia del catálogo de la tienda vive en el celular (desde la 0.4.0) sin usuarios, PIN ni clientes, que ni siquiera se leen del paquete; para medir el escáner con los códigos reales, el dueño los exporta a un archivo fuera del repo y la app lo carga. Con eleventa nada se conecta |
 | Distribución | APK firmado que se instala a mano, con cable o desde la versión de GitHub; no va a Play Store. La llave (generada el 2026-10-09) vive fuera del repo y en GitHub como secretos; si se pierde, hay que desinstalar la app (y sus datos) para instalar la nueva |
 | Idioma | Todo en español: documentos, código, commits y PRs, como en el POS |
 
@@ -215,9 +215,14 @@ permisos por rol, y adaptar el escáner a los celulares del personal.
 ## Fase 2: la app conectada al POS
 
 Desde el 2026-11-03 ([arriba](#plan-de-la-app-android)). **Cómo se une al POS ya está decidido:** app nativa en Kotlin
-que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10); la propuesta cambia dos
-cosas de esa decisión, pendientes de aprobar: el celular deja de darse de alta como caja y lleva copia del catálogo. El
-escáner sigue en su módulo, sin cambios.
+que habla con el servicio de la caja principal, con su misma API (decisión del POS, 2026-10-10). **El dueño decidió el
+2026-11-08 las dos preguntas que la propuesta dejaba:** el celular **se da de alta como una caja más**, con el alta que ya
+existe para la caja de Windows (no habrá «celulares» aparte en el POS), y **lleva la copia del catálogo de esa caja**
+(el precio sale al instante y sin red); la app descarta de la copia los usuarios con el hash de su PIN y los clientes. La
+secuencia exacta de la API está en el
+[documento del POS](https://github.com/Marioalr/papeleria-pos/blob/celular/como-caja/docs/celular-como-caja.md), que manda
+sobre la propuesta. La red: solo la caja principal de la tienda, en una dirección privada. El escáner sigue en su módulo,
+sin cambios.
 
 Lo que hace la app: armar tickets en el piso y mandarlos a una caja (la preventa), revisar precios (el verificador, F9),
 contar inventario y agregar al ticket las impresiones por cobrar (las que mide el POS y las de Control Print). Lo demás de
@@ -233,17 +238,16 @@ piloto.
 | # | Entrega | Qué trae | Necesita del POS |
 |---|---|---|---|
 | 1 | **La base** | Los modos Precio, Ticket y Conteo sobre el escáner de hoy, el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
-| 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda con la API; la copia del catálogo cuando el POS la sirva. Mientras, una caja nueva, con red | Celulares (de quién es, sus modos, lo que deja cada llave), los permisos nuevos, la regla de los códigos; luego la copia sin PIN ni clientes |
+| 2 | **El celular de Luis** (0.4.0) | El alta como caja (buscar la caja principal o escribir su IP, el PIN del dueño, el nombre y la serie), la copia del catálogo de la caja sin usuarios ni clientes y sus cambios con el latido, el precio y la búsqueda con la copia también sin red, entrar con la huella | La regla de los códigos en el servicio y en la copia, que una caja sin turno no estorbe, y el documento de la API (rama `celular/como-caja`) |
 | 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos | — |
 | 4 | **Mandar el ticket** | Elegir la caja, mandarlo y el QR sin red | Recibir tickets del celular (su entrega 12), las cajas con quién atiende |
 | 5 | **Impresiones** | Las impresiones por cobrar con miniaturas y lotes | Apartarlas; cobrar una sola vez |
 | 6 | **Conteo** | El completo, el del día y el celular de la tienda, con el lugar y la bandeja de salida (después del piloto) | Capturas ligeras, que los conteos no se pisen, quién cuenta de la sesión, el lugar; el conteo de arranque |
 
-**Lo que cambia de las decisiones de arriba al aprobarse:** «Red y privacidad» pasa a **solo la red de la tienda** (la
+**Lo que cambió de las decisiones de arriba con la 0.4.0:** «Red y privacidad» pasó a **solo la red de la tienda** (la
 app habla solo con la caja principal dada de alta, en direcciones privadas, sin estadísticas ni fotos), y «Datos de la
-tienda» suma la copia del catálogo en el celular, sin usuarios, PIN ni clientes, y deja de decir «Nada se conecta al
-servicio de la tienda» (con eleventa sigue sin conectarse). De la decisión del POS cambian dos cosas: el celular deja
-de darse de alta como caja y lleva copia del catálogo. Lo demás se queda.
+tienda» sumó la copia del catálogo en el celular, sin usuarios, PIN ni clientes. De la decisión del POS solo cambia que el
+celular lleva copia del catálogo; el alta como caja se queda como estaba aprobado.
 
 Lo que sigue pendiente de la fase 1 (el motor de la tienda y sus umbrales, la resolución, el lente) se sigue midiendo con
 las herramientas de siempre, que bajan a Ajustes › Herramientas de medición. Y **qué celular comprar para la tienda**,

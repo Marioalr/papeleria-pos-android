@@ -41,8 +41,11 @@ sealed interface Hoja {
 sealed interface ConsultaPrecio {
     data class Encontrado(val producto: Producto) : ConsultaPrecio
 
-    /** Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. */
-    data class NoEsta(val codigo: String) : ConsultaPrecio
+    /**
+     * Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. [deVarios]: sí está, pero el
+     * código es de más de un producto y no se adivina (como el POS); también se busca por nombre.
+     */
+    data class NoEsta(val codigo: String, val deVarios: Boolean = false) : ConsultaPrecio
 }
 
 /**
@@ -158,6 +161,9 @@ class Piso(
     var menuAbierto = false
         private set
 
+    /** La app está bloqueada hasta entrar con la huella ([mx.papeleriapos.android.entrada.Entrada]): las lecturas no cuentan. */
+    @Volatile var bloqueada = false
+
     /**
      * El aviso que espera a que se cierre el menú (taparía ↑ y ↖) o el precio en grande (es para el cliente): sale al
      * cerrarlo, con su tiempo completo.
@@ -207,13 +213,14 @@ class Piso(
      * atenuado). Devuelve si contó; si contó, deja en [anuncio] lo que hizo.
      */
     fun alLeer(normalizado: String, simbologia: Simbologia, hora: Long): Boolean {
-        if (_hoja.value != null) return false
+        if (_hoja.value != null || bloqueada) return false
         val c = _catalogo.value
         val producto = c?.porLectura(normalizado, simbologia)
+        val deVarios = producto == null && c?.deVarios(normalizado, simbologia) == true
         val texto = when (_modo.value) {
             ModoApp.PRECIO -> {
-                _precio.value = producto?.let { ConsultaPrecio.Encontrado(it) } ?: ConsultaPrecio.NoEsta(normalizado)
-                producto?.let { "${it.nombre}, ${pesos(it.precio)}" } ?: "No está en el catálogo"
+                _precio.value = producto?.let { ConsultaPrecio.Encontrado(it) } ?: ConsultaPrecio.NoEsta(normalizado, deVarios)
+                producto?.let { "${it.nombre}, ${pesos(it.precio)}" } ?: if (deVarios) DE_VARIOS else "No está en el catálogo"
             }
             ModoApp.TICKET -> {
                 val l = venta.updateAndGet { it.completarClaves(::claveDe).sumar(normalizado, simbologia, hora, clave = producto?.clave) }
@@ -514,9 +521,12 @@ class Piso(
         venta.update { d.aplicar(it) }
     }
 
-    private companion object {
+    companion object {
         /** Lo que cabe del nombre en el aviso de «Al ticket» (como el prototipo). */
-        const val LARGO_NOMBRE_AVISO = 26
+        private const val LARGO_NOMBRE_AVISO = 26
+
+        /** Lo que dice la tarjeta (y TalkBack) de un código que es de más de un producto, como el POS. */
+        const val DE_VARIOS = "Ese código es de más de un producto: búscalo por nombre"
     }
 }
 

@@ -50,6 +50,28 @@ export JAVA_HOME=/opt/android-studio/jbr
     AOSP que le faltan (`AccesosAncladosTest`); y shortcuts.xml leído como lo lee el sistema (`AtajosDelIconoTest`).
   - El mosaico: «Precio» en el manifiesto y en `onStartListening`, su ícono (la etiqueta de precio) y sus textos
     (`MosaicoTest`); el plazo y la cámara apagada mientras se pide el PIN (`CaducidadTest`).
+- **`app`, el celular de Luis** (la entrega 2, la conexión con el POS):
+  - La copia del catálogo (`CopiaTest`): el paquete se lee con sus versiones; los usuarios con el hash de su PIN, sus
+    permisos y reglas, los clientes y lo del ticket no quedan ni en memoria ni en lo que se guarda (el JSON de prueba
+    los trae a propósito, `src/test/resources/paquete-prueba.json`, con datos ficticios); los cambios reemplazan,
+    agregan, quitan y mueven códigos como `CopiaAlDia.Aplicar` de la caja de Windows; cuándo el latido obliga a pedirlos.
+  - Los productos de la copia (`ProductosDeLaCopiaTest`): cada variante y cada otra presentación, el precio de la
+    sucursal sobre el general, el mayoreo, el precio propio de la caja de 12, lo que no lleva inventario, las unidades,
+    la regla de los códigos y un código de dos productos que no se adivina, la promoción que corre hoy (y la que no), la
+    búsqueda con lo elegido y lo más vendido, y el día de hoy en la zona horaria del celular.
+  - La red (`RedLocalTest`): solo direcciones privadas, con o sin puerto; lo que contesta el descubrimiento; la serie y
+    el nombre que se proponen.
+  - La identidad de la caja principal (`IdentidadTest`, con un servicio de mentira que firma con ECDSA, `LlavesDePrueba`):
+    la huella y la prueba como en el POS; se acepta la respuesta buena y se rechazan otro reto, otra dirección, otra
+    llave, la firma de otro servicio y la basura.
+  - El cliente (`ClienteCajaTest`, con MockWebServer): la llave en `X-Caja-Llave`, el alta con `cajaId` vacío, los
+    cambios con todas las versiones, los mensajes del servicio tal cual y el 401 «caja-sin-alta».
+  - La conexión (`ConexionTest`, con una caja principal de mentira): sin alta no se llama a nadie; el alta guarda la
+    llave y baja la copia; el latido pide los cambios solo cuando cambian las versiones y los aplica, y baja la copia
+    entera si el servicio lo dice; el 401 borra la llave y la copia; si la caja principal cambia de IP se vuelve a
+    encontrar solo cuando prueba quién es (una impostora con la huella pero sin la llave del servicio no entra); y al
+    abrir con alta la copia del disco se lee sin red.
+  - Cuándo se pide la huella (`EntradaTest`): al abrir y después de 10 minutos en el fondo.
 - **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
   (gráficos nativos) con la geometría del chico (360 × 740 dp con barras de 24 + 24: como Robolectric no da la barra de
   gestos, la ventana mide 716 y abajo va solo el hueco de los modos, así el panel mide lo mismo que en el celular), con el
@@ -348,6 +370,48 @@ adb shell pidof mx.papeleriapos.android
    desde Recientes: no vuelve el producto de entonces.
 10. **Tiempos,** si las banderas se deciden por milisegundos: Macrobenchmark de un acceso con `CLEAR_TASK` (los de hoy)
     contra `CLEAR_TOP | SINGLE_TOP`.
+
+## La conexión con el POS
+
+Entre semana, contra un servicio del POS en la PC de desarrollo con la base ficticia, nunca contra los equipos de la
+tienda. El POS de la rama `celular/como-caja` (en `~/Documents/TPV/papeleria-pos-celular`), con su README:
+
+```
+cd ~/Documents/TPV/papeleria-pos-celular
+dotnet run --project src/PapeleriaPos.Herramientas -- generar-ficticios --salida /tmp/ficticios.db
+dotnet run --project src/PapeleriaPos.Herramientas -- preparar-caja --base /tmp/ficticios.db
+dotnet run --project src/PapeleriaPos.Servicio -- --environment Development --ConnectionStrings:Pos="Data Source=/tmp/ficticios.db"
+```
+
+`preparar-caja` deja tres usuarios de prueba (ver su README) con «Dar de alta y quitar cajas». En Development el
+servicio escucha solo en `localhost:5080`: desde el emulador la caja principal es `10.0.2.2` (el anfitrión), que se
+escribe a mano porque el UDP del emulador no llega a la PC. Para que el Pixel lo vea por Wi-Fi en la red de la casa,
+`--Urls=http://*:5080`.
+
+1. **El alta.** Ajustes › La conexión › escribir `10.0.2.2` › «Usar esta dirección» › el usuario y el PIN › el nombre y
+   la serie propuestos (CEL) › «Dar de alta». La pantalla pasa a la conexión: la caja principal, «Celular de …» (serie
+   CEL), «Bajando la copia completa…» y luego cuántos productos y de cuándo. En el POS, Configuración › Cajas enseña el
+   celular con su serie y su equipo.
+2. **Precio y Buscar con la copia.** Con el emulador y un cartel (`-camera-back imagefile:`) de un código de la base
+   ficticia, o con «Productos de prueba» apagado y un código escrito en Buscar. Un código que no está: «No está en el
+   catálogo». Sin red (apagar el servicio): sigue igual.
+3. **Los cambios.** Cambiar un precio en el POS (la caja de Windows o `api/productos`); al siguiente latido (30 s con la
+   app al frente) la tarjeta ya lo trae y «De cuándo» cambia. `adb logcat` no debe traer nada de la copia ni de la llave.
+4. **Quitar PC.** En el POS, Configuración › Cajas › «Quitar PC» del celular; al siguiente latido Ajustes dice «Este
+   celular ya no tiene acceso…», sin copia, y Precio ya no encuentra nada hasta el próximo alta.
+5. **La huella.** Con el emulador con PIN (`adb shell locksettings set-pin 1234`) y una huella
+   (`adb -e emu finger touch 1` cuando el diálogo la pide): al abrir la app con alta sale «Entra con tu huella»; sin
+   entrar, un código leído no vibra ni cambia nada; al entrar ya escanea. Volver a los 10 minutos del fondo pide otra
+   vez; antes, no. Sin PIN en el celular, La conexión no deja dar de alta y abre la seguridad.
+6. **Otra IP.** Arrancar el servicio en otro puerto (`--Urls=http://localhost:5180`) con la misma base; en el emulador
+   no se encuentra solo (sin UDP): se prueba en la PC con `ConexionTest`, o en el Pixel con la PC cambiando de IP.
+7. **En el Pixel, la medición:** cuánto tarda en armarse la copia de la tienda (los productos y el índice de la
+   búsqueda) al abrir la app, con la sesión de prueba; y que la apertura hasta el primer cuadro analizado no empeore
+   contra la [medición del 2026-11-07](../mediciones/2026-11-07-0.3.0/LEEME.md) (Macrobenchmark con el alta hecha).
+
+Y en la tienda, un fin de semana con el dueño: el Pixel en el Wi-Fi, el alta en la caja principal (la de verdad; la serie
+CEL no se usa para folios), y el precio y la búsqueda con los productos reales. Los datos de la tienda siguen fuera del
+repo.
 
 ## Estrés
 

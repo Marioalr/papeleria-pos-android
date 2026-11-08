@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +29,8 @@ import mx.papeleriapos.android.camara.FichaLente
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.CatalogoPrueba
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
+import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.lista.ListasCompartidas
@@ -65,14 +68,19 @@ import kotlin.math.roundToInt
  * pantalla principal ([piso]: los tres modos, el ticket y el conteo, guardados en disco por [ListasCompartidas]) y la
  * sesión de prueba. Cada lectura aceptada va al modo actual y, si hay sesión, queda como intento con lo que encontró en
  * el catálogo de prueba ([CatalogoPrueba]).
+ *
+ * @param productos Los productos de Precio, Buscar y el ticket: los de la copia del catálogo de la caja (o los de prueba,
+ * con la herramienta) por [FuenteDeProductos]; las pruebas pasan los suyos. Cada vez que emite (otra copia), la pantalla
+ * los toma.
  */
 class EscanerViewModel(
     app: Application,
     fabrica: (Context, ConfigEscaner) -> ControladorEscaner,
     private val listas: ListasCompartidas = ListasCompartidas(),
+    productos: kotlinx.coroutines.flow.Flow<CatalogoDeProductos?>? = null,
 ) : AndroidViewModel(app) {
     /** El que usa la app (con las listas del proceso); las pruebas pasan un controlador de muestra. */
-    constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso(app))
+    constructor(app: Application) : this(app, ::crearControlador, ListasCompartidas.delProceso(app), FuenteDeProductos.catalogo)
 
     private val prefs = app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE)
     private val preferencias = PreferenciasEscaner(prefs)
@@ -87,10 +95,12 @@ class EscanerViewModel(
      */
     val piso = Piso(listas.venta, listas.conteo, PreferenciasPiso(prefs), ModoApp.deNucleo(_config.value.modo))
 
-    /** Los productos de prueba, en su hilo y una vez: después de la apertura o con la primera lectura que los necesite. */
-    private val productos = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
-        CatalogoDeProductos.deCsv(app.assets.open(CatalogoDeProductos.ARCHIVO_DE_PRUEBA).bufferedReader().use { it.readText() })
-    }
+    /**
+     * Los productos: los de la fuente ([FuenteDeProductos], que se arma después de la apertura o con la primera lectura
+     * que los necesite) o, en las pruebas sin fuente, los de prueba de assets, en su hilo y una vez.
+     */
+    private val fuente: kotlinx.coroutines.flow.Flow<CatalogoDeProductos?>? = productos
+    private val productosDePrueba = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) { FuenteDeProductos.dePrueba(app) }
 
     private val _venta = listas.venta
     val venta: StateFlow<ListaLecturas> = _venta.asStateFlow()
@@ -127,13 +137,26 @@ class EscanerViewModel(
         if (_config.value.modo != piso.modo.value.delNucleo) cambiarModo(piso.modo.value.delNucleo)
         // Mientras una hoja o el precio en grande tapan el visor, el escáner no vibra ni suena: lo leído no cuenta.
         viewModelScope.launch { piso.hoja.drop(1).collect { configurarControlador() } }
+        // Tampoco mientras la app está bloqueada hasta entrar con la huella.
+        viewModelScope.launch {
+            Entrada.bloqueada.collect {
+                piso.bloqueada = it
+                configurarControlador()
+            }
+        }
+        // Cada copia nueva del catálogo (o la herramienta de productos de prueba) llega a la pantalla.
+        if (fuente != null) viewModelScope.launch { fuente.filterNotNull().collect { piso.cargarCatalogo(it) } }
     }
 
     /** Los productos, si todavía no están: para Buscar y Precio antes de la primera lectura. */
     fun prepararProductos() {
         if (piso.catalogo.value != null) return
-        viewModelScope.launch { piso.cargarCatalogo(productos.await()) }
+        if (fuente != null) FuenteDeProductos.iniciar(getApplication()) else viewModelScope.launch { piso.cargarCatalogo(productosDePrueba.await()) }
     }
+
+    /** Los productos, esperándolos si todavía no están (solo la primera vez, en su hilo). */
+    private suspend fun productos(): CatalogoDeProductos =
+        if (fuente != null) FuenteDeProductos.listo(getApplication()) else productosDePrueba.await()
 
     /** El modo de la pantalla principal (y el del escáner que le toca). */
     fun cambiarModoApp(modo: ModoApp) {
@@ -156,7 +179,7 @@ class EscanerViewModel(
         val hora = System.currentTimeMillis()
         val codigo = e.aceptada.codigo
         // La primera lectura no espera a la apertura: si los productos no están, se cargan ahora, en su hilo.
-        if (piso.catalogo.value == null) piso.cargarCatalogo(productos.await())
+        if (piso.catalogo.value == null) piso.cargarCatalogo(productos())
         val conto = piso.alLeer(codigo.normalizado, codigo.simbologia, hora)
         val apertura = aperturaActual()
         // Lo del celular, en el momento de la lectura. Con una hoja o el precio en grande encima la lectura no contó: la
@@ -215,12 +238,13 @@ class EscanerViewModel(
     }
 
     /**
-     * Lo guardado, salvo la vibración y el bip mientras algo tapa el visor (docs/propuesta-interfaz.md, «Cómo se usa»: no
-     * vibrar «leído» por lo que no cuenta). Cambiar solo eso no rehace el motor ni el Confirmador.
+     * Lo guardado, salvo la vibración y el bip mientras algo tapa el visor o la app está bloqueada hasta entrar
+     * (docs/propuesta-interfaz.md, «Cómo se usa»: no vibrar «leído» por lo que no cuenta). Cambiar solo eso no rehace el
+     * motor ni el Confirmador.
      */
     private fun configurarControlador() {
         val c = _config.value
-        controlador.configurar(if (piso.hoja.value != null) c.copy(vibracion = false, sonido = false) else c)
+        controlador.configurar(if (piso.hoja.value != null || piso.bloqueada) c.copy(vibracion = false, sonido = false) else c)
     }
 
     fun cambiarModo(modo: Modo) = cambiarConfig(_config.value.copy(modo = modo))

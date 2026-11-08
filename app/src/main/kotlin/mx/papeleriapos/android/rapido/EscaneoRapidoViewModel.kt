@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.estimarVisor
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.principal.ModoApp
@@ -35,8 +36,8 @@ data class LecturaRapida(val codigo: String, val simbologia: Simbologia, val num
 /**
  * El escaneo rápido: el verificador sobre el bloqueo (docs/propuesta-interfaz.md, «Del bolsillo al precio» y «Sobre el
  * bloqueo»). Siempre en Precio, aunque la app esté en Ticket o en Conteo: lo leído no entra a ninguna lista (no toca
- * [mx.papeleriapos.android.lista.ListasCompartidas]) y solo se enseña lo que el cliente ve en la tienda, de los productos
- * de prueba: el nombre, el precio, el mayoreo, la promoción y, de una presentación, su precio por pieza. Nunca la
+ * [mx.papeleriapos.android.lista.ListasCompartidas]) y solo se enseña lo que el cliente ve en la tienda, de la copia del
+ * catálogo: el nombre, el precio, el mayoreo, la promoción y, de una presentación, su precio por pieza. Nunca la
  * existencia, el ticket ni el conteo: el celular puede estar bloqueado en manos de cualquiera. Lo único que se ve es lo
  * último leído en esta apertura ([leido]). Sin sesión de prueba, sin ajustes y sin exportar; sus aperturas sí quedan en
  * aperturas.csv de la sesión activa (solo en archivo).
@@ -53,8 +54,8 @@ data class LecturaRapida(val codigo: String, val simbologia: Simbologia, val num
 class EscaneoRapidoViewModel(
     app: Application,
     fabrica: (Context, ConfigEscaner) -> ControladorEscaner,
-    /** Los productos; las pruebas los dan cuando quieren (para ver lo que se enseña mientras cargan). */
-    leerProductos: suspend () -> CatalogoDeProductos = { productosDePrueba(app) },
+    /** Los productos (los de la copia del catálogo); las pruebas los dan cuando quieren (para ver lo que se enseña mientras cargan). */
+    leerProductos: suspend () -> CatalogoDeProductos = { FuenteDeProductos.listo(app) },
 ) : AndroidViewModel(app) {
     /** El que usa la app; las pruebas pasan un controlador de muestra. */
     constructor(app: Application) : this(app, ::crearControlador)
@@ -72,7 +73,7 @@ class EscaneoRapidoViewModel(
     val leido: StateFlow<LecturaRapida?> = _leido.asStateFlow()
     private var lecturas = 0
 
-    /** Los productos de prueba, para lo que se enseña; se leen con la primera lectura, en su hilo (no en la apertura). */
+    /** Los productos, para lo que se enseña; se leen con la primera lectura, en su hilo (no en la apertura). */
     private val productos = viewModelScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) { leerProductos() }
     private val _catalogo = MutableStateFlow<CatalogoDeProductos?>(null)
 
@@ -156,6 +157,3 @@ class EscaneoRapidoViewModel(
     }
 }
 
-/** Los productos de prueba (assets), los mismos que lee la app. */
-private fun productosDePrueba(app: Application): CatalogoDeProductos =
-    CatalogoDeProductos.deCsv(app.assets.open(CatalogoDeProductos.ARCHIVO_DE_PRUEBA).bufferedReader().use { it.readText() })

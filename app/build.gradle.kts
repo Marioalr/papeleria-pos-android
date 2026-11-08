@@ -4,12 +4,14 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // El JSON de la API de la caja principal (entrega 2).
+    alias(libs.plugins.kotlin.serialization)
     // Baseline Profile y Startup Profile (docs: generarlos con :baselineprofile; medir con :benchmark).
     alias(libs.plugins.androidx.baselineprofile)
 }
 
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
-val versionApp = "0.3.0"
+val versionApp = "0.4.0"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
 
 // La llave de los APK de prueba (docs/plan.md, «Versiones»): en GitHub Actions llega por variables de entorno (de los
@@ -104,10 +106,11 @@ baselineProfile {
     automaticGenerationDuringBuild = false
 }
 
-// Sin red (docs/plan.md, «Decisiones», «Red y privacidad»): el manifiesto final de cada variante pide solo cámara y vibración y
-// no trae el envío de estadísticas de ML Kit (datatransport). Una biblioteca nueva puede volver a meterlos al combinar
-// los manifiestos; esta revisión corre antes de armar cada APK y lo detiene.
-abstract class VerificarSinRed : DefaultTask() {
+// Solo la red de la tienda (docs/plan.md, «Decisiones», «Red y privacidad»): el manifiesto final de cada variante pide solo
+// cámara, vibración, Internet (para hablar con la caja principal; la app solo acepta direcciones privadas) y la huella
+// (un permiso normal, para entrar), y no trae el envío de estadísticas de ML Kit (datatransport). Una biblioteca nueva puede meter otros permisos al combinar los
+// manifiestos; esta revisión corre antes de armar cada APK y lo detiene.
+abstract class VerificarPermisos : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val manifiesto: RegularFileProperty
@@ -121,10 +124,11 @@ abstract class VerificarSinRed : DefaultTask() {
         val permisos = Regex("""<uses-permission[^>]*android:name="([^"]+)"""").findAll(texto).map { it.groupValues[1] }.toSet()
         // El de AndroidX es de firma: solo protege los receptores de la propia app, no da acceso a nada.
         val sobran = permisos.filterNot {
-            it == "android.permission.CAMERA" || it == "android.permission.VIBRATE" ||
-                it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+            it == "android.permission.CAMERA" || it == "android.permission.VIBRATE" || it == "android.permission.INTERNET" ||
+                it == "android.permission.USE_BIOMETRIC" || it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
         }
-        check(sobran.isEmpty()) { "El manifiesto pide permisos de más (la app no usa la red): $sobran" }
+        check(sobran.isEmpty()) { "El manifiesto pide permisos de más (la app solo usa cámara, vibración, Internet y la huella): $sobran" }
+        check("ACCESS_NETWORK_STATE" !in texto) { "El manifiesto pide el estado de la red: la app no lo usa" }
         check("datatransport" !in texto) { "El manifiesto trae el envío de estadísticas de ML Kit (datatransport)" }
         marca.get().asFile.writeText("ok\n")
     }
@@ -133,9 +137,9 @@ abstract class VerificarSinRed : DefaultTask() {
 androidComponents {
     onVariants { variante ->
         val nombre = variante.name.replaceFirstChar { it.uppercase() }
-        val revision = tasks.register<VerificarSinRed>("verificarSinRed$nombre") {
+        val revision = tasks.register<VerificarPermisos>("verificarPermisos$nombre") {
             manifiesto.set(variante.artifacts.get(SingleArtifact.MERGED_MANIFEST))
-            marca.set(layout.buildDirectory.file("intermediates/sin_red/${variante.name}.txt"))
+            marca.set(layout.buildDirectory.file("intermediates/permisos/${variante.name}.txt"))
         }
         tasks.matching { it.name == "assemble$nombre" }.configureEach { dependsOn(revision) }
     }
@@ -164,6 +168,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
+    // La conexión con la caja principal (entrega 2): HTTP y el JSON de su API.
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -179,6 +186,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)

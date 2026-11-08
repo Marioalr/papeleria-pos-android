@@ -49,7 +49,7 @@ código de barras: [pruebas](docs/pruebas.md).
 | `nucleo` | Kotlin puro, probado en la JVM: verificación de GTIN, codificadores, escenas sintéticas, geometría, localizador, guía, validación y consenso, búsqueda en el catálogo |
 | `escaner` | Android: la cámara (CameraX), los motores (ML Kit y zxing-cpp) y la pantalla del escáner con su guía, bip y vibración |
 | `pos` | Kotlin puro, probado en la JVM: lo del núcleo del POS que el celular hace igual que la caja, portado del C# con sus pruebas y comparado contra él: la búsqueda del catálogo (pedazos de palabra, error de dedo, sinónimos, familias y el orden en español) y el cálculo del precio (escalas de mayoreo, presentaciones y promociones) |
-| `app` | La app: la pantalla principal con Precio, Ticket y Conteo y el botón rápido, la búsqueda, los productos de prueba, el verificador sobre el bloqueo (el mosaico «Precio»), los accesos directos del ícono y Ajustes, con las herramientas de medición (sesión de prueba con CSV, banco de pruebas y pruebas de estrés) |
+| `app` | La app: la pantalla principal con Precio, Ticket y Conteo y el botón rápido, la búsqueda, la conexión con la caja principal del POS (el alta como caja, la copia del catálogo y sus cambios, la huella al entrar), el verificador sobre el bloqueo (el mosaico «Precio»), los accesos directos del ícono y Ajustes, con las herramientas de medición (sesión de prueba con CSV, banco de pruebas, pruebas de estrés y los productos de prueba) |
 | `baselineprofile` | Genera el perfil de arranque (Baseline Profile y Startup Profile) que precompila la apertura |
 | `benchmark` | Macrobenchmark de la apertura: frío, tibio y caliente hasta el primer cuadro analizado |
 

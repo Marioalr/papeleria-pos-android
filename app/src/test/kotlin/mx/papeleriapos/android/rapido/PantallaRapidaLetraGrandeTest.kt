@@ -23,6 +23,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mx.papeleriapos.android.tema.TemaEscaner
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.escaner.ui.ControladorDeMuestra
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -102,7 +103,7 @@ class PantallaRapidaLetraGrandeTest {
         cabeTodo: Boolean = false,
         nombreYPrecio: Boolean = true,
     ) {
-        val vm = EscaneoRapidoViewModel(app, { _, c -> ControladorDeMuestra(config = c) })
+        val vm = EscaneoRapidoViewModel(app, { _, c -> ControladorDeMuestra(config = c) }) { FuenteDeProductos.dePrueba(app) }
         compose.setContent { TemaEscaner(oscuro = true) { PantallaRapida(vm, alAbrirApp = {}, alCerrar = {}) } }
         idle()
         // Las barras del chico llegan a Compose como en el celular de orilla a orilla.
