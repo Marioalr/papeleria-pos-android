@@ -31,8 +31,13 @@ precio»: el verificador sobre el bloqueo y los accesos del ícono. No necesita 
 - **Buscar le deja su lugar al aviso:** un aviso que seguía a la vista al abrir Buscar (p. ej. «… al ticket» y luego ←)
   tapaba los resultados de arriba; ahora la lista empieza abajo de él, como en el ticket completo.
 
-**Pendiente antes de publicar la 0.3.0:** los perfiles de arranque siguen siendo los de la 0.1 (ver la 0.2.0). Y lo que
-solo se prueba en el celular: [pruebas](docs/pruebas.md#en-el-pixel-8-pro-o-el-emulador).
+**Los perfiles de arranque, generados en el Pixel** (2026-11-07): ya traen la pantalla principal, el botón rápido y
+Ajustes. En frío, la 0.3.0 llega a escanear en 453 ms (mediana), contra 523 ms de la 0.1.0 en la misma sesión
+([medición](mediciones/2026-11-07-0.3.0/LEEME.md)). Todavía sin la lectura de un código: nadie apuntó la cámara.
+
+**Pendiente antes de publicar la 0.3.0:** lo que solo se prueba en el celular con el PIN, el mosaico o el emulador
+([pruebas](docs/pruebas.md#en-el-pixel-8-pro-o-el-emulador)). En el Pixel ya se revisó que los accesos y el ícono dejan
+una sola MainActivity.
 
 ## 0.2.0 (sin publicar)
 
@@ -75,10 +80,7 @@ fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
   es el mismo producto. Con la letra grande sus botones no se encogen.
 - **Los contadores del botón rápido** salen con la medición de la sesión de prueba (contadores-rapido.csv).
 
-**Pendiente antes de publicar la 0.2.0:** volver a generar los perfiles de arranque
-(`app/src/main/generated/baselineProfiles`, con `./gradlew :app:generateBaselineProfile` en el Pixel o en un emulador
-con API 33 o más; [pruebas](docs/pruebas.md#arranque-y-perfil)). Los de ahora son de la 0.1: traen la pestaña del escáner,
-que ya no existe, y nada de la pantalla principal ni del botón rápido. No se editan a mano.
+**Los perfiles de arranque** se volvieron a generar con la 0.3.0 (ver arriba).
 
 ## 0.1.0 (sin publicar)
 

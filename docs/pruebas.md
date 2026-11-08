@@ -196,6 +196,21 @@ y va en git (`app/src/main/generated/baselineProfiles/`):
 ./gradlew :app:generateBaselineProfile
 ```
 
+Esa tarea también **desinstala la app al terminar, con sus datos**. En el Pixel (o en un celular con datos) se corre a
+mano y luego se juntan los dos recorridos como lo hace el plugin (ver
+[la medición del 2026-11-07](../mediciones/2026-11-07-0.3.0/LEEME.md)). Para que el perfil traiga la lectura, la
+cámara debe estar viendo un código mientras corre:
+
+```
+./gradlew :app:assembleNonMinifiedRelease :baselineprofile:assembleNonMinifiedRelease
+adb install -r app/build/outputs/apk/nonMinifiedRelease/app-nonMinifiedRelease.apk
+adb install -r -t baselineprofile/build/outputs/apk/nonMinifiedRelease/baselineprofile-nonMinifiedRelease.apk
+adb shell am instrument -w -r -e androidx.benchmark.enabledRules BaselineProfile mx.papeleriapos.baselineprofile/androidx.test.runner.AndroidJUnitRunner
+adb pull /sdcard/Android/media/mx.papeleriapos.baselineprofile/ perfil/   # *-baseline-prof.txt y *-startup-prof.txt
+adb uninstall mx.papeleriapos.baselineprofile
+adb shell rm -r /sdcard/Android/media/mx.papeleriapos.baselineprofile
+```
+
 Fuera de Google Play el perfil se compila hasta la noche, con el celular cargando. Para medir desde el principio:
 
 ```

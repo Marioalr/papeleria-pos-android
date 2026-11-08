@@ -1,0 +1,401 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "husky",
+            "fingerprint": "google/husky/husky:17/CP3A.261005.005/16271449:user/release-keys",
+            "id": "CP3A.261005.005",
+            "model": "Pixel 8 Pro",
+            "type": "user",
+            "version": {
+                "codename": "REL",
+                "sdk": 37
+            }
+        },
+        "cpuCoreCount": 9,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2914000000,
+        "memTotalBytes": 12135165952,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 372042720,
+        "osCodenameAbbreviated": "REL",
+        "compilationMode": "run-from-apk",
+        "payload": {}
+    },
+    "benchmarks": [
+        {
+            "name": "frioConPerfil",
+            "params": {},
+            "className": "mx.papeleriapos.benchmark.AperturaBenchmark",
+            "totalRunTimeNs": 173462269209,
+            "metrics": {
+                "escaner.cuadroAverageMs": {
+                    "minimum": 2.3306343333333333,
+                    "maximum": 2.3306343333333333,
+                    "median": 2.3306343333333333,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        2.3306343333333333
+                    ]
+                },
+                "escaner.enlazarFirstMs": {
+                    "minimum": 3.697592,
+                    "maximum": 3.697592,
+                    "median": 3.697592,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        3.697592
+                    ]
+                },
+                "escaner.esperaProveedorFirstMs": {
+                    "minimum": 28.524333,
+                    "maximum": 28.524333,
+                    "median": 28.524333,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        28.524333
+                    ]
+                },
+                "escaner.hastaPrimerCuadroFirstMs": {
+                    "minimum": 352.552369,
+                    "maximum": 352.552369,
+                    "median": 352.552369,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        352.552369
+                    ]
+                },
+                "escaner.leerAverageMs": {
+                    "minimum": 1.6571683650793652,
+                    "maximum": 1.6571683650793652,
+                    "median": 1.6571683650793652,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        1.6571683650793652
+                    ]
+                },
+                "escaner.localizarAverageMs": {
+                    "minimum": 0.5840495873015873,
+                    "maximum": 0.5840495873015873,
+                    "median": 0.5840495873015873,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        0.5840495873015873
+                    ]
+                },
+                "escaner.rangosFpsFirstMs": {
+                    "minimum": 4.109334,
+                    "maximum": 4.109334,
+                    "median": 4.109334,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        4.109334
+                    ]
+                },
+                "timeToFullDisplayMs": {
+                    "minimum": 516.729493,
+                    "maximum": 516.729493,
+                    "median": 516.729493,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        516.729493
+                    ]
+                },
+                "timeToInitialDisplayMs": {
+                    "minimum": 240.554362,
+                    "maximum": 240.554362,
+                    "median": 240.554362,
+                    "coefficientOfVariation": 0.0,
+                    "runs": [
+                        240.554362
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 0,
+            "repeatIterations": 15,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 0",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter000_2026-11-07-20-33-39.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 1",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter001_2026-11-07-20-33-47.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 2",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter002_2026-11-07-20-33-54.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 3",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter003_2026-11-07-20-34-02.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 4",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter004_2026-11-07-20-34-12.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 5",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter005_2026-11-07-20-34-23.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 6",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter006_2026-11-07-20-34-32.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 7",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter007_2026-11-07-20-34-42.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 8",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter008_2026-11-07-20-34-56.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 9",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter009_2026-11-07-20-35-08.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 10",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter010_2026-11-07-20-35-18.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 11",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter011_2026-11-07-20-35-34.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 12",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter012_2026-11-07-20-35-48.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 13",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter013_2026-11-07-20-36-00.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 14",
+                    "filename": "AperturaBenchmark_frioConPerfil_iter014_2026-11-07-20-36-11.perfetto-trace"
+                }
+            ]
+        },
+        {
+            "name": "calienteConPerfil",
+            "params": {},
+            "className": "mx.papeleriapos.benchmark.AperturaBenchmark",
+            "totalRunTimeNs": 163759294880,
+            "metrics": {
+                "escaner.cuadroAverageMs": {
+                    "minimum": 3.3017206559139787,
+                    "maximum": 9.729167468750001,
+                    "median": 7.242158778947369,
+                    "coefficientOfVariation": 0.3603428528900651,
+                    "runs": [
+                        3.3469333888888886,
+                        3.3017206559139787,
+                        3.78476010989011,
+                        3.544863296703297,
+                        4.548876688172043,
+                        5.693228580645161,
+                        6.839464705263158,
+                        7.242158778947369,
+                        9.536681526315789,
+                        7.636743770833333,
+                        8.535890086956522,
+                        8.243319731958763,
+                        9.449490704081633,
+                        7.325026510638298,
+                        9.729167468750001
+                    ]
+                },
+                "escaner.hastaPrimerCuadroFirstMs": {
+                    "minimum": 198.127238,
+                    "maximum": 472.714193,
+                    "median": 243.934693,
+                    "coefficientOfVariation": 0.34519930259730053,
+                    "runs": [
+                        198.127238,
+                        211.240722,
+                        205.257487,
+                        207.828166,
+                        243.934693,
+                        226.29366,
+                        227.788208,
+                        222.617106,
+                        251.717285,
+                        417.251831,
+                        269.79187,
+                        249.478637,
+                        472.714193,
+                        356.72172,
+                        471.747396
+                    ]
+                },
+                "escaner.leerAverageMs": {
+                    "minimum": 2.2043465698924734,
+                    "maximum": 6.856774625,
+                    "median": 5.157638255319148,
+                    "coefficientOfVariation": 0.36083597716037114,
+                    "runs": [
+                        2.289890888888889,
+                        2.2043465698924734,
+                        2.5899569230769233,
+                        2.4565004505494503,
+                        3.0662190322580645,
+                        4.016598924731182,
+                        4.796300631578947,
+                        5.15990647368421,
+                        6.26546652631579,
+                        5.3145836979166665,
+                        5.800740576086957,
+                        5.924016072164948,
+                        6.378765122448979,
+                        5.157638255319148,
+                        6.856774625
+                    ]
+                },
+                "escaner.localizarAverageMs": {
+                    "minimum": 0.9548983333333333,
+                    "maximum": 3.043014115789474,
+                    "median": 1.8736674947368421,
+                    "coefficientOfVariation": 0.37634908158976665,
+                    "runs": [
+                        0.9622914505494505,
+                        0.9548983333333333,
+                        1.0920159450549451,
+                        0.9790342747252747,
+                        1.3465803440860216,
+                        1.4776827553191487,
+                        1.8246685157894738,
+                        1.8736674947368421,
+                        3.043014115789474,
+                        2.0997751041666666,
+                        2.4927005652173913,
+                        2.112141051546392,
+                        2.7855394795918365,
+                        1.9673301382978723,
+                        2.5859476875
+                    ]
+                },
+                "timeToInitialDisplayMs": {
+                    "minimum": 26.722046,
+                    "maximum": 66.812337,
+                    "median": 40.799764,
+                    "coefficientOfVariation": 0.27295779711747176,
+                    "runs": [
+                        42.485759,
+                        41.035726,
+                        30.050008,
+                        29.688232,
+                        40.799764,
+                        29.21464,
+                        33.282185,
+                        35.726197,
+                        26.722046,
+                        66.812337,
+                        39.056397,
+                        48.901449,
+                        53.663656,
+                        48.031494,
+                        53.414062
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 0,
+            "repeatIterations": 15,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 0",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter000_2026-11-07-20-36-41.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 1",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter001_2026-11-07-20-36-50.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 2",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter002_2026-11-07-20-36-59.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 3",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter003_2026-11-07-20-37-07.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 4",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter004_2026-11-07-20-37-16.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 5",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter005_2026-11-07-20-37-25.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 6",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter006_2026-11-07-20-37-34.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 7",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter007_2026-11-07-20-37-43.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 8",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter008_2026-11-07-20-37-53.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 9",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter009_2026-11-07-20-38-05.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 10",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter010_2026-11-07-20-38-15.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 11",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter011_2026-11-07-20-38-25.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 12",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter012_2026-11-07-20-38-36.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 13",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter013_2026-11-07-20-38-47.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 14",
+                    "filename": "AperturaBenchmark_calienteConPerfil_iter014_2026-11-07-20-38-57.perfetto-trace"
+                }
+            ]
+        }
+    ]
+}
