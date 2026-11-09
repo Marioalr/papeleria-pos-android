@@ -1167,6 +1167,15 @@ La entrega 6, en partes y después del piloto:
 > alta confianza, el dueño por ejemplo; y más a futuro quizá el celular de la tienda, pero solo con conteo y
 > verificación de precio.»
 
+> **Decisión del dueño (2026-11-08): el celular se da de alta en el POS como una caja más,** con el alta que ya existe
+> para la caja de Windows, y **lleva la copia del catálogo de esa caja.** No habrá «celulares» aparte en el POS, ni
+> llaves con solo los modos, ni Configuración › Celulares, ni la sesión del celular de la tienda: lo que sigue de esta
+> sección que hable de eso (el QR, «¿Es este?», de quién es y sus modos, 1a–1e) queda como lo que se propuso, no como lo
+> que se hará. Lo que manda es
+> [el documento del POS](https://github.com/Marioalr/papeleria-pos/blob/celular/como-caja/docs/celular-como-caja.md).
+> La app descarta de la copia los usuarios con el hash de su PIN, sus permisos y reglas, y los clientes: ni siquiera los
+> lee del JSON. Así quedó en la 0.4.0 ([CAMBIOS](../CAMBIOS.md)). El celular de la tienda (6.3) se replantea cuando toque.
+
 Hay dos clases de celular. La clase se elige al darlo de alta en la caja y no cambia con quien lo agarre.
 
 | | **De una persona** (el de Luis, el dueño) | **De la tienda** (a futuro) |
@@ -1251,6 +1260,20 @@ Vale a 360 y a 448 dp de ancho. Nada nuevo toca la franja.
 
 ### Dar de alta el celular
 
+**Como quedó en la 0.4.0 (el celular como una caja, 2026-11-08):** en el celular, Ajustes › La conexión. 1. Busca la caja
+principal en el Wi-Fi de la tienda (UDP a 5081) o se escribe su IP (solo direcciones privadas); `GET /api/estado` dice si
+ahí hay un POS y si da de alta (no «La única caja» ni una tienda nueva). 2. El usuario y el PIN de quien tiene «Dar de
+alta y quitar cajas» (`POST /api/alta/opciones`; el PIN no se guarda). 3. La sucursal si hay más de una, el nombre
+(«Celular de Luis») y la serie (CEL, o la siguiente libre), que se proponen y se editan como en la PC; se ven las cajas que
+ya hay. `POST /api/alta` siempre con `cajaId` vacío: una caja nueva, nunca le quita la llave a una que existe. 4. La llave
+queda cifrada con el Android Keystore y la copia baja. Sin bloqueo de pantalla no se da de alta: la app lo dice y abre
+la seguridad del celular. Quitarle el acceso: en la caja, Configuración › Cajas › «Quitar PC»; la app, al recibir el 401
+«caja-sin-alta», borra la llave y la copia y lo dice. Si la caja principal cambia de IP, tras dos latidos sin respuesta
+la app pregunta por UDP y, antes de mandarle la llave, le pide que pruebe quién es (`GET /api/identidad`), como la caja
+de Windows.
+
+**Lo que se había propuesto** (celulares aparte, con QR y confirmación en la caja), para que no se pierda:
+
 1. **En la caja:** Configuración › Celulares › «Dar de alta un celular», con el permiso «Dar de alta y quitar cajas y
    celulares». La caja pregunta **¿de quién es?**
    - **De una persona:** se elige quién, de entre quienes tienen «Usar la app en su celular» (hoy, solo Luis). Los modos
@@ -1278,7 +1301,8 @@ Vale a 360 y a 448 dp de ancho. Nada nuevo toca la franja.
 
 Queda en la bitácora: «Dio de alta el Pixel 8 Pro como celular de Luis (Precio, Ticket y Conteo)».
 
-**Mientras el POS no tenga celulares, el respaldo:**
+**El respaldo que se había propuesto mientras el POS no tuviera celulares** (ya no va: ahora la caja con copia es el
+camino principal):
 
 - **Solo el de Luis, y lo menos posible.** El de la tienda espera a los celulares.
 - **Como una caja nueva, nunca una que ya existe:** «Celular de Luis», con una serie que no use ninguna caja (L). Dar de
@@ -1296,6 +1320,14 @@ Queda en la bitácora: «Dio de alta el Pixel 8 Pro como celular de Luis (Precio
 - **Con «La única caja»** (la segunda sucursal) no hay respaldo: ahí el alta desde otra PC está cerrada.
 
 ### Entrar
+
+**Como quedó en la 0.4.0:** es local, del celular. Con el celular dado de alta, la app se bloquea al abrirse y al volver
+después de 10 minutos en el fondo, y se entra con lo que el celular acepte como seguro (la huella o la cara; si no, el
+PIN, el patrón o la contraseña del celular). Mientras, la pantalla queda tapada y las lecturas no cuentan ni vibran; la
+cámara sí se enlaza, así que al entrar ya escanea. Sin la copia con usuarios, quién usa la app no sale del PIN del POS;
+las acciones que en el POS pidan un usuario (mandar un ticket) irán con el del alta o con `POST /api/sesion`, cuando
+lleguen. El PIN del celular sí sirve aquí (es el bloqueo del celular, no el del POS): lo que sigue sobre «nunca el PIN
+del celular» y la llave del Keystore que pide la huella en cada uso era lo propuesto.
 
 **En el celular de Luis no hay fichas ni «Cambiar de persona»:** es suyo.
 
@@ -1370,6 +1402,13 @@ precio](#del-bolsillo-al-precio)).
 
 ### La copia del catálogo en cada uno
 
+**Como quedó en la 0.4.0:** la copia de la caja (`GET /api/cajas/{id}/paquete` y después `/cambios` con el latido de
+cada 30 s al frente), guardada como JSON propio con los productos, sus presentaciones, precios y existencia, todos los
+códigos, las marcas, los sinónimos, lo más vendido, lo elegido, las promociones y el nombre de la tienda. Los usuarios
+(con el hash de su PIN), sus permisos y reglas, los clientes y lo del ticket ni se leen. Sin departamento (la copia no lo
+trae): la tarjeta enseña solo el código. Los rápidos y las fotos, después. La tabla de abajo es lo propuesto por clase de
+celular; el de la tienda se replantea cuando toque.
+
 | | De una persona | De la tienda |
 |---|---|---|
 | Productos, códigos, precios y mayoreo | Sí | Sí |
@@ -1402,6 +1441,9 @@ precio](#del-bolsillo-al-precio)).
 
 ### En el POS: Configuración › Celulares
 
+**No va (dueño, 2026-11-08):** el celular sale en Configuración › Cajas con su serie y su equipo, y ahí se le quita la
+llave («Quitar PC»). Lo que sigue era lo propuesto.
+
 ```
 ┌ Configuración › Celulares ────────────────────── [ + Dar de alta un celular ] ┐
 │                                                                               │
@@ -1425,6 +1467,9 @@ precio](#del-bolsillo-al-precio)).
 
 ### Los permisos nuevos
 
+**No van por ahora (dueño, 2026-11-08):** el celular entra con la llave de su caja, como una PC. Lo que sigue era lo
+propuesto.
+
 En un grupo «Celular» de Usuarios y permisos. Los dos son solo «Puede» o «No»: el celular no tiene cómo pedir una
 autorización.
 
@@ -1441,7 +1486,8 @@ autorización.
 
 ### Lo que pide al POS para los celulares
 
-Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
+Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos). **Lo de 1a a 1e ya no va** (dueño, 2026-11-08:
+el celular es una caja más); se deja para cuando se replantee el celular de la tienda (6.3). El 2a sigue.
 
 | # | Qué | Por qué | Para |
 |---|---|---|---|
@@ -1507,7 +1553,7 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
 | Mandarlo | No: se enseña como QR |
 | Impresiones | No: se agregan en la caja con F2 |
 | Contar | Sí: lo contado sube solo al volver la red |
-| Entrar | En el de Luis, con su huella (el PIN del POS pide red). En el de la tienda, solo quien ya entró, y su sesión no se cierra sin red |
+| Entrar | Con la huella o el bloqueo del celular: es local (0.4.0). Lo propuesto para el de la tienda (solo quien ya entró) se replantea con la 6.3 |
 
 - **La red tiene tres estados,** como en la caja: buena, lenta y caída, por lo que tarda el latido. En «lenta», mandar
   espera su turno sin trabar la pantalla.
@@ -1519,8 +1565,10 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
 - **Lo del personal,** en Ajustes: vibración y bip (apagado de fábrica, como hoy), linterna automática, «Botón rápido a
   la izquierda» y «Volver a ver las pistas». Van por persona: en el celular de la tienda, los de quien entró; sin nadie,
   los del celular.
-- **La conexión,** solo para leer: la caja principal, el catálogo (cuántos productos y de cuándo), de quién es el
-  celular y, en el de la tienda, a los cuántos minutos se cierra la sesión. Se cambia en la caja.
+- **La conexión,** solo para leer (0.4.0): la caja principal y cómo está la red, qué caja es este celular (nombre, serie,
+  sucursal, equipo), cuántos productos tiene la copia y de cuándo es. «Quitar el alta» se hace desde la caja
+  (Configuración › Cajas › «Quitar PC»). Sin alta, ahí mismo está el alta paso a paso. Sin «Buscar cambios ahora»: el
+  latido de 30 s basta; si en las pruebas de la tienda hace falta, se agrega.
 - **Las herramientas de medición** (sesión de prueba, banco, estrés y los ajustes del escáner: motor, lente, resolución,
   cuadros por segundo) se quedan, porque se sigue midiendo en la tienda, pero bajan a Ajustes › Herramientas de
   medición. Hoy son cuatro de las cinco pestañas de abajo. En el celular de la tienda piden la ficha y el PIN de alguien
@@ -1551,11 +1599,13 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
   la vibración, apagada mientras una hoja o el precio en grande tapan el visor, para no vibrar «leído» por lo que no
   cuenta; y, si se aprueba, `msParaRepetirAVista = 0` al entrar a Conteo. Cambiar solo la vibración no rehace el motor
   ni el `Confirmador`.
-- **Un módulo nuevo, `pos`:** el cliente de la API, la copia del catálogo (Room, que también es SQLite), la búsqueda,
-  y una bandeja de salida para los tickets y las capturas, cada una con su número para que mandarla dos veces cuente una.
-  Guarda la llave del celular cifrada con el Keystore de Android. En el de una persona, otra llave del Keystore abre la
-  sesión: pide la huella en cada uso (solo lo que Android da por seguro, sin el PIN del celular) y Android la invalida
-  si se registra otra huella o se quita el bloqueo; entonces la app pide el PIN del POS.
+- **El módulo `pos`** tiene lo del núcleo del POS portado (la búsqueda y el cálculo del precio). **La conexión quedó en
+  `app` (0.4.0):** `caja/` (los DTO de la API escritos a mano, el cliente con OkHttp, el descubrimiento por UDP, la prueba
+  de identidad, el alta con la llave cifrada con el Keystore y `Conexion`, que late, pide los cambios y vuelve a
+  encontrar la caja principal) y `copia/` (la copia como JSON propio, cómo se le aplican los cambios y cómo se vuelve
+  productos). Sin Room: la copia entera se lee a memoria al abrir, porque la búsqueda ya vive en memoria; con decenas de
+  miles de productos se mide en el Pixel cuánto tarda. La bandeja de salida llega con los tickets. La sesión con la
+  llave del Keystore que pide la huella en cada uso era lo propuesto; quedó la huella local al entrar ([entrar](#entrar)).
 - **`app`:** las pantallas nuevas sobre la de hoy; las de medición bajan a Ajustes. El botón rápido se excluye del gesto
   de atrás (`Modifier.systemGestureExclusion()`). De los accesos directos del ícono, «Armar ticket» y «Contar» pasan a
   dinámicos, con id nuevos, y «Revisar precio» se queda fijo en `shortcuts.xml`, donde «Ticket» y «Conteo» de antes
@@ -1563,15 +1613,18 @@ Detalla los puntos 1, 2 y 4 de [lo que pide al POS](#lo-que-pide-al-pos).
 - **El contrato:** el POS todavía no publica OpenAPI. Mientras, los DTO se escriben a mano en Kotlin (camelCase, los
   enums como números, ignorando campos nuevos), con ejemplos de JSON sacados de las pruebas del POS. Cuando el POS
   publique OpenAPI con sus respuestas tipadas, el cliente se genera de ahí.
-- **La red y los permisos.** Hoy la app no puede usar la red y cada APK lo revisa. Pasa a **solo la red de la tienda**:
-  - Pide internet, el estado de la red y «Dispositivos cercanos» (al apuntar a Android 17), y nada más. La revisión de
-    cada APK cambia a esa lista, y sigue sin el envío de estadísticas de ML Kit.
+- **La red y los permisos (0.4.0).** La app pasó a **solo la red de la tienda**:
+  - Pide Internet y la huella (`USE_BIOMETRIC`, un permiso normal) y nada más (el estado de la red sigue fuera). Con targetSdk 36, Android 17 deja pasar a la red local con
+    Internet; al pasar a targetSdk 37 habrá que pedir `ACCESS_LOCAL_NETWORK` en tiempo de ejecución (el permiso de
+    Android 17 que reemplazó a «Dispositivos cercanos»). La revisión de cada APK (`verificarPermisos`) acepta cámara,
+    vibración, Internet y la huella, y sigue sin el envío de estadísticas de ML Kit.
   - El cliente solo se conecta a la caja principal dada de alta, y solo a direcciones privadas (10.x, 172.16–31.x,
     192.168.x). No manda nada a internet, ni estadísticas ni fotos de la cámara.
-  - El servicio habla HTTP, sin cifrar (la llave y los PIN viajan así, como con las cajas), así que Android debe permitir
-    HTTP a esa dirección. El POS ya pide que cajas y celulares no compartan la red con el público.
-- **Versiones:** `0.2.0` con la primera entrega de esta propuesta, `0.3.0` con «Del bolsillo al precio»; `1.0.0` cuando
-  se use en la tienda con el POS, como dice el plan.
+  - El servicio habla HTTP, sin cifrar (la llave y los PIN viajan así, como con las cajas), así que Android lo permite
+    (`res/xml/red_segura.xml`, que no puede acotar por rango de IP: lo acota la app). El POS ya pide que cajas y
+    celulares no compartan la red con el público.
+- **Versiones:** `0.2.0` con la primera entrega de esta propuesta, `0.3.0` con «Del bolsillo al precio», `0.4.0` con «El
+  celular de Luis»; `1.0.0` cuando se use en la tienda con el POS, como dice el plan.
 
 ## Lo que pide al POS
 
@@ -1579,9 +1632,9 @@ Nada de esto existe hoy en `papeleria-pos`; cada punto dice qué entrega de aqu�
 
 | # | Qué | Por qué | Para la entrega |
 |---|---|---|---|
-| 1 | **Celulares:** alta con un QR de un solo uso desde la caja (lleva la llave pública del servicio), que la caja confirma («¿Es este?»); llave propia, sin serie de folios ni turno; de una persona o de la tienda, con sus modos; lo que deja cada llave (quién hace cada cosa sale de la llave o de la sesión, nunca del `usuarioId` que manda el celular); la sesión del de la tienda; Configuración › Celulares; los permisos «Usar la app en su celular» y «Mandar tickets desde el celular». Detalle: de 1a a 1e, [los celulares](#lo-que-pide-al-pos-para-los-celulares), y C10 | Un celular dado de alta como caja tiene serie, sale en el corte del día y en la red de cajas, y su llave abre toda la API de su caja; con «La única caja» no se puede dar de alta. Hoy la API cree el `usuarioId` que le mandan. Cambia lo aprobado en la propuesta del POS (2026-10-10): ahí el celular se da de alta como una caja | 2, 4 y 6 |
-| 2 | **La copia del catálogo para el celular:** la de las cajas (`/api/cajas/{id}/paquete` y `/cambios`), con el departamento de cada producto (id y nombre; hoy ni la copia ni `/api/productos/codigo` ni `/api/productos/buscar` lo traen), sin usuarios ni el hash de sus PIN, clientes, costos, folios, efectivo ni reglas; la del de la tienda, además, sin existencias (2a) | La de hoy trae el hash del PIN de cada usuario (un PIN de 4 cifras sale de ahí en minutos) y los clientes; en un celular que se puede perder, no. Sin el departamento, la tarjeta de Precio, «Falta» y el conteo sin red no saben de cuál es cada producto. Cambia lo aprobado en la propuesta del POS (2026-10-10): ahí el celular no lleva base y trabaja por Wi-Fi contra la caja principal | 2 y 6 |
-| 3 | **La regla de los códigos** (las variantes de UPC y EAN) en el servicio y en la copia de las cajas | Se decidió el 2026-10-11 y está en el núcleo de esta app, pero el POS todavía busca el código tal cual | 2 |
+| 1 | ~~**Celulares** aparte (1a–1e)~~ **No va (dueño, 2026-11-08): el celular es una caja más**, con el alta de siempre. El POS hizo que una caja que nunca abre turno no estorbe (el corte del día, la bitácora de red, las listas de cajas). Lo que se pedía para el celular de la tienda (1a, 1b, 1c) se replantea con la 6.3 | Era: un celular dado de alta como caja tiene serie, sale en el corte del día y en la red de cajas, y su llave abre toda la API de su caja. Se aceptó: el celular no vende ni abre turno, y si se pierde se le quita la llave como a una PC | — |
+| 2 | **La copia del catálogo para el celular:** **se cumple con la copia de la caja (0.4.0):** la app descarta al leer los usuarios, sus permisos y reglas, los clientes y lo del ticket. Queda pendiente el departamento de cada producto (la copia no lo trae: la tarjeta enseña solo el código) y, para el de la tienda, la copia sin existencias (2a) | La de hoy trae el hash del PIN de cada usuario y los clientes; en un celular que se puede perder, no: por eso la app no los guarda. Sin el departamento, «Falta» y el conteo sin red no sabrán de cuál es cada producto | 2 (hecho) y 6 |
+| 3 | **La regla de los códigos** (las variantes de UPC y EAN) en el servicio y en la copia de las cajas | Hecho en el POS (rama `celular/como-caja`, 2026-11-08), con la misma regla de `Catalogo.kt`; un código cuyas variantes dan con dos productos no se encuentra, y el celular hace lo mismo | 2 (hecho) |
 | 4 | **Mandar un ticket a una caja:** recibirlo, avisarle a esa caja por su canal de avisos (con acuse) y que entre en espera con quien lo mandó; el permiso «Mandar tickets desde el celular» | Es la entrega 12 de la propuesta del POS; los tickets en espera hoy viven solo dentro de cada caja | 4 |
 | 5 | **Las cajas para el celular:** quién atiende, cuántos tickets esperan y si está prendida | Hoy la caja no le dice al servicio quién atiende ni cuántos esperan | 4 |
 | 6 | **Impresiones:** apartarlas (en el POS: Control Print no se entera) mientras están en un ticket del celular, y revisar «por cobrar» dentro del candado del cobro | Que dos no tomen la misma; y que dos cobros simultáneos no cobren dos veces una impresión del POS | 5 |
@@ -1599,7 +1652,7 @@ celular de la tienda.
 | # | Entrega | Qué trae | Necesita del POS |
 |---|---|---|---|
 | 1 | **La base** | Los tres modos sobre el escáner de hoy (Conteo, todavía el de prueba: el de verdad llega en la 6 y en el piloto no aparece), el panel, el botón rápido con su gesto, la búsqueda y el ticket con el catálogo de prueba (sin red todavía), el tema, Ajustes con las herramientas de medición, el visor del mismo tamaño | Nada |
-| 2 | **El celular de Luis** | El alta a su nombre, entrar con su huella, el precio y la búsqueda. Mientras el POS no tenga celulares, el respaldo: una caja nueva («Celular de Luis», serie L), con red y sin copia. La copia del catálogo y sin red, cuando el POS sirva el 2 | 1 (1a, 1b, 1d, 1e) y 3; luego 2 |
+| 2 | **El celular de Luis** (0.4.0) | El alta como caja (buscar la caja principal o escribir su IP, el PIN del dueño, el nombre y la serie), la copia del catálogo de la caja sin usuarios ni clientes y sus cambios con el latido, el precio y la búsqueda con la copia también sin red, entrar con la huella. Los productos de prueba quedan como herramienta | 3 y la copia de la caja (2); el documento del POS de la rama `celular/como-caja` |
 | 3 | **Del bolsillo al precio** | El mosaico «Precio» sobre el bloqueo y los accesos directos: «Revisar precio» fijo, «Armar ticket» y «Contar» dinámicos | — |
 | 4 | **Mandar el ticket** | «¿A qué caja?», mandarlo, la confirmación y el QR sin red | 4, 5, 7 |
 | 5 | **Impresiones** | La hoja de impresiones con miniaturas y lotes, el renglón en el ticket | 6 |
@@ -1617,13 +1670,11 @@ Las del botón rápido, las de Contar y las de quién tiene la app van en su sec
   tienda con Precio y Conteo (dueño, 2026-11-03). Cómo se entra queda en las preguntas de quién tiene la app.
 - [ ] ¿El precio sobre el bloqueo, sin el PIN del celular? Solo enseña lo que el cliente ve en la tienda. Igual en los
   dos celulares.
-- [ ] ¿La copia del catálogo en el celular (lo recomendado: precio al instante y sin red) o solo con red, como lo
-  aprobado en la propuesta del POS (2026-10-10, «Sin base en el celular al principio»)? Con pocos celulares, y de
-  confianza, pesa menos el riesgo; ninguna lleva el hash del PIN, y la copia del celular de la tienda va sin
-  existencias.
-- [ ] ¿Los celulares como «celulares» en el POS (lo recomendado: uno tiene dueño y modos, y la llave de una caja abre
-  toda la API de su caja) o como una caja más, que es lo aprobado en la propuesta del POS («La app Android en Kotlin»)?
-  Mientras, el de Luis como caja nueva, con red.
+- [x] ¿La copia del catálogo en el celular o solo con red? **Con copia** (dueño, 2026-11-08): la de la caja, y la app
+  descarta los usuarios con el hash de su PIN y los clientes al leerla. Recomendado y por revisar con el dueño: que la
+  copia de las cajas deje de traer el hash de los PIN; mientras, la app no los guarda.
+- [x] ¿Los celulares como «celulares» en el POS o como una caja más? **Como una caja** (dueño, 2026-11-08), con el alta
+  que ya existe. El POS hizo que una caja que nunca abre turno no estorbe.
 - [ ] ¿Apartar las impresiones que se agregan en el celular?
 - [ ] ¿El conteo físico de arranque: A, B o C (lo recomendado)? Está en las preguntas de Contar.
 - [ ] ¿Las herramientas de medición las ve todo el personal o solo quien tiene «Configuración de la tienda»? Lo

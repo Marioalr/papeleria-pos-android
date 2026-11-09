@@ -17,12 +17,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.caja.Conexion
+import mx.papeleriapos.android.caja.EstadoConexion
+import mx.papeleriapos.android.caja.Red
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.principal.ContadoresRapido
 import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
@@ -35,8 +40,9 @@ import mx.papeleriapos.escaner.ConfigEscaner
 
 /**
  * Ajustes (docs/propuesta-interfaz.md, «Ajustes y herramientas de medición»): arriba lo de quien usa el celular (vibración
- * y bip, linterna automática, el botón rápido a la izquierda y las pistas), el mosaico para abrir rápido, los productos de
- * prueba y, al final, las herramientas de medición, que se quedan porque se sigue midiendo en la tienda.
+ * y bip, linterna automática, el botón rápido a la izquierda y las pistas), el mosaico para abrir rápido, la conexión con
+ * la caja principal (la copia del catálogo) y, al final, las herramientas de medición, que se quedan porque se sigue
+ * midiendo en la tienda.
  */
 @Composable
 fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
@@ -44,6 +50,8 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
     val zurdo by vm.piso.zurdo.collectAsStateWithLifecycle()
     val contadores by vm.piso.contadores.collectAsStateWithLifecycle()
     val productos by vm.piso.catalogo.collectAsStateWithLifecycle()
+    val conexion by Conexion.del(LocalContext.current).estado.collectAsStateWithLifecycle()
+    val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
     var mensajeMosaico by remember { mutableStateOf<String?>(null) }
     var pistasDeNuevo by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.prepararProductos() }
@@ -60,6 +68,8 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
         alAgregarMosaico = rememberAgregarMosaico { mensajeMosaico = it },
         mensajeMosaico = mensajeMosaico,
         productos = productos,
+        conexion = conexion,
+        productosDePrueba = dePrueba,
         contadores = contadores,
         alAbrir = alAbrir,
     )
@@ -78,8 +88,12 @@ fun ContenidoAjustesPersonales(
     alAgregarMosaico: (() -> Unit)?,
     /** Lo que contestó el sistema la última vez que se pidió. */
     mensajeMosaico: String?,
-    /** Los productos de prueba; null mientras se cargan. */
+    /** Los productos que usan Precio, Buscar y el ticket; null mientras se arman. */
     productos: CatalogoDeProductos?,
+    /** La conexión con la caja principal (su alta y su copia). */
+    conexion: EstadoConexion = EstadoConexion(leida = true),
+    /** La herramienta «Productos de prueba» está encendida: los productos son los ficticios, no la copia. */
+    productosDePrueba: Boolean = false,
     contadores: ContadoresRapido,
     alAbrir: (Destino) -> Unit,
 ) {
@@ -132,19 +146,16 @@ fun ContenidoAjustesPersonales(
             Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp).testTag("mensaje-mosaico"))
         }
 
-        TituloSeccion("Productos")
-        Text(
-            when {
-                productos == null -> "Cargando…"
-                else -> "${productos.tamano} productos de prueba"
-            },
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.testTag("productos-prueba"),
+        TituloSeccion("La conexión")
+        FilaNavegacion(
+            if (conexion.alta != null) "Conectado con la caja principal" else "Conectar con la caja principal",
+            { alAbrir(Destino.CONEXION) },
+            descripcion = textoConexion(conexion, productos, productosDePrueba),
+            modifier = Modifier.testTag("abrir-conexion"),
         )
-        Nota(
-            "Ficticios, para probar Precio, el ticket y la búsqueda sin red. Los de la tienda, con sus precios, llegan " +
-                "cuando el celular se conecte al POS.",
-        )
+        if (productosDePrueba) {
+            Nota("Precio, Buscar y el ticket están usando los productos de prueba (Herramientas de medición › El escáner), no la copia.")
+        }
 
         TituloSeccion("Herramientas de medición")
         Nota("Para medir el escáner en la tienda: la sesión de prueba, el banco y las pruebas de estrés.")
@@ -164,4 +175,23 @@ fun ContenidoAjustesPersonales(
         )
         Nota("Versión ${BuildConfig.VERSION_NAME} · ${BuildConfig.COMMIT}")
     }
+}
+
+/** Lo que dice el renglón de la conexión: la caja y la copia, o que falta el alta. */
+internal fun textoConexion(c: EstadoConexion, productos: CatalogoDeProductos?, dePrueba: Boolean): String {
+    if (!c.leida) return "Leyendo…"
+    if (c.alta == null && c.sinAcceso) return "La caja le quitó el acceso a este celular: sin copia del catálogo. Ábrelo para darlo de alta otra vez"
+    val alta = c.alta ?: return "Este celular no está dado de alta: sin copia del catálogo" + if (dePrueba) "" else ", Precio no encuentra nada"
+    val red = when (c.red) {
+        Red.SIN_PROBAR -> ""
+        Red.BUENA -> " · red buena"
+        Red.LENTA -> " · red lenta"
+        Red.CAIDA -> " · sin conexión"
+    }
+    val copia = when {
+        c.copia != null -> "${c.copia.variantes} productos en la copia"
+        c.bajando -> "bajando la copia"
+        else -> "sin copia todavía"
+    }
+    return "${alta.caja.nombre} · $copia$red"
 }

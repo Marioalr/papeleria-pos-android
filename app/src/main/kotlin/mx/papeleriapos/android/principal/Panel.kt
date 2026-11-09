@@ -112,11 +112,13 @@ fun ContenidoPanel(
     modifier: Modifier = Modifier,
     /** «Botón rápido a la izquierda»: el panel vacío dice dónde está. */
     zurdo: Boolean = false,
+    /** La caja le quitó el acceso a este celular y el dueño no lo ha visto ([mx.papeleriapos.android.caja.EstadoConexion.sinAcceso]). */
+    sinAcceso: Boolean = false,
 ) {
     val color = LocalColoresModo.current.de(modo)
     Column(modifier.fillMaxSize()) {
         when (modo) {
-            ModoApp.PRECIO -> PanelPrecio(precio, color, zurdo, acciones)
+            ModoApp.PRECIO -> PanelPrecio(precio, color, zurdo, sinAcceso, acciones)
             ModoApp.TICKET -> PanelTicket(ticket, catalogo, color, zurdo, acciones)
             ModoApp.CONTEO -> PanelConteo(conteo, catalogo, color, acciones)
         }
@@ -129,14 +131,14 @@ internal fun ladoDelBoton(zurdo: Boolean): String = if (zurdo) "abajo a la izqui
 // ---- Precio: el verificador (F9) en el celular ----
 
 @Composable
-private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, zurdo: Boolean, acciones: AccionesPanel) {
+private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, zurdo: Boolean, sinAcceso: Boolean, acciones: AccionesPanel) {
     when (precio) {
         null -> Vacio(
             "Escanea para ver el precio",
             "Es el verificador (F9) de la caja: escanear no agrega nada. Enseñar y buscar: en el botón de " +
                 "${ladoDelBoton(zurdo)}. Si se lo lleva, «Al ticket» en la tarjeta.",
         )
-        is ConsultaPrecio.NoEsta -> NoEstaEnElCatalogo(precio.codigo, acciones.buscar)
+        is ConsultaPrecio.NoEsta -> NoEstaEnElCatalogo(precio.codigo, precio.deVarios, sinAcceso, acciones.buscar)
         is ConsultaPrecio.Encontrado -> TarjetaPrecio(precio.producto, color, acciones)
     }
 }
@@ -164,7 +166,7 @@ private fun TarjetaPrecio(p: Producto, color: ColorModo, acciones: AccionesPanel
             Column(Modifier.weight(1f)) {
                 Text(p.nombre, style = MaterialTheme.typography.titleMedium, maxLines = if (grande) 1 else 2, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "${p.departamento} · ${p.clave}",
+                    detalleDe(p),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -230,19 +232,46 @@ private fun Iniciales(nombre: String, color: ColorModo) {
     ) { Text(letras, color = color.enContenedor, style = MaterialTheme.typography.titleLarge) }
 }
 
-/** Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. */
+/**
+ * Lo que dice la tarjeta y la lista debajo del nombre: el departamento y el código (los productos de prueba), o solo el
+ * código (la copia del catálogo no trae el departamento); vacío si no tiene código.
+ */
+internal fun detalleDe(p: Producto): String = listOfNotNull(p.departamento.ifBlank { null }, p.codigo).joinToString(" · ")
+
+/** Lo mismo, para un renglón de la lista de Buscar, donde cabe menos: el departamento o, si no tiene, el código. */
+internal fun detalleCorto(p: Producto): String = p.departamento.ifBlank { p.codigo.orEmpty() }
+
+/**
+ * Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. Con [deVarios], sí está pero el
+ * código es de más de un producto: no se adivina, como el POS. Con [sinAcceso], abajo y discreto, por qué no encuentra
+ * nada: la caja le quitó el acceso y se borró la copia.
+ */
 @Composable
-private fun NoEstaEnElCatalogo(codigo: String, buscar: () -> Unit) {
+private fun NoEstaEnElCatalogo(codigo: String, deVarios: Boolean, sinAcceso: Boolean, buscar: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("no-esta")) {
-        Text("No está en el catálogo", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+        Text(
+            if (deVarios) Piso.DE_VARIOS else "No está en el catálogo",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
         Text(codigo, style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"))
         OutlinedButton(onClick = buscar, modifier = Modifier.padding(top = 6.dp).heightIn(min = 48.dp)) {
             Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text("Buscar por nombre")
         }
+        if (sinAcceso) {
+            Text(
+                SIN_ACCESO_EN_PRECIO,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp).testTag("sin-acceso"),
+            )
+        }
     }
 }
+
+internal const val SIN_ACCESO_EN_PRECIO = "Este celular ya no tiene acceso a la caja y se borró la copia: Ajustes › La conexión."
 
 // ---- Ticket: la preventa ----
 

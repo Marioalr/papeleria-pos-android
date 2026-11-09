@@ -262,9 +262,9 @@ private fun Resultado(p: Producto, modo: ModoApp, lugar: Int, alTocar: () -> Uni
     ) {
         Column(Modifier.weight(1f)) {
             Text(p.nombre, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val existencia = if (modo == ModoApp.CONTEO || p.existencia == null) "" else " · existencia ${cantidadCorta(p.existencia)}"
+            val existencia = if (modo == ModoApp.CONTEO || p.existencia == null) null else "existencia ${cantidadCorta(p.existencia)}"
             Text(
-                p.departamento + existencia,
+                listOfNotNull(detalleCorto(p).ifBlank { null }, existencia).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

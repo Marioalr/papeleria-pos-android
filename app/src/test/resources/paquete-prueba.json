@@ -1,0 +1,110 @@
+{
+  "version": 41,
+  "caja": {"id": "0190c5a2-0000-7000-8000-00000000c0a1", "nombre": "Celular de Luis", "serie": "CEL", "sucursalId": "0190c5a2-0000-7000-8000-0000000005aa", "sucursal": "Matriz", "equipo": "Pixel 8 Pro"},
+  "productos": [
+    {
+      "varianteId": "0190C5A2-0000-7000-8000-000000000001",
+      "descripcion": "Cuaderno profesional cuadro chico 100 hojas",
+      "codigo": "7509990100019",
+      "impuesto": 0, "unidad": 0, "llevaInventario": true, "existencia": 8.000,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b1", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [{"id": "0190c5a2-0000-7000-8000-0000000000b1", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true}],
+      "precios": [
+        {"id": "p1", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 4600},
+        {"id": "p2", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 12000, "precioCentavos": 4100},
+        {"id": "p3", "presentacionId": null, "sucursalId": "0190c5a2-0000-7000-8000-0000000005aa", "cantidadMinimaMilesimas": 1000, "precioCentavos": 4500}
+      ],
+      "version": 41
+    },
+    {
+      "varianteId": "0190c5a2-0000-7000-8000-000000000002",
+      "descripcion": "Lápiz HB No. 2",
+      "codigo": "7509990100026",
+      "impuesto": 0, "unidad": 0, "llevaInventario": true, "existencia": 140,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b2", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [
+        {"id": "0190c5a2-0000-7000-8000-0000000000b2", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+        {"id": "0190c5a2-0000-7000-8000-0000000000c2", "nombre": "Caja con 12", "factorMilesimas": 12000, "esBase": false}
+      ],
+      "precios": [
+        {"id": "p4", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 550},
+        {"id": "p5", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 12000, "precioCentavos": 450},
+        {"id": "p6", "presentacionId": "0190c5a2-0000-7000-8000-0000000000c2", "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 5400}
+      ]
+    },
+    {
+      "varianteId": "0190c5a2-0000-7000-8000-000000000003",
+      "descripcion": "Copia B/N",
+      "codigo": null,
+      "impuesto": 0, "unidad": 0, "llevaInventario": false, "existencia": null,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b3", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [{"id": "0190c5a2-0000-7000-8000-0000000000b3", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true}],
+      "precios": [{"id": "p7", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 100}]
+    },
+    {
+      "varianteId": "0190c5a2-0000-7000-8000-000000000004",
+      "descripcion": "Listón satín 1 cm rojo",
+      "codigo": "7509990100217",
+      "impuesto": 0, "unidad": 1, "llevaInventario": true, "existencia": 85.5,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b4", "nombre": "Metro", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [{"id": "0190c5a2-0000-7000-8000-0000000000b4", "nombre": "Metro", "factorMilesimas": 1000, "esBase": true}],
+      "precios": [{"id": "p8", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 350}]
+    },
+    {
+      "varianteId": "0190c5a2-0000-7000-8000-000000000005",
+      "descripcion": "Plumón ficticio negro",
+      "codigo": "099999291452",
+      "impuesto": 0, "unidad": 0, "llevaInventario": true, "existencia": 4,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b5", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [{"id": "0190c5a2-0000-7000-8000-0000000000b5", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true}],
+      "precios": [{"id": "p9", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 1900}]
+    },
+    {
+      "varianteId": "0190c5a2-0000-7000-8000-000000000006",
+      "descripcion": "Plumón ficticio negro (otro proveedor)",
+      "codigo": "7509990100033",
+      "impuesto": 0, "unidad": 0, "llevaInventario": true, "existencia": 2,
+      "presentacion": {"id": "0190c5a2-0000-7000-8000-0000000000b6", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true},
+      "presentaciones": [{"id": "0190c5a2-0000-7000-8000-0000000000b6", "nombre": "Pieza", "factorMilesimas": 1000, "esBase": true}],
+      "precios": [{"id": "p10", "presentacionId": null, "sucursalId": null, "cantidadMinimaMilesimas": 1000, "precioCentavos": 2100}]
+    }
+  ],
+  "codigos": [
+    {"codigo": "7509990100019", "varianteId": "0190c5a2-0000-7000-8000-000000000001", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b1"},
+    {"codigo": "7509990100026", "varianteId": "0190c5a2-0000-7000-8000-000000000002", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b2"},
+    {"codigo": "7509990100200", "varianteId": "0190c5a2-0000-7000-8000-000000000002", "presentacionId": "0190c5a2-0000-7000-8000-0000000000c2"},
+    {"codigo": "7509990100217", "varianteId": "0190c5a2-0000-7000-8000-000000000004", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b4"},
+    {"codigo": "099999291452", "varianteId": "0190c5a2-0000-7000-8000-000000000005", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b5"},
+    {"codigo": "7509990100033", "varianteId": "0190c5a2-0000-7000-8000-000000000006", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b6"},
+    {"codigo": "7509990100040", "varianteId": "0190c5a2-0000-7000-8000-000000000005", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b5"},
+    {"codigo": "7509990100040", "varianteId": "0190c5a2-0000-7000-8000-000000000006", "presentacionId": "0190c5a2-0000-7000-8000-0000000000b6"}
+  ],
+  "usuarios": [
+    {"id": "0190c5a2-0000-7000-8000-0000000000e1", "usuario": "luis", "nombre": "Luis", "rol": 0, "pinHash": "AQIDBA==", "activo": true}
+  ],
+  "reglas": [{"accion": 3, "nivel": 1}],
+  "permisos": [{"usuarioId": null, "permisos": [{"accion": 1, "nivel": 2}]}],
+  "clientes": [{"id": "c1", "nombre": "Cliente Ficticio", "saldoCentavos": 12300}],
+  "registrados": [{"id": "c1", "nombre": "Cliente Ficticio", "saldoCentavos": 12300}],
+  "encabezado": ["PAPELERÍA DE PRUEBA"], "pie": ["Gracias"], "logo": null, "ultimoFolio": 17, "limiteEfectivoCentavos": 500000,
+  "marcas": ["BIC", "SCRIBE"],
+  "sinonimos": [{"id": "s1", "palabra": "BOLIGRAFO", "equivale": "PLUMA"}],
+  "configuracion": {"nombreTienda": "Papelería de prueba", "direccion": "Calle 1", "telefono": null, "horaApertura": "09:00:00", "horaCierre": "20:00:00", "limiteEfectivoCentavos": null, "fondoSugeridoCentavos": null, "umbralCorteCentavos": 0},
+  "base": "0190c5a2-0000-7000-8000-00000000ba5e",
+  "formato": 5,
+  "versionExistencias": 7,
+  "vendidos": [{"varianteId": "0190c5a2-0000-7000-8000-000000000002", "veces": 90}, {"varianteId": "0190c5a2-0000-7000-8000-000000000001", "veces": 30}],
+  "elegidos": [{"texto": "plumon", "varianteId": "0190c5a2-0000-7000-8000-000000000006"}],
+  "versionVendidos": 3,
+  "versionElegidos": 2,
+  "alCobrar": 0,
+  "exhibidores": [],
+  "fotos": [{"varianteId": "0190c5a2-0000-7000-8000-000000000001", "huella": "abc"}],
+  "promociones": [
+    {"id": "0190c5a2-0000-7000-8000-00000000f001", "nombre": "Regreso a clases", "tipo": 0, "lleva": 3, "paga": 2, "centesimas": 0,
+     "desde": "2026-08-01", "hasta": "2026-12-31", "dias": 127, "variantes": [{"varianteId": "0190c5a2-0000-7000-8000-000000000006", "precioCentavos": null}]},
+    {"id": "0190c5a2-0000-7000-8000-00000000f002", "nombre": "Solo en enero", "tipo": 2, "lleva": 0, "paga": 0, "centesimas": 1000,
+     "desde": "2027-01-01", "hasta": "2027-01-31", "dias": 127, "variantes": [{"varianteId": "0190c5a2-0000-7000-8000-000000000001", "precioCentavos": null}]}
+  ],
+  "huellaPromociones": "ABCDEF0123456789"
+}

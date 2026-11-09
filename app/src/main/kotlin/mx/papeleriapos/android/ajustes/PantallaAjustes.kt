@@ -35,6 +35,7 @@ import mx.papeleriapos.android.EscanerViewModel
 import mx.papeleriapos.android.camara.CsvFicha
 import mx.papeleriapos.android.camara.FichaLente
 import mx.papeleriapos.android.catalogo.EstadoCatalogo
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.catalogo.OrigenCatalogo
 import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
 import mx.papeleriapos.android.rapido.mensajeMosaico
@@ -59,6 +60,8 @@ fun PantallaAjustesEscaner(vm: EscanerViewModel) {
     val config by vm.config.collectAsStateWithLifecycle()
     val catalogo by vm.catalogo.collectAsStateWithLifecycle()
     val ficha by vm.ficha.collectAsStateWithLifecycle()
+    val productosDePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
+    val contexto = LocalContext.current
     // El catálogo y la ficha de la cámara se cargan perezosos: aquí, para mostrarlos.
     LaunchedEffect(Unit) {
         vm.prepararCatalogo()
@@ -76,6 +79,8 @@ fun PantallaAjustesEscaner(vm: EscanerViewModel) {
         alCargarCatalogo = { elegirCatalogo.launch(TIPOS_CATALOGO) },
         alUsarCatalogoDeEjemplo = vm::usarCatalogoDeEjemplo,
         ficha = ficha,
+        productosDePrueba = productosDePrueba,
+        alCambiarProductosDePrueba = { FuenteDeProductos.usarDePrueba(contexto, it) },
     )
 }
 
@@ -109,6 +114,9 @@ fun ContenidoAjustes(
     alUsarCatalogoDeEjemplo: () -> Unit = {},
     /** Las lentes traseras según Camera2; null mientras se leen. */
     ficha: List<FichaLente>? = null,
+    /** Precio, Buscar y el ticket con los productos ficticios en lugar de la copia del catálogo. */
+    productosDePrueba: Boolean = false,
+    alCambiarProductosDePrueba: (Boolean) -> Unit = {},
 ) {
     Column(
         Modifier
@@ -245,6 +253,11 @@ fun ContenidoAjustes(
         }
 
         TituloSeccion("Pruebas")
+        FilaInterruptor(
+            "Productos de prueba", productosDePrueba, alCambiarProductosDePrueba, Modifier.testTag("ajuste-productos-prueba"),
+            descripcion = "Precio, Buscar y el ticket con los productos ficticios del prototipo en lugar de la copia del catálogo " +
+                "de la caja. Para medir y probar sin la caja principal; también en el escaneo rápido.",
+        )
         FilaInterruptor(
             "Mostrar diagnóstico", config.mostrarDiagnostico, { alCambiar(config.copy(mostrarDiagnostico = it)) },
             descripcion = "Cuadros por segundo, ms del motor, px por módulo, zoom…",

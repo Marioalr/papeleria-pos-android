@@ -2,6 +2,103 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.2 (sin publicar)
+
+Los 9 hallazgos de la [revisión de la entrega 2](docs/revision-entrega-2.md), arreglados; cada uno con su prueba.
+
+- **La llave solo sale hacia la caja principal que probó quién es:** al abrir la app y después de cada caída, antes de
+  mandar la llave, la dirección guardada tiene que probar quién es (`/api/identidad`), como en la caja de Windows. Si
+  no lo prueba, se busca la caja principal por UDP.
+- **Un 401 de otro equipo ya no borra el alta:** solo se olvida la llave si quien dice «caja-sin-alta» prueba ser la
+  caja principal o si no se encuentra a nadie que lo pruebe. Si la caja principal está en otra IP, el celular se cambia ahí.
+- **Al abrir en frío con alta, la app sale bloqueada desde el primer cuadro,** sin esperar a que se lea la copia.
+- **Una sola copia completa a la vez,** y una que termina de bajar después de olvidar el alta ya no se guarda.
+  Irse al fondo mientras baja ya no la tira.
+- **Las promociones, con el día de hoy:** si la app sigue abierta de un día para otro, los productos se vuelven a armar
+  al pasar al frente.
+- **El latido nota que se le quitó la llave** aunque no cambie el catálogo: con las mismas versiones, pide los cambios
+  (casi vacíos) solo para comprobar la llave.
+- **100.64/10 ya no cuenta como red de la tienda** (es la de los operadores, CGNAT).
+- `ConexionTest` contesta como el servicio de verdad y sí comprueba que la impostora nunca recibe la llave.
+
+## 0.4.1 (sin publicar)
+
+Tres detalles de Ajustes › La conexión que salieron al probar la 0.4.0 en el Pixel 8 Pro contra el POS de la rama
+`celular/como-caja` (2026-11-09).
+
+- **Las fechas, siempre en español de México:** «Dado de alta», «De cuándo» y «Contestó» seguían el idioma del celular
+  («Nov 9, 2026 8:47 AM»). Ahora salen como el resto de la app: «9 nov 2026, 8:47», con reloj de 24 horas. Se arman a
+  mano (`ui/Fechas.kt`), sin `DateFormat`, para que salgan igual en cualquier versión de Android. Las demás fechas de la
+  app ya eran numéricas y sin idioma (la sesión de prueba, los CSV y los nombres de archivo).
+- **La red, buena desde el alta:** justo después del alta decía «La red: Sin probar todavía» hasta el primer latido
+  (30 s), aunque el alta y la copia ya habían hablado con el servicio. Ahora el alta deja la red como buena (o lenta, si
+  tardó más de 1.5 s) con su hora, y la copia al bajar también cuenta como respuesta.
+- **El aviso de sin acceso ya no se pierde:** si la caja le quitaba el acceso (401 `caja-sin-alta`) con la entrada con
+  la huella tapando todo, o si la app se reiniciaba, La conexión solo decía «Conectar con la caja principal». Ahora el
+  aviso se guarda (solo el aviso: la llave y los datos de la caja se borran igual) hasta que el dueño lo ve en La
+  conexión o vuelve a dar de alta. Mientras, el renglón de Ajustes lo dice y Precio, al no encontrar un código, lo
+  dice abajo y discreto.
+
+## 0.4.0 (sin publicar)
+
+La entrega 2 de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «El celular de Luis», con lo que decidió
+el dueño el 2026-11-08: **el celular se da de alta en el POS como una caja más y lleva la copia del catálogo de esa
+caja** ([el documento del POS](https://github.com/Marioalr/papeleria-pos/blob/celular/como-caja/docs/celular-como-caja.md),
+que manda sobre la propuesta). Ya no hay «celulares» aparte en el POS, ni llaves con solo los modos, ni Configuración ›
+Celulares, ni la sesión del celular de la tienda. Necesita el POS de la rama `celular/como-caja`.
+
+- **Ajustes › La conexión: el alta como caja,** igual que la caja de Windows. Busca la caja principal en el Wi-Fi de la
+  tienda (UDP a 5081) o se escribe su IP (solo direcciones privadas); el usuario y el PIN de quien tiene «Dar de alta y
+  quitar cajas» (el PIN no se guarda); el nombre («Celular de Luis») y la serie (CEL o, si ya existe, CEA, CEB…; el
+  servicio solo acepta de 1 a 3 letras), que se proponen y se editan como en la PC. Siempre crea una caja nueva: nunca le quita la llave a una que existe. La llave
+  queda cifrada con el Android Keystore. Quitarle el acceso se hace desde la caja: Configuración › Cajas › «Quitar PC»;
+  entonces la app borra la llave y la copia y lo dice.
+- **La copia del catálogo** (`GET /api/cajas/{id}/paquete`, varios MB) baja al dar de alta y se guarda como JSON propio
+  en la memoria de la app. Solo los productos con sus presentaciones, precios y existencia, todos los códigos, las
+  marcas, los sinónimos, lo más vendido, lo elegido en la búsqueda, las promociones y el nombre de la tienda. **Los
+  usuarios con el hash de su PIN, sus permisos y reglas, y los clientes con su crédito ni siquiera se leen del JSON**:
+  nunca tocan la memoria ni el disco (`CopiaTest` lo revisa). Mientras la app está al frente le avisa a la caja principal
+  cada 30 segundos (`GET /api/estado?caja=`); si cambió algo, pide solo lo que cambió (`/cambios`) y lo aplica como la
+  caja de Windows; si el servicio dice que se baje entera, la baja. Nunca en segundo plano. Sin red, Precio y Buscar
+  siguen con la copia.
+- **Precio, Buscar y el ticket con la copia:** cada variante es un producto y cada otra presentación (la caja de 12) es
+  otro, con su código y su precio. El precio se calcula con el mismo `CalculoPrecio` sobre los precios tal cual: el de la
+  sucursal manda sobre el general, las escalas de mayoreo, el precio propio de la presentación nunca más caro que sus
+  piezas, y la promoción que corre hoy (la tarjeta la dice: «Regreso a clases: lleva 3 y paga 2»). Un código que es de
+  dos productos no se adivina, como en el POS: la tarjeta dice «Ese código es de más de un producto: búscalo por nombre».
+  La tarjeta ya no trae el departamento (la copia no lo tiene), solo el código. Buscar es la búsqueda de la caja con las
+  marcas y los sinónimos de la tienda, lo que esa caja eligió antes primero y lo más vendido; sin escribir, lo más
+  vendido (los rápidos llegan después, con red). El mosaico «Precio» sobre el bloqueo también lee la copia.
+- **Entrar con la huella:** con el celular dado de alta, la app se bloquea al abrirse y al volver después de 10 minutos
+  en el fondo, y se entra con lo que el celular acepte (la huella o la cara; si no, el PIN, el patrón o la contraseña del
+  celular). Mientras, la pantalla queda tapada y las lecturas no cuentan ni vibran; la cámara sí se enlaza, así que al
+  entrar ya escanea. Sin bloqueo de pantalla no se da de alta: la app lo dice y abre la seguridad del celular. El mosaico
+  sobre el bloqueo no pide nada, como antes. Es local, del celular: la app no pide la sesión del POS (`POST /api/sesion`)
+  porque el precio y la búsqueda no la necesitan; llegará con lo que dependa de quién.
+- **Si la caja principal cambia de IP:** tras dos latidos sin respuesta la app pregunta por UDP y, antes de mandarle la
+  llave a la dirección nueva, le pide que pruebe quién es (`GET /api/identidad`: el HMAC con la huella de la llave y la
+  firma ECDSA del servicio), como la caja de Windows.
+- **Los productos de prueba** (los ficticios del prototipo) salen de Precio, Buscar y el ticket y quedan como herramienta:
+  Ajustes › Herramientas de medición › El escáner › «Productos de prueba», para medir y probar sin la caja principal
+  (también en el escaneo rápido). Ajustes dice si está encendida.
+- **Permisos:** vuelve Internet (la app solo acepta direcciones privadas de la red local; HTTP sin TLS como la caja de
+  Windows, en `res/xml/red_segura.xml`) y entra el de la huella (`USE_BIOMETRIC`, normal, sin diálogo); el estado de la
+  red sigue fuera. La revisión al armar cada APK (`verificarPermisos`) acepta cámara, vibración, Internet y la huella, y
+  nada más. Con targetSdk 36, Android 17 deja pasar a la red local con Internet;
+  al pasar a targetSdk 37 habrá que pedir `ACCESS_LOCAL_NETWORK` en tiempo de ejecución.
+- **Bibliotecas nuevas:** OkHttp 4.12 y kotlinx-serialization 1.9 (y MockWebServer en las pruebas). Ninguna manda nada
+  fuera de la red de la tienda.
+
+**Lo que no trae y por qué:** «Buscar cambios ahora» en Ajustes (el latido de 30 s basta; si en las pruebas de la tienda
+hace falta, se agrega), los rápidos (Copia B/N, CURP) en Buscar sin escribir (van por `GET /api/sucursales/{id}/rapidos`,
+con red; después), las fotos (la interfaz no las enseña), la red «lenta» con espera para mandar (no hay nada que mandar
+todavía) y `POST /api/sesion`.
+
+**Pendiente antes de publicar la 0.4.0:** probar en la PC contra el servicio del POS de la rama `celular/como-caja` con la
+base ficticia, y en la tienda un fin de semana con el dueño: el Pixel en el Wi-Fi, el alta en la caja principal, y el
+precio y la búsqueda con los productos reales ([pruebas](docs/pruebas.md#la-conexión-con-el-pos)). Medir en el Pixel
+cuánto tarda en armarse la copia de la tienda (el índice de la búsqueda) y que la apertura no empeore.
+
 ## 0.3.0 (sin publicar)
 
 La tercera entrega de la [propuesta de interfaz](docs/propuesta-interfaz.md#del-bolsillo-al-precio), «Del bolsillo al
@@ -31,8 +128,13 @@ precio»: el verificador sobre el bloqueo y los accesos del ícono. No necesita 
 - **Buscar le deja su lugar al aviso:** un aviso que seguía a la vista al abrir Buscar (p. ej. «… al ticket» y luego ←)
   tapaba los resultados de arriba; ahora la lista empieza abajo de él, como en el ticket completo.
 
-**Pendiente antes de publicar la 0.3.0:** los perfiles de arranque siguen siendo los de la 0.1 (ver la 0.2.0). Y lo que
-solo se prueba en el celular: [pruebas](docs/pruebas.md#en-el-pixel-8-pro-o-el-emulador).
+**Los perfiles de arranque, generados en el Pixel** (2026-11-07): ya traen la pantalla principal, el botón rápido y
+Ajustes. En frío, la 0.3.0 llega a escanear en 453 ms (mediana), contra 523 ms de la 0.1.0 en la misma sesión
+([medición](mediciones/2026-11-07-0.3.0/LEEME.md)). Todavía sin la lectura de un código: nadie apuntó la cámara.
+
+**Pendiente antes de publicar la 0.3.0:** lo que solo se prueba en el celular con el PIN, el mosaico o el emulador
+([pruebas](docs/pruebas.md#en-el-pixel-8-pro-o-el-emulador)). En el Pixel ya se revisó que los accesos y el ícono dejan
+una sola MainActivity.
 
 ## 0.2.0 (sin publicar)
 
@@ -75,10 +177,7 @@ fase 2 sobre el escáner de hoy, todavía sin conexión al POS.
   es el mismo producto. Con la letra grande sus botones no se encogen.
 - **Los contadores del botón rápido** salen con la medición de la sesión de prueba (contadores-rapido.csv).
 
-**Pendiente antes de publicar la 0.2.0:** volver a generar los perfiles de arranque
-(`app/src/main/generated/baselineProfiles`, con `./gradlew :app:generateBaselineProfile` en el Pixel o en un emulador
-con API 33 o más; [pruebas](docs/pruebas.md#arranque-y-perfil)). Los de ahora son de la 0.1: traen la pestaña del escáner,
-que ya no existe, y nada de la pantalla principal ni del botón rápido. No se editan a mano.
+**Los perfiles de arranque** se volvieron a generar con la 0.3.0 (ver arriba).
 
 ## 0.1.0 (sin publicar)
 
