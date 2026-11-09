@@ -34,7 +34,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import mx.papeleriapos.android.caja.AlmacenAlta
 import mx.papeleriapos.android.caja.Conexion
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.rapido.Accesos
@@ -116,7 +118,11 @@ class MainActivity : ComponentActivity() {
      */
     private fun conexionAlFrente() {
         val conexion = Conexion.del(applicationContext)
+        // Bloqueada desde ya si hay alta, sin esperar a que se lea la copia (pueden ser segundos).
+        Entrada.bloquearAlAbrir(this, conAlta = AlmacenAlta.hayAlta(applicationContext))
         conexion.alFrente()
+        // Las promociones dependen del día: si la app quedó viva de ayer, los productos se arman otra vez.
+        FuenteDeProductos.revisarElDia()
         lifecycleScope.launch {
             val estado = conexion.estado.first { it.leida }
             Entrada.alFrente(this@MainActivity, conAlta = estado.alta != null, pedirCredencial = pedirCredencial)

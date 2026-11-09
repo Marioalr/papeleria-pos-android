@@ -3,6 +3,7 @@ package mx.papeleriapos.android.caja
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +92,21 @@ class Conexion(
     /** Latidos seguidos sin respuesta: con [FALLOS_PARA_BUSCAR] se busca la caja principal por UDP por si cambió de IP. */
     private var fallos = 0
 
+    /**
+     * La dirección guardada todavía no prueba quién es ([Identidad]): al leer el alta del disco y después de cualquier
+     * caída. Mientras, la llave no sale hacia ella (como la caja de Windows): en esa IP puede haber ya otro equipo.
+     */
+    private var sinComprobar = false
+
+    /**
+     * Cambia con cada alta y al olvidarla: lo que termina después (una copia que bajaba, una búsqueda por UDP) ve que ya
+     * no es la suya y no publica nada.
+     */
+    private var generacion = 0L
+
+    /** La copia completa que está bajando (una sola a la vez); no la cancela irse al fondo. */
+    private var descarga: Job? = null
+
     // ---- Lo que se lee del disco ----
 
     /** Empieza a leer el alta y la copia del disco, sin esperar (al abrir la app, fuera de la apertura de la cámara). */
@@ -102,6 +118,7 @@ class Conexion(
         if (leida) return
         leida = true
         alta = almacenAlta.leer()
+        sinComprobar = alta != null
         val c = if (alta != null) almacenCopia.leer()?.takeIf { it.caja.id.equals(alta!!.caja.id, ignoreCase = true) } else null
         _copia.value = c
         val pendiente = if (alta == null) almacenAlta.leerAviso() else null
@@ -126,51 +143,88 @@ class Conexion(
         }
     }
 
-    /** La app pasó a segundo plano: ni latidos ni cambios hasta que vuelva (lo que esté bajando, termina). */
+    /** La app pasó a segundo plano: ni latidos ni cambios hasta que vuelva (la copia que esté bajando, termina). */
     fun alFondo() {
         alFrente = false
         latido?.cancel()
         latido = null
     }
 
-    /** Un latido: `GET /api/estado` con la llave; si las versiones cambiaron, los cambios (o la copia completa). */
-    suspend fun latir() {
-        val a = alta ?: return
+    /**
+     * Un latido: `GET /api/estado` con la llave (antes, si hace falta, que la dirección pruebe quién es); si las versiones
+     * cambiaron, los cambios (o la copia completa). Con las mismas versiones también pide los cambios, que salen casi
+     * vacíos, solo para saber si la llave sigue sirviendo: `/api/estado` contesta a cualquiera, con llave o sin ella.
+     */
+    suspend fun latir() = withContext(hilo) { latirEnElHilo() }
+
+    private suspend fun latirEnElHilo() {
+        var a = alta ?: return
+        val gen = generacion
+        if (sinComprobar) {
+            a = when (comprobar(a)) {
+                Comprobacion.PROBADA -> a
+                Comprobacion.NO_CONTESTA -> {
+                    sinContestar(a, gen)
+                    return
+                }
+                Comprobacion.OTRO -> {
+                    _estado.update { it.copy(red = Red.CAIDA) }
+                    reencontrar(a, gen) ?: return
+                }
+            }
+            if (gen != generacion) return
+            sinComprobar = false
+        }
         val desde = cronometro()
         val estadoServicio = try {
             cliente.estado(a.direccion, a.llave, a.caja.id)
         } catch (e: ErrorDelPos) {
-            if (e.sinAlta) olvidarAlta(SIN_ACCESO) else _estado.update { it.copy(aviso = e.message) }
+            if (gen != generacion) return
+            if (e.sinAlta) sinLlave(a, gen) else _estado.update { it.copy(aviso = e.message) }
             return
         } catch (e: IOException) {
-            fallos++
-            _estado.update { it.copy(red = Red.CAIDA) }
-            if (fallos >= FALLOS_PARA_BUSCAR) {
-                fallos = 0
-                reencontrar(a)
-            }
+            if (gen == generacion) sinContestar(a, gen)
             return
         }
+        if (gen != generacion) return
         fallos = 0
         val tardo = cronometro() - desde
         _estado.update { it.copy(red = if (tardo >= MS_LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj(), aviso = null) }
         val c = _copia.value
         when {
             c == null -> bajarCompleta(a)
-            c.desactualizada(estadoServicio.versionDatos, estadoServicio.versionExistencias, estadoServicio.base, estadoServicio.formatoCopia) -> pedirCambios(a, c)
+            c.desactualizada(estadoServicio.versionDatos, estadoServicio.versionExistencias, estadoServicio.base, estadoServicio.formatoCopia) -> pedirCambios(a, c, gen, aplicar = true)
+            else -> pedirCambios(a, c, gen, aplicar = false)
         }
     }
 
-    private suspend fun pedirCambios(a: Alta, c: Copia) {
+    /** La caja principal no contestó: la dirección queda sin comprobar y, a los [FALLOS_PARA_BUSCAR], se busca por UDP. */
+    private suspend fun sinContestar(a: Alta, gen: Long) {
+        sinComprobar = true
+        fallos++
+        _estado.update { it.copy(red = Red.CAIDA) }
+        if (fallos >= FALLOS_PARA_BUSCAR) {
+            fallos = 0
+            reencontrar(a, gen)
+        }
+    }
+
+    /** Con [aplicar] falso, los cambios solo se piden para saber si la llave sigue sirviendo: no se aplica ni se guarda nada. */
+    private suspend fun pedirCambios(a: Alta, c: Copia, gen: Long, aplicar: Boolean) {
         val cambios = try {
             cliente.cambios(a.direccion, a.llave, c)
         } catch (e: ErrorDelPos) {
-            if (e.sinAlta) olvidarAlta(SIN_ACCESO) else _estado.update { it.copy(aviso = e.message) }
+            if (gen != generacion) return
+            if (e.sinAlta) sinLlave(a, gen) else if (aplicar) _estado.update { it.copy(aviso = e.message) }
             return
         } catch (e: IOException) {
-            _estado.update { it.copy(red = Red.CAIDA) }
+            if (gen == generacion) {
+                sinComprobar = true
+                _estado.update { it.copy(red = Red.CAIDA) }
+            }
             return
         }
+        if (!aplicar || gen != generacion) return
         if (cambios.paqueteCompleto != null) {
             bajarCompleta(a)
             return
@@ -178,19 +232,39 @@ class Conexion(
         publicar(c.aplicar(cambios, reloj()))
     }
 
-    /** La copia completa: la primera vez, cuando los cambios dicen que se baje entera o cuando la de aquí no se pudo leer. */
+    /**
+     * La copia completa: la primera vez, cuando los cambios dicen que se baje entera o cuando la de aquí no se pudo leer.
+     * Una sola a la vez: si ya está bajando, espera a esa. Corre aparte del latido: irse al fondo no la tira.
+     */
     private suspend fun bajarCompleta(a: Alta) {
+        val activa = descarga?.takeIf { it.isActive } ?: iniciarDescarga(a)
+        activa.join()
+    }
+
+    private fun iniciarDescarga(a: Alta): Job {
+        val gen = generacion
+        return alcance.launch { descargar(a, gen) }.also { descarga = it }
+    }
+
+    private suspend fun descargar(a: Alta, gen: Long) {
         _estado.update { it.copy(bajando = true) }
         try {
             val paquete = cliente.paquete(a.direccion, a.llave, a.caja.id)
-            publicar(Copia.dePaquete(paquete, reloj()))
+            val nueva = Copia.dePaquete(paquete, reloj())
+            // Mientras bajaba se olvidó el alta (o se dio otra): no es de nadie.
+            if (gen != generacion) return
+            publicar(nueva)
             // La copia bajó: el servicio contestó (lo que tardó no dice nada de la red, son varios MB).
-            _estado.update { it.copy(bajando = false, aviso = null, red = if (it.red == Red.LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj()) }
+            _estado.update { it.copy(aviso = null, red = if (it.red == Red.LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj()) }
         } catch (e: ErrorDelPos) {
-            _estado.update { it.copy(bajando = false) }
-            if (e.sinAlta) olvidarAlta(SIN_ACCESO) else _estado.update { it.copy(aviso = e.message) }
+            if (gen != generacion) return
+            if (e.sinAlta) sinLlave(a, gen) else _estado.update { it.copy(aviso = e.message) }
         } catch (e: IOException) {
-            _estado.update { it.copy(bajando = false, red = Red.CAIDA, aviso = "No se pudo bajar la copia del catálogo: se vuelve a intentar.") }
+            if (gen != generacion) return
+            sinComprobar = true
+            _estado.update { it.copy(red = Red.CAIDA, aviso = "No se pudo bajar la copia del catálogo: se vuelve a intentar.") }
+        } finally {
+            if (gen == generacion) _estado.update { it.copy(bajando = false) }
         }
     }
 
@@ -200,13 +274,53 @@ class Conexion(
         _estado.update { it.copy(copia = c.resumen()) }
     }
 
+    private enum class Comprobacion { PROBADA, NO_CONTESTA, OTRO }
+
+    /** Si en la dirección guardada sigue la caja principal: `GET /api/identidad` sin llave, con un reto ([Identidad]). */
+    private suspend fun comprobar(a: Alta): Comprobacion {
+        val reto = Identidad.nuevoReto()
+        val respuesta = try {
+            cliente.identidad(a.direccion, a.caja.id, reto)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            return Comprobacion.NO_CONTESTA
+        } catch (e: Exception) {
+            return Comprobacion.OTRO
+        }
+        return if (Identidad.esLaCajaPrincipal(respuesta, a.llave, a.llaveDelServicio, a.caja.id, reto, a.direccion)) Comprobacion.PROBADA else Comprobacion.OTRO
+    }
+
+    /**
+     * Un 401 «caja-sin-alta»: solo se olvida la llave si quien lo dice es la caja principal. Si la dirección guardada
+     * prueba quién es, le quitaron el acceso. Si no lo prueba (en esa IP ya hay otro POS, o la caja ya no conoce a este
+     * celular y no puede firmar), se busca por UDP: si la caja principal está en otra IP, se muda; si nadie lo prueba, se
+     * olvida. Si no contesta nadie, se revisa en el siguiente latido.
+     */
+    private suspend fun sinLlave(a: Alta, gen: Long) {
+        when (comprobar(a)) {
+            Comprobacion.PROBADA -> Unit
+            Comprobacion.NO_CONTESTA -> {
+                sinComprobar = true
+                return
+            }
+            Comprobacion.OTRO -> {
+                sinComprobar = true
+                if (reencontrar(a, gen) != null) return
+            }
+        }
+        if (gen == generacion) olvidarAlta(SIN_ACCESO)
+    }
+
     /**
      * La caja principal cambió de IP: se busca otra vez por UDP y, antes de mandarle la llave, se le pide que pruebe quién
-     * es ([Identidad]). Se acepta la primera que lo prueba.
+     * es ([Identidad]). Se acepta la primera que lo prueba; null si ninguna (o si mientras se olvidó el alta).
      */
-    private suspend fun reencontrar(a: Alta) {
+    private suspend fun reencontrar(a: Alta, gen: Long): Alta? {
         val candidatas = try {
             descubrir()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             emptyList()
         }
@@ -215,16 +329,22 @@ class Conexion(
             val reto = Identidad.nuevoReto()
             val respuesta = try {
                 cliente.identidad(d, a.caja.id, reto)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 continue
             }
             if (!Identidad.esLaCajaPrincipal(respuesta, a.llave, a.llaveDelServicio, a.caja.id, reto, d)) continue
+            if (gen != generacion) return null
             val nueva = a.copy(direccion = d)
             almacenAlta.guardarDireccion(d)
             alta = nueva
+            sinComprobar = false
+            fallos = 0
             _estado.update { it.copy(alta = nueva) }
-            return
+            return nueva
         }
+        return null
     }
 
     // ---- El alta ----
@@ -260,12 +380,14 @@ class Conexion(
             leerSiFalta()
             almacenCopia.borrar()
             almacenAlta.guardar(nueva)
+            generacion++
             alta = nueva
             fallos = 0
+            sinComprobar = false
             _copia.value = null
             _estado.update { EstadoConexion(alta = nueva, red = red, ultimaVez = nueva.altaEn, leida = true) }
+            iniciarDescarga(nueva)
         }
-        alcance.launch { bajarCompleta(nueva) }
         return nueva
     }
 
@@ -275,9 +397,11 @@ class Conexion(
      * ([avisoVisto]) o vuelve a dar de alta: puede llegar con la entrada con la huella tapando todo, o reiniciarse la app.
      */
     suspend fun olvidarAlta(aviso: String? = null) = withContext(hilo) {
+        generacion++
         almacenAlta.borrar(aviso)
         almacenCopia.borrar()
         alta = null
+        sinComprobar = false
         _copia.value = null
         _estado.value = EstadoConexion(aviso = aviso, sinAcceso = aviso != null, leida = true)
     }
@@ -315,6 +439,11 @@ class Conexion(
         /** La del proceso: la usan la app, el escaneo rápido y Ajustes. */
         fun del(contexto: Context): Conexion = proceso ?: synchronized(this) {
             proceso ?: crear(contexto.applicationContext).also { proceso = it }
+        }
+
+        /** Para las pruebas: como un proceso nuevo (la siguiente [del] crea otra y vuelve a leer el disco), o con [otra]. */
+        internal fun reiniciar(otra: Conexion? = null) {
+            proceso = otra
         }
 
         private fun crear(app: Context) = Conexion(

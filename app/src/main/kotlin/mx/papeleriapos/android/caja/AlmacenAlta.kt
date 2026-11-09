@@ -99,6 +99,14 @@ class AlmacenAlta(private val prefs: SharedPreferences, private val cifrador: Ci
 
     companion object {
         const val ARCHIVO = "conexion"
+
+        /**
+         * Si hay un alta guardada, sin descifrar la llave ni leer la copia: lo único que hace falta para bloquear la app
+         * al abrir en frío antes del primer cuadro ([mx.papeleriapos.android.entrada.Entrada.bloquearAlAbrir]).
+         */
+        fun hayAlta(contexto: android.content.Context): Boolean =
+            contexto.applicationContext.getSharedPreferences(ARCHIVO, android.content.Context.MODE_PRIVATE).contains(LLAVE)
+
         private const val LLAVE = "llave"
         private const val IP = "ip"
         private const val PUERTO = "puerto"

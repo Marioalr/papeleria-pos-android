@@ -49,12 +49,18 @@ class ConexionTest {
     private val pedidos = ArrayList<String>()
     private var encontradas: List<Direccion> = emptyList()
 
-    private fun despachador(firma: ServicioDePrueba, direccionDelServidor: () -> Direccion) = object : Dispatcher() {
+    /**
+     * Como el servicio de verdad (`SeguridadCajas.cs`): `/api/estado`, el alta y la identidad contestan a cualquiera; lo
+     * demás, 401 «caja-sin-alta» a una llave que no conoce. [llaves] anota las llaves que le llegan a ese servidor.
+     */
+    private fun despachador(firma: ServicioDePrueba, llaves: MutableList<String> = ArrayList(), direccionDelServidor: () -> Direccion) = object : Dispatcher() {
         override fun dispatch(request: RecordedRequest): MockResponse {
             val ruta = request.path.orEmpty()
             synchronized(pedidos) { pedidos.add(ruta) }
             val conLlave = request.getHeader(ClienteCaja.ENCABEZADO_LLAVE)
-            if (conLlave != null && (!llaveValida || conLlave != servicio.llaveDeLaCaja)) {
+            conLlave?.let { synchronized(llaves) { llaves.add(it) } }
+            val abierta = ruta.startsWith("/api/estado") || ruta.startsWith("/api/alta") || ruta.startsWith("/api/identidad")
+            if (!abierta && (conLlave == null || !llaveValida || conLlave != firma.llaveDeLaCaja)) {
                 return MockResponse().setResponseCode(401).setBody("""{"mensaje":"Esta PC no está dada de alta como caja.","codigo":"caja-sin-alta"}""")
             }
             return when {
@@ -142,11 +148,17 @@ class ConexionTest {
     }
 
     @Test
-    fun `el latido pide los cambios solo cuando las versiones cambian y los aplica`() {
+    fun `el latido aplica los cambios solo cuando las versiones cambian`() {
         darDeAlta()
         pedidos.clear()
+        val guardada = File(carpeta, "copia.json").takeIf { it.exists() }?.lastModified()
         espera { conexion.latir() }
-        assertEquals("Mismas versiones: solo el latido", listOf("/api/estado?caja=$cajaId"), pedidos)
+        // Mismas versiones: el latido y los cambios solo para saber si la llave sirve (/api/estado contesta a cualquiera).
+        assertEquals(pedidos.toString(), 2, pedidos.size)
+        assertEquals("/api/estado?caja=$cajaId", pedidos[0])
+        assertTrue(pedidos[1], pedidos[1].startsWith("/api/cajas/$cajaId/cambios?desde=41&existencias=7"))
+        assertEquals("Y no se aplica nada", 41L, conexion.copia.value!!.version)
+        assertEquals(guardada, File(carpeta, "copia.json").takeIf { it.exists() }?.lastModified())
         assertEquals(Red.BUENA, conexion.estado.value.red)
         assertEquals(1_000L, conexion.estado.value.ultimaVez)
 
@@ -237,8 +249,9 @@ class ConexionTest {
         lateinit var direccionMudada: Direccion
         lateinit var direccionImpostora: Direccion
         val impostora = MockWebServer()
+        val llavesDeLaImpostora = ArrayList<String>()
         mudada.dispatcher = despachador(servicio) { direccionMudada }
-        impostora.dispatcher = despachador(otraPc) { direccionImpostora }
+        impostora.dispatcher = despachador(otraPc, llavesDeLaImpostora) { direccionImpostora }
         mudada.start()
         impostora.start()
         direccionMudada = Direccion("127.0.0.1", mudada.port)
@@ -253,7 +266,7 @@ class ConexionTest {
             assertEquals(direccionMudada, conexion.estado.value.alta!!.direccion)
             assertEquals(direccionMudada, almacenAlta.leer()!!.direccion)
             // Y a la impostora nunca se le mandó la llave.
-            assertTrue(pedidos.none { it.startsWith("/api/estado?caja") && false })
+            assertTrue("$llavesDeLaImpostora", synchronized(llavesDeLaImpostora) { llavesDeLaImpostora.isEmpty() })
             pedidos.clear()
             espera { conexion.latir() }
             assertEquals(Red.BUENA, conexion.estado.value.red)

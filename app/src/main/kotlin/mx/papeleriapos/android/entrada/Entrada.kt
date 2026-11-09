@@ -55,6 +55,15 @@ object Entrada {
         }
     }
 
+    /**
+     * Al abrir, antes de leer el alta entera (la llave cifrada y la copia, que tarda): si hay un alta guardada ([conAlta]),
+     * el celular tiene bloqueo y toca pedir, la app se bloquea ya, desde el primer cuadro; así no se ve el ticket ni cuentan
+     * las lecturas mientras se lee la copia. [alFrente] pide entrar (o desbloquea si el alta no se pudo leer).
+     */
+    fun bloquearAlAbrir(contexto: Context, conAlta: Boolean, ahora: Long = SystemClock.elapsedRealtime()) {
+        if (conAlta && hayQuePedir(ahora) && hayBloqueoSeguro(contexto)) _bloqueada.value = true
+    }
+
     /** Si toca pedir: nunca se ha entrado en este proceso, o se estuvo más de [MS_SIN_PEDIR] en el fondo. */
     internal fun hayQuePedir(ahora: Long): Boolean = !entroAlgunaVez || (alFondoDesde != 0L && ahora - alFondoDesde >= MS_SIN_PEDIR)
 

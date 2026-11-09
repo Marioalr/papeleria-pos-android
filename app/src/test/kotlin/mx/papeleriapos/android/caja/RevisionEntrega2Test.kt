@@ -20,7 +20,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -28,8 +27,8 @@ import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 /**
- * Las pruebas de docs/revision-entrega-2.md: cada una demuestra un hallazgo y falla con el código de la 0.4.0 (por eso van
- * con `@Ignore("hallazgo N")`; se quita al arreglarlo).
+ * Las pruebas de docs/revision-entrega-2.md: cada una demuestra un hallazgo y falla con el código de la 0.4.0; desde la
+ * 0.4.2, arreglados, pasan. (Los hallazgos 3 y 5 se prueban en `AbrirBloqueadaTest` y `CatalogoDelDiaTest`.)
  *
  * A diferencia del despachador de [ConexionTest], el de aquí contesta como el servicio de verdad (rama `celular/como-caja`
  * del POS): `GET /api/estado` está abierto con cualquier llave o sin ella (`SeguridadCajas.cs:53`, `ApiCajas.cs:24-27`), y
@@ -116,7 +115,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 1 ----
 
-    @Ignore("hallazgo 1")
     @Test
     fun `despues de una caida la llave no sale hacia la ip guardada sin que pruebe quien es`() {
         val c = conexion()
@@ -148,7 +146,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 2 ----
 
-    @Ignore("hallazgo 2")
     @Test
     fun `otro pos en la ip guardada no borra el alta si la caja principal de verdad se encuentra en otra ip`() {
         val c = conexion()
@@ -184,7 +181,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 4 ----
 
-    @Ignore("hallazgo 4")
     @Test
     fun `al darse de alta con la app al frente la copia completa se baja una sola vez`() {
         msPaquete = 1_500
@@ -203,7 +199,6 @@ class RevisionEntrega2Test {
         }
     }
 
-    @Ignore("hallazgo 4")
     @Test
     fun `una copia que termina de bajar despues de olvidar el alta no se publica`() {
         msPaquete = 1_000
@@ -219,7 +214,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 6 ----
 
-    @Ignore("hallazgo 6")
     @Test
     fun `irse al fondo mientras baja la primera copia no la tira`() {
         // Un alta guardada sin copia todavía (se dio de alta y se cerró la app, o la copia no se pudo leer).
@@ -239,7 +233,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 7 ----
 
-    @Ignore("hallazgo 7")
     @Test
     fun `al quitarle la llave el latido lo nota aunque no cambie el catalogo`() {
         val c = conexion()
@@ -255,7 +248,6 @@ class RevisionEntrega2Test {
 
     // ---- Hallazgo 8 ----
 
-    @Ignore("hallazgo 8")
     @Test
     fun `solo direcciones privadas de la red de la tienda`() {
         // 100.64/10 es la red compartida de los operadores (CGNAT, RFC 6598): con datos móviles, son otros clientes del operador.

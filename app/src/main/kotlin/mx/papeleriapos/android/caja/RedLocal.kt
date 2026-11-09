@@ -48,9 +48,11 @@ object RedLocal {
         }
     }
 
-    /** Una dirección de la red local: privada (RFC 1918), de enlace local o del propio equipo. */
-    fun esPrivada(ip: InetAddress): Boolean = ip.isSiteLocalAddress || ip.isLinkLocalAddress || ip.isLoopbackAddress ||
-        (ip is Inet4Address && ip.address[0].toInt() and 0xFF == 100 && ip.address[1].toInt() and 0xC0 == 64) // 100.64/10 (CGNAT)
+    /**
+     * Una dirección de la red local: privada (RFC 1918), de enlace local o del propio equipo. Nunca 100.64/10 (RFC 6598):
+     * es la red compartida de los operadores (CGNAT); con datos móviles, son otros clientes del operador.
+     */
+    fun esPrivada(ip: InetAddress): Boolean = ip.isSiteLocalAddress || ip.isLinkLocalAddress || ip.isLoopbackAddress
 
     /**
      * Las direcciones de difusión de las redes IPv4 de este celular (su Wi-Fi), más la general 255.255.255.255: a ellas va

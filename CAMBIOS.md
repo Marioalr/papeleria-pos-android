@@ -2,6 +2,25 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.2 (sin publicar)
+
+Los 9 hallazgos de la [revisión de la entrega 2](docs/revision-entrega-2.md), arreglados; cada uno con su prueba.
+
+- **La llave solo sale hacia la caja principal que probó quién es:** al abrir la app y después de cada caída, antes de
+  mandar la llave, la dirección guardada tiene que probar quién es (`/api/identidad`), como en la caja de Windows. Si
+  no lo prueba, se busca la caja principal por UDP.
+- **Un 401 de otro equipo ya no borra el alta:** solo se olvida la llave si quien dice «caja-sin-alta» prueba ser la
+  caja principal o si no se encuentra a nadie que lo pruebe. Si la caja principal está en otra IP, el celular se cambia ahí.
+- **Al abrir en frío con alta, la app sale bloqueada desde el primer cuadro,** sin esperar a que se lea la copia.
+- **Una sola copia completa a la vez,** y una que termina de bajar después de olvidar el alta ya no se guarda.
+  Irse al fondo mientras baja ya no la tira.
+- **Las promociones, con el día de hoy:** si la app sigue abierta de un día para otro, los productos se vuelven a armar
+  al pasar al frente.
+- **El latido nota que se le quitó la llave** aunque no cambie el catálogo: con las mismas versiones, pide los cambios
+  (casi vacíos) solo para comprobar la llave.
+- **100.64/10 ya no cuenta como red de la tienda** (es la de los operadores, CGNAT).
+- `ConexionTest` contesta como el servicio de verdad y sí comprueba que la impostora nunca recibe la llave.
+
 ## 0.4.1 (sin publicar)
 
 Tres detalles de Ajustes › La conexión que salieron al probar la 0.4.0 en el Pixel 8 Pro contra el POS de la rama

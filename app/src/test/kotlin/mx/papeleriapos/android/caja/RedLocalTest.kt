@@ -13,7 +13,7 @@ class RedLocalTest {
         assertEquals(Direccion("192.168.1.10", 5180), RedLocal.direccionDe(" 192.168.1.10:5180 "))
         assertEquals(Direccion("10.0.2.2", 5080), RedLocal.direccionDe("http://10.0.2.2:5080/"))
         assertEquals(Direccion("172.16.4.1", 5080), RedLocal.direccionDe("172.16.4.1"))
-        assertEquals(Direccion("100.64.0.9", 5080), RedLocal.direccionDe("100.64.0.9"))
+        assertNull("La red compartida de los operadores (CGNAT)", RedLocal.direccionDe("100.64.0.9"))
         assertEquals(5080, RedLocal.direccionDe("[fe80::1]")!!.puerto)
         assertNull("Pública", RedLocal.direccionDe("8.8.8.8"))
         assertNull("Un nombre", RedLocal.direccionDe("caja.tienda.local"))
