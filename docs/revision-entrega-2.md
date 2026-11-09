@@ -4,23 +4,27 @@ Revisión del diff `a60c02a..0d46e5e -- app` (sin los perfiles de arranque), com
 `celular/como-caja` de `papeleria-pos-celular` (`docs/celular-como-caja.md` y el C#). Solo defectos confirmados: cada uno
 con una prueba JVM que falla con el código de la 0.4.0 (`app/src/test/kotlin/mx/papeleriapos/android/caja/RevisionEntrega2Test.kt`,
 marcadas `@Ignore("hallazgo N")`; se quita la marca al arreglarlo) o, donde no se puede probar en la JVM, con las líneas
-exactas y el escenario. No se arregló nada.
+exactas y el escenario.
+
+> **Estado (2026-11-09):** los 9, **arreglados** en la 0.4.2 (commit `33565a8`, rama `claude/entrega-2-detalles-7fa16b`).
+> Ninguno se descartó. Las pruebas ya no llevan `@Ignore`; los hallazgos 3 y 5 tienen la suya (`AbrirBloqueadaTest`,
+> `CatalogoDelDiaTest`). Cada una se comprobó fallando sin su arreglo y pasando con él.
 
 Las pruebas usan un despachador que contesta **como el servicio de verdad**: `GET /api/estado` está abierto con cualquier
 llave o sin ella (`SeguridadCajas.cs:53`, `ApiCajas.cs:24-27`) y solo lo demás contesta 401 «caja-sin-alta». El de
 `ConexionTest` contesta 401 también en `/api/estado`, que el servicio no hace (hallazgo 9).
 
-| # | Gravedad | Qué | Cómo se confirmó |
-|---|---|---|---|
-| 1 | Alta | La llave sale en claro hacia la IP guardada sin que pruebe quién es, también después de una caída | Prueba |
-| 2 | Alta | Cualquier equipo en la IP guardada que conteste 401 «caja-sin-alta» borra la llave y la copia | Prueba |
-| 3 | Alta | Al abrir la app en frío no está bloqueada hasta que se lee la copia: se ve el ticket y las lecturas cuentan | Líneas |
-| 4 | Media | El alta y el latido bajan la copia completa dos veces a la vez; una copia que termina tarde se publica sin alta | 2 pruebas |
-| 5 | Media | Las promociones se calculan con el día en que se armó el catálogo: al pasar la medianoche el precio puede ser otro | Líneas |
-| 6 | Media | Irse al fondo mientras baja la copia la tira (y «bajando» se queda encendido) | Prueba |
-| 7 | Baja | El latido nunca nota que se le quitó la llave (`/api/estado` está abierto) | Prueba |
-| 8 | Baja | 100.64/10 (CGNAT de los operadores) cuenta como «red de la tienda» | Prueba |
-| 9 | Baja | `ConexionTest` no prueba lo que dice: una aserción vacía y un 401 que el servicio no da | Líneas |
+| # | Gravedad | Qué | Cómo se confirmó | Estado |
+|---|---|---|---|---|
+| 1 | Alta | La llave sale en claro hacia la IP guardada sin que pruebe quién es, también después de una caída | Prueba | Arreglado (`33565a8`) |
+| 2 | Alta | Cualquier equipo en la IP guardada que conteste 401 «caja-sin-alta» borra la llave y la copia | Prueba | Arreglado (`33565a8`) |
+| 3 | Alta | Al abrir la app en frío no está bloqueada hasta que se lee la copia: se ve el ticket y las lecturas cuentan | Líneas; prueba desde la 0.4.2 | Arreglado (`33565a8`) |
+| 4 | Media | El alta y el latido bajan la copia completa dos veces a la vez; una copia que termina tarde se publica sin alta | 2 pruebas | Arreglado (`33565a8`) |
+| 5 | Media | Las promociones se calculan con el día en que se armó el catálogo: al pasar la medianoche el precio puede ser otro | Líneas; prueba desde la 0.4.2 | Arreglado (`33565a8`) |
+| 6 | Media | Irse al fondo mientras baja la copia la tira (y «bajando» se queda encendido) | Prueba | Arreglado (`33565a8`) |
+| 7 | Baja | El latido nunca nota que se le quitó la llave (`/api/estado` está abierto) | Prueba | Arreglado (`33565a8`) |
+| 8 | Baja | 100.64/10 (CGNAT de los operadores) cuenta como «red de la tienda» | Prueba | Arreglado (`33565a8`) |
+| 9 | Baja | `ConexionTest` no prueba lo que dice: una aserción vacía y un 401 que el servicio no da | Líneas | Arreglado (`33565a8`) |
 
 ---
 
@@ -46,6 +50,11 @@ la llave.
 `IOException`. Mientras lo esté, el latido primero pide `GET /api/identidad` a la dirección guardada (sin llave) y solo si
 `Identidad.esLaCajaPrincipal` manda la llave; si no prueba, `Red.CAIDA` y a buscar por UDP (`reencontrar`).
 
+**Arreglado (`33565a8`):** `Conexion.sinComprobar`, verdadero al leer el alta del disco y tras cualquier caída. Mientras
+lo esté, el latido pide `/api/identidad` a la dirección guardada (sin llave) y solo con la prueba sigue con la llave; si
+contesta otro, red caída y a buscar por UDP; si no contesta nadie, cuenta como una caída más. La llave se sigue mandando
+sin volver a probar mientras la caja principal conteste (como la caja de Windows).
+
 ## 2. Un 401 de cualquiera borra la llave y la copia (Alta)
 
 **Dónde:** `caja/Conexion.kt:133-134`, `:158-159`, `:179-181` → `olvidarAlta` (`:263-269`), sin ninguna comprobación de
@@ -66,6 +75,12 @@ dice que no conoce la caja (404 «caja-sin-alta» de `ApiRed.cs:60-62` llega sin
 prueba, olvidar la llave. Valorar no borrar la copia en ese momento (sin llave no sirve para hablar con nadie, pero sí
 para seguir dando precios sin red), como la caja de Windows, que avisa (`SinAlta`) y sigue con su copia.
 
+**Arreglado (`33565a8`):** `sinLlave` en `Conexion`. Ante un 401 «caja-sin-alta», la dirección guardada tiene que probar
+quién es: si lo prueba, se olvida la llave (le quitaron el acceso); si no lo prueba, se busca por UDP y, si la caja
+principal está en otra IP, el celular se cambia ahí sin borrar nada; si nadie lo prueba, se olvida; si no contesta
+nadie, se revisa en el siguiente latido. La copia se sigue borrando al olvidar la llave, como decía la 0.4.0 (cambiarlo
+es decisión del dueño).
+
 ## 3. Al abrir en frío, la app no está bloqueada hasta leer la copia (Alta)
 
 **Dónde:** `MainActivity.kt:117-123` (`Entrada.alFrente` se llama solo después de `conexion.estado.first { it.leida }`),
@@ -83,6 +98,11 @@ lecturas no cuentan ni vibran» y «la app se bloquea al abrirse».
 **Arreglo propuesto:** no esperar la copia para decidir: leer solo si hay alta (un `prefs.contains("llave")`, barato) o,
 más simple, empezar bloqueada de forma pesimista (`_bloqueada = true` hasta saber que no hay alta o no hay bloqueo de
 pantalla) y separar `leida` del alta de la lectura de la copia.
+
+**Arreglado (`33565a8`):** `MainActivity.conexionAlFrente` llama `Entrada.bloquearAlAbrir` en `onStart`, antes del primer
+cuadro, con `AlmacenAlta.hayAlta` (solo mira si hay llave en `conexion.xml`: ni la descifra ni lee la copia). Después,
+como antes, `Entrada.alFrente` pide entrar o desbloquea si el alta no se pudo leer. Prueba: `AbrirBloqueadaTest`. Ojo
+para la medición en el Pixel: con alta, el velo sale desde el primer cuadro (antes salía al terminar de leer la copia).
 
 ## 4. Dos copias completas a la vez y una que se publica sin alta (Media)
 
@@ -105,6 +125,10 @@ Prueba: `una copia que termina de bajar despues de olvidar el alta no se publica
 `guardarDireccion`, ya en el hilo, comprobar que `alta` sigue siendo la misma (`alta?.llave == a.llave && caja.id`) o
 llevar un número de generación que `olvidarAlta`/`darDeAlta` incrementan.
 
+**Arreglado (`33565a8`):** `descarga`, un solo `Job` para la copia completa: el latido espera a la que ya baja en lugar de
+lanzar otra. `generacion` cambia con cada alta y al olvidarla; la descarga, los cambios y `reencontrar` la revisan
+después de cada espera y no publican nada de un alta que ya no es la suya.
+
 ## 5. Las promociones se quedan con el día en que se armó el catálogo (Media)
 
 **Dónde:** `catalogo/FuenteDeProductos.kt:69-70` (el catálogo armado se reutiliza mientras la copia sea el mismo objeto),
@@ -119,6 +143,11 @@ calcularse en el celular (`celular-como-caja.md`, tabla del paso 6).
 
 **Arreglo propuesto:** guardar el día con el catálogo armado (`deLaCopia` → copia + día) y volver a armar si cambió
 (al pasar al frente basta con comparar `hoy()`), o que `Cobro` calcule el día al usarse.
+
+**Arreglado (`33565a8`):** `CatalogoDelDia` (en `FuenteDeProductos`) guarda el día con los productos armados y los vuelve a
+armar si cambió. `FuenteDeProductos.revisarElDia()` se llama al pasar al frente (`MainActivity.onStart`) y cuando el
+escaneo rápido pide los productos. Prueba: `CatalogoDelDiaTest`. Con la app al frente justo a la medianoche no se
+vuelve a armar hasta la siguiente vez que pase al frente (la tienda está cerrada a esa hora).
 
 ## 6. Irse al fondo mientras baja la copia la tira (Media)
 
@@ -136,6 +165,9 @@ idas y vueltas frecuentes (el uso normal del celular en la tienda) la primera co
 **Arreglo propuesto:** lanzar la descarga en `alcance` (no dentro del `Job` del latido), con el `Job` único del
 hallazgo 4, y apagar `bajando` en un `finally`.
 
+**Arreglado (`33565a8`):** la descarga corre en el alcance de la conexión, no en el `Job` del latido (el latido solo la
+espera), y `bajando` se apaga en un `finally`.
+
 ## 7. El latido no nota que se le quitó la llave (Baja)
 
 **Dónde:** `caja/Conexion.kt:131-135` espera un 401 del latido; el servicio nunca lo da en `/api/estado`
@@ -151,6 +183,9 @@ cambia una versión y `/cambios` contesta 401. En horas de venta son minutos; co
 casi vacío) llamar a algo con llave que sí valide, como `GET /api/cajas/{id}/cambios`; o pedir en el POS que
 `/api/estado?caja=` conteste 401 con una llave que no conoce.
 
+**Arreglado (`33565a8`):** con las mismas versiones, el latido pide `GET /api/cajas/{id}/cambios` sin aplicar ni guardar
+nada, solo para comprobar la llave; con un 401, `sinLlave` (hallazgo 2). Es una llamada más cada 30 s, casi vacía.
+
 ## 8. 100.64/10 cuenta como red de la tienda (Baja)
 
 **Dónde:** `caja/RedLocal.kt:52-53`. El comentario de `:7-11` y `docs/plan.md` solo nombran 10/8, 172.16/12, 192.168/16 y
@@ -165,6 +200,8 @@ escrita.)
 
 **Arreglo propuesto:** quitar la rama de CGNAT de `esPrivada`.
 
+**Arreglado (`33565a8`):** sin la rama de CGNAT en `esPrivada`; `RedLocalTest` ya la rechaza.
+
 ## 9. `ConexionTest` no prueba lo que dice (Baja)
 
 **Dónde:** `ConexionTest.kt:199`: `assertTrue(pedidos.none { it.startsWith("/api/estado?caja") && false })` siempre es
@@ -174,6 +211,10 @@ pasa `un 401 sin alta borra la llave y la copia y lo dice` y no se vio el hallaz
 
 **Arreglo propuesto:** que cada servidor de mentira anote las llaves que recibe y se compruebe que la impostora no recibió
 ninguna; que `/api/estado` del despachador esté abierto como en `SeguridadCajas.cs`.
+
+**Arreglado (`33565a8`):** el despachador de `ConexionTest` contesta como el servicio (`/api/estado`, el alta y la identidad
+abiertos; lo demás con la llave), cada servidor anota las llaves que recibe y se comprueba que la impostora no recibió
+ninguna. La prueba del latido con las mismas versiones ahora espera también los cambios sin aplicarlos (hallazgo 7).
 
 ---
 
