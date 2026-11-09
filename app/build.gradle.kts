@@ -11,7 +11,7 @@ plugins {
 }
 
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
-val versionApp = "0.4.0"
+val versionApp = "0.4.1"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
 
 // La llave de los APK de prueba (docs/plan.md, «Versiones»): en GitHub Actions llega por variables de entorno (de los

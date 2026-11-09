@@ -180,6 +180,7 @@ fun ContenidoAjustesPersonales(
 /** Lo que dice el renglón de la conexión: la caja y la copia, o que falta el alta. */
 internal fun textoConexion(c: EstadoConexion, productos: CatalogoDeProductos?, dePrueba: Boolean): String {
     if (!c.leida) return "Leyendo…"
+    if (c.alta == null && c.sinAcceso) return "La caja le quitó el acceso a este celular: sin copia del catálogo. Ábrelo para darlo de alta otra vez"
     val alta = c.alta ?: return "Este celular no está dado de alta: sin copia del catálogo" + if (dePrueba) "" else ", Precio no encuentra nada"
     val red = when (c.red) {
         Red.SIN_PROBAR -> ""

@@ -112,11 +112,13 @@ fun ContenidoPanel(
     modifier: Modifier = Modifier,
     /** «Botón rápido a la izquierda»: el panel vacío dice dónde está. */
     zurdo: Boolean = false,
+    /** La caja le quitó el acceso a este celular y el dueño no lo ha visto ([mx.papeleriapos.android.caja.EstadoConexion.sinAcceso]). */
+    sinAcceso: Boolean = false,
 ) {
     val color = LocalColoresModo.current.de(modo)
     Column(modifier.fillMaxSize()) {
         when (modo) {
-            ModoApp.PRECIO -> PanelPrecio(precio, color, zurdo, acciones)
+            ModoApp.PRECIO -> PanelPrecio(precio, color, zurdo, sinAcceso, acciones)
             ModoApp.TICKET -> PanelTicket(ticket, catalogo, color, zurdo, acciones)
             ModoApp.CONTEO -> PanelConteo(conteo, catalogo, color, acciones)
         }
@@ -129,14 +131,14 @@ internal fun ladoDelBoton(zurdo: Boolean): String = if (zurdo) "abajo a la izqui
 // ---- Precio: el verificador (F9) en el celular ----
 
 @Composable
-private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, zurdo: Boolean, acciones: AccionesPanel) {
+private fun PanelPrecio(precio: ConsultaPrecio?, color: ColorModo, zurdo: Boolean, sinAcceso: Boolean, acciones: AccionesPanel) {
     when (precio) {
         null -> Vacio(
             "Escanea para ver el precio",
             "Es el verificador (F9) de la caja: escanear no agrega nada. Enseñar y buscar: en el botón de " +
                 "${ladoDelBoton(zurdo)}. Si se lo lleva, «Al ticket» en la tarjeta.",
         )
-        is ConsultaPrecio.NoEsta -> NoEstaEnElCatalogo(precio.codigo, precio.deVarios, acciones.buscar)
+        is ConsultaPrecio.NoEsta -> NoEstaEnElCatalogo(precio.codigo, precio.deVarios, sinAcceso, acciones.buscar)
         is ConsultaPrecio.Encontrado -> TarjetaPrecio(precio.producto, color, acciones)
     }
 }
@@ -241,10 +243,11 @@ internal fun detalleCorto(p: Producto): String = p.departamento.ifBlank { p.codi
 
 /**
  * Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. Con [deVarios], sí está pero el
- * código es de más de un producto: no se adivina, como el POS.
+ * código es de más de un producto: no se adivina, como el POS. Con [sinAcceso], abajo y discreto, por qué no encuentra
+ * nada: la caja le quitó el acceso y se borró la copia.
  */
 @Composable
-private fun NoEstaEnElCatalogo(codigo: String, deVarios: Boolean, buscar: () -> Unit) {
+private fun NoEstaEnElCatalogo(codigo: String, deVarios: Boolean, sinAcceso: Boolean, buscar: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("no-esta")) {
         Text(
             if (deVarios) Piso.DE_VARIOS else "No está en el catálogo",
@@ -257,8 +260,18 @@ private fun NoEstaEnElCatalogo(codigo: String, deVarios: Boolean, buscar: () -> 
             Spacer(Modifier.width(6.dp))
             Text("Buscar por nombre")
         }
+        if (sinAcceso) {
+            Text(
+                SIN_ACCESO_EN_PRECIO,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp).testTag("sin-acceso"),
+            )
+        }
     }
 }
+
+internal const val SIN_ACCESO_EN_PRECIO = "Este celular ya no tiene acceso a la caja y se borró la copia: Ajustes › La conexión."
 
 // ---- Ticket: la preventa ----
 

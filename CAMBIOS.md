@@ -2,6 +2,24 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.1 (sin publicar)
+
+Tres detalles de Ajustes › La conexión que salieron al probar la 0.4.0 en el Pixel 8 Pro contra el POS de la rama
+`celular/como-caja` (2026-11-09).
+
+- **Las fechas, siempre en español de México:** «Dado de alta», «De cuándo» y «Contestó» seguían el idioma del celular
+  («Nov 9, 2026 8:47 AM»). Ahora salen como el resto de la app: «9 nov 2026, 8:47», con reloj de 24 horas. Se arman a
+  mano (`ui/Fechas.kt`), sin `DateFormat`, para que salgan igual en cualquier versión de Android. Las demás fechas de la
+  app ya eran numéricas y sin idioma (la sesión de prueba, los CSV y los nombres de archivo).
+- **La red, buena desde el alta:** justo después del alta decía «La red: Sin probar todavía» hasta el primer latido
+  (30 s), aunque el alta y la copia ya habían hablado con el servicio. Ahora el alta deja la red como buena (o lenta, si
+  tardó más de 1.5 s) con su hora, y la copia al bajar también cuenta como respuesta.
+- **El aviso de sin acceso ya no se pierde:** si la caja le quitaba el acceso (401 `caja-sin-alta`) con la entrada con
+  la huella tapando todo, o si la app se reiniciaba, La conexión solo decía «Conectar con la caja principal». Ahora el
+  aviso se guarda (solo el aviso: la llave y los datos de la caja se borran igual) hasta que el dueño lo ve en La
+  conexión o vuelve a dar de alta. Mientras, el renglón de Ajustes lo dice y Precio, al no encontrar un código, lo
+  dice abajo y discreto.
+
 ## 0.4.0 (sin publicar)
 
 La entrega 2 de la [propuesta de interfaz](docs/propuesta-interfaz.md#entregas), «El celular de Luis», con lo que decidió

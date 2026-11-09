@@ -389,8 +389,9 @@ escribe a mano porque el UDP del emulador no llega a la PC. Para que el Pixel lo
 `--Urls=http://*:5080`.
 
 1. **El alta.** Ajustes › La conexión › escribir `10.0.2.2` › «Usar esta dirección» › el usuario y el PIN › el nombre y
-   la serie propuestos (CEL) › «Dar de alta». La pantalla pasa a la conexión: la caja principal, «Celular de …» (serie
-   CEL), «Bajando la copia completa…» y luego cuántos productos y de cuándo. En el POS, Configuración › Cajas enseña el
+   la serie propuestos (CEL) › «Dar de alta». La pantalla pasa a la conexión: la caja principal con la red «Buena» (no
+   «Sin probar todavía»), «Celular de …» (serie CEL), «Bajando la copia completa…» y luego cuántos productos y de cuándo,
+   en español aunque el celular esté en inglés («9 nov 2026, 8:47»). En el POS, Configuración › Cajas enseña el
    celular con su serie y su equipo.
 2. **Precio y Buscar con la copia.** Con el emulador y un cartel (`-camera-back imagefile:`) de un código de la base
    ficticia, o con «Productos de prueba» apagado y un código escrito en Buscar. Un código que no está: «No está en el
@@ -398,7 +399,9 @@ escribe a mano porque el UDP del emulador no llega a la PC. Para que el Pixel lo
 3. **Los cambios.** Cambiar un precio en el POS (la caja de Windows o `api/productos`); al siguiente latido (30 s con la
    app al frente) la tarjeta ya lo trae y «De cuándo» cambia. `adb logcat` no debe traer nada de la copia ni de la llave.
 4. **Quitar PC.** En el POS, Configuración › Cajas › «Quitar PC» del celular; al siguiente latido Ajustes dice «Este
-   celular ya no tiene acceso…», sin copia, y Precio ya no encuentra nada hasta el próximo alta.
+   celular ya no tiene acceso…», sin copia, y Precio ya no encuentra nada hasta el próximo alta: un código que no está
+   lo dice abajo, discreto («…Ajustes › La conexión»). El aviso sigue aunque llegue con la huella tapando todo o se
+   cierre la app (`adb shell am force-stop`): al volver a abrir, La conexión lo dice; ya visto ahí, Precio deja de decirlo.
 5. **La huella.** Con el emulador con PIN (`adb shell locksettings set-pin 1234`) y una huella
    (`adb -e emu finger touch 1` cuando el diálogo la pide): al abrir la app con alta sale «Entra con tu huella»; sin
    entrar, un código leído no vibra ni cambia nada; al entrar ya escanea. Volver a los 10 minutos del fondo pide otra

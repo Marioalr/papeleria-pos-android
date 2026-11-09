@@ -91,6 +91,36 @@ class PantallaConexionTest {
         compose.onAllNodesCount("LLAVE").let { check(it == 0) }
     }
 
+    @Test
+    fun `las fechas salen en espanol de mexico aunque el celular este en ingles`() {
+        val idioma = java.util.Locale.getDefault()
+        val zona = java.util.TimeZone.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.US)
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/Mexico_City"))
+        try {
+            // 9 nov 2026, 8:47 y 20:05 en la Ciudad de México.
+            val alta = Alta(Direccion("192.168.1.10"), CajaDto("c9", "Celular de Luis", "CEL", "s1", "Matriz", "Pixel 8 Pro"), "Pixel 8 Pro", "luis", "LLAVE", null, 1_794_235_620_000L)
+            compose.setContent {
+                TemaEscaner {
+                    ContenidoConexion(
+                        estado = EstadoConexion(alta = alta, red = Red.BUENA, ultimaVez = 1_794_276_300_000L, copia = ResumenCopia(1458, 1220, 1_794_235_620_000L, 6, null, "Matriz"), leida = true),
+                        paso = PasoAlta.Buscar(),
+                        hayBloqueo = true,
+                        alAbrirSeguridad = {},
+                        acciones = AccionesAlta(),
+                    )
+                }
+            }
+            // Regresión: salían «Nov 9, 2026 8:47 AM» y «8:05 PM», con el idioma del celular.
+            check(compose.onAllNodesCount("9 nov 2026, 8:47") == 2) { "«Dado de alta» y «De cuándo» en español" }
+            compose.onNodeWithText("20:05").assertExists()
+            check(compose.onAllNodes(androidx.compose.ui.test.hasText("AM", substring = true).or(androidx.compose.ui.test.hasText("PM", substring = true).or(androidx.compose.ui.test.hasText("Nov", substring = true)))).fetchSemanticsNodes().isEmpty())
+        } finally {
+            java.util.Locale.setDefault(idioma)
+            java.util.TimeZone.setDefault(zona)
+        }
+    }
+
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesCount(etiqueta: String): Int =
         onAllNodes(androidx.compose.ui.test.hasTestTag(etiqueta).or(androidx.compose.ui.test.hasText(etiqueta))).fetchSemanticsNodes().size
 }

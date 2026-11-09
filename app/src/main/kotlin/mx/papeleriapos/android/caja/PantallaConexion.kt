@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,11 +37,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
+import mx.papeleriapos.android.ui.Fechas
 import mx.papeleriapos.android.ui.FilaDato
 import mx.papeleriapos.android.ui.Opciones
 import mx.papeleriapos.android.ui.TituloSeccion
-import java.text.DateFormat
-import java.util.Date
 
 /**
  * Ajustes › La conexión (docs/propuesta-interfaz.md, «Ajustes y herramientas de medición»): con el celular dado de alta,
@@ -52,6 +52,9 @@ fun PantallaConexion(vm: ConexionViewModel = viewModel()) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     val paso by vm.paso.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
+    // Aquí el dueño ve el aviso de que la caja le quitó el acceso (esta pantalla no se dibuja con la entrada con la huella
+    // encima): deja de guardarse y de salir en la pantalla principal.
+    LaunchedEffect(estado.sinAcceso) { if (estado.sinAcceso) vm.avisoVisto() }
     ContenidoConexion(
         estado = estado,
         paso = paso,
@@ -129,14 +132,14 @@ private fun Conectada(alta: Alta, estado: EstadoConexion) {
             Red.CAIDA -> "Sin conexión"
         },
     )
-    estado.ultimaVez?.let { FilaDato("Contestó", hora(it)) }
+    estado.ultimaVez?.let { FilaDato("Contestó", Fechas.hora(it)) }
     Nota("La app le avisa cada 30 segundos mientras está abierta; nunca en segundo plano. Sin red, Precio y Buscar siguen con la copia.")
 
     TituloSeccion("Este celular")
     FilaDato("Caja", "${alta.caja.nombre} (serie ${alta.caja.serie})")
     if (alta.caja.sucursal.isNotBlank()) FilaDato("Sucursal", alta.caja.sucursal)
     FilaDato("Equipo", alta.equipo)
-    if (alta.altaEn > 0) FilaDato("Dado de alta", fecha(alta.altaEn))
+    if (alta.altaEn > 0) FilaDato("Dado de alta", Fechas.fechaYHora(alta.altaEn))
     Nota("Para quitarle el acceso: en la caja, Configuración › Cajas › «Quitar PC» en su renglón. Este celular nunca abre turno ni vende.")
 
     TituloSeccion("La copia del catálogo")
@@ -150,7 +153,7 @@ private fun Conectada(alta: Alta, estado: EstadoConexion) {
         else -> {
             FilaDato("Productos", copia.variantes.toString())
             FilaDato("Códigos", copia.codigos.toString())
-            FilaDato("De cuándo", fecha(copia.guardadaEn))
+            FilaDato("De cuándo", Fechas.fechaYHora(copia.guardadaEn))
             copia.nombreTienda?.let { FilaDato("Tienda", it) }
             if (estado.bajando) {
                 Text("Bajando la copia completa otra vez…", style = MaterialTheme.typography.bodyMedium)
@@ -315,7 +318,3 @@ private fun Nota(texto: String) {
     Text(texto, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
 }
 
-/** «8 nov 2026, 9:12» en el idioma del celular. */
-internal fun fecha(ms: Long): String = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(ms))
-
-internal fun hora(ms: Long): String = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(ms))

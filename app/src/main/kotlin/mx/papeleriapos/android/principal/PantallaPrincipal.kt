@@ -62,6 +62,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -81,6 +82,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import mx.papeleriapos.android.EscanerViewModel
 import mx.papeleriapos.android.botonrapido.Accion
 import mx.papeleriapos.android.botonrapido.AccionesBotonRapido
@@ -94,6 +97,7 @@ import mx.papeleriapos.android.botonrapido.huecoDelBoton
 import mx.papeleriapos.android.botonrapido.nombreDelBoton
 import mx.papeleriapos.android.botonrapido.opcionesDe
 import mx.papeleriapos.android.botonrapido.pistaDe
+import mx.papeleriapos.android.caja.Conexion
 import mx.papeleriapos.android.sesion.ALTO_BARRA_COMPLETA
 import mx.papeleriapos.android.sesion.BarraSesion
 import mx.papeleriapos.android.tema.LocalColoresModo
@@ -132,6 +136,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     val zurdo by piso.zurdo.collectAsStateWithLifecycle()
     val pistasVistas by piso.pistasVistas.collectAsStateWithLifecycle()
     val deslizando by piso.elegidasDeslizando.collectAsStateWithLifecycle()
+    // Solo cambia cuando la caja le quita el acceso o el dueño lo ve en La conexión: no recompone nada más.
+    val contextoApp = LocalContext.current.applicationContext
+    val sinAccesoFlujo = remember(contextoApp) { Conexion.del(contextoApp).estado.map { it.sinAcceso }.distinctUntilChanged() }
+    val sinAcceso by sinAccesoFlujo.collectAsStateWithLifecycle(initialValue = false)
     val soloVisor = LocalSoloVisor.current
     LaunchedEffect(soloVisor) { if (!soloVisor) vm.prepararProductos() }
 
@@ -332,6 +340,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                     acciones = accionesPanel,
                     modifier = Modifier.weight(1f),
                     zurdo = zurdo,
+                    sinAcceso = sinAcceso,
                 )
                 BarraModos(
                     modo = modo,

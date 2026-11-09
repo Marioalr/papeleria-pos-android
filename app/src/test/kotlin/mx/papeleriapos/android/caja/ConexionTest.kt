@@ -133,6 +133,15 @@ class ConexionTest {
     }
 
     @Test
+    fun `justo despues del alta la red ya sale buena, sin esperar al primer latido`() {
+        darDeAlta()
+        // Regresión: salía «Sin probar todavía» hasta el primer latido, aunque el alta y la copia ya habían hablado con el servicio.
+        assertEquals(Red.BUENA, conexion.estado.value.red)
+        assertEquals(1_000L, conexion.estado.value.ultimaVez)
+        assertTrue("Nada de latidos todavía", pedidos.none { it.startsWith("/api/estado?caja") })
+    }
+
+    @Test
     fun `el latido pide los cambios solo cuando las versiones cambian y los aplica`() {
         darDeAlta()
         pedidos.clear()
@@ -169,6 +178,54 @@ class ConexionTest {
         assertNull(conexion.copia.value)
         assertNull(almacenAlta.leer())
         assertNull(almacenCopia.leer())
+        assertTrue(estado.sinAcceso)
+    }
+
+    /** Otra conexión sobre el mismo disco: como si la app se reiniciara. */
+    private fun alReabrir(): EstadoConexion {
+        val otra = Conexion(almacenAlta, almacenCopia, ClienteCaja(msRespuesta = 500), "Prueba", descubrir = { emptyList() }, hilo = Dispatchers.Unconfined)
+        otra.precargar()
+        return espera { otra.estado.first { it.leida } }.also { reabierta = otra }
+    }
+
+    private var reabierta: Conexion? = null
+
+    @Test
+    fun `el aviso de sin acceso se guarda hasta que se ve, sin nada de la caja`() {
+        darDeAlta()
+        llaveValida = false
+        espera { conexion.latir() }
+        // Regresión: con la huella tapando todo o al reiniciar la app, el aviso se perdía y La conexión solo ofrecía el alta.
+        val alAbrir = alReabrir()
+        assertNull(alAbrir.alta)
+        assertEquals(Conexion.SIN_ACCESO, alAbrir.aviso)
+        assertTrue(alAbrir.sinAcceso)
+        // Solo el aviso: ni la llave ni nada de la caja.
+        assertEquals(setOf("aviso"), prefs.all.keys)
+        assertFalse(prefs.all.values.any { it.toString().contains(servicio.llaveDeLaCaja) || it.toString().contains(cajaId) })
+
+        // El dueño lo ve en La conexión: en esa pantalla sigue, pero ya no se guarda ni sale en la principal.
+        reabierta!!.avisoVisto()
+        assertFalse(reabierta!!.estado.value.sinAcceso)
+        assertEquals(Conexion.SIN_ACCESO, reabierta!!.estado.value.aviso)
+        val otraVez = alReabrir()
+        assertNull(otraVez.aviso)
+        assertFalse(otraVez.sinAcceso)
+    }
+
+    @Test
+    fun `el aviso de sin acceso se borra al volver a dar de alta`() {
+        darDeAlta()
+        llaveValida = false
+        espera { conexion.latir() }
+        llaveValida = true
+        darDeAlta()
+        assertFalse(conexion.estado.value.sinAcceso)
+        assertNull(conexion.estado.value.aviso)
+        val alAbrir = alReabrir()
+        assertNotNull(alAbrir.alta)
+        assertNull(alAbrir.aviso)
+        assertFalse(alAbrir.sinAcceso)
     }
 
     @Test

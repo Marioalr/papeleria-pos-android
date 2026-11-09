@@ -41,6 +41,11 @@ data class EstadoConexion(
     /** Bajando la copia completa (varios MB): mientras, se sigue con la de antes si la hay. */
     val bajando: Boolean = false,
     val aviso: String? = null,
+    /**
+     * La caja le quitó el acceso a este celular y el dueño todavía no lo ha visto en Ajustes › La conexión: se guarda en
+     * el disco ([AlmacenAlta.leerAviso]) y la pantalla principal también lo dice, discreto.
+     */
+    val sinAcceso: Boolean = false,
     /** Ya se leyó el disco: antes de esto no se sabe si hay alta. */
     val leida: Boolean = false,
 )
@@ -99,7 +104,11 @@ class Conexion(
         alta = almacenAlta.leer()
         val c = if (alta != null) almacenCopia.leer()?.takeIf { it.caja.id.equals(alta!!.caja.id, ignoreCase = true) } else null
         _copia.value = c
-        _estado.update { it.copy(alta = alta, copia = c?.resumen(), leida = true) }
+        val pendiente = if (alta == null) almacenAlta.leerAviso() else null
+        _estado.update {
+            if (pendiente != null) it.copy(alta = null, copia = null, aviso = pendiente, sinAcceso = true, leida = true)
+            else it.copy(alta = alta, copia = c?.resumen(), leida = true)
+        }
     }
 
     // ---- El latido ----
@@ -175,7 +184,8 @@ class Conexion(
         try {
             val paquete = cliente.paquete(a.direccion, a.llave, a.caja.id)
             publicar(Copia.dePaquete(paquete, reloj()))
-            _estado.update { it.copy(bajando = false, aviso = null) }
+            // La copia bajó: el servicio contestó (lo que tardó no dice nada de la red, son varios MB).
+            _estado.update { it.copy(bajando = false, aviso = null, red = if (it.red == Red.LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj()) }
         } catch (e: ErrorDelPos) {
             _estado.update { it.copy(bajando = false) }
             if (e.sinAlta) olvidarAlta(SIN_ACCESO) else _estado.update { it.copy(aviso = e.message) }
@@ -238,10 +248,13 @@ class Conexion(
      * [serie] como los pide la caja de Windows (la serie, de 1 a 3 letras; nunca se usa: el celular no vende).
      */
     suspend fun darDeAlta(direccion: Direccion, usuario: String, pin: String, sucursalId: String, nombre: String, serie: String): Alta {
+        val desde = cronometro()
         val respuesta = cliente.darDeAlta(
             direccion,
             SolicitudAltaCaja(usuario.trim(), pin.trim(), sucursalId, cajaId = null, nombre = nombre.trim(), serie = serie.trim().uppercase(), equipo = equipo),
         )
+        // El alta ya habló con el servicio: la red se sabe desde ahora, sin esperar al primer latido (30 s).
+        val red = if (cronometro() - desde >= MS_LENTA) Red.LENTA else Red.BUENA
         val nueva = Alta(direccion, respuesta.caja, equipo, usuario.trim(), respuesta.llave, respuesta.llaveDelServicio, reloj())
         withContext(hilo) {
             leerSiFalta()
@@ -250,7 +263,7 @@ class Conexion(
             alta = nueva
             fallos = 0
             _copia.value = null
-            _estado.update { EstadoConexion(alta = nueva, leida = true) }
+            _estado.update { EstadoConexion(alta = nueva, red = red, ultimaVez = nueva.altaEn, leida = true) }
         }
         alcance.launch { bajarCompleta(nueva) }
         return nueva
@@ -258,14 +271,27 @@ class Conexion(
 
     /**
      * Borra la llave y la copia: la caja le quitó el acceso a este celular (401 «caja-sin-alta»), o se quiere empezar de
-     * nuevo. [aviso] se enseña en Ajustes hasta el próximo alta.
+     * nuevo. [aviso] se guarda (solo el aviso, nada de la caja) y se enseña en Ajustes hasta que el dueño lo ve
+     * ([avisoVisto]) o vuelve a dar de alta: puede llegar con la entrada con la huella tapando todo, o reiniciarse la app.
      */
     suspend fun olvidarAlta(aviso: String? = null) = withContext(hilo) {
-        almacenAlta.borrar()
+        almacenAlta.borrar(aviso)
         almacenCopia.borrar()
         alta = null
         _copia.value = null
-        _estado.value = EstadoConexion(aviso = aviso, leida = true)
+        _estado.value = EstadoConexion(aviso = aviso, sinAcceso = aviso != null, leida = true)
+    }
+
+    /**
+     * Ajustes › La conexión enseñó el aviso de sin acceso: ya no se guarda ni sale en la pantalla principal. En La conexión
+     * se sigue leyendo mientras la app siga abierta.
+     */
+    fun avisoVisto() {
+        alcance.launch {
+            if (!_estado.value.sinAcceso) return@launch
+            almacenAlta.borrarAviso()
+            _estado.update { it.copy(sinAcceso = false) }
+        }
     }
 
     private fun Copia.resumen() = ResumenCopia(productos.size, codigos.size, guardadaEn, version, nombreTienda, caja.sucursal)

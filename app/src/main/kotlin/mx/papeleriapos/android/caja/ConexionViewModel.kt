@@ -77,6 +77,9 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
         conexion.precargar()
     }
 
+    /** La pantalla enseñó el aviso de que la caja le quitó el acceso ([Conexion.avisoVisto]). */
+    fun avisoVisto() = conexion.avisoVisto()
+
     /** Empieza el alta desde el principio, buscando en la red. */
     fun empezar() {
         _paso.value = PasoAlta.Buscar()

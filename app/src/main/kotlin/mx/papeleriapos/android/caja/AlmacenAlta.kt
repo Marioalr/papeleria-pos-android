@@ -21,14 +21,18 @@ data class Alta(
     val altaEn: Long,
 )
 
-/** El alta en las preferencias de la app (`conexion.xml`), con la llave cifrada por [Cifrador]. */
+/**
+ * El alta en las preferencias de la app (`conexion.xml`), con la llave cifrada por [Cifrador]. Junto, sin nada de la
+ * caja, el aviso de que la caja le quitó el acceso a este celular ([leerAviso]): se queda hasta que el dueño lo ve en
+ * Ajustes › La conexión o vuelve a dar de alta, aunque la app se reinicie.
+ */
 class AlmacenAlta(private val prefs: SharedPreferences, private val cifrador: Cifrador) {
     /** El alta guardada; null si no hay o la llave ya no se puede descifrar (entonces se borra lo que quedaba). */
     fun leer(): Alta? {
         val cifrada = prefs.getString(LLAVE, null) ?: return null
         val llave = cifrador.descifrar(cifrada)
         if (llave.isNullOrEmpty()) {
-            borrar()
+            borrar(aviso = leerAviso())
             return null
         }
         val ip = prefs.getString(IP, null) ?: return null
@@ -65,6 +69,7 @@ class AlmacenAlta(private val prefs: SharedPreferences, private val cifrador: Ci
             putString(USUARIO, alta.usuario)
             if (alta.llaveDelServicio != null) putString(LLAVE_SERVICIO, alta.llaveDelServicio) else remove(LLAVE_SERVICIO)
             putLong(ALTA_EN, alta.altaEn)
+            remove(AVISO)
         }
     }
 
@@ -76,8 +81,20 @@ class AlmacenAlta(private val prefs: SharedPreferences, private val cifrador: Ci
         }
     }
 
-    fun borrar() {
-        prefs.edit(commit = true) { clear() }
+    /** Borra el alta (la llave y los datos de la caja); con [aviso], deja solo el aviso para enseñarlo después. */
+    fun borrar(aviso: String? = null) {
+        prefs.edit(commit = true) {
+            clear()
+            if (aviso != null) putString(AVISO, aviso)
+        }
+    }
+
+    /** El aviso que quedó al borrar el alta ([borrar]) y que el dueño todavía no ha visto; null si no hay. */
+    fun leerAviso(): String? = prefs.getString(AVISO, null)
+
+    /** El dueño ya vio el aviso. */
+    fun borrarAviso() {
+        prefs.edit(commit = true) { remove(AVISO) }
     }
 
     companion object {
@@ -94,5 +111,6 @@ class AlmacenAlta(private val prefs: SharedPreferences, private val cifrador: Ci
         private const val USUARIO = "usuario"
         private const val LLAVE_SERVICIO = "llave_servicio"
         private const val ALTA_EN = "alta_en"
+        private const val AVISO = "aviso"
     }
 }
