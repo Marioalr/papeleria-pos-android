@@ -98,6 +98,7 @@ import mx.papeleriapos.android.botonrapido.nombreDelBoton
 import mx.papeleriapos.android.botonrapido.opcionesDe
 import mx.papeleriapos.android.botonrapido.pistaDe
 import mx.papeleriapos.android.caja.Conexion
+import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.sesion.ALTO_BARRA_COMPLETA
 import mx.papeleriapos.android.sesion.BarraSesion
 import mx.papeleriapos.android.tema.LocalColoresModo
@@ -140,6 +141,11 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     val contextoApp = LocalContext.current.applicationContext
     val sinAccesoFlujo = remember(contextoApp) { Conexion.del(contextoApp).estado.map { it.sinAcceso }.distinctUntilChanged() }
     val sinAcceso by sinAccesoFlujo.collectAsStateWithLifecycle(initialValue = false)
+    // «Mandar a una caja» se enciende con el alta y un ticket que la caja conoce.
+    val conAltaFlujo = remember(contextoApp) { Conexion.del(contextoApp).estado.map { it.alta != null }.distinctUntilChanged() }
+    val conAlta by conAltaFlujo.collectAsStateWithLifecycle(initialValue = false)
+    val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
+    val razonMandar = razonParaMandar(ticket, catalogo, conAlta, dePrueba)
     val soloVisor = LocalSoloVisor.current
     LaunchedEffect(soloVisor) { if (!soloVisor) vm.prepararProductos() }
 
@@ -173,7 +179,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     val precioDeLasOpciones = if (boton.pulsando) productoAlPulsar else precio
     val opciones = opcionesDe(
         modo,
-        EstadoOpciones(hayProducto = precioDeLasOpciones is ConsultaPrecio.Encontrado, ticketVacio = ticket.renglones.isEmpty()),
+        EstadoOpciones(hayProducto = precioDeLasOpciones is ConsultaPrecio.Encontrado, ticketVacio = ticket.renglones.isEmpty(), razonMandar = razonMandar),
     )
     val colorModo = LocalColoresModo.current.de(modo)
     val accionesBoton = remember(piso) {
@@ -189,8 +195,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                         productoAlPulsar = null
                         (p as? ConsultaPrecio.Encontrado)?.let { piso.ensenar(it.producto) }
                     }
-                    // Apagadas en esta entrega (sin la conexión al POS): no llegan aquí.
-                    Accion.MANDAR, Accion.IMPRESIONES -> Unit
+                    // El gesto nunca manda solo: abre «¿A qué caja?», donde se toca «Mandar».
+                    Accion.MANDAR -> piso.abrir(Hoja.Mandar)
+                    // Apagada en esta entrega (las impresiones, con la entrega 5): no llega aquí.
+                    Accion.IMPRESIONES -> Unit
                 }
             },
             alRechazar = { o -> o.razonApagada?.let(piso::rechazar) },
@@ -222,6 +230,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                 piso.cerrarHoja(hizoAlgo = true)
             },
             deshacer = piso::deshacerTicket,
+            mandar = { piso.abrir(Hoja.Mandar) },
         )
     }
     val elegirModo: (ModoApp) -> Unit = remember(vm) { { m -> vm.cambiarModoApp(m) } }
@@ -441,7 +450,18 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                     Hoja.Buscar -> HojaBuscar(modo, catalogo, piso::buscar, piso::elegirDeBusqueda, huecoArriba = huecoDelAviso) {
                         piso.cerrarHoja()
                     }
-                    Hoja.Ticket -> HojaTicket(ticket, catalogo, accionesTicket, huecoArriba = huecoDelAviso) { piso.cerrarHoja() }
+                    Hoja.Ticket -> HojaTicket(ticket, catalogo, accionesTicket, huecoArriba = huecoDelAviso, razonMandar = razonMandar) { piso.cerrarHoja() }
+                    Hoja.Mandar -> {
+                        val estadoMandar by vm.mandador.estado.collectAsStateWithLifecycle()
+                        HojaMandar(
+                            estado = estadoMandar,
+                            ticket = ticket,
+                            catalogo = catalogo,
+                            alCargar = vm.mandador::cargar,
+                            alElegir = vm.mandador::elegir,
+                            alMandar = { catalogo?.let { c -> vm.mandador.mandar(ticket, c, piso::mandado) } },
+                        ) { piso.cerrarHoja() }
+                    }
                     is Hoja.Cantidad -> {
                         val r = ticket.renglones.firstOrNull { it.id == h.idRenglon }
                         if (r == null) {

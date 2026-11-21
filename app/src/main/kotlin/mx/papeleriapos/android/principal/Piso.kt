@@ -35,6 +35,9 @@ sealed interface Hoja {
 
     /** ↑ «Enseñar al cliente»: el nombre y el precio a pantalla completa, para voltear el celular. */
     data class PrecioGrande(val producto: Producto) : Hoja
+
+    /** ↑ «Mandar a una caja»: «¿A qué caja?», donde se elige y se toca «Mandar» (el gesto nunca manda solo). */
+    data object Mandar : Hoja
 }
 
 /** Lo que enseña la tarjeta de Precio. */
@@ -349,6 +352,17 @@ class Piso(
         quitado?.let { (r, i) -> avisar("Quitado del ticket", "Deshacer", deshace = Deshace.Quitado(r, i, tras)) }
     }
 
+    /**
+     * La caja ya guardó el ticket en su espera: se vacía (sin «Deshacer»: ya está en la caja), se cierran «¿A qué caja?» y el
+     * ticket completo, y el aviso lo dice («Enviado a Caja 2 · 4 art. · $129.50»). Lo siguiente que se escanee es otro ticket.
+     */
+    fun mandado(texto: String) {
+        venta.update { it.vaciar() }
+        hojaDeAbajo = null
+        cerrarHoja(hizoAlgo = true)
+        avisar(texto)
+    }
+
     /** «Empezar otro ticket»: lo vacía; se puede deshacer (lo leído después queda arriba). */
     fun empezarOtroTicket() {
         var antes: List<Renglon> = emptyList()
@@ -391,7 +405,7 @@ class Piso(
      */
     fun abrir(h: Hoja) {
         val actual = _hoja.value
-        hojaDeAbajo = if (actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar)) actual else null
+        hojaDeAbajo = if (actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar || h == Hoja.Mandar)) actual else null
         _hoja.value = h
         if (h is Hoja.PrecioGrande) esconderAviso()
     }

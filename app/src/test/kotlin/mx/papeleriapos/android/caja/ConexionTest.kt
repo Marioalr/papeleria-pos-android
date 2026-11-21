@@ -49,6 +49,12 @@ class ConexionTest {
     private val pedidos = ArrayList<String>()
     private var encontradas: List<Direccion> = emptyList()
 
+    /** Lo que contesta `POST …/mandar` y lo que le llegó (el cuerpo, tal cual). */
+    private var respuestaMandar: MockResponse = MockResponse().setBody(
+        """{"id":"t1","destino":"c2","caja":"Caja 2","renglones":1,"articulos":3.0,"totalCentavos":7050,"recibido":true}""",
+    )
+    private val mandados = ArrayList<String>()
+
     /**
      * Como el servicio de verdad (`SeguridadCajas.cs`): `/api/estado`, el alta y la identidad contestan a cualquiera; lo
      * demás, 401 «caja-sin-alta» a una llave que no conoce. [llaves] anota las llaves que le llegan a ese servidor.
@@ -71,6 +77,13 @@ class ConexionTest {
                 ruta == "/api/alta" -> MockResponse().setBody(
                     """{"caja":{"id":"$cajaId","nombre":"Celular de Luis","serie":"CEL","sucursalId":"s1","sucursal":"Matriz","equipo":"Prueba"},"llave":"${servicio.llaveDeLaCaja}","llaveDelServicio":"${servicio.llavePublica}"}""",
                 )
+                ruta.endsWith("/para-mandar") -> MockResponse().setBody(
+                    """[{"id":"c2","nombre":"Caja 2","serie":"B","recibe":true,"atiende":"Ana","esperan":1},{"id":"c1","nombre":"Caja 1","serie":"A","recibe":false,"atiende":null,"esperan":null}]""",
+                )
+                ruta.endsWith("/mandar") -> {
+                    synchronized(mandados) { mandados.add(request.body.readUtf8()) }
+                    respuestaMandar
+                }
                 ruta.endsWith("/paquete") -> MockResponse().setBody(CopiaTest.textoDelPaquete())
                 ruta.contains("/cambios") -> MockResponse().setBody(cambios)
                 ruta.startsWith("/api/identidad") -> {
@@ -326,5 +339,51 @@ class ConexionTest {
         espera { otra.latir() }
         assertEquals(Red.CAIDA, otra.estado.value.red)
         assertEquals("Sin red se sigue con la copia", 41L, otra.copia.value!!.version)
+    }
+
+    @Test
+    fun `manda el ticket con la llave, despues de que la caja principal pruebe quien es`() {
+        darDeAlta()
+        // Un proceso nuevo: la dirección guardada todavía no prueba quién es.
+        val otra = Conexion(
+            almacenAlta, almacenCopia, ClienteCaja(msRespuesta = 2_000), equipo = "Prueba",
+            descubrir = { encontradas }, reloj = { 1_000L }, cronometro = { 0L }, hilo = Dispatchers.Unconfined, leerRed = { red },
+        )
+        synchronized(pedidos) { pedidos.clear() }
+        val cajas = espera { otra.cajasParaMandar() }
+        assertEquals(listOf("Caja 2" to true, "Caja 1" to false), cajas.map { it.nombre to it.recibe })
+        assertEquals("Ana", cajas[0].atiende)
+        val antes = synchronized(pedidos) { pedidos.toList() }
+        assertTrue("Primero la identidad: ${antes}", antes.first().startsWith("/api/identidad"))
+        assertEquals("/api/cajas/$cajaId/para-mandar", antes[1])
+
+        val r = espera {
+            otra.mandar(SolicitudMandarTicket("t1", "c2", listOf(RenglonMandado("v1", "p1", "7501", 3000))))
+        }
+        assertEquals(("Caja 2" to 7050L), r.caja to r.totalCentavos)
+        // Lo que viaja: qué y cuánto, sin precios, en camelCase como lo lee el POS.
+        assertEquals(
+            """{"id":"t1","destino":"c2","renglones":[{"varianteId":"v1","presentacionId":"p1","codigo":"7501","cantidadMilesimas":3000}]}""",
+            mandados.single(),
+        )
+    }
+
+    @Test
+    fun `lo que el servicio no acepta llega con su mensaje y sin red dice la causa`() {
+        darDeAlta()
+        respuestaMandar = MockResponse().setResponseCode(409)
+            .setBody("""{"mensaje":"La Caja 2 no tiene la venta abierta (o está apagada): que entren a vender ahí y vuelve a mandarlo.","codigo":"caja-no-recibe"}""")
+        val solicitud = SolicitudMandarTicket("t1", "c2", listOf(RenglonMandado("v1", null, null, 1000)))
+        val e = runCatching { espera { conexion.mandar(solicitud) } }.exceptionOrNull() as NoSeMando
+        assertEquals("caja-no-recibe", e.codigo)
+        assertTrue(e.message!!.startsWith("La Caja 2 no tiene la venta abierta"))
+        assertNotNull("El alta sigue", conexion.estado.value.alta)
+
+        // La caja principal se apaga, con una VPN en el celular: la causa, en español.
+        principal.shutdown()
+        red = EstadoDeRed(listOf(InterfazDeRed("wlan0", true, listOf(IpConPrefijo("192.168.1.34", 24))), InterfazDeRed("tun0", true, listOf(IpConPrefijo("10.2.0.2", 32)))))
+        val sinRed = runCatching { espera { conexion.mandar(solicitud) } }.exceptionOrNull() as NoSeMando
+        assertTrue(sinRed.sinRed)
+        assertTrue(sinRed.message, sinRed.message!!.contains("VPN"))
     }
 }

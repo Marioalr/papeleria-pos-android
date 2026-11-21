@@ -37,6 +37,8 @@ import mx.papeleriapos.android.lista.ListasCompartidas
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.principal.Piso
+import mx.papeleriapos.android.principal.Mandador
+import mx.papeleriapos.android.caja.Conexion
 import mx.papeleriapos.android.principal.PreferenciasPiso
 import mx.papeleriapos.android.sesion.AlmacenSesion
 import mx.papeleriapos.android.sesion.AnotacionesSesion
@@ -94,6 +96,16 @@ class EscanerViewModel(
      * era el ticket).
      */
     val piso = Piso(listas.venta, listas.conteo, PreferenciasPiso(prefs), ModoApp.deNucleo(_config.value.modo))
+
+    /** «¿A qué caja?»: manda el ticket con la llave del alta; recuerda la última caja usada. */
+    val mandador: Mandador by lazy {
+        val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
+        Mandador(
+            Conexion.del(app), viewModelScope,
+            ultima = { ultima.getString(ULTIMA_CAJA, null) },
+            guardarUltima = { ultima.edit().putString(ULTIMA_CAJA, it).apply() },
+        )
+    }
 
     /**
      * Los productos: los de la fuente ([FuenteDeProductos], que se arma después de la apertura o con la primera lectura
@@ -372,3 +384,7 @@ private fun dimensionDelSistema(actividad: Activity, nombre: String): Int {
     val id = actividad.resources.getIdentifier(nombre, "dimen", "android")
     return if (id > 0) actividad.resources.getDimensionPixelSize(id) else 0
 }
+
+/** Dónde se recuerda la última caja a la que se mandó un ticket (sin nada de la caja más que su id). */
+private const val ARCHIVO_MANDAR = "mandar"
+private const val ULTIMA_CAJA = "ultima-caja"

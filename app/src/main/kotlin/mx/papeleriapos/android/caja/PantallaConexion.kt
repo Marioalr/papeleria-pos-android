@@ -176,7 +176,7 @@ private fun Alta(estado: EstadoConexion, paso: PasoAlta, hayBloqueo: Boolean, al
     estado.aviso?.let { Aviso(it) }
     if (!hayBloqueo) {
         Text(
-            "Este celular no tiene bloqueo de pantalla. Para darlo de alta ponle uno (huella, PIN o patrón): la app lo pide al entrar.",
+            "Este celular no tiene bloqueo de pantalla. Para darlo de alta ponle uno (huella, PIN o patrón): cuida la llave de la caja si se pierde el celular.",
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.testTag("sin-bloqueo"),
         )

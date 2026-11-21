@@ -66,6 +66,18 @@ data class EstadoConexion(
  * Lo que nunca hace: abrir turno, vender, mandar a la bandeja ni pedir la sesión de nadie. Y nunca late en segundo plano:
  * solo entre [alFrente] y [alFondo].
  */
+/**
+ * A dónde se manda el ticket (docs/celular-como-caja.md del POS, paso 9): [Conexion] con la llave del alta; las pruebas,
+ * uno de mentiras.
+ */
+interface CanalDeMandar {
+    suspend fun cajasParaMandar(): List<CajaParaMandarDto>
+    suspend fun mandar(solicitud: SolicitudMandarTicket): TicketMandadoDto
+}
+
+/** No se pudo: el mensaje es para enseñarlo tal cual; [codigo], el del servicio si contestó; [sinRed], si no contestó. */
+class NoSeMando(mensaje: String, val codigo: String? = null, val sinRed: Boolean = false) : Exception(mensaje)
+
 class Conexion(
     private val almacenAlta: AlmacenAlta,
     private val almacenCopia: AlmacenCopia,
@@ -80,7 +92,7 @@ class Conexion(
     private val msEntreLatidos: Long = MS_ENTRE_LATIDOS,
     /** Las interfaces de red del celular, para decir la causa cuando no contesta ([Diagnostico]); las pruebas pasan la suya. */
     private val leerRed: () -> EstadoDeRed? = EstadoDeRed::actual,
-) {
+) : CanalDeMandar {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val hilo: CoroutineDispatcher = hilo ?: Dispatchers.IO.limitedParallelism(1)
     private val alcance = CoroutineScope(SupervisorJob() + this.hilo)
@@ -401,6 +413,55 @@ class Conexion(
         return null
     }
 
+    // ---- Mandar el ticket a una caja ----
+
+    /** Las cajas de la sucursal a las que se puede mandar (las que tienen turno), con si tienen la venta abierta. */
+    override suspend fun cajasParaMandar(): List<CajaParaMandarDto> = withContext(hilo) {
+        conLlave("Las cajas no contestaron") { a -> cliente.paraMandar(a.direccion, a.llave, a.caja.id) }
+    }
+
+    /** Manda el ticket; el servicio contesta cuando la caja ya lo guardó en su espera. */
+    override suspend fun mandar(solicitud: SolicitudMandarTicket): TicketMandadoDto = withContext(hilo) {
+        conLlave("Mandar el ticket no contestó") { a -> cliente.mandar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    /**
+     * Una llamada con la llave, como el latido: antes, si hace falta, la dirección prueba quién es (la llave nunca sale hacia
+     * otro equipo). Lo que sale mal regresa como [NoSeMando], con un mensaje para enseñarlo tal cual.
+     */
+    private suspend fun <T> conLlave(que: String, llamada: suspend (Alta) -> T): T {
+        leerSiFalta()
+        var a = alta ?: throw NoSeMando(SIN_ALTA_PARA_MANDAR)
+        val gen = generacion
+        if (sinComprobar) {
+            a = when (comprobar(a)) {
+                Comprobacion.PROBADA -> a
+                Comprobacion.NO_CONTESTA -> throw noContesto(a, que, fallaDeIdentidad)
+                Comprobacion.OTRO -> reencontrar(a, gen) ?: throw NoSeMando("No se encontró la caja principal en esta red: revisa que esté encendida, con Papelería POS abierto.")
+            }
+            if (gen != generacion) throw NoSeMando(SIN_ALTA_PARA_MANDAR)
+            sinComprobar = false
+        }
+        return try {
+            llamada(a)
+        } catch (e: ErrorDelPos) {
+            if (e.sinAlta) {
+                sinLlave(a, gen)
+                throw NoSeMando("La caja principal ya no reconoce este celular: revisa Ajustes › La conexión.", e.codigo)
+            }
+            throw NoSeMando(e.message ?: "La caja principal no lo aceptó.", e.codigo)
+        } catch (e: IOException) {
+            if (gen == generacion) sinComprobar = true
+            throw noContesto(a, que, e)
+        }
+    }
+
+    private fun noContesto(a: Alta, que: String, falla: Throwable?): NoSeMando {
+        caida(a, que, falla)
+        val causa = Diagnostico.alLatir(a.direccion, leerRed())
+        return NoSeMando(causa ?: "No contestó la caja principal: revisa que el celular esté en el Wi-Fi de la tienda y vuelve a intentar.", sinRed = true)
+    }
+
     // ---- El alta ----
 
     /** Las cajas principales que contestan en la red (puede haber una de prueba): el dueño elige o escribe la IP. */
@@ -498,6 +559,7 @@ class Conexion(
             }
         }
 
+        const val SIN_ALTA_PARA_MANDAR = "Este celular no está dado de alta: dalo de alta en Ajustes › La conexión."
         const val SIN_ACCESO = "Este celular ya no tiene acceso: la caja le quitó la llave. Para volver a usarlo, se da de alta otra vez."
 
         @Volatile private var proceso: Conexion? = null

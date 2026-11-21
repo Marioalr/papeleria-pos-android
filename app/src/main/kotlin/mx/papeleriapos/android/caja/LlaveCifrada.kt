@@ -27,7 +27,9 @@ interface Cifrador {
  * La llave de la caja cifrada con una llave AES-256 (GCM) del Android Keystore (docs/propuesta-interfaz.md, «Dar de
  * alta el celular»: «guardar la llave que da el servicio, cifrada con el Android Keystore»). La llave AES no sale del
  * hardware (o del TEE) y es de esta app en este celular: un respaldo o una copia de los archivos de la app no sirve en
- * otro. Lo guardado es «iv:cifrado», en base64. No pide la huella para usarla: la app ya la pidió al entrar.
+ * otro. Lo guardado es «iv:cifrado», en base64. No pide la huella para usarla (nunca se creó con
+ * `setUserAuthenticationRequired`): así se lee al abrir sin pedir nada, y «Pedir huella al abrir» (Ajustes, apagado de
+ * fábrica desde la 0.4.4) es solo de la app. No la cambies a una que pida la huella sin migrar las altas que ya están.
  */
 class CifradorKeystore(private val alias: String = ALIAS) : Cifrador {
     private fun llave(): SecretKey {

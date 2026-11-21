@@ -70,6 +70,19 @@ class ContraElPosTest {
         val igual = copia.aplicar(cambios, System.currentTimeMillis())
         assertEquals(copia.productos.size, igual.productos.size)
 
+        // Mandar a la caja (POS con la rama celular/mandar-a-la-caja): las cajas se entienden y, sin una caja con la venta
+        // abierta, mandar dice por qué, en español, con su código.
+        val cajas = cliente.paraMandar(direccion, alta.llave, alta.caja.id)
+        println("Cajas para mandar: ${cajas.map { "${it.nombre} (recibe=${it.recibe})" }}")
+        assertTrue(cajas.none { it.id.equals(alta.caja.id, ignoreCase = true) })
+        cajas.firstOrNull { !it.recibe }?.let { apagada ->
+            val p0 = copia.productos.first()
+            val e = runCatching {
+                cliente.mandar(direccion, alta.llave, alta.caja.id, SolicitudMandarTicket(java.util.UUID.randomUUID().toString(), apagada.id, listOf(RenglonMandado(p0.varianteId, null, null, 1000))))
+            }.exceptionOrNull() as ErrorDelPos
+            assertEquals("caja-no-recibe", e.codigo)
+        }
+
         // La identidad, como si hubiera cambiado de IP.
         val reto = Identidad.nuevoReto()
         val identidad = cliente.identidad(direccion, alta.caja.id, reto)

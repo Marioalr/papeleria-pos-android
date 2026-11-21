@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Entrar a la app con la huella (docs/propuesta-interfaz.md, «Entrar»): es local, del celular. Con el celular dado de
- * alta, la app se bloquea al abrirse y cuando vuelve del fondo después de [MS_SIN_PEDIR]; se desbloquea con lo que el
+ * Entrar a la app con la huella (docs/propuesta-interfaz.md, «Entrar»): es local, del celular, y **es una opción de Ajustes,
+ * apagada de fábrica** («Pedir huella al abrir», 0.4.4): pedirla en cada apertura estorbaba en el piso (dueño, 2026-11-21).
+ * Con ella encendida y el celular dado de alta, la app se bloquea al abrirse y cuando vuelve del fondo después de
+ * [MS_SIN_PEDIR]; se desbloquea con lo que el
  * celular acepte como seguro: la huella o la cara, y si no, el PIN, el patrón o la contraseña del celular. Sin bloqueo
  * de pantalla no hay qué pedir (el alta lo avisa). El escaneo rápido sobre el bloqueo no entra aquí: solo enseña lo que
  * ve el cliente.
@@ -31,6 +33,44 @@ object Entrada {
     private val _bloqueada = MutableStateFlow(false)
     val bloqueada: StateFlow<Boolean> = _bloqueada.asStateFlow()
 
+    /** Archivo y clave del ajuste «Pedir huella al abrir». */
+    const val ARCHIVO = "entrada"
+    const val PEDIR_AL_ABRIR = "pedir-huella-al-abrir"
+
+    private val _pedirAlAbrir = MutableStateFlow(false)
+
+    /**
+     * «Pedir huella al abrir» (Ajustes › Al abrir). Apagado de fábrica, también al actualizar desde la 0.4.3 con el alta
+     * puesta: la llave de la caja nunca dependió de la huella (`CifradorKeystore` no usa `setUserAuthenticationRequired`),
+     * así que no hay nada que migrar y el alta se queda como estaba.
+     */
+    val pedirAlAbrir: StateFlow<Boolean> = _pedirAlAbrir.asStateFlow()
+    private var ajusteLeido = false
+
+    /** Lee el ajuste una vez por proceso (un archivo de preferencias chico, como el del alta). */
+    fun leerAjuste(contexto: Context) {
+        if (ajusteLeido) return
+        _pedirAlAbrir.value = contexto.getSharedPreferences(ARCHIVO, Context.MODE_PRIVATE).getBoolean(PEDIR_AL_ABRIR, false)
+        ajusteLeido = true
+    }
+
+    /**
+     * Cambia el ajuste. Al encenderlo no se bloquea en ese momento (quien lo enciende ya está adentro): se pide en la próxima
+     * apertura o al volver después de [MS_SIN_PEDIR]. Al apagarlo, si estaba bloqueada, se entra.
+     */
+    fun cambiarPedirAlAbrir(contexto: Context, pedir: Boolean) {
+        contexto.getSharedPreferences(ARCHIVO, Context.MODE_PRIVATE).edit().putBoolean(PEDIR_AL_ABRIR, pedir).apply()
+        ajusteLeido = true
+        _pedirAlAbrir.value = pedir
+        if (pedir) {
+            entroAlgunaVez = true
+            alFondoDesde = 0L
+        } else {
+            pidiendo?.cancel()
+            desbloquear()
+        }
+    }
+
     /** Cuándo se fue al fondo por última vez (`elapsedRealtime`); 0 si todavía no se ha entrado en este proceso. */
     private var alFondoDesde = 0L
     private var entroAlgunaVez = false
@@ -41,11 +81,13 @@ object Entrada {
         contexto.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
 
     /**
-     * La app pasa al frente con el celular dado de alta ([conAlta]): si es la primera vez en el proceso o estuvo más de
-     * [MS_SIN_PEDIR] en el fondo, se bloquea y se pide entrar. Sin alta, o sin bloqueo de pantalla, no se pide.
+     * La app pasa al frente con el celular dado de alta ([conAlta]) y «Pedir huella al abrir» encendido: si es la primera
+     * vez en el proceso o estuvo más de [MS_SIN_PEDIR] en el fondo, se bloquea y se pide entrar. Sin alta, con el ajuste
+     * apagado (lo de fábrica) o sin bloqueo de pantalla, no se pide: se abre directo a trabajar.
      */
     fun alFrente(actividad: Activity, conAlta: Boolean, pedirCredencial: (Intent) -> Unit, ahora: Long = SystemClock.elapsedRealtime()) {
-        if (!conAlta || !hayBloqueoSeguro(actividad)) {
+        leerAjuste(actividad)
+        if (!conAlta || !_pedirAlAbrir.value || !hayBloqueoSeguro(actividad)) {
             _bloqueada.value = false
             return
         }
@@ -57,11 +99,13 @@ object Entrada {
 
     /**
      * Al abrir, antes de leer el alta entera (la llave cifrada y la copia, que tarda): si hay un alta guardada ([conAlta]),
-     * el celular tiene bloqueo y toca pedir, la app se bloquea ya, desde el primer cuadro; así no se ve el ticket ni cuentan
-     * las lecturas mientras se lee la copia. [alFrente] pide entrar (o desbloquea si el alta no se pudo leer).
+     * «Pedir huella al abrir» está encendido, el celular tiene bloqueo y toca pedir, la app se bloquea ya, desde el primer
+     * cuadro; así no se ve el ticket ni cuentan las lecturas mientras se lee la copia. [alFrente] pide entrar (o desbloquea
+     * si el alta no se pudo leer). Con el ajuste apagado no hace nada.
      */
     fun bloquearAlAbrir(contexto: Context, conAlta: Boolean, ahora: Long = SystemClock.elapsedRealtime()) {
-        if (conAlta && hayQuePedir(ahora) && hayBloqueoSeguro(contexto)) _bloqueada.value = true
+        leerAjuste(contexto)
+        if (conAlta && _pedirAlAbrir.value && hayQuePedir(ahora) && hayBloqueoSeguro(contexto)) _bloqueada.value = true
     }
 
     /** Si toca pedir: nunca se ha entrado en este proceso, o se estuvo más de [MS_SIN_PEDIR] en el fondo. */
@@ -69,6 +113,8 @@ object Entrada {
 
     /** Para las pruebas: como un proceso nuevo. */
     internal fun reiniciar() {
+        ajusteLeido = false
+        _pedirAlAbrir.value = false
         entroAlgunaVez = false
         alFondoDesde = 0L
         pidiendo = null

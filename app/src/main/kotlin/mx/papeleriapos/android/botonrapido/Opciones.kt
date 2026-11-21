@@ -22,18 +22,20 @@ data class EstadoOpciones(
     val hayProducto: Boolean = false,
     /** En Ticket: no trae nada. */
     val ticketVacio: Boolean = true,
+    /** En Ticket: por qué todavía no se puede mandar (sin alta, con los productos de prueba…); null si se puede. */
+    val razonMandar: String? = SIN_CONEXION_MANDAR,
 )
 
 /**
  * Lo que tiene el botón en [modo]. Vacío: no hay botón (en Conteo, mientras no se cuente contra el POS, el lugar del botón
- * queda vacío; los modos no se recorren). En esta entrega la app todavía no se conecta al POS: «Mandar» e «Impresiones»
- * salen apagadas, en su lugar, para que el gesto se aprenda igual.
+ * queda vacío; los modos no se recorren). «Mandar» se enciende con el alta y un ticket que la caja conoce (0.4.4);
+ * «Impresiones» sigue apagada, en su lugar, para que el gesto se aprenda igual.
  */
 fun opcionesDe(modo: ModoApp, estado: EstadoOpciones): List<OpcionRapida> = when (modo) {
     ModoApp.TICKET -> listOf(
         OpcionRapida(
             Lugar.ARRIBA, Accion.MANDAR, "Mandar a una caja",
-            if (estado.ticketVacio) "El ticket está vacío: escanea lo que lleva el cliente." else SIN_CONEXION_MANDAR,
+            if (estado.ticketVacio) "El ticket está vacío: escanea lo que lleva el cliente." else estado.razonMandar,
         ),
         OpcionRapida(Lugar.DIAGONAL, Accion.IMPRESIONES, "Impresiones", SIN_CONEXION_IMPRESIONES),
         OpcionRapida(Lugar.LADO, Accion.BUSCAR, "Buscar"),
@@ -48,8 +50,8 @@ fun opcionesDe(modo: ModoApp, estado: EstadoOpciones): List<OpcionRapida> = when
     ModoApp.CONTEO -> emptyList()
 }
 
-/** Mandar el ticket a una caja necesita la conexión al POS (entrega 4). */
-const val SIN_CONEXION_MANDAR = "Mandarlo a una caja llega con la conexión al POS. Mientras, la caja lo captura."
+/** Mandar el ticket a una caja necesita el alta de este celular (la entrega 4). */
+const val SIN_CONEXION_MANDAR = "Mandarlo a una caja pide el alta del celular (Ajustes › La conexión)."
 
 /** Las impresiones por cobrar viven en la caja principal (entrega 5). */
 const val SIN_CONEXION_IMPRESIONES = "Las impresiones llegan con la conexión al POS. Mientras, la caja las agrega con F2."
