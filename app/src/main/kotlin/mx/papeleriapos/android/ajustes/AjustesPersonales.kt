@@ -28,6 +28,7 @@ import mx.papeleriapos.android.caja.EstadoConexion
 import mx.papeleriapos.android.caja.Red
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.FuenteDeProductos
+import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.principal.ContadoresRapido
 import mx.papeleriapos.android.rapido.COMO_AGREGAR_MOSAICO_A_MANO
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
@@ -52,6 +53,9 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
     val productos by vm.piso.catalogo.collectAsStateWithLifecycle()
     val conexion by Conexion.del(LocalContext.current).estado.collectAsStateWithLifecycle()
     val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
+    val contexto = LocalContext.current
+    remember { Entrada.leerAjuste(contexto) }
+    val pedirHuella by Entrada.pedirAlAbrir.collectAsStateWithLifecycle()
     var mensajeMosaico by remember { mutableStateOf<String?>(null) }
     var pistasDeNuevo by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.prepararProductos() }
@@ -72,6 +76,9 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
         productosDePrueba = dePrueba,
         contadores = contadores,
         alAbrir = alAbrir,
+        pedirHuella = pedirHuella,
+        hayBloqueo = Entrada.hayBloqueoSeguro(contexto),
+        alCambiarPedirHuella = { Entrada.cambiarPedirAlAbrir(contexto, it) },
     )
 }
 
@@ -96,6 +103,11 @@ fun ContenidoAjustesPersonales(
     productosDePrueba: Boolean = false,
     contadores: ContadoresRapido,
     alAbrir: (Destino) -> Unit,
+    /** «Pedir huella al abrir» (apagado de fábrica). */
+    pedirHuella: Boolean = false,
+    /** Si el celular tiene bloqueo de pantalla: sin él no hay huella ni PIN que pedir. */
+    hayBloqueo: Boolean = true,
+    alCambiarPedirHuella: (Boolean) -> Unit = {},
 ) {
     Column(
         Modifier
@@ -128,6 +140,17 @@ fun ContenidoAjustesPersonales(
             enabled = !pistasDeNuevo,
             modifier = Modifier.fillMaxWidth().heightIn(min = ALTO_TOCABLE).testTag("volver-a-ver-pistas"),
         ) { Text(if (pistasDeNuevo) "Las pistas saldrán otra vez" else "Volver a ver las pistas") }
+
+        TituloSeccion("Al abrir")
+        FilaInterruptor(
+            "Pedir huella al abrir", pedirHuella && hayBloqueo, alCambiarPedirHuella, Modifier.testTag("ajuste-pedir-huella"),
+            descripcion = when {
+                !hayBloqueo -> "Este celular no tiene bloqueo de pantalla: ponle uno para poder pedirla."
+                pedirHuella -> "Al abrir la app, y al volver después de 10 minutos, pide la huella o el bloqueo del celular."
+                else -> "Apagado: la app abre directo a trabajar. El bloqueo del celular sigue cuidándola."
+            },
+            habilitado = hayBloqueo,
+        )
 
         TituloSeccion("Abrir rápido")
         Nota(

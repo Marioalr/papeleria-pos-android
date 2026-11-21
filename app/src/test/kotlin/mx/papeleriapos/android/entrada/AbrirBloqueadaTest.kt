@@ -38,8 +38,9 @@ import java.io.File
 import java.util.concurrent.Executor
 
 /**
- * docs/revision-entrega-2.md, hallazgo 3: al abrir en frío con el celular dado de alta, la app sale bloqueada desde el
- * primer cuadro, sin esperar a que se lea la copia (antes se veía el ticket y las lecturas contaban mientras tanto).
+ * Al abrir en frío con el celular dado de alta. De fábrica (0.4.4, dueño 2026-11-21) **no se bloquea**: abre directo a
+ * trabajar, también al actualizar desde la 0.4.3 con el alta puesta. Con «Pedir huella al abrir» encendido, sale
+ * bloqueada desde el primer cuadro, sin esperar a que se lea la copia (docs/revision-entrega-2.md, hallazgo 3).
  */
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class)
@@ -66,6 +67,7 @@ class AbrirBloqueadaTest {
         }
         shadowOf(Looper.getMainLooper()).idle()
         app.getSharedPreferences(AlmacenAlta.ARCHIVO, Context.MODE_PRIVATE).edit().clear().commit()
+        app.getSharedPreferences(Entrada.ARCHIVO, Context.MODE_PRIVATE).edit().clear().commit()
         Entrada.reiniciar()
         Conexion.reiniciar()
     }
@@ -82,16 +84,30 @@ class AbrirBloqueadaTest {
         return c
     }
 
-    @Test
-    fun `con alta guardada sale bloqueada antes de leer la copia`() {
-        // Un alta guardada (lo que mira es si hay llave, sin descifrarla) y una conexión que todavía la está leyendo junto con
-        // la copia: su hilo no avanza en esta prueba.
+    /** Un alta guardada (lo que mira es si hay llave, sin descifrarla) y una conexión que todavía la lee junto con la copia. */
+    private fun conAltaLeyendose() {
         val prefs = app.getSharedPreferences(AlmacenAlta.ARCHIVO, Context.MODE_PRIVATE)
         prefs.edit().putString("llave", "cifrada").commit()
+        // Su hilo no avanza en esta prueba.
         val leyendo = Executor { }.asCoroutineDispatcher()
         Conexion.reiniciar(
             Conexion(AlmacenAlta(prefs, Cifrador.Transparente), AlmacenCopia(File(app.cacheDir, "copia-bloqueada")), ClienteCaja(), "Prueba", hilo = leyendo),
         )
+    }
+
+    @Test
+    fun `con alta y el ajuste de fabrica abre directo sin pedir la huella`() {
+        // Como al actualizar desde la 0.4.3: el alta está y el archivo del ajuste no existe.
+        conAltaLeyendose()
+        abrir()
+        assertFalse("De fábrica no se pide la huella al abrir", Entrada.bloqueada.value)
+        assertFalse(Entrada.pedirAlAbrir.value)
+    }
+
+    @Test
+    fun `con pedir huella encendido sale bloqueada antes de leer la copia`() {
+        app.getSharedPreferences(Entrada.ARCHIVO, Context.MODE_PRIVATE).edit().putBoolean(Entrada.PEDIR_AL_ABRIR, true).commit()
+        conAltaLeyendose()
         abrir()
         assertTrue("Sin bloquear mientras se lee la copia: se ve el ticket y las lecturas cuentan", Entrada.bloqueada.value)
     }
