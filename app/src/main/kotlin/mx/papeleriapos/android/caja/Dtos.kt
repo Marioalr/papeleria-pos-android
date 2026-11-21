@@ -188,3 +188,36 @@ data class CambiosDto(
     val promociones: List<PromocionDto>? = null,
     val huellaPromociones: String? = null,
 )
+
+// ---- Mandar el ticket a una caja (docs/celular-como-caja.md del POS, paso 9) ----
+
+/** `GET /api/cajas/{id}/para-mandar`: una caja de la sucursal, si tiene la venta abierta, quién atiende y cuántos esperan. */
+@Serializable
+data class CajaParaMandarDto(
+    val id: String,
+    val nombre: String = "",
+    val serie: String = "",
+    val recibe: Boolean = false,
+    val atiende: String? = null,
+    val esperan: Int? = null,
+)
+
+/** Un renglón: el producto de la copia (su variante y presentación) y, por si acaso, su código; nunca su precio. */
+@Serializable
+data class RenglonMandado(val varianteId: String?, val presentacionId: String?, val codigo: String?, val cantidadMilesimas: Long)
+
+/** `POST /api/cajas/{id}/mandar`: [id], uno por ticket (mandarlo otra vez con el mismo no lo duplica). */
+@Serializable
+data class SolicitudMandarTicket(val id: String, val destino: String, val renglones: List<RenglonMandado>)
+
+/** Lo que contesta: a qué caja llegó, cuántos artículos y el total con los precios del servicio. */
+@Serializable
+data class TicketMandadoDto(
+    val id: String,
+    val destino: String = "",
+    val caja: String = "",
+    val renglones: Int = 0,
+    val articulos: Double = 0.0,
+    val totalCentavos: Long = 0,
+    val recibido: Boolean = false,
+)

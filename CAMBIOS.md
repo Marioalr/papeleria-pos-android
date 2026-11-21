@@ -2,6 +2,40 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.4 (sin publicar)
+
+Dos pedidos del dueño (2026-11-21): que la app no pida la huella al abrir, y mandar el ticket a la caja. Va después de la
+0.4.3 (PR #26).
+
+- **Abre directo, sin la huella.** «Pedir huella al abrir» pasa a ser una opción de Ajustes › Al abrir, **apagada de
+  fábrica**: pedirla en cada apertura estorbaba en el piso. Encendida, hace lo de antes (al abrir y al volver después de
+  10 minutos; sale bloqueada desde el primer cuadro). Encenderla no bloquea en ese momento; apagarla con la app bloqueada
+  deja entrar. Sin bloqueo de pantalla, el interruptor sale apagado y lo dice.
+  - **Sin migración:** la llave de la caja nunca dependió de la huella (`CifradorKeystore` no usa
+    `setUserAuthenticationRequired`); al actualizar, el alta se queda como estaba y la app abre directo.
+  - **Por revisar:** el alta sigue pidiendo que el celular tenga bloqueo de pantalla (cuida la llave si se pierde el
+    celular). Ninguna acción de la app pedía la huella aparte; los permisos de quien atiende son cosa del POS.
+- **↑ «Mandar a una caja».** Con el alta y un ticket de productos de la copia, ↑ (o «Mandar a una caja» en el ticket
+  completo) abre «¿A qué caja?»: cada caja con turno de la sucursal, con quién atiende y cuántos tickets esperan; la que no
+  tiene la venta abierta sale en gris («Sin la venta abierta: que entren a vender ahí.»). La última usada ya viene
+  elegida (si tiene la venta abierta; si no, la única que la tenga), y «Mandar a Caja 2» no acepta el toque en sus
+  primeros 300 ms (el que suelta el gesto). Si la caja lo guardó, el ticket se vacía y el aviso dice «Enviado a Caja 2 ·
+  4 art. · $129.50». Necesita el POS con «Mandar a la caja» (PR del POS, rama `celular/mandar-a-la-caja`).
+  - **Lo que viaja:** la variante y la presentación de cada renglón (de la copia), su código y la cantidad; **ningún
+    precio**: los pone el servicio con su catálogo y la caja al armarlo.
+  - **Sin duplicados:** el mismo ticket mandado otra vez lleva el mismo Id (si se perdió la respuesta, la caja no lo
+    recibe dos veces); si el ticket cambia, otro.
+  - **Los errores, en español, en la hoja,** y el ticket se queda en el celular: la caja sin la venta abierta, la que no lo
+    recogió, un producto que ya no está en el catálogo, sin red (con la causa: sin Wi-Fi, una VPN…), la caja principal que
+    ya no reconoce al celular.
+  - **Apagado, con su razón:** sin alta («Mandarlo a una caja pide el alta del celular (Ajustes › La conexión).»), con los productos de prueba
+    o con un código que no está en el catálogo («quítalo del ticket para mandarlo»).
+  - Como el latido, la llave solo sale hacia la caja principal que probó quién es.
+  - Falta: el QR del ticket sin red y las impresiones en el ticket (entregas 4 y 5).
+- Pruebas: `EntradaTest` y `AbrirBloqueadaTest` (el ajuste y la apertura), `MandarTest` (cuándo se puede, qué viaja, la
+  caja elegida, el mismo Id, los errores), `HojaMandarTest` (la hoja dibujada, el rebote) y `ConexionTest` (con la llave
+  después de la identidad, el cuerpo tal cual lo lee el POS, el error y la causa sin red).
+
 ## 0.4.3 (sin publicar)
 
 Decir por qué no se conecta (2026-11-21): el Pixel 8 Pro no se pudo dar de alta con la caja principal porque estaba con

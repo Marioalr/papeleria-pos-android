@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -48,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,8 +91,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
 import mx.papeleriapos.android.botonrapido.Accion
 import mx.papeleriapos.android.botonrapido.EstadoOpciones
+import mx.papeleriapos.android.botonrapido.SIN_CONEXION_MANDAR
 import mx.papeleriapos.android.botonrapido.opcionesDe
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
@@ -354,14 +359,16 @@ class AccionesTicket(
     val buscar: () -> Unit,
     val empezarOtro: () -> Unit,
     val deshacer: () -> Unit,
+    /** «Mandar a una caja»: abre «¿A qué caja?». */
+    val mandar: () -> Unit = {},
 )
 
 /**
  * El ticket entero (jalar el asidero o tocar el encabezado), como el del prototipo: todos los renglones con − y + e
  * importe, «Buscar» e «Impresiones» abajo de ellos, deshacer arriba, el total, «Mandar a una caja» (el botón principal,
- * en el color del modo) y «Empezar otro ticket». «Mandar» e «Impresiones» se ven apagadas en su lugar, con su razón:
- * llegan con la conexión al POS (docs/propuesta-interfaz.md, «Entregas»). Lo que se abre desde aquí (la cantidad,
- * Buscar) regresa aquí al cerrarse.
+ * en el color del modo) y «Empezar otro ticket». Lo apagado se ve en su lugar, con su razón: «Mandar» sin alta o con
+ * un código que la caja no conoce ([razonMandar]); «Impresiones», hasta la entrega 5. Lo que se abre desde aquí (la
+ * cantidad, Buscar, «¿A qué caja?») regresa aquí al cerrarse.
  *
  * [huecoArriba]: lo que tapa el aviso que sale encima, bajo la barra («Quitado del ticket», «… al ticket»). La lista
  * empieza abajo de él mientras se ve (también desplazada: no es un relleno de su contenido), para que un toque al − o al
@@ -373,12 +380,13 @@ fun HojaTicket(
     catalogo: CatalogoDeProductos?,
     acciones: AccionesTicket,
     huecoArriba: Dp = 0.dp,
+    razonMandar: String? = SIN_CONEXION_MANDAR,
     alCerrar: () -> Unit,
 ) {
     val color = LocalColoresModo.current.ticket
     val cargando = catalogo == null
     // Las razones de lo apagado, las mismas del botón rápido.
-    val apagadas = opcionesDe(ModoApp.TICKET, EstadoOpciones(ticketVacio = ticket.renglones.isEmpty())).associateBy { it.accion }
+    val apagadas = opcionesDe(ModoApp.TICKET, EstadoOpciones(ticketVacio = ticket.renglones.isEmpty(), razonMandar = razonMandar)).associateBy { it.accion }
     HojaCompleta("hoja-ticket") {
         BarraHoja("Ticket · ${ticket.total} art.", "Los precios los pone la caja al recibirlo", alCerrar) {
             IconButton(onClick = acciones.deshacer, enabled = ticket.puedeDeshacer, modifier = Modifier.size(48.dp).testTag("deshacer-ticket")) {
@@ -434,7 +442,7 @@ fun HojaTicket(
                 }
                 val mandar = apagadas[Accion.MANDAR]
                 Button(
-                    onClick = {},
+                    onClick = acciones.mandar,
                     enabled = mandar?.encendida == true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -531,6 +539,113 @@ fun PrecioGrande(p: Producto, alCerrar: () -> Unit) {
             p.promocion?.let { Text(it, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)) }
             Spacer(Modifier.height(32.dp))
             TextButton(onClick = alCerrar) { Text("Toca para regresar") }
+        }
+    }
+}
+
+// ---- ¿A qué caja? ----
+
+/** Por 300 ms desde que se abre, «Mandar» no acepta el toque: el que suelta el gesto ↑ cae justo donde queda. */
+const val MS_REBOTE_MANDAR = 300L
+
+/**
+ * «¿A qué caja?» (docs/propuesta-interfaz.md, «Mandar a una caja»): cada caja con quién atiende y cuántos tickets esperan;
+ * la que no tiene la venta abierta sale apagada, con su razón. La última usada ya viene elegida, así que casi siempre es
+ * tocar «Mandar». Lo que sale mal se dice aquí, en español, y el ticket se queda en el celular.
+ */
+@Composable
+fun HojaMandar(
+    estado: EstadoMandar,
+    ticket: ListaLecturas,
+    catalogo: CatalogoDeProductos?,
+    alCargar: () -> Unit,
+    alElegir: (String) -> Unit,
+    alMandar: () -> Unit,
+    alCerrar: () -> Unit,
+) {
+    val color = LocalColoresModo.current.ticket
+    var listo by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        alCargar()
+        delay(MS_REBOTE_MANDAR)
+        listo = true
+    }
+    HojaCompleta("hoja-mandar") {
+        BarraHoja("¿A qué caja?", "Ticket · ${ticket.total} art. · ${pesos(totalDe(ticket, catalogo))}", alCerrar)
+        val cajas = estado.cajas
+        Column(Modifier.weight(1f).fillMaxWidth().selectableGroup().padding(horizontal = 4.dp)) {
+            when {
+                cajas == null -> Text(
+                    "Buscando las cajas…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp).testTag("mandar-buscando"),
+                )
+                cajas.isEmpty() && estado.error == null -> Text(
+                    "No hay cajas con turno en esta sucursal: la caja tiene que haber vendido alguna vez.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp),
+                )
+                else -> for (c in cajas) {
+                    val detalle = when {
+                        !c.recibe -> "Sin la venta abierta: que entren a vender ahí."
+                        else -> listOfNotNull(
+                            c.atiende?.let { "Atiende $it" },
+                            c.esperan?.let { if (it == 1) "1 ticket en espera" else "$it tickets en espera" },
+                        ).joinToString(" · ").ifEmpty { "Lista para recibir" }
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 64.dp)
+                            .selectable(selected = c.id == estado.elegida, enabled = c.recibe && !estado.mandando, role = Role.RadioButton) { alElegir(c.id) }
+                            .padding(horizontal = 12.dp)
+                            .testTag("caja-${c.serie}"),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = c.id == estado.elegida, onClick = null, enabled = c.recibe)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(c.nombre, style = MaterialTheme.typography.bodyLarge, color = if (c.recibe) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            if (cajas != null) {
+                TextButton(onClick = alCargar, enabled = !estado.mandando, modifier = Modifier.padding(horizontal = 8.dp).heightIn(min = 48.dp).testTag("mandar-actualizar")) {
+                    Text("Volver a buscar")
+                }
+            }
+        }
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                estado.error?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("mandar-error"),
+                    )
+                }
+                val elegida = estado.cajaElegida
+                Button(
+                    onClick = alMandar,
+                    enabled = listo && estado.puedeMandar && catalogo != null,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("mandar-a-la-caja"),
+                    colors = ButtonDefaults.buttonColors(containerColor = color.color, contentColor = color.enColor),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        when {
+                            estado.mandando -> "Mandando…"
+                            elegida != null -> "Mandar a ${elegida.nombre}"
+                            else -> "Mandar"
+                        },
+                        maxLines = 1,
+                    )
+                }
+            }
         }
     }
 }

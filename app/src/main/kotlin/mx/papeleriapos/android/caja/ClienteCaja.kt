@@ -65,6 +65,14 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         return pedir(direccion, ruta, llave, MS_CAMBIOS)
     }
 
+    /** `GET /api/cajas/{id}/para-mandar`: las cajas a las que se puede mandar el ticket. */
+    suspend fun paraMandar(direccion: Direccion, llave: String, cajaId: String): List<CajaParaMandarDto> =
+        pedir(direccion, "api/cajas/$cajaId/para-mandar", llave, msRespuesta)
+
+    /** `POST /api/cajas/{id}/mandar`: el servicio espera a que la caja lo guarde (hasta 10 s), así que se le dan [MS_MANDAR]. */
+    suspend fun mandar(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudMandarTicket): TicketMandadoDto =
+        pedir(direccion, "api/cajas/$cajaId/mandar", llave, MS_MANDAR, cuerpo = JsonDelPos.encodeToString(SolicitudMandarTicket.serializer(), solicitud))
+
     @OptIn(ExperimentalSerializationApi::class)
     private suspend inline fun <reified T> pedir(direccion: Direccion, ruta: String, llave: String?, msLeer: Long, cuerpo: String? = null): T =
         withContext(Dispatchers.IO) {
@@ -120,6 +128,7 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         const val MS_ALTA = 15_000L
         const val MS_CAMBIOS = 10_000L
         const val MS_PAQUETE = 60_000L
+        const val MS_MANDAR = 15_000L
 
         /** Un solo cliente por proceso (sus hilos y su piscina de conexiones); cada llamada ajusta su tiempo de lectura. */
         fun clienteBase(): OkHttpClient = OkHttpClient.Builder()
