@@ -3,6 +3,7 @@ package mx.papeleriapos.android.caja
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,8 @@ sealed interface PasoAlta {
         val encontradas: List<Direccion> = emptyList(),
         val busco: Boolean = false,
         val ipEscrita: String = "",
+        /** Si no contestó nadie: por qué se ve que no ([Diagnostico.pistaAlBuscar]), abajo de «Ninguna caja principal contestó…». */
+        val pista: String? = null,
         override val trabajando: Boolean = false,
         override val error: String? = null,
     ) : PasoAlta
@@ -90,15 +93,19 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
     fun buscar() {
         val b = _paso.value as? PasoAlta.Buscar ?: return
         if (b.trabajando) return
-        _paso.value = b.copy(trabajando = true, error = null)
+        _paso.value = b.copy(trabajando = true, error = null, pista = null)
         trabajo = viewModelScope.launch {
+            var falla: Exception? = null
             val encontradas = try {
                 conexion.buscarCajas()
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                falla = e
                 emptyList()
             }
+            val pista = if (encontradas.isEmpty()) Diagnostico.pistaAlBuscar(conexion.redAlFallar("Nadie contestó al buscar por UDP", null, falla)) else null
             _paso.update { p ->
-                if (p is PasoAlta.Buscar) p.copy(encontradas = encontradas, busco = true, trabajando = false) else p
+                if (p is PasoAlta.Buscar) p.copy(encontradas = encontradas, busco = true, trabajando = false, pista = pista) else p
             }
         }
     }
@@ -125,7 +132,7 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
             } catch (e: ErrorDelPos) {
                 _paso.value = b.copy(trabajando = false, error = e.message)
             } catch (e: IOException) {
-                _paso.value = b.copy(trabajando = false, error = "No contesta el POS en $d. ¿Está encendida la caja principal y el celular en el Wi-Fi de la tienda?")
+                _paso.value = b.copy(trabajando = false, error = Diagnostico.alUsarIp(d, conexion.redAlFallar("No contestó la IP de la caja principal", d, e)))
             }
         }
     }
@@ -156,7 +163,7 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
             } catch (e: ErrorDelPos) {
                 _paso.value = p.copy(trabajando = false, error = e.message)
             } catch (e: IOException) {
-                _paso.value = p.copy(trabajando = false, error = "No contestó la caja principal. Inténtalo otra vez.")
+                _paso.value = p.copy(trabajando = false, error = noContesto(p.direccion, "Las opciones del alta no contestaron", e))
             }
         }
     }
@@ -188,9 +195,16 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
             } catch (e: ErrorDelPos) {
                 _paso.value = d.copy(trabajando = false, error = e.message)
             } catch (e: IOException) {
-                _paso.value = d.copy(trabajando = false, error = "No contestó la caja principal. Inténtalo otra vez.")
+                _paso.value = d.copy(trabajando = false, error = noContesto(d.direccion, "El alta no contestó", e))
             }
         }
+    }
+
+    /** «No contestó la caja principal. Inténtalo otra vez.», con la causa abajo si se ve una (y al registro). */
+    private fun noContesto(direccion: Direccion, que: String, e: IOException): String {
+        val red = conexion.redAlFallar(que, direccion, e)
+        val causas = Diagnostico.causas(red, direccion.ip)
+        return (listOf("No contestó la caja principal. Inténtalo otra vez.") + Diagnostico.textos(causas, Diagnostico.Donde.IP, direccion.ip, red)).joinToString("\n")
     }
 
     /** Regresa al paso de antes (sin lo que contestó el servicio para el que se deja). */

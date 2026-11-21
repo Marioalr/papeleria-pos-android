@@ -3,6 +3,7 @@ package mx.papeleriapos.android.caja
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +44,11 @@ data class EstadoConexion(
     val bajando: Boolean = false,
     val aviso: String? = null,
     /**
+     * Con la red caída, por qué se ve que no contesta ([Diagnostico.alLatir]: sin Wi-Fi, una VPN, otra red); null si no se
+     * ve nada raro en el celular o la red está bien.
+     */
+    val causa: String? = null,
+    /**
      * La caja le quitó el acceso a este celular y el dueño todavía no lo ha visto en Ajustes › La conexión: se guarda en
      * el disco ([AlmacenAlta.leerAviso]) y la pantalla principal también lo dice, discreto.
      */
@@ -72,6 +78,8 @@ class Conexion(
     private val cronometro: () -> Long = SystemClock::elapsedRealtime,
     hilo: CoroutineDispatcher? = null,
     private val msEntreLatidos: Long = MS_ENTRE_LATIDOS,
+    /** Las interfaces de red del celular, para decir la causa cuando no contesta ([Diagnostico]); las pruebas pasan la suya. */
+    private val leerRed: () -> EstadoDeRed? = EstadoDeRed::actual,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val hilo: CoroutineDispatcher = hilo ?: Dispatchers.IO.limitedParallelism(1)
@@ -88,6 +96,15 @@ class Conexion(
     private var alta: Alta? = null
     private var latido: Job? = null
     private var alFrente = false
+
+    /**
+     * Lo último que se escribió en el registro de una caída (sus causas): una caída que sigue igual
+     * no se vuelve a escribir cada 30 s. Se borra cuando contesta.
+     */
+    private var caidaRegistrada: String? = null
+
+    /** La falla con la que no contestó la identidad (para el registro): [comprobar] la traga para decidir. */
+    private var fallaDeIdentidad: Throwable? = null
 
     /** Latidos seguidos sin respuesta: con [FALLOS_PARA_BUSCAR] se busca la caja principal por UDP por si cambió de IP. */
     private var fallos = 0
@@ -164,7 +181,7 @@ class Conexion(
             a = when (comprobar(a)) {
                 Comprobacion.PROBADA -> a
                 Comprobacion.NO_CONTESTA -> {
-                    sinContestar(a, gen)
+                    sinContestar(a, gen, fallaDeIdentidad)
                     return
                 }
                 Comprobacion.OTRO -> {
@@ -183,13 +200,14 @@ class Conexion(
             if (e.sinAlta) sinLlave(a, gen) else _estado.update { it.copy(aviso = e.message) }
             return
         } catch (e: IOException) {
-            if (gen == generacion) sinContestar(a, gen)
+            if (gen == generacion) sinContestar(a, gen, e)
             return
         }
         if (gen != generacion) return
         fallos = 0
+        contesto()
         val tardo = cronometro() - desde
-        _estado.update { it.copy(red = if (tardo >= MS_LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj(), aviso = null) }
+        _estado.update { it.copy(red = if (tardo >= MS_LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj(), aviso = null, causa = null) }
         val c = _copia.value
         when {
             c == null -> bajarCompleta(a)
@@ -199,10 +217,10 @@ class Conexion(
     }
 
     /** La caja principal no contestó: la dirección queda sin comprobar y, a los [FALLOS_PARA_BUSCAR], se busca por UDP. */
-    private suspend fun sinContestar(a: Alta, gen: Long) {
+    private suspend fun sinContestar(a: Alta, gen: Long, falla: Throwable?) {
         sinComprobar = true
         fallos++
-        _estado.update { it.copy(red = Red.CAIDA) }
+        caida(a, "El latido no contestó", falla)
         if (fallos >= FALLOS_PARA_BUSCAR) {
             fallos = 0
             reencontrar(a, gen)
@@ -220,7 +238,7 @@ class Conexion(
         } catch (e: IOException) {
             if (gen == generacion) {
                 sinComprobar = true
-                _estado.update { it.copy(red = Red.CAIDA) }
+                caida(a, "Los cambios no contestaron", e)
             }
             return
         }
@@ -255,17 +273,52 @@ class Conexion(
             if (gen != generacion) return
             publicar(nueva)
             // La copia bajó: el servicio contestó (lo que tardó no dice nada de la red, son varios MB).
-            _estado.update { it.copy(aviso = null, red = if (it.red == Red.LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj()) }
+            contesto()
+            _estado.update { it.copy(aviso = null, causa = null, red = if (it.red == Red.LENTA) Red.LENTA else Red.BUENA, ultimaVez = reloj()) }
         } catch (e: ErrorDelPos) {
             if (gen != generacion) return
             if (e.sinAlta) sinLlave(a, gen) else _estado.update { it.copy(aviso = e.message) }
         } catch (e: IOException) {
             if (gen != generacion) return
             sinComprobar = true
-            _estado.update { it.copy(red = Red.CAIDA, aviso = "No se pudo bajar la copia del catálogo: se vuelve a intentar.") }
+            caida(a, "La copia no terminó de bajar", e)
+            _estado.update { it.copy(aviso = "No se pudo bajar la copia del catálogo: se vuelve a intentar.") }
         } finally {
             if (gen == generacion) _estado.update { it.copy(bajando = false) }
         }
+    }
+
+    /**
+     * La caja principal no contestó: la red queda caída con su causa, si se ve una. Al registro solo va la primera vez
+     * de cada caída, o si cambia la causa: no cada 30 s.
+     */
+    private fun caida(a: Alta, que: String, falla: Throwable?) {
+        val red = leerRed()
+        val causas = Diagnostico.causas(red, a.direccion.ip)
+        val causa = Diagnostico.alLatir(a.direccion, red)
+        _estado.update { it.copy(red = Red.CAIDA, causa = causa) }
+        // Solo la causa: la clase de la falla cambia entre llamadas (sin ruta, tiempo agotado) y llenaría el registro.
+        val clave = causas.joinToString()
+        if (clave == caidaRegistrada) return
+        caidaRegistrada = clave
+        registrar("$que (${a.direccion}): ${falla?.let(Diagnostico::deLaFalla) ?: "sin respuesta"}; red: ${Diagnostico.registro(red, causas)}")
+    }
+
+    /** Contestó: si venía de una caída, el registro lo dice una vez. */
+    private fun contesto() {
+        if (caidaRegistrada == null) return
+        caidaRegistrada = null
+        registrar("La caja principal volvió a contestar", aviso = false)
+    }
+
+    /**
+     * Al buscar o al escribir la IP durante el alta, cuando no contesta nadie: lee la red del celular y lo escribe en el
+     * registro. [ip] es la que se escribió (null al buscar por UDP).
+     */
+    fun redAlFallar(que: String, ip: Direccion?, falla: Throwable?): EstadoDeRed? {
+        val red = leerRed()
+        registrar("$que${ip?.let { " ($it)" } ?: ""}: ${falla?.let(Diagnostico::deLaFalla) ?: "sin respuesta"}; red: ${Diagnostico.registro(red, Diagnostico.causas(red, ip?.ip))}")
+        return red
     }
 
     private fun publicar(c: Copia) {
@@ -284,6 +337,7 @@ class Conexion(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
+            fallaDeIdentidad = e
             return Comprobacion.NO_CONTESTA
         } catch (e: Exception) {
             return Comprobacion.OTRO
@@ -431,6 +485,18 @@ class Conexion(
 
         /** Latidos seguidos sin respuesta antes de buscar la caja principal por UDP por si cambió de IP. */
         const val FALLOS_PARA_BUSCAR = 2
+
+        /** La etiqueta del registro: `adb logcat -s Conexion`. Nunca la llave, el PIN ni el cuerpo de lo que viaja. */
+        const val ETIQUETA = "Conexion"
+
+        /** Al registro de Android; en la JVM sin Robolectric (`Log` sin implementar) no escribe nada. */
+        internal fun registrar(texto: String, aviso: Boolean = true) {
+            try {
+                if (aviso) Log.w(ETIQUETA, texto) else Log.i(ETIQUETA, texto)
+            } catch (e: RuntimeException) {
+                // Pruebas en la JVM pura.
+            }
+        }
 
         const val SIN_ACCESO = "Este celular ya no tiene acceso: la caja le quitó la llave. Para volver a usarlo, se da de alta otra vez."
 

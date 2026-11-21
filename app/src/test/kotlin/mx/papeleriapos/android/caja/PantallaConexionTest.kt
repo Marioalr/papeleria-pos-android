@@ -121,6 +121,36 @@ class PantallaConexionTest {
         }
     }
 
+    @Test
+    fun `si nadie contesta al buscar dice la causa abajo`() {
+        val sinWifiConVpn = EstadoDeRed(listOf(InterfazDeRed("rmnet_data1", true, listOf(IpConPrefijo("10.150.20.7", 30))), InterfazDeRed("tun0", true, listOf(IpConPrefijo("10.2.0.2", 32)))))
+        val paso = androidx.compose.runtime.mutableStateOf<PasoAlta>(PasoAlta.Buscar(busco = true, pista = Diagnostico.pistaAlBuscar(sinWifiConVpn)))
+        compose.setContent {
+            TemaEscaner { ContenidoConexion(EstadoConexion(leida = true), paso.value, hayBloqueo = true, alAbrirSeguridad = {}, acciones = AccionesAlta()) }
+        }
+        compose.onNodeWithText(Diagnostico.NADIE).assertIsDisplayed()
+        compose.onNodeWithTag("conexion-causa").assertIsDisplayed()
+        compose.onNodeWithText(Diagnostico.sinWifi(), substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Proton VPN", substring = true).assertIsDisplayed()
+        // En el Wi-Fi y sin VPN: el mensaje de siempre y la pista.
+        paso.value = PasoAlta.Buscar(busco = true, pista = Diagnostico.pistaAlBuscar(EstadoDeRed(listOf(InterfazDeRed("wlan0", true, listOf(IpConPrefijo("192.168.1.34", 24)))))))
+        compose.onNodeWithText(Diagnostico.NADIE_PISTA).assertIsDisplayed()
+    }
+
+    @Test
+    fun `con alta y la red caida dice la causa`() {
+        val alta = Alta(Direccion("192.168.1.10"), CajaDto("c9", "Celular de Luis", "CEL", "s1", "Matriz", "Pixel 8 Pro"), "Pixel 8 Pro", "luis", "LLAVE", null, 1_762_000_000_000L)
+        val causa = Diagnostico.vpn(Diagnostico.Donde.LATIDO)
+        compose.setContent {
+            TemaEscaner {
+                ContenidoConexion(EstadoConexion(alta = alta, red = Red.CAIDA, causa = causa, leida = true), PasoAlta.Buscar(), hayBloqueo = true, alAbrirSeguridad = {}, acciones = AccionesAlta())
+            }
+        }
+        compose.onNodeWithText("Sin conexión").assertIsDisplayed()
+        compose.onNodeWithTag("conexion-causa").assertIsDisplayed()
+        compose.onNodeWithText(causa).assertIsDisplayed()
+    }
+
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesCount(etiqueta: String): Int =
         onAllNodes(androidx.compose.ui.test.hasTestTag(etiqueta).or(androidx.compose.ui.test.hasText(etiqueta))).fetchSemanticsNodes().size
 }

@@ -2,6 +2,30 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.4.3 (sin publicar)
+
+Decir por qué no se conecta (2026-11-21): el Pixel 8 Pro no se pudo dar de alta con la caja principal porque estaba con
+datos móviles, el Wi-Fi desconectado y Proton VPN encendida (todo por `tun0`); la app solo decía «Ninguna caja principal
+contestó en esta red» o, con la IP escrita, que no contestaba, y no dejaba nada en el registro.
+
+- **Ajustes › La conexión dice la causa probable,** leída de las interfaces de red del celular (`NetworkInterface`, sin
+  permisos nuevos: ACCESS_NETWORK_STATE sigue quitado por ML Kit):
+  - Sin Wi-Fi (ninguna interfaz que no sea de datos móviles ni túnel tiene una IP privada): «El celular no está conectado
+    al Wi-Fi de la tienda: conéctalo y vuelve a buscar.»
+  - Con una VPN arriba (`tun`, `ppp`, `ipsec`, `wg`…): «Hay una VPN encendida en el celular (por ejemplo Proton VPN):
+    apágala o permite las conexiones de la red local, y vuelve a buscar.»
+  - Una IP escrita de otra red que la del Wi-Fi: «La IP … no es de la red del Wi-Fi del celular (el celular está en …):
+    revisa la IP de la caja principal o que los dos estén en el mismo Wi-Fi.»
+  - En el Wi-Fi y sin VPN, abajo de «Ninguna caja principal contestó en esta red.»: «Revisa que el celular esté en el
+    mismo Wi-Fi que la caja principal, y que esa PC esté encendida y con Papelería POS abierto.»
+  Al escribir la IP dice «vuelve a intentar»; con alta, si el latido no contesta, la causa sale abajo de «La red: Sin
+  conexión» («…; la app vuelve a intentar sola.») y se borra en cuanto contesta.
+- **Al registro (`adb logcat -s Conexion`), con `Log.w`:** cada falla del alta y cada caída del latido, con la clase y
+  el mensaje de la falla, la causa y las interfaces arriba («sin-wifi,vpn; rmnet_data1 10.150.20.7/30, tun0
+  10.2.0.2/32»). Una caída que sigue igual se escribe una sola vez, no cada 30 s; al volver, «La caja principal volvió a
+  contestar». Nunca la llave, el PIN ni lo que viaja.
+- La causa es una función pura (`Diagnostico`, en `caja/CausaDeRed.kt`) con su prueba en la JVM (`DiagnosticoTest`).
+
 ## 0.4.2 (sin publicar)
 
 Los 9 hallazgos de la [revisión de la entrega 2](docs/revision-entrega-2.md), arreglados; cada uno con su prueba.
