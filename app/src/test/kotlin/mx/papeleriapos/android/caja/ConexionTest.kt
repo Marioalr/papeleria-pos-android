@@ -86,6 +86,9 @@ class ConexionTest {
     private lateinit var direccion: Direccion
     private lateinit var conexion: Conexion
 
+    /** La red del celular que ve la conexión; las pruebas la cambian. */
+    private var red: EstadoDeRed? = EstadoDeRed(listOf(InterfazDeRed("wlan0", true, listOf(IpConPrefijo("192.168.1.34", 24)))))
+
     @Before
     fun arrancar() {
         principal.dispatcher = despachador(servicio) { direccion }
@@ -93,7 +96,7 @@ class ConexionTest {
         direccion = Direccion("127.0.0.1", principal.port)
         conexion = Conexion(
             almacenAlta, almacenCopia, ClienteCaja(msRespuesta = 2_000), equipo = "Prueba",
-            descubrir = { encontradas }, reloj = { 1_000L }, cronometro = { 0L }, hilo = Dispatchers.Unconfined,
+            descubrir = { encontradas }, reloj = { 1_000L }, cronometro = { 0L }, hilo = Dispatchers.Unconfined, leerRed = { red },
         )
     }
 
@@ -177,6 +180,40 @@ class ConexionTest {
         espera { conexion.latir() }
         assertTrue(pedidos.any { it.endsWith("/paquete") })
         assertEquals(41L, conexion.copia.value!!.version)
+    }
+
+    @Test
+    fun `si el latido no contesta dice la causa y la escribe en el registro una vez por caida`() {
+        val alta = darDeAlta()
+        org.robolectric.shadows.ShadowLog.clear()
+        principal.shutdown()
+        // El caso del 2026-11-21: datos móviles y Proton VPN, sin Wi-Fi.
+        red = EstadoDeRed(listOf(InterfazDeRed("rmnet_data1", true, listOf(IpConPrefijo("10.150.20.7", 30))), InterfazDeRed("tun0", true, listOf(IpConPrefijo("10.2.0.2", 32)))))
+        repeat(3) { espera { conexion.latir() } }
+        val estado = conexion.estado.value
+        assertEquals(Red.CAIDA, estado.red)
+        assertEquals(Diagnostico.alLatir(alta.direccion, red), estado.causa)
+        assertTrue(estado.causa!!.startsWith("El celular no está conectado al Wi-Fi de la tienda"))
+        fun registro() = org.robolectric.shadows.ShadowLog.getLogsForTag(Conexion.ETIQUETA)
+        assertEquals("Una caída que sigue igual no se escribe cada 30 s", 1, registro().size)
+        val linea = registro()[0]
+        assertEquals(android.util.Log.WARN, linea.type)
+        assertTrue(linea.msg, linea.msg.contains("sin-wifi,vpn") && linea.msg.contains("tun0") && linea.msg.contains("Exception"))
+        // Vuelve el Wi-Fi pero sigue la VPN: otra causa, otra línea.
+        red = EstadoDeRed(listOf(InterfazDeRed("wlan0", true, listOf(IpConPrefijo("192.168.1.34", 24))), InterfazDeRed("tun0", true, listOf(IpConPrefijo("10.2.0.2", 32)))))
+        espera { conexion.latir() }
+        assertEquals(Diagnostico.vpn(Diagnostico.Donde.LATIDO), conexion.estado.value.causa)
+        assertEquals(2, registro().size)
+        // Nada de la llave en el registro.
+        assertFalse(registro().any { it.msg.contains(servicio.llaveDeLaCaja) || it.msg.contains("X-Caja-Llave") })
+    }
+
+    @Test
+    fun `al buscar o escribir la ip la conexion lee la red y lo registra`() {
+        red = null
+        assertNull(conexion.redAlFallar("Nadie contestó al buscar por UDP", null, null))
+        val linea = org.robolectric.shadows.ShadowLog.getLogsForTag(Conexion.ETIQUETA).last()
+        assertTrue(linea.msg, linea.msg.contains("sin respuesta") && linea.msg.contains("no se pudieron leer las interfaces"))
     }
 
     @Test

@@ -61,6 +61,9 @@ export JAVA_HOME=/opt/android-studio/jbr
     búsqueda con lo elegido y lo más vendido, y el día de hoy en la zona horaria del celular.
   - La red (`RedLocalTest`): solo direcciones privadas, con o sin puerto; lo que contesta el descubrimiento; la serie y
     el nombre que se proponen.
+  - Por qué no contesta (`DiagnosticoTest`, en la JVM con redes de mentira): sin Wi-Fi (los datos móviles con IP 10.x no
+    cuentan), una VPN arriba, una IP escrita de otra red, nada raro (el mensaje de siempre con la pista), sin poder leer
+    las interfaces (no se adivina), y lo que va al registro, sin llaves.
   - La identidad de la caja principal (`IdentidadTest`, con un servicio de mentira que firma con ECDSA, `LlavesDePrueba`):
     la huella y la prueba como en el POS; se acepta la respuesta buena y se rechazan otro reto, otra dirección, otra
     llave, la firma de otro servicio y la basura.
@@ -69,8 +72,9 @@ export JAVA_HOME=/opt/android-studio/jbr
   - La conexión (`ConexionTest`, con una caja principal de mentira): sin alta no se llama a nadie; el alta guarda la
     llave y baja la copia; el latido pide los cambios solo cuando cambian las versiones y los aplica, y baja la copia
     entera si el servicio lo dice; el 401 borra la llave y la copia; si la caja principal cambia de IP se vuelve a
-    encontrar solo cuando prueba quién es (una impostora con la huella pero sin la llave del servicio no entra); y al
-    abrir con alta la copia del disco se lee sin red.
+    encontrar solo cuando prueba quién es (una impostora con la huella pero sin la llave del servicio no entra); al
+    abrir con alta la copia del disco se lee sin red; y si el latido no contesta, la causa sale en el estado y va al
+    registro una sola vez por caída (otra vez solo si cambia la causa).
   - Cuándo se pide la huella (`EntradaTest`): al abrir y después de 10 minutos en el fondo.
 - **La pantalla dibujada, sin celular:** `PantallaPrincipalCapturasTest` dibuja la pantalla principal con Robolectric
   (gráficos nativos) con la geometría del chico (360 × 740 dp con barras de 24 + 24: como Robolectric no da la barra de
@@ -406,9 +410,14 @@ escribe a mano porque el UDP del emulador no llega a la PC. Para que el Pixel lo
    (`adb -e emu finger touch 1` cuando el diálogo la pide): al abrir la app con alta sale «Entra con tu huella»; sin
    entrar, un código leído no vibra ni cambia nada; al entrar ya escanea. Volver a los 10 minutos del fondo pide otra
    vez; antes, no. Sin PIN en el celular, La conexión no deja dar de alta y abre la seguridad.
-6. **Otra IP.** Arrancar el servicio en otro puerto (`--Urls=http://localhost:5180`) con la misma base; en el emulador
+6. **Por qué no conecta.** En el Pixel, sin alta: con el Wi-Fi apagado, «Buscar en el Wi-Fi de la tienda» dice
+   «El celular no está conectado al Wi-Fi de la tienda…»; con una VPN encendida (Proton VPN), «Hay una VPN
+   encendida…»; con una IP de otra red (192.168.0.x si el Wi-Fi es 192.168.1.x), que es de otra red. Con alta, al apagar
+   el Wi-Fi, La conexión dice «Sin conexión» y la causa abajo. Cada caída deja una línea en `adb logcat -s Conexion`
+   (sin llave ni PIN).
+7. **Otra IP.** Arrancar el servicio en otro puerto (`--Urls=http://localhost:5180`) con la misma base; en el emulador
    no se encuentra solo (sin UDP): se prueba en la PC con `ConexionTest`, o en el Pixel con la PC cambiando de IP.
-7. **En el Pixel, la medición:** cuánto tarda en armarse la copia de la tienda (los productos y el índice de la
+8. **En el Pixel, la medición:** cuánto tarda en armarse la copia de la tienda (los productos y el índice de la
    búsqueda) al abrir la app, con la sesión de prueba; y que la apertura hasta el primer cuadro analizado no empeore
    contra la [medición del 2026-11-07](../mediciones/2026-11-07-0.3.0/LEEME.md) (Macrobenchmark con el alta hecha).
 

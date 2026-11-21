@@ -132,6 +132,7 @@ private fun Conectada(alta: Alta, estado: EstadoConexion) {
             Red.CAIDA -> "Sin conexión"
         },
     )
+    if (estado.red == Red.CAIDA) estado.causa?.let { Aviso(it, "conexion-causa") }
     estado.ultimaVez?.let { FilaDato("Contestó", Fechas.hora(it)) }
     Nota("La app le avisa cada 30 segundos mientras está abierta; nunca en segundo plano. Sin red, Precio y Buscar siguen con la copia.")
 
@@ -210,7 +211,8 @@ private fun PasoBuscar(p: PasoAlta.Buscar, acciones: AccionesAlta) {
     }
     if (p.busco && !p.trabajando) {
         if (p.encontradas.isEmpty()) {
-            Text("Ninguna caja principal contestó en esta red.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
+            Text(Diagnostico.NADIE, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
+            p.pista?.let { Aviso(it, "conexion-causa") }
         } else {
             for (d in p.encontradas) {
                 OutlinedButton(
@@ -308,8 +310,8 @@ private fun Botones(trabajando: Boolean, texto: String, alSeguir: () -> Unit, al
 }
 
 @Composable
-private fun Aviso(texto: String) {
-    Text(texto, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 6.dp).testTag("conexion-aviso"))
+private fun Aviso(texto: String, etiqueta: String = "conexion-aviso") {
+    Text(texto, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 6.dp).testTag(etiqueta))
     Spacer(Modifier.height(4.dp))
 }
 

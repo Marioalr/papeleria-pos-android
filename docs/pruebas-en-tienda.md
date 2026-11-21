@@ -25,7 +25,7 @@
   4. La app lo copia a su memoria privada: se puede borrar de Descargas.
 
   Nada se conecta a eleventa ni al servicio de la tienda, y los códigos reales no van al repositorio.
-- **La laptop** con el cable, el repositorio y Android Studio, por si hay que ver el registro (`adb logcat -s Escaner`).
+- **La laptop** con el cable, el repositorio y Android Studio, por si hay que ver el registro (`adb logcat -s Escaner Conexion`; `Conexion` dice por qué no contestó la caja principal).
 - **Un cronómetro o la cámara lenta de otro celular** (240 cuadros por segundo) para la parte humana de la apertura:
   del bolsillo al bip.
 
