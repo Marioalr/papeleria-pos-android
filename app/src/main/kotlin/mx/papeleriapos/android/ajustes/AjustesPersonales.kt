@@ -54,7 +54,9 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
     val conexion by Conexion.del(LocalContext.current).estado.collectAsStateWithLifecycle()
     val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
-    remember { Entrada.leerAjuste(contexto) }
+    // Lee una sola vez «Pedir huella al abrir» (leerAjuste no hace nada si ya se leyó). En un efecto y no en remember: Lint
+    // no deja que remember regrese Unit (RememberReturnType).
+    LaunchedEffect(contexto) { Entrada.leerAjuste(contexto) }
     val pedirHuella by Entrada.pedirAlAbrir.collectAsStateWithLifecycle()
     var mensajeMosaico by remember { mutableStateOf<String?>(null) }
     var pistasDeNuevo by remember { mutableStateOf(false) }
