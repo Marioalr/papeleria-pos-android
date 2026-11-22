@@ -37,6 +37,8 @@ import mx.papeleriapos.android.lista.ListasCompartidas
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.principal.Piso
+import mx.papeleriapos.android.principal.Cobrador
+import mx.papeleriapos.android.principal.IdsDeTicket
 import mx.papeleriapos.android.principal.Mandador
 import mx.papeleriapos.android.caja.Conexion
 import mx.papeleriapos.android.principal.PreferenciasPiso
@@ -97,6 +99,9 @@ class EscanerViewModel(
      */
     val piso = Piso(listas.venta, listas.conteo, PreferenciasPiso(prefs), ModoApp.deNucleo(_config.value.modo))
 
+    /** El Id de cada ticket, el mismo al mandarlo y al cobrarlo: uno que se mandó y luego se cobra aquí es la misma venta. */
+    private val idsDeTicket = IdsDeTicket()
+
     /** «¿A qué caja?»: manda el ticket con la llave del alta; recuerda la última caja usada. */
     val mandador: Mandador by lazy {
         val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
@@ -104,6 +109,18 @@ class EscanerViewModel(
             Conexion.del(app), viewModelScope,
             ultima = { ultima.getString(ULTIMA_CAJA, null) },
             guardarUltima = { ultima.edit().putString(ULTIMA_CAJA, it).apply() },
+            ids = idsDeTicket,
+        )
+    }
+
+    /** «Cobrar»: cotiza y cobra con la llave del alta; recuerda en el turno de qué caja entró el último cobro. */
+    val cobrador: Cobrador by lazy {
+        val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
+        Cobrador(
+            Conexion.del(app), viewModelScope,
+            ultima = { ultima.getString(ULTIMA_CAJA_COBRO, null) },
+            guardarUltima = { ultima.edit().putString(ULTIMA_CAJA_COBRO, it).apply() },
+            ids = idsDeTicket,
         )
     }
 
@@ -395,3 +412,4 @@ internal fun ConfigEscaner.sinRepetirALaVista(): ConfigEscaner = if (msParaRepet
 /** Dónde se recuerda la última caja a la que se mandó un ticket (sin nada de la caja más que su id). */
 private const val ARCHIVO_MANDAR = "mandar"
 private const val ULTIMA_CAJA = "ultima-caja"
+private const val ULTIMA_CAJA_COBRO = "ultima-caja-cobro"

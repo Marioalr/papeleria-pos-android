@@ -2,6 +2,48 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.1 (sin publicar)
+
+**El celular cobra** (dueño, 2026-11-22), con lo que el POS dejó escrito en el paso 10 de su
+[documento](https://github.com/Marioalr/papeleria-pos/blob/celular/cobrar/docs/celular-como-caja.md), rama `celular/cobrar`.
+Necesita ese POS en la caja principal; con uno anterior, «Cobrar» lo dice («hay que actualizar Papelería POS en esa PC») y
+se puede seguir mandando el ticket a una caja.
+
+- **«Cobrar» abre el cobro,** a pantalla completa: el total, cómo paga y «Cobrar $160.00». Efectivo y exacto ya vienen
+  elegidos, así que casi siempre es un toque más.
+  - **Efectivo:** el total va redondeado al peso, como en la caja (los 50 centavos hacia arriba y nunca menos de $1; la
+    regla del POS, portada). «¿Cuánto te dio?»: exacto, los tres billetes que siguen ($200, $500, $1,000) u otro monto con
+    el teclado; el cambio sale en grande, o cuánto falta.
+  - **Tarjeta:** el exacto, con la referencia de la terminal si se quiere. **Transferencia:** el exacto; queda «por
+    verificar», como en la caja. En esta versión, una sola forma de pago por ticket (lo mixto, en una caja).
+  - **Los precios los pone el servicio:** al abrirse, el cobro le pide a la caja principal lo que costaría (`cotizar`) y
+    hasta que contesta no deja cobrar. Mientras, enseña el total de la copia. Al cobrar manda el total que enseñó
+    (`totalVisto`): si el del servicio ya es otro, no cobra, lo dice y enseña el nuevo.
+  - **En el turno de qué caja entra:** el celular no abre turno. Con una sola caja con turno abierto, lo dice («Entra al
+    turno de la Caja 1: el efectivo va a su cajón»); con varias, se elige, y la del último cobro ya viene elegida. Sin
+    ninguna: «Ninguna caja tiene un turno abierto…».
+  - **No cobra dos veces:** cada ticket lleva un Id; si la respuesta se pierde, «Cobrar» otra vez lleva el mismo y el
+    servicio contesta la misma venta. Es el mismo Id con que se manda a una caja: uno que se mandó y luego se cobra aquí
+    es una sola venta.
+  - **Los toques de rebote:** «Cobrar» no acepta el toque en sus primeros 300 ms (sale donde estaba el botón que abre la
+    hoja) y «Siguiente cliente», en sus primeros 700 ms.
+- **«Cobrado»:** el cambio en grande, cuánto se cobró y cómo, el folio (el de la serie de la caja en cuyo turno entró) y
+  dónde dejar el efectivo. El celular no imprime: el ticket se saca en esa caja, desde sus ventas del día. El ticket del
+  celular se vacía.
+- **«Mejor que lo cobre una caja»** sigue ahí, abajo del botón: abre «¿A qué caja?» como antes.
+- **El artículo común ya viaja,** al cobrar y al mandar: sin variante, con su descripción («Artículo común») y su precio.
+  «Cobrar» ya no se apaga por él.
+- Sin red no cobra: lo dice, con la causa, y el ticket se queda en el celular. Quién cobra: el cajero del turno donde
+  entra (la app todavía no pide la sesión del POS).
+- Pruebas: `CobroTest` (el redondeo, lo que viaja, el mismo Id, el total distinto, sin turno, sin red, el POS anterior),
+  `CobrarClienteTest` (la ruta, la llave y el JSON tal cual, con los ejemplos del documento del POS), `HojaCobrarTest` (la
+  hoja y «Cobrado» dibujadas, los rebotes) y `ContraElPosTest` contra el servicio de verdad de la rama `celular/cobrar` con
+  la base ficticia: el total de la copia es el del servicio, cobra en efectivo y con tarjeta, el mismo Id no cobra dos
+  veces y un ticket con artículo común ya se manda.
+
+**Lo que falta:** probarlo en el Pixel y en la tienda con el POS de esa rama; imprimir el ticket desde el celular (pendiente
+en el POS); pagos mixtos; la descripción del artículo común; y mandar lo contado a una caja (lo trabaja el POS aparte).
+
 ## 0.5.0 (sin publicar)
 
 La interfaz que pidió y aprobó el dueño el 2026-11-22, después de probarla en el

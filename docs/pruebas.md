@@ -425,6 +425,23 @@ Y en la tienda, un fin de semana con el dueño: el Pixel en el Wi-Fi, el alta en
 CEL no se usa para folios), y el precio y la búsqueda con los productos reales. Los datos de la tienda siguen fuera del
 repo.
 
+### Cobrar en el celular (0.5.1)
+
+Con el POS de la rama `celular/cobrar` y la base ficticia (su `docs/celular-como-caja.md`, paso 10, dice cómo prepararla,
+arrancar el servicio y abrir un turno en la Caja 1 con curl):
+
+- **JVM, contra el servicio de verdad:** `POS_URL=http://127.0.0.1:5080 ./gradlew :app:testDebugUnitTest --tests '*ContraElPosTest*'`.
+  Da de alta un celular, arma un ticket con un producto de la copia y un artículo común, y revisa que el total de la copia
+  sea el del servicio, que cobre en efectivo y con tarjeta, que el mismo Id no cobre dos veces y que con otro total no
+  cobre. Sin una caja con turno abierto, esa prueba no corre.
+- **En el emulador, la dirección de la caja principal es la IP de la PC en la red local, no `10.0.2.2`.** El servicio
+  prueba quién es firmando la IP por la que le llegó la pregunta; por `10.0.2.2` le llega por `127.0.0.1` y la prueba no
+  coincide. Recién dado de alta funciona (todavía no la pide), pero al reiniciar la app «Cobrar» y «Mandar» dicen «No se
+  encontró la caja principal en esta red». Con la IP de la PC (el servicio escuchando en `0.0.0.0`) no pasa. En un celular
+  de verdad, en el Wi-Fi, tampoco.
+- A mano: Buscar un producto, «Cobrar», elegir el billete y «Cobrar»; debe salir «Cobrado» con el cambio y el folio de la
+  serie de la Caja 1. La venta sale en «Ventas del día» de esa caja.
+
 ## Estrés
 
 Ajustes › Herramientas de medición › **Pruebas de estrés** corre sobre la cámara real y dice si cada prueba pasa, con

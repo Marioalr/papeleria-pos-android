@@ -15,6 +15,7 @@ import mx.papeleriapos.android.caja.NoSeMando
 import mx.papeleriapos.android.caja.RenglonMandado
 import mx.papeleriapos.android.caja.SolicitudMandarTicket
 import mx.papeleriapos.android.caja.TicketMandadoDto
+import mx.papeleriapos.android.catalogo.ARTICULO_COMUN
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.lista.ListaLecturas
 import mx.papeleriapos.android.catalogo.pesos
@@ -31,9 +32,6 @@ const val CON_PRODUCTOS_DE_PRUEBA = "Con los productos de prueba no se manda: ap
 /** Lo que dice «Cobrar» (y «Mandar a una caja») sin nada que mandar. */
 const val TICKET_VACIO = "El ticket está vacío: escanea lo que lleva el cliente."
 
-/** El servicio todavía no recibe artículos comunes del celular (se le pidió al POS con el cobro). */
-const val CON_ARTICULO_COMUN = "El artículo común todavía no se puede mandar a una caja: cóbralo en la caja o quítalo del ticket."
-
 /**
  * Por qué todavía no se puede mandar el ticket (lo que dice «Mandar» apagado), o null si sí. El ticket vacío lo dice el botón
  * rápido aparte. Sin alta, [SIN_CONEXION_MANDAR].
@@ -43,9 +41,9 @@ fun razonParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, conAl
     dePrueba -> CON_PRODUCTOS_DE_PRUEBA
     ticket.renglones.isEmpty() -> null
     catalogo == null -> "Esperando la copia del catálogo para mandarlo."
-    ticket.renglones.any { it.comunCentavos != null } -> CON_ARTICULO_COMUN
     else -> {
-        val sinProducto = ticket.renglones.filter { catalogo.de(it)?.cobro == null }
+        // El artículo común viaja con su descripción y su precio; lo demás tiene que ser de la copia.
+        val sinProducto = ticket.renglones.filter { it.comunCentavos == null && catalogo.de(it)?.cobro == null }
         when (sinProducto.size) {
             0 -> null
             1 -> "El código ${sinProducto[0].codigo} no está en el catálogo: quítalo del ticket para mandarlo (en la caja se da de alta)."
@@ -54,9 +52,15 @@ fun razonParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, conAl
     }
 }
 
-/** Los renglones como los recibe el servicio: la variante y la presentación de la copia, el código y la cantidad; sin precios. */
+/**
+ * Los renglones como los recibe el servicio, los mismos al mandar, cotizar y cobrar: la variante y la presentación de la
+ * copia, el código y la cantidad, sin precios. El artículo común va sin variante, con su descripción y su precio a mano.
+ */
 fun renglonesParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos): List<RenglonMandado> =
     ticket.renglones.reversed().map { r ->
+        if (r.comunCentavos != null) {
+            return@map RenglonMandado(descripcion = ARTICULO_COMUN, precioCentavos = r.comunCentavos, cantidadMilesimas = r.cantidad * 1000L)
+        }
         val p = catalogo.de(r)
         RenglonMandado(
             varianteId = p?.cobro?.presentacion?.varianteId,
@@ -65,6 +69,25 @@ fun renglonesParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos): L
             cantidadMilesimas = r.cantidad * 1000L,
         )
     }
+
+/**
+ * El Id de cada ticket, uno nuevo por ticket: el mismo ticket mandado o cobrado otra vez lleva el mismo (si la respuesta se
+ * perdió, la caja no lo recibe ni lo cobra dos veces; y uno que se mandó y luego se cobra en el celular es la misma venta);
+ * si el ticket cambia, otro. Lo comparten [Mandador] y [Cobrador].
+ */
+class IdsDeTicket(private val nuevoId: () -> String = { UUID.randomUUID().toString() }) {
+    private var intento: Pair<List<RenglonMandado>, String>? = null
+
+    @Synchronized
+    fun de(renglones: List<RenglonMandado>): String =
+        intento?.takeIf { it.first == renglones }?.second ?: nuevoId().also { intento = renglones to it }
+
+    /** El ticket ya llegó a donde iba (o ya se cobró): el siguiente es otro. */
+    @Synchronized
+    fun olvidar() {
+        intento = null
+    }
+}
 
 /** Lo que enseña «¿A qué caja?». [cajas] null mientras se piden. */
 data class EstadoMandar(
@@ -90,13 +113,12 @@ class Mandador(
     private val alcance: CoroutineScope,
     private val ultima: () -> String?,
     private val guardarUltima: (String) -> Unit,
-    private val nuevoId: () -> String = { UUID.randomUUID().toString() },
+    /** El Id de cada ticket, el mismo que usa el cobro: mandarlo y luego cobrarlo no lo duplica. */
+    private val ids: IdsDeTicket = IdsDeTicket(),
 ) {
     private val _estado = MutableStateFlow(EstadoMandar())
     val estado: StateFlow<EstadoMandar> = _estado.asStateFlow()
 
-    /** El Id del último intento y lo que llevaba: si se manda lo mismo, el mismo Id. */
-    private var intento: Pair<List<RenglonMandado>, String>? = null
     private var trabajo: Job? = null
 
     /** Al abrir la hoja (y con «Volver a buscar»): pide las cajas. */
@@ -129,15 +151,14 @@ class Mandador(
         val caja = _estado.value.cajaElegida ?: return
         if (_estado.value.mandando) return
         val renglones = renglonesParaMandar(ticket, catalogo)
-        val id = intento?.takeIf { it.first == renglones }?.second ?: nuevoId()
-        intento = renglones to id
+        val id = ids.de(renglones)
         _estado.update { it.copy(mandando = true, error = null) }
         trabajo = alcance.launch {
             try {
                 val r = canal.mandar(SolicitudMandarTicket(id, caja.id, renglones))
                 guardarUltima(caja.id)
                 if (r.recibido) {
-                    intento = null
+                    ids.olvidar()
                     _estado.update { it.copy(mandando = false) }
                     alMandar(textoEnviado(r))
                 } else {
@@ -152,7 +173,7 @@ class Mandador(
                 throw e
             } catch (e: NoSeMando) {
                 // Ya se cobró en la caja (se mandó, se perdió la respuesta y se cobró): ya no hay nada que mandar.
-                if (e.codigo == "ya-cobrado") intento = null
+                if (e.codigo == "ya-cobrado") ids.olvidar()
                 _estado.update { it.copy(mandando = false, error = e.message) }
             }
         }

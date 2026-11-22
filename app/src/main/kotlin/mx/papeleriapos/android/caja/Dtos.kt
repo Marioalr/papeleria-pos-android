@@ -200,11 +200,23 @@ data class CajaParaMandarDto(
     val recibe: Boolean = false,
     val atiende: String? = null,
     val esperan: Int? = null,
+    /** Tiene un turno abierto (paso 10): el celular puede cobrar en él, aunque no tenga la venta abierta. */
+    val turnoAbierto: Boolean = false,
 )
 
-/** Un renglón: el producto de la copia (su variante y presentación) y, por si acaso, su código; nunca su precio. */
+/**
+ * Un renglón, el mismo al mandar, cotizar y cobrar: el producto de la copia (su variante y presentación) y, por si acaso,
+ * su código; nunca su precio. Un artículo común va sin variante, con su [descripcion] y su [precioCentavos] por pieza.
+ */
 @Serializable
-data class RenglonMandado(val varianteId: String?, val presentacionId: String?, val codigo: String?, val cantidadMilesimas: Long)
+data class RenglonMandado(
+    val varianteId: String? = null,
+    val presentacionId: String? = null,
+    val codigo: String? = null,
+    val cantidadMilesimas: Long,
+    val descripcion: String? = null,
+    val precioCentavos: Long? = null,
+)
 
 /** `POST /api/cajas/{id}/mandar`: [id], uno por ticket (mandarlo otra vez con el mismo no lo duplica). */
 @Serializable
@@ -220,4 +232,94 @@ data class TicketMandadoDto(
     val articulos: Double = 0.0,
     val totalCentavos: Long = 0,
     val recibido: Boolean = false,
+)
+
+// ---- Cobrar en el celular (docs/celular-como-caja.md del POS, paso 10) ----
+
+/** Cómo paga: [forma] 0 efectivo (el monto es lo que entregó el cliente), 1 tarjeta y 2 transferencia (exactas). */
+@Serializable
+data class CobroPedido(val forma: Int, val montoCentavos: Long, val referencia: String? = null)
+
+/** `POST /api/cajas/{id}/cotizar`: lo que costaría, con la misma función que el cobro. No cobra nada ni pide turno. */
+@Serializable
+data class SolicitudCotizar(val renglones: List<RenglonMandado>, val cobros: List<CobroPedido>? = null)
+
+/** Una línea como la cobraría el servicio, con sus precios y promociones de hoy. */
+@Serializable
+data class LineaCotizadaDto(
+    val varianteId: String? = null,
+    val presentacionId: String? = null,
+    val descripcion: String = "",
+    val cantidadMilesimas: Long = 0,
+    val precioCentavos: Long = 0,
+    val importeCentavos: Long = 0,
+    val articuloComun: Boolean = false,
+)
+
+/** Con los cobros de la solicitud: cuánto falta o el cambio. */
+@Serializable
+data class PagoCotizadoDto(
+    val sinEfectivoCentavos: Long = 0,
+    val efectivoCentavos: Long = 0,
+    val redondeoCentavos: Long = 0,
+    val recibidoCentavos: Long = 0,
+    val faltanCentavos: Long = 0,
+    val cambioCentavos: Long = 0,
+)
+
+/** [totalCentavos] es el exacto (el de tarjeta y transferencia); [efectivoCentavos], lo que se cobra si todo es en efectivo. */
+@Serializable
+data class CotizacionDto(
+    val lineas: List<LineaCotizadaDto> = emptyList(),
+    val renglones: Int = 0,
+    val articulos: Double = 0.0,
+    val totalCentavos: Long = 0,
+    val efectivoCentavos: Long = 0,
+    val redondeoCentavos: Long = 0,
+    val pago: PagoCotizadoDto? = null,
+)
+
+/**
+ * `POST /api/cajas/{id}/cobrar`. [id], uno por ticket: es el Id de la venta, y mandarlo otra vez no cobra dos veces.
+ * [caja], en el turno de qué caja entra (vacía: la única con turno abierto). [cajeroId] vacío: el cajero de ese turno.
+ * [totalVisto]: el total exacto que el celular enseñó; si el del servicio es otro, no cobra.
+ */
+@Serializable
+data class SolicitudCobrar(
+    val id: String,
+    val renglones: List<RenglonMandado>,
+    val cobros: List<CobroPedido>,
+    val caja: String? = null,
+    val cajeroId: String? = null,
+    val totalVisto: Long? = null,
+)
+
+@Serializable
+data class CobroHechoDto(
+    val forma: Int = 0,
+    val montoCentavos: Long = 0,
+    val recibidoCentavos: Long = 0,
+    val cambioCentavos: Long = 0,
+    val referencia: String? = null,
+)
+
+/** La venta cobrada. El ticket para imprimir que también contesta el servicio no se lee: el celular no imprime. */
+@Serializable
+data class VentaCobradaDto(
+    val id: String = "",
+    val folio: String = "",
+    val folioEleventa: String? = null,
+    val cajaId: String = "",
+    val caja: String = "",
+    val cajero: String = "",
+    val renglones: Int = 0,
+    val articulos: Double = 0.0,
+    val totalCentavos: Long = 0,
+    val redondeoCentavos: Long = 0,
+    val cobradoCentavos: Long = 0,
+    val recibidoCentavos: Long = 0,
+    val cambioCentavos: Long = 0,
+    val cobros: List<CobroHechoDto> = emptyList(),
+    /** Ese Id ya era una venta: no se cobró otra vez. */
+    val yaCobrada: Boolean = false,
 )

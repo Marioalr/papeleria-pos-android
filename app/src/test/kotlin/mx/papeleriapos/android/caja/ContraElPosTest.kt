@@ -1,5 +1,12 @@
 package mx.papeleriapos.android.caja
 
+import org.junit.Assert.fail
+import mx.papeleriapos.android.principal.totalDe
+import mx.papeleriapos.android.principal.renglonesParaMandar
+import mx.papeleriapos.android.principal.Efectivo
+import mx.papeleriapos.android.principal.Cobrador
+import mx.papeleriapos.android.lista.ListaLecturas
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import mx.papeleriapos.android.copia.Copia
 import mx.papeleriapos.android.copia.ProductosDeLaCopia
@@ -87,5 +94,88 @@ class ContraElPosTest {
         val reto = Identidad.nuevoReto()
         val identidad = cliente.identidad(direccion, alta.caja.id, reto)
         assertTrue("El servicio prueba quién es", Identidad.esLaCajaPrincipal(identidad, alta.llave, alta.llaveDelServicio, alta.caja.id, reto, direccion))
+    }
+
+    /**
+     * Cobrar en el celular (docs/celular-como-caja.md del POS, paso 10), contra el servicio de verdad. Necesita una caja con
+     * turno abierto en la base de prueba (ese documento dice cómo abrirlo con curl); sin él, no corre.
+     */
+    @Test
+    fun `cotizar y cobrar se entienden tal cual y el total de la copia es el del servicio`() = runBlocking {
+        assumeTrue("Sin POS_URL no corre", url != null)
+        val direccion = RedLocal.direccionDe(url!!)!!
+        val cliente = ClienteCaja()
+        val sucursal = cliente.opcionesDeAlta(direccion, usuario, pin)[0]
+        val alta = cliente.darDeAlta(direccion, SolicitudAltaCaja(usuario, pin, sucursal.id, null, "Celular de prueba", Conexion.seriePropuesta(sucursal.cajas), "Prueba JVM"))
+        val celular = alta.caja.id
+        val cajas = cliente.paraMandar(direccion, alta.llave, celular)
+        val conTurno = cajas.filter { it.turnoAbierto }
+        println("Cajas: " + cajas.joinToString { "${it.nombre} (turno ${it.turnoAbierto}, recibe ${it.recibe})" })
+        assumeTrue("Sin una caja con turno abierto no se puede cobrar", conTurno.isNotEmpty())
+
+        // El ticket, armado como en la app: tres de un producto de la copia y un artículo común de $35.50.
+        val copia = Copia.dePaquete(cliente.paquete(direccion, alta.llave, celular), System.currentTimeMillis())
+        val productos = ProductosDeLaCopia.armar(copia)
+        val producto = productos.productos.first { it.cobro != null && it.base == null && it.precio in 100..50_000 && it.promocion == null }
+        var ticket = ListaLecturas().agregarDelCatalogo(producto.clave, 1L, cantidad = 3).agregarComun(3550, 2L)
+        val renglones = renglonesParaMandar(ticket, productos)
+        val local = totalDe(ticket, productos)
+
+        val cotizacion = cliente.cotizar(direccion, alta.llave, celular, SolicitudCotizar(renglones))
+        println("Cotización: total ${cotizacion.totalCentavos}, efectivo ${cotizacion.efectivoCentavos}, redondeo ${cotizacion.redondeoCentavos}; la copia dice $local")
+        assertEquals("El total que enseña la app con su copia es el del servicio", cotizacion.totalCentavos, local)
+        assertEquals("El redondeo de la app es el del servicio", cotizacion.efectivoCentavos, Efectivo.aCobrar(local))
+        assertEquals(listOf(false, true), cotizacion.lineas.map { it.articuloComun })
+        assertEquals(4.0, cotizacion.articulos, 0.0)
+
+        // Con el total que no es, no cobra: lo dice y no pasa nada.
+        val id = UUID.randomUUID().toString()
+        val recibido = cotizacion.efectivoCentavos + 5_000
+        try {
+            cliente.cobrar(direccion, alta.llave, celular, SolicitudCobrar(id, renglones, listOf(CobroPedido(0, recibido)), caja = conTurno[0].id, totalVisto = local + 100))
+            fail("Con otro total no debió cobrar")
+        } catch (e: ErrorDelPos) {
+            assertEquals("total-distinto", e.codigo)
+            println("Total distinto: ${e.message}")
+        }
+
+        // En efectivo, con $50 de más: el cambio.
+        val solicitud = SolicitudCobrar(id, renglones, listOf(CobroPedido(0, recibido)), caja = conTurno[0].id, totalVisto = local)
+        val venta = cliente.cobrar(direccion, alta.llave, celular, solicitud)
+        println("Cobrado: folio ${venta.folio} en ${venta.caja}, cajero ${venta.cajero}, cobrado ${venta.cobradoCentavos}, cambio ${venta.cambioCentavos}")
+        assertTrue(venta.folio.isNotBlank())
+        assertEquals(conTurno[0].nombre, venta.caja)
+        assertEquals(cotizacion.totalCentavos, venta.totalCentavos)
+        assertEquals(cotizacion.efectivoCentavos, venta.cobradoCentavos)
+        assertEquals(5_000L, venta.cambioCentavos)
+        assertFalse(venta.yaCobrada)
+        assertEquals("efectivo", Cobrador.comoPago(venta))
+
+        // El mismo Id otra vez (se perdió la respuesta): la misma venta, sin cobrar dos veces.
+        val otraVez = cliente.cobrar(direccion, alta.llave, celular, solicitud)
+        assertTrue(otraVez.yaCobrada)
+        assertEquals(venta.folio, otraVez.folio)
+
+        // Con tarjeta, exacto y con su referencia; es otro ticket, con otro Id y otro folio.
+        ticket = ListaLecturas().agregarDelCatalogo(producto.clave, 3L)
+        val deTarjeta = renglonesParaMandar(ticket, productos)
+        val exacto = totalDe(ticket, productos)
+        val conTarjeta = cliente.cobrar(
+            direccion, alta.llave, celular,
+            SolicitudCobrar(UUID.randomUUID().toString(), deTarjeta, listOf(CobroPedido(1, exacto, "4321")), caja = conTurno[0].id, totalVisto = exacto),
+        )
+        println("Con tarjeta: folio ${conTarjeta.folio}, cobrado ${conTarjeta.cobradoCentavos}")
+        assertEquals(exacto, conTarjeta.cobradoCentavos)
+        assertEquals("4321", conTarjeta.cobros.single().referencia)
+        assertTrue(conTarjeta.folio != venta.folio)
+
+        // Y mandar a una caja un ticket con artículo común ya no lo rechaza por él.
+        try {
+            val mandado = cliente.mandar(direccion, alta.llave, celular, SolicitudMandarTicket(UUID.randomUUID().toString(), conTurno[0].id, renglones))
+            println("Mandado con artículo común: recibido ${mandado.recibido}, total ${mandado.totalCentavos}")
+        } catch (e: ErrorDelPos) {
+            println("Mandar con artículo común: ${e.codigo}: ${e.message}")
+            assertEquals("Sin la venta abierta en esa caja no lo recoge, pero el artículo común ya no es el problema", "caja-no-recibe", e.codigo)
+        }
     }
 }
