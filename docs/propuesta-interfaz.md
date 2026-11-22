@@ -5,6 +5,14 @@
 > quién es el celular (de Luis o de la tienda), lo que pasa (10 min sin uso, 20 s sin códigos, quitar el acceso), el
 > tamaño, el tema y «Ver» (el gesto, letra 200 %); a la derecha está «Qué probar». Todo es ficticio.
 >
+> **La 0.5 cambió la pantalla principal (2026-11-22).** El dueño pidió y aprobó, con el
+> [prototipo de la 0.5](propuesta-interfaz/prototipo-0.5.html), que Precio y Ticket sean una sola pantalla (la venta), que
+> la cantidad se ponga con gestos en la tarjeta de lo último, «Cobrar» abajo, Conteo en el menú «Este celular» y actualizar
+> desde la app; y que la app es de uso personal (sin perfiles ni celular de la tienda). Lo de abajo sobre los tres modos,
+> «Al ticket», «quién tiene la app» y el celular de la tienda queda como historia: manda la 0.5
+> ([CAMBIOS](../CAMBIOS.md#050-sin-publicar)). El botón rápido, Buscar, «¿A qué caja?», el mosaico y la conexión siguen
+> como aquí se describen.
+>
 > **El núcleo de reconocimiento no cambia.** Las pruebas de la cámara salieron bien (dueño, 2026-11-03): `nucleo`, la
 > cámara, los motores y la pantalla del escáner (`escaner`) se quedan como se midieron. Esta propuesta pone la app
 > alrededor del escáner, sin tocarlo.

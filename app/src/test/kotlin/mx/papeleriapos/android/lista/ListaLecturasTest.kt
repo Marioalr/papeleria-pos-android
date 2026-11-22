@@ -145,4 +145,37 @@ class ListaLecturasTest {
             carpeta.deleteRecursively()
         }
     }
+
+    // ---- 0.5: subir un renglón a la tarjeta y el artículo común ----
+
+    @Test
+    fun `subir lleva el renglon arriba sin sumarle y se puede deshacer`() {
+        val l = ListaLecturas().sumar("A", Simbologia.EAN_13, 1).sumar("B", Simbologia.EAN_13, 2).sumar("C", Simbologia.EAN_13, 3)
+        val a = l.renglones.last()
+        val subida = l.subir(a.id)
+        assertEquals(listOf("A", "C", "B"), subida.renglones.map { it.codigo })
+        assertEquals(3, subida.total)
+        assertEquals(listOf("C", "B", "A"), subida.deshacer().renglones.map { it.codigo })
+        assertSame("El de arriba ya está arriba", subida, subida.subir(a.id))
+        assertSame("Lo que no está, nada", subida, subida.subir(999))
+    }
+
+    @Test
+    fun `el articulo comun es un renglon propio y sobrevive a guardarse`() {
+        val l = ListaLecturas().sumar("7509990100019", Simbologia.EAN_13, 1, clave = "7509990100019").agregarComun(1550, 2).agregarComun(1550, 3)
+        assertEquals("Dos artículos comunes son dos renglones", 3, l.renglones.size)
+        assertEquals(listOf(1550L, 1550L, null), l.renglones.map { it.comunCentavos })
+        val leida = ListaLecturas.deTexto(l.aTexto())
+        assertEquals(l.renglones.map { Triple(it.codigo, it.cantidad, it.comunCentavos) }, leida.renglones.map { Triple(it.codigo, it.cantidad, it.comunCentavos) })
+        // Después de leerla, otro artículo común no choca con los guardados.
+        assertEquals(4, leida.agregarComun(900, 4).renglones.map { it.codigo }.toSet().size)
+    }
+
+    @Test
+    fun `lo guardado por la 0_4, sin la columna del articulo comun, se sigue leyendo`() {
+        val de04 = "id,codigo,simbologia,cantidad,hora,clave\r\n1,7509990100019,EAN_13,2,10,7509990100019\r\n"
+        val l = ListaLecturas.deTexto(de04)
+        assertEquals(2, l.total)
+        assertNull(l.actual!!.comunCentavos)
+    }
 }

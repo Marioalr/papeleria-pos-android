@@ -439,7 +439,7 @@ su CSV:
   térmico moderado o más, margen ≥ 0.85, cuadros de análisis < 85 % del primer minuto o CPU por cuadro +25 %).
 
 En el emulador también hay pruebas instrumentadas de ciclos (`CiclosCamaraTest`) y de navegación de la app
-(`NavegacionTest`: los tres modos, Ajustes y cada herramienta de medición, y de vuelta al escáner, que debe volver a
+(`NavegacionTest`: la venta y el conteo, el menú, Ajustes y cada herramienta de medición, y de vuelta al escáner, que debe volver a
 escanear; `ControladorCamaraTest` revisa que
 al volver la cámara abra una sola vez). Las pruebas con UiAutomator, el perfil y Macrobenchmark esperan el id
 `escaneando`, que aparece con el primer cuadro analizado. Monkey para lo inesperado:

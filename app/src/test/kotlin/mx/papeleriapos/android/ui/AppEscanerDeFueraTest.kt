@@ -15,7 +15,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import mx.papeleriapos.android.EscanerViewModel
 import mx.papeleriapos.android.lista.ListasCompartidas
 import mx.papeleriapos.android.principal.CHICO
-import mx.papeleriapos.android.principal.ConsultaPrecio
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.tema.TemaEscaner
 import mx.papeleriapos.escaner.ui.ControladorDeMuestra
@@ -51,7 +50,7 @@ class AppEscanerDeFueraTest {
         val app = ApplicationProvider.getApplicationContext<Application>()
         shadowOf(app).grantPermissions(Manifest.permission.CAMERA)
         val vm = EscanerViewModel(app, { _, c -> ControladorDeMuestra(config = c) }, ListasCompartidas())
-        vm.cambiarModoApp(ModoApp.TICKET)
+        vm.cambiarModoApp(ModoApp.VENTA)
         compose.setContent { TemaEscaner { AppEscaner(inicial = desde, vm = vm, alCambiarDestino = { visto = it }) } }
         idle()
         assertEquals(desde, visto)
@@ -67,9 +66,9 @@ class AppEscanerDeFueraTest {
         }
         idle()
         assertEquals(Destino.PRINCIPAL, visto)
-        assertEquals(ModoApp.PRECIO, vm.piso.modo.value)
-        assertTrue(vm.piso.precio.value is ConsultaPrecio.Encontrado)
-        compose.onNode(hasText("Cuaderno profesional cuadro chico 100 hojas") and hasAnyAncestor(hasTestTag("tarjeta-precio"))).assertExists()
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
+        assertEquals(CUADERNO, vm.venta.value.actual?.clave)
+        compose.onNode(hasText("Cuaderno profesional cuadro chico 100 hojas") and hasAnyAncestor(hasTestTag("tarjeta")), useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -77,7 +76,9 @@ class AppEscanerDeFueraTest {
         val vm = abrirEn(Destino.AJUSTES)
         regresaConElProducto(vm)
         // Otra vez a Ajustes: lo de antes ya se atendió y no la regresa.
-        compose.onNodeWithTag("boton-ajustes").performClick()
+        compose.onNodeWithTag("boton-menu").performClick()
+        idle()
+        compose.onNodeWithTag("menu-ajustes").performClick()
         idle()
         assertEquals(Destino.AJUSTES, visto)
     }

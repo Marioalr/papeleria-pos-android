@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.platform.AccessibilityManager
@@ -31,6 +32,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -112,7 +115,7 @@ abstract class PruebaDePantalla {
             val a = accesibilidad ?: LocalAccessibilityManager.current
             CompositionLocalProvider(LocalAccessibilityManager provides a) {
                 TemaEscaner(oscuro = oscuro) {
-                    Box(Modifier.fillMaxSize()) { if (mostrar) PantallaPrincipal(vm, relleno) { ajustesAbiertos++ } }
+                    Box(Modifier.fillMaxSize()) { if (mostrar) PantallaPrincipal(vm, relleno) { if (it == mx.papeleriapos.android.ui.Destino.AJUSTES) ajustesAbiertos++ } }
                 }
             }
         }
@@ -133,6 +136,34 @@ abstract class PruebaDePantalla {
 
     protected fun leer(codigo: String) {
         controlador.emitirLectura(codigo)
+        idle()
+    }
+
+    /** Un toque en la tarjeta de lo último: uno más. */
+    protected fun tocarTarjeta() {
+        compose.onNodeWithTag("renglon-actual").performTouchInput { down(center); up() }
+        idle()
+    }
+
+    /** Desliza la tarjeta [dp] a la izquierda, en pasos, y suelta: un tramo corto quita uno; hasta el fondo, el renglón. */
+    protected fun deslizarTarjeta(dp: Float) {
+        compose.onNodeWithTag("renglon-actual").performTouchInput {
+            down(center)
+            repeat(8) { moveBy(Offset(-dp * density / 8, 0f)) }
+            up()
+        }
+        idle()
+    }
+
+    /** Deslizar un tramo corto: uno menos (con 1, sale y avisa «Quitado del ticket»). */
+    protected fun quitarUno() = deslizarTarjeta(80f)
+
+    /** Uno más del producto de la tarjeta sin escanearlo, como al elegirlo en Buscar: su aviso sale arriba, con «Deshacer». */
+    protected fun otroAlTicket() {
+        compose.runOnUiThread {
+            val p = vm.piso.catalogo.value!!.de(vm.venta.value.actual!!)!!
+            vm.piso.alTicket(p)
+        }
         idle()
     }
 

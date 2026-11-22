@@ -87,10 +87,14 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `cada lectura le llega a talkback y antes de leer no hay una parada vacia`() {
-        abrir(ModoApp.PRECIO, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         assertFalse("Sin lecturas, el anuncio no es una parada (no diría nada)", "anuncio" in ordenDeTalkBack(nodosAccesibles()))
         dejarQueSalganLosEventos()
-        vm.cambiarModoApp(ModoApp.TICKET)
+        // Un cambio en la pantalla antes de la primera lectura: con él Compose toma la foto de lo que hay, contra la que
+        // compara después (con TalkBack de verdad la toma en cuanto lee la pantalla).
+        vm.cambiarModoApp(ModoApp.CONTEO)
+        dejarQueSalganLosEventos()
+        vm.cambiarModoApp(ModoApp.VENTA)
         dejarQueSalganLosEventos()
         val antes = anunciosEnviados().size
         // La primera lectura, el mismo producto otra vez y uno en Ticket: cada una manda su anuncio.
@@ -98,7 +102,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         dejarQueSalganLosEventos()
         leer(LAPIZ)
         dejarQueSalganLosEventos()
-        vm.cambiarModoApp(ModoApp.PRECIO)
+        vm.cambiarModoApp(ModoApp.VENTA)
         dejarQueSalganLosEventos()
         leer(CUADERNO)
         dejarQueSalganLosEventos()
@@ -106,10 +110,10 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         dejarQueSalganLosEventos()
         assertEquals(
             listOf(
-                "Lápiz HB No. 2 al ticket. Total \$5.50",
-                "Lápiz HB No. 2 al ticket, van 2. Total \$11.00",
-                "Cuaderno profesional cuadro chico 100 hojas, \$46.00",
-                "Cuaderno profesional cuadro chico 100 hojas, \$46.00",
+                "Lápiz HB No. 2, \$5.50, al ticket. Total \$5.50",
+                "Lápiz HB No. 2, \$5.50, al ticket, van 2. Total \$11.00",
+                "Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$57.00",
+                "Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket, van 2. Total \$103.00",
             ),
             anunciosEnviados().drop(antes).filter { it.contains("Lápiz") || it.contains("Cuaderno") },
         )
@@ -117,10 +121,14 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `lo que llega del escaneo rapido se anuncia como una lectura, tambien al volver de ajustes`() {
-        abrir(ModoApp.PRECIO, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         nodosAccesibles()
         dejarQueSalganLosEventos()
-        vm.cambiarModoApp(ModoApp.TICKET)
+        // Un cambio en la pantalla antes de la primera lectura: con él Compose toma la foto de lo que hay, contra la que
+        // compara después (con TalkBack de verdad la toma en cuanto lee la pantalla).
+        vm.cambiarModoApp(ModoApp.CONTEO)
+        dejarQueSalganLosEventos()
+        vm.cambiarModoApp(ModoApp.VENTA)
         dejarQueSalganLosEventos()
         val antes = anunciosEnviados().size
         // «Abrir la app» con la principal a la vista (y en Ticket: pasa a Precio).
@@ -135,7 +143,10 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         idle()
         dejarQueSalganLosEventos()
         assertEquals(
-            listOf("Cuaderno profesional cuadro chico 100 hojas, \$46.00", "Lápiz HB No. 2, \$5.50"),
+            listOf(
+                "Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$46.00",
+                "Lápiz HB No. 2, \$5.50, al ticket. Total \$51.50",
+            ),
             anunciosEnviados().drop(antes).filter { it.contains("Lápiz") || it.contains("Cuaderno") },
         )
         assertTrue(anuncioAccesible())
@@ -143,20 +154,18 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `cada lectura anuncia lo que hizo por una region viva oculta`() {
-        abrir(ModoApp.PRECIO, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         leer(CUADERNO)
-        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00", anuncio())
+        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$46.00", anuncio())
         assertTrue(anuncioAccesible())
-        vm.cambiarModoApp(ModoApp.TICKET)
-        idle()
         leer(LAPIZ)
         leer(LAPIZ)
-        assertEquals("Lápiz HB No. 2 al ticket, van 2. Total \$11.00", anuncio())
+        assertEquals("Lápiz HB No. 2, \$5.50, al ticket, van 2. Total \$57.00", anuncio())
         // Con el menú abierto el panel sale del árbol, pero las lecturas siguen contando y se anuncian.
         tocarBoton()
         assertTrue(menuAbierto())
         leer(CUADERNO)
-        assertEquals("Cuaderno profesional cuadro chico 100 hojas al ticket. Total \$57.00", anuncio())
+        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket, van 2. Total \$103.00", anuncio())
         assertTrue(anuncioAccesible())
         atras()
         vm.cambiarModoApp(ModoApp.CONTEO)
@@ -186,7 +195,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `con el menu abierto el foco del teclado no sale del menu`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         teclado()
@@ -205,15 +214,14 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
             assertTrue("El foco salió del menú: ${foco()}", foco() in delMenu)
         }
         // Enter bajo el velo no hace nada: ni cambia de modo, ni abre el ticket, ni quita renglones.
-        assertEquals(ModoApp.TICKET, vm.piso.modo.value)
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
         assertNull(vm.piso.hoja.value)
         assertTrue(vm.venta.value === antes)
     }
 
     @Test
     fun `esc y atras cierran el menu y el foco regresa al boton`() {
-        abrir(ModoApp.TICKET)
-        leer(CUADERNO)
+        abrir(ModoApp.VENTA)
         teclado()
         compose.onNodeWithTag("boton-rapido").requestFocus()
         idle()
@@ -227,17 +235,17 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         atras()
         assertFalse(menuAbierto())
         assertEquals("Atrás también", "boton-rapido", foco())
-        // Elegir con Enter la apagada (↑ «Mandar»): el aviso dice por qué y el foco regresa al botón.
+        // Elegir con Enter la apagada (↑ «Enseñar», sin producto en la tarjeta): el aviso dice por qué y el foco regresa al botón.
         tecla(Key.Enter)
         tecla(Key.Enter)
         assertFalse(menuAbierto())
-        assertTrue(vm.piso.aviso.value!!.texto.startsWith("Mandarlo a una caja"))
+        assertTrue(vm.piso.aviso.value!!.texto.startsWith("Escanea un producto"))
         assertEquals("boton-rapido", foco())
     }
 
     @Test
     fun `el boton enfocado se ve distinto`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         teclado()
         val sinFoco = captura("regresion/boton-sin-foco")
@@ -257,7 +265,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `talkback recorre el menu en su orden con el boton al final`() {
-        abrir(ModoApp.TICKET, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         leer(CUADERNO)
         val cerrado = ordenDeTalkBack(nodosAccesibles())
         assertEquals("Cerrado, el botón es una parada y va al final: $cerrado", "boton-rapido", cerrado.last())
@@ -272,19 +280,28 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         // Lo que dice el botón: su nombre y cuáles hay.
         val boton = compose.onNodeWithTag("boton-rapido").fetchSemanticsNode()
         assertEquals("Opciones del ticket", boton.config[SemanticsProperties.ContentDescription].single())
-        assertEquals("abiertas: Mandar a una caja, Impresiones, Buscar", boton.config[SemanticsProperties.StateDescription])
+        assertEquals("abiertas: Enseñar al cliente, Impresiones, Buscar", boton.config[SemanticsProperties.StateDescription])
     }
 
     @Test
-    fun `el asidero, el velo y el numero de la pestana no confunden a talkback`() {
-        abrir(ModoApp.TICKET)
+    fun `el asidero, el velo y cobrar no confunden a talkback`() {
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         val asidero = compose.onNodeWithTag("asidero", useUnmergedTree = true).fetchSemanticsNode()
-        assertFalse("El asidero no es un botón sin nombre (el encabezado ya abre el ticket)", asidero.config.contains(SemanticsActions.OnClick))
-        val pestana = compose.onNodeWithTag("modo-TICKET").fetchSemanticsNode()
-        assertEquals(listOf("Ticket"), pestana.config[SemanticsProperties.Text].map { it.text })
-        assertEquals("2 artículos", pestana.config[SemanticsProperties.StateDescription])
+        // Ya no hay encabezado que abra el ticket completo: el asidero es un botón, con su nombre.
+        assertTrue(asidero.config.contains(SemanticsActions.OnClick))
+        assertEquals("Ver el ticket completo", asidero.config[SemanticsProperties.ContentDescription].single())
+        // «Cobrar» dice el total y cuántos van; apagado (sin alta), por qué.
+        val cobrar = compose.onNodeWithTag("cobrar").fetchSemanticsNode()
+        assertEquals(listOf("Cobrar · \$51.50", "2 art. · se manda a una caja"), cobrar.config[SemanticsProperties.Text].map { it.text })
+        assertTrue(cobrar.config[SemanticsProperties.StateDescription].startsWith("apagado: Mandarlo a una caja"))
+        // La tarjeta ofrece sus gestos como acciones, para quien no puede deslizar.
+        val tarjeta = compose.onNodeWithTag("renglon-actual").fetchSemanticsNode()
+        assertEquals(
+            listOf("Uno más", "Quitar del ticket", "Quitar el renglón", "Teclear la cantidad"),
+            tarjeta.config[SemanticsActions.CustomActions].map { it.label },
+        )
         vm.piso.abrir(Hoja.Cantidad(vm.venta.value.actual!!.id))
         idle()
         val velo = compose.onNodeWithTag("velo-cantidad", useUnmergedTree = true).fetchSemanticsNode()
@@ -298,7 +315,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
     @Test
     @Config(qualifiers = HOJA_DEL_CHICO)
     fun `buscar dice cuantos encontro`() {
-        abrir(ModoApp.TICKET, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         vm.piso.abrir(Hoja.Buscar)
         idle()
         // Como en el celular, el resultado de más arriba queda entero bajo el subtítulo: sin la barra encima, TalkBack no lo
@@ -321,7 +338,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
     @Test
     fun `en buscar talkback lee el campo y luego del mejor resultado al peor`() {
         // La lista va de abajo hacia arriba: el mejor junto al campo. Leída de corrido, no debe empezar por el peor.
-        abrir(ModoApp.TICKET, talkBack = true)
+        abrir(ModoApp.VENTA, talkBack = true)
         vm.piso.abrir(Hoja.Buscar)
         idle()
         compose.onNodeWithTag("campo-buscar").performTextInput("lapiz")
@@ -365,7 +382,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
 
     @Test
     fun `en oscuro las opciones del menu se separan del velo`() {
-        abrir(ModoApp.TICKET, oscuro = true)
+        abrir(ModoApp.VENTA, oscuro = true)
         leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput { down(center); up() }
         idle()

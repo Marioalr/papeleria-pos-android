@@ -392,7 +392,9 @@ fun MenuRapido(
     if (!estado.abierto || estado.centro == Offset.Unspecified || opciones.isEmpty()) return
     val vista = LocalView.current
     val densidad = LocalDensity.current
-    val velo = MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f)
+    // En oscuro el velo va más cargado: bajo él ya no hay solo renglones, sino la tarjeta de lo último con su cantidad en
+    // el color del modo (claro en oscuro), y con 45 % las opciones no se separaban de ella.
+    val velo = MaterialTheme.colorScheme.scrim.copy(alpha = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) 0.62f else 0.45f)
     val primera = remember { FocusRequester() }
     val salida = remember { Animatable(0f) }
     val contexto = LocalContext.current
@@ -491,9 +493,10 @@ private fun OpcionDelMenu(
         elegida -> color.enColor
         else -> color.enContenedor
     }
-    // En oscuro, los círculos apenas se separan del panel atenuado (unos 2:1): un borde de 1 dp en outline.
+    // En oscuro, los círculos apenas se separan del panel atenuado (unos 2:1): un borde de 1 dp, claro, que también se
+    // separa de la tarjeta y de su cantidad cuando caen debajo.
     val borde = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
-        Modifier.border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+        Modifier.border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape)
     } else {
         Modifier
     }

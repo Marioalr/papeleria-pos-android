@@ -87,7 +87,7 @@ class AtajosDelIconoTest {
         assertEquals(setOf(Intent.CATEGORY_LAUNCHER), intent.categories)
         assertTrue("Otro filtro que el ícono ($intent contra $icono)", intent.filterEquals(icono))
         assertEquals(MainActivity.MODO_PRECIO, intent.getStringExtra(MainActivity.EXTRA_MODO))
-        assertEquals("MainActivity lo entiende", ModoApp.PRECIO, ModoApp.deExtra(intent.getStringExtra(MainActivity.EXTRA_MODO)))
+        assertEquals("MainActivity lo entiende", ModoApp.VENTA, ModoApp.deExtra(intent.getStringExtra(MainActivity.EXTRA_MODO)))
     }
 
     @Test

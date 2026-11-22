@@ -99,8 +99,7 @@ data class ColorModo(val color: Color, val enColor: Color, val contenedor: Color
 @Immutable
 data class ColoresModo(val precio: ColorModo, val ticket: ColorModo, val conteo: ColorModo) {
     fun de(modo: ModoApp): ColorModo = when (modo) {
-        ModoApp.PRECIO -> precio
-        ModoApp.TICKET -> ticket
+        ModoApp.VENTA -> ticket
         ModoApp.CONTEO -> conteo
     }
 }

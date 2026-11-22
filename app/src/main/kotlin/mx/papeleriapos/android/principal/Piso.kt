@@ -16,8 +16,8 @@ import mx.papeleriapos.escaner.nucleo.Simbologia
 import mx.papeleriapos.pos.busqueda.IndiceDeBusqueda
 
 /*
- * El estado de la pantalla principal (docs/propuesta-interfaz.md, «La pantalla principal: el escáner con tres modos»),
- * sin Android: el modo, lo que enseña Precio, el ticket y el conteo de prueba (las listas que ya se guardan en disco),
+ * El estado de la pantalla principal, sin Android (0.5: Precio y Ticket son una sola pantalla, la venta): el modo, lo
+ * último que se leyó y no está en el catálogo, el ticket y el conteo de prueba (las listas que ya se guardan en disco),
  * lo que tapa el visor, los avisos y lo que se aprende del botón rápido. La pantalla lo dibuja; el ViewModel le pasa las
  * lecturas y calla la vibración mientras una hoja tapa el visor.
  */
@@ -30,8 +30,14 @@ sealed interface Hoja {
     /** El teclado de números para la cantidad de un renglón del ticket («20» copias). */
     data class Cantidad(val idRenglon: Long) : Hoja
 
-    /** El ticket completo (el asidero o el encabezado). */
+    /** El ticket completo (el asidero). */
     data object Ticket : Hoja
+
+    /** «Este celular» (arriba a la izquierda): contar, actualizar, la conexión y Ajustes. */
+    data object Menu : Hoja
+
+    /** El precio a mano de un artículo común: lo que no está en el catálogo y se cobra de todos modos. */
+    data object Comun : Hoja
 
     /** ↑ «Enseñar al cliente»: el nombre y el precio a pantalla completa, para voltear el celular. */
     data class PrecioGrande(val producto: Producto) : Hoja
@@ -40,16 +46,12 @@ sealed interface Hoja {
     data object Mandar : Hoja
 }
 
-/** Lo que enseña la tarjeta de Precio. */
-sealed interface ConsultaPrecio {
-    data class Encontrado(val producto: Producto) : ConsultaPrecio
-
-    /**
-     * Lo que no está en el catálogo: en rojo, con el código, y ofrece buscar por nombre. [deVarios]: sí está, pero el
-     * código es de más de un producto y no se adivina (como el POS); también se busca por nombre.
-     */
-    data class NoEsta(val codigo: String, val deVarios: Boolean = false) : ConsultaPrecio
-}
+/**
+ * Lo último que se leyó y no está en el catálogo: no entra al ticket ni al conteo. La tarjeta lo dice en rojo, con el
+ * código, y ofrece buscarlo por nombre o, en la venta, cobrarlo como artículo común. [deVarios]: sí está, pero el código
+ * es de más de un producto y no se adivina (como el POS); también se busca por nombre.
+ */
+data class NoEsta(val codigo: String, val deVarios: Boolean = false)
 
 /**
  * Lo que deshace el «Deshacer» de un aviso: exactamente lo que el aviso nombra, aunque mientras se veía entrara otra
@@ -97,14 +99,16 @@ data class Aviso(
     val ms: Long = MS_AVISO,
     /** Lo que deshace su acción; null si no deshace nada (la razón de una opción apagada). */
     val deshace: Deshace? = null,
+    /** Lo que deshace es del conteo, no del ticket. */
+    val enConteo: Boolean = false,
 )
 
 /** Lo que dura un aviso a la vista; con «Deshacer», el de Material para una acción. */
 const val MS_AVISO = 4_200L
 
 /**
- * Lo que hizo la última lectura, para TalkBack (docs/propuesta-interfaz.md, «Accesibilidad»): en Precio el producto y su
- * precio, en Ticket lo que se sumó y el total, en Conteo el producto y el contador. [id] cambia con cada lectura, para
+ * Lo que hizo la última lectura, para TalkBack (docs/propuesta-interfaz.md, «Accesibilidad»): en la venta el producto,
+ * su precio, cuántos van y el total; en Conteo el producto y el contador; lo que no está, que no entró. [id] cambia con cada lectura, para
  * que se vuelva a anunciar aunque diga lo mismo (el mismo producto otra vez en Precio).
  */
 data class Anuncio(val id: Long, val texto: String)
@@ -124,8 +128,10 @@ class Piso(
     /** null mientras se carga (se carga en su hilo; las primeras lecturas esperan sin perderse). */
     val catalogo: StateFlow<CatalogoDeProductos?> = _catalogo.asStateFlow()
 
-    private val _precio = MutableStateFlow<ConsultaPrecio?>(null)
-    val precio: StateFlow<ConsultaPrecio?> = _precio.asStateFlow()
+    private val _noEsta = MutableStateFlow<NoEsta?>(null)
+
+    /** Lo último leído que no está en el catálogo; se va con la siguiente lectura que sí está o al tocar el ticket. */
+    val noEsta: StateFlow<NoEsta?> = _noEsta.asStateFlow()
 
     private val _hoja = MutableStateFlow<Hoja?>(null)
     val hoja: StateFlow<Hoja?> = _hoja.asStateFlow()
@@ -208,32 +214,45 @@ class Piso(
     fun cambiarModo(m: ModoApp) {
         if (_modo.value == m) return
         _modo.value = m
+        _noEsta.value = null
         almacen.guardarModo(m)
     }
+
+    /** La lista del modo de ahora: los gestos de la tarjeta y el teclado de la cantidad valen igual en la venta y al contar. */
+    private val listaActual: MutableStateFlow<ListaLecturas> get() = if (enConteo) conteo else venta
+    private val enConteo: Boolean get() = _modo.value == ModoApp.CONTEO
+    private fun donde(): String = if (enConteo) "conteo" else "ticket"
 
     /**
      * Una lectura aceptada. Con una hoja encima no cuenta (la lectura confirma con su verde, pero el visor está tapado o
      * atenuado). Devuelve si contó; si contó, deja en [anuncio] lo que hizo.
+     *
+     * Lo que no está en el catálogo se queda fuera del ticket y del conteo (0.5): queda en [noEsta], para buscarlo por
+     * nombre o cobrarlo como artículo común. Sin productos todavía (no pasa con la app: el ViewModel los espera antes de
+     * llamar), la lectura entra con su código y toma su producto al llegar.
      */
     fun alLeer(normalizado: String, simbologia: Simbologia, hora: Long): Boolean {
         if (_hoja.value != null || bloqueada) return false
         val c = _catalogo.value
         val producto = c?.porLectura(normalizado, simbologia)
-        val deVarios = producto == null && c?.deVarios(normalizado, simbologia) == true
+        if (c != null && producto == null) {
+            val deVarios = c.deVarios(normalizado, simbologia)
+            _noEsta.value = NoEsta(normalizado, deVarios)
+            anunciar(if (deVarios) DE_VARIOS else "No está en el catálogo: no entró al ${donde()}")
+            return true
+        }
+        _noEsta.value = null
         val texto = when (_modo.value) {
-            ModoApp.PRECIO -> {
-                _precio.value = producto?.let { ConsultaPrecio.Encontrado(it) } ?: ConsultaPrecio.NoEsta(normalizado, deVarios)
-                producto?.let { "${it.nombre}, ${pesos(it.precio)}" } ?: if (deVarios) DE_VARIOS else "No está en el catálogo"
-            }
-            ModoApp.TICKET -> {
+            ModoApp.VENTA -> {
                 val l = venta.updateAndGet { it.completarClaves(::claveDe).sumar(normalizado, simbologia, hora, clave = producto?.clave) }
                 val van = l.actual?.cantidad ?: 1
-                "${producto?.nombre ?: "Código sin producto"} al ticket${if (van > 1) ", van $van" else ""}. Total ${pesos(totalDe(l, c))}"
+                val que = producto?.let { "${it.nombre}, ${pesos(it.precioUnitario(van))}" } ?: "Código sin producto"
+                "$que, al ticket${if (van > 1) ", van $van" else ""}. Total ${pesos(totalDe(l, c))}"
             }
             ModoApp.CONTEO -> {
                 val l = conteo.updateAndGet { it.completarClaves(::claveDe).sumar(normalizado, simbologia, hora, clave = producto?.clave) }
                 val van = l.actual?.cantidad ?: 1
-                "${producto?.nombre ?: "No está en el catálogo"}, ${if (van == 1) "va" else "van"} $van"
+                "${producto?.nombre ?: normalizado}, ${if (van == 1) "va" else "van"} $van"
             }
         }
         anunciar(texto)
@@ -242,9 +261,9 @@ class Piso(
 
     private fun claveDe(r: Renglon): String? = _catalogo.value?.de(r)?.clave
 
-    // ---- Precio ----
+    // ---- Enseñar al cliente y lo que llega de fuera ----
 
-    /** «Al ticket» de la tarjeta: uno más sin salir de Precio; el aviso sale arriba y nombra el producto. */
+    /** Uno más de [p] sin escanearlo (lo elegido en Buscar): el aviso sale arriba, nombra el producto y lo deshace. */
     fun alTicket(p: Producto) {
         val tras = venta.updateAndGet { it.completarClaves(::claveDe).agregarDelCatalogo(p.clave, reloj()) }
         avisoAlTicket(p, tras)
@@ -254,32 +273,40 @@ class Piso(
     fun ensenar(p: Producto) = abrir(Hoja.PrecioGrande(p))
 
     /**
-     * Lo que llegó de fuera: «Abrir la app» del escaneo rápido, que sigue en Precio con ese producto
+     * Lo que llegó de fuera: «Abrir la app» del escaneo rápido, que sigue en la venta con ese producto
      * (docs/propuesta-interfaz.md, «Del bolsillo al precio»). [producto] es su clave del catálogo o, si no estaba, el código
-     * que se leyó. Se cierran las hojas (sin contarlas como «cerrada pronto»: no las cerró quien atiende), pasa a Precio y
-     * la tarjeta lo enseña como si se hubiera leído, con su anuncio para TalkBack; lo que no está, como «No está» con su
-     * código. No es una lectura: no vibra, la sesión de prueba no la anota y el ticket no cambia. Si los productos todavía
-     * no llegan, la tarjeta espera vacía y lo enseña al llegar.
+     * que se leyó. Se cierran las hojas (sin contarlas como «cerrada pronto»: no las cerró quien atiende), pasa a la venta y
+     * el producto entra al ticket como si se hubiera leído (0.5: ya no hay un modo que solo consulte; si solo preguntaba,
+     * la tarjeta se desliza y sale), con su anuncio para TalkBack; lo que no está, como «No está» con su código. No es una
+     * lectura: no vibra y la sesión de prueba no la anota. Si los productos todavía no llegan, espera y entra al llegar.
      */
     fun ensenarDeFuera(producto: String) {
         hojaDeAbajo = null
         abiertaPor = null
         _hoja.value = null
         soltarAvisoEnEspera()
-        cambiarModo(ModoApp.PRECIO)
+        cambiarModo(ModoApp.VENTA)
         _deFuera.value = maxOf(reloj(), _deFuera.value + 1)
         if (_catalogo.value == null) {
             pendienteDeFuera = producto
-            _precio.value = null
+            _noEsta.value = null
             return
         }
         mostrarDeFuera(producto)
     }
 
     private fun mostrarDeFuera(producto: String) {
-        val p = _catalogo.value?.porClave(producto)
-        _precio.value = p?.let { ConsultaPrecio.Encontrado(it) } ?: ConsultaPrecio.NoEsta(producto)
-        anunciar(p?.let { "${it.nombre}, ${pesos(it.precio)}" } ?: "No está en el catálogo")
+        val c = _catalogo.value
+        val p = c?.porClave(producto)
+        if (p == null) {
+            _noEsta.value = NoEsta(producto)
+            anunciar("No está en el catálogo: no entró al ticket")
+            return
+        }
+        _noEsta.value = null
+        val l = venta.updateAndGet { it.completarClaves(::claveDe).agregarDelCatalogo(p.clave, reloj()) }
+        val van = l.actual?.cantidad ?: 1
+        anunciar("${p.nombre}, ${pesos(p.precioUnitario(van))}, al ticket${if (van > 1) ", van $van" else ""}. Total ${pesos(totalDe(l, c))}")
     }
 
     // ---- Lo que se le dice a TalkBack ----
@@ -306,7 +333,7 @@ class Piso(
         anunciosALaVista = false
     }
 
-    // ---- Buscar: en Ticket agrega, en Precio enseña y en Conteo cuenta ----
+    // ---- Buscar: en la venta agrega al ticket y en Conteo cuenta ----
 
     /** Lo que encuentra [texto], con lo que se eligió antes con él primero; vacío mientras no hay productos. */
     fun buscar(texto: String): List<Producto> {
@@ -318,38 +345,70 @@ class Piso(
     fun elegirDeBusqueda(p: Producto, texto: String = "") {
         if (texto.isNotBlank()) elegidos[IndiceDeBusqueda.claveGuardada(texto)] = p.clave
         cerrarHoja(hizoAlgo = true)
+        _noEsta.value = null
         when (_modo.value) {
-            ModoApp.PRECIO -> _precio.value = ConsultaPrecio.Encontrado(p)
-            ModoApp.TICKET -> avisoAlTicket(p, venta.updateAndGet { it.completarClaves(::claveDe).agregarDelCatalogo(p.clave, reloj()) })
+            ModoApp.VENTA -> alTicket(p)
             ModoApp.CONTEO -> conteo.update { it.completarClaves(::claveDe).agregarDelCatalogo(p.clave, reloj()) }
         }
     }
 
-    // ---- El ticket ----
+    // ---- El ticket y el conteo: la tarjeta de lo último y sus gestos ----
 
-    fun masUno(id: Long) = venta.update { it.masUno(id, reloj()) }
+    /** Un toque en la tarjeta (o el + del ticket completo): uno más. */
+    fun masUno(id: Long) = listaActual.update { it.masUno(id, reloj()) }
 
-    /** En 1, el − es el bote: quita el renglón, con «Deshacer» (también en el ticket completo: el aviso va encima). */
+    /** Deslizar un tramo corto (o el − del ticket completo): uno menos; en 1 lo quita, con «Deshacer». */
     fun menosUno(id: Long) {
         var quitado: Pair<Renglon, Int>? = null
-        val tras = venta.updateAndGet { l ->
+        val tras = listaActual.updateAndGet { l ->
             val i = l.renglones.indexOfFirst { it.id == id }
             quitado = if (i >= 0 && l.renglones[i].cantidad == 1) l.renglones[i] to i else null
             l.menosUno(id)
         }
-        quitado?.let { (r, i) -> avisar("Quitado del ticket", "Deshacer", deshace = Deshace.Quitado(r, i, tras)) }
+        quitado?.let { (r, i) -> avisarQuitado(r, i, tras) }
     }
 
-    /** La cantidad tecleada; 0 («Quitar») lo quita y, como el bote, se puede deshacer. */
+    /** Deslizar hasta el fondo: quita el renglón entero, con todas sus piezas; «Deshacer» lo regresa como estaba. */
+    fun quitar(id: Long) {
+        var quitado: Pair<Renglon, Int>? = null
+        val tras = listaActual.updateAndGet { l ->
+            val i = l.renglones.indexOfFirst { it.id == id }
+            quitado = if (i >= 0) l.renglones[i] to i else null
+            l.quitar(id)
+        }
+        quitado?.let { (r, i) -> avisarQuitado(r, i, tras) }
+    }
+
+    private fun avisarQuitado(r: Renglon, indice: Int, tras: ListaLecturas) = avisar(
+        if (r.cantidad > 1) "Quitados los ${r.cantidad} del ${donde()}" else "Quitado del ${donde()}",
+        "Deshacer",
+        deshace = Deshace.Quitado(r, indice, tras),
+    )
+
+    /** La cantidad tecleada; 0 («Quitar») lo quita y, como deslizar, se puede deshacer. */
     fun conCantidad(id: Long, cantidad: Int) {
         var quitado: Pair<Renglon, Int>? = null
-        val tras = venta.updateAndGet { l ->
+        val tras = listaActual.updateAndGet { l ->
             val i = l.renglones.indexOfFirst { it.id == id }
             quitado = if (i >= 0 && cantidad <= 0) l.renglones[i] to i else null
             l.conCantidad(id, cantidad, reloj())
         }
         cerrarHoja(hizoAlgo = true)
-        quitado?.let { (r, i) -> avisar("Quitado del ticket", "Deshacer", deshace = Deshace.Quitado(r, i, tras)) }
+        quitado?.let { (r, i) -> avisarQuitado(r, i, tras) }
+    }
+
+    /** Tocar un renglón de la lista: sube a la tarjeta, sin sumarle; ahí se le suma y se le quita. */
+    fun subir(id: Long) {
+        listaActual.update { it.subir(id) }
+        _noEsta.value = null
+    }
+
+    /** El artículo común con su precio a mano: entra al ticket (nunca al conteo) y cierra su hoja. */
+    fun agregarComun(centavos: Long) {
+        if (centavos <= 0) return
+        venta.update { it.agregarComun(centavos, reloj()) }
+        _noEsta.value = null
+        cerrarHoja(hizoAlgo = true)
     }
 
     /**
@@ -358,6 +417,7 @@ class Piso(
      */
     fun mandado(texto: String) {
         venta.update { it.vaciar() }
+        _noEsta.value = null
         hojaDeAbajo = null
         cerrarHoja(hizoAlgo = true)
         avisar(texto)
@@ -391,11 +451,18 @@ class Piso(
         if (yaDeshecho(avisoEnEspera)) avisoEnEspera = null
     }
 
-    // ---- El conteo de prueba (el de hoy, en el celular; contra el POS llega con la entrega 6) ----
+    // ---- El conteo de prueba (el de hoy, en el celular; contra el POS llega después del piloto) ----
 
-    fun menosUnoConteo() = conteo.update { it.menosUno() }
-    fun deshacerConteo() = conteo.update { it.deshacer() }
-    fun vaciarConteo() = conteo.update { it.vaciar() }
+    /** «Empezar otro conteo» (en el menú): lo vacía; se puede deshacer (lo contado después queda arriba). */
+    fun empezarOtroConteo() {
+        var antes: List<Renglon> = emptyList()
+        val tras = conteo.updateAndGet { l ->
+            antes = l.renglones
+            l.vaciar()
+        }
+        if (antes.isEmpty()) return
+        avisar("Conteo vacío: empieza otro", "Deshacer", deshace = Deshace.Vaciado(antes, tras), enConteo = true)
+    }
 
     // ---- Lo que tapa el visor ----
 
@@ -405,7 +472,7 @@ class Piso(
      */
     fun abrir(h: Hoja) {
         val actual = _hoja.value
-        hojaDeAbajo = if (actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar || h == Hoja.Mandar)) actual else null
+        hojaDeAbajo = if (actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar || h == Hoja.Mandar || h == Hoja.Comun)) actual else null
         _hoja.value = h
         if (h is Hoja.PrecioGrande) esconderAviso()
     }
@@ -494,8 +561,8 @@ class Piso(
         )
     }
 
-    private fun avisar(texto: String, accion: String? = null, arriba: Boolean = false, deshace: Deshace? = null) {
-        val a = Aviso(siguienteAviso++, texto, accion, arriba, deshace = deshace)
+    private fun avisar(texto: String, accion: String? = null, arriba: Boolean = false, deshace: Deshace? = null, enConteo: Boolean = this.enConteo) {
+        val a = Aviso(siguienteAviso++, texto, accion, arriba, deshace = deshace, enConteo = enConteo && deshace != null)
         if (avisosEsperan) avisoEnEspera = a else _aviso.value = a
     }
 
@@ -532,7 +599,7 @@ class Piso(
         if (a.id != id) return
         _aviso.value = null
         val d = a.deshace ?: return
-        venta.update { d.aplicar(it) }
+        (if (a.enConteo) conteo else venta).update { d.aplicar(it) }
     }
 
     companion object {

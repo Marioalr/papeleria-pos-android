@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.actualizar.PantallaActualizar
 import mx.papeleriapos.android.ajustes.PantallaAjustes
 import mx.papeleriapos.android.ajustes.PantallaAjustesEscaner
 import mx.papeleriapos.android.banco.BancoViewModel
@@ -59,12 +60,13 @@ import java.util.Locale
 
 /**
  * Las pantallas de la app, sin librería de navegación (docs/propuesta-interfaz.md, «Ajustes y herramientas de
- * medición»): la principal (el escáner con sus tres modos) y Ajustes, con las herramientas de medición que antes eran
- * cuatro de las cinco pestañas de abajo. Atrás sube al [padre].
+ * medición»): la principal (el escáner, con la venta y el conteo) y, desde su menú «Este celular», actualizar la app, la
+ * conexión y Ajustes, con las herramientas de medición. Atrás sube al [padre] o, si se abrió desde el menú, a la principal.
  */
 enum class Destino(val titulo: String, val padre: Destino?) {
     PRINCIPAL("Escanear", null),
     AJUSTES("Ajustes", PRINCIPAL),
+    ACTUALIZAR("Actualizar la app", AJUSTES),
     CONEXION("La conexión", AJUSTES),
     ESCANER("El escáner", AJUSTES),
     SESION("Sesión de prueba", AJUSTES),
@@ -116,7 +118,13 @@ fun AppEscaner(
         }
     }
     // Atrás sube un nivel; en la principal, lo maneja ella (cierra lo de encima) o sale de la app.
-    BackHandler(enabled = destino != Destino.PRINCIPAL) { destino = destino.padre ?: Destino.PRINCIPAL }
+    // Lo que se abrió desde el menú de la principal («Actualizar la app», «La conexión») regresa a ella, no a Ajustes.
+    var desdePrincipal by rememberSaveable { mutableStateOf(false) }
+    val regresar = {
+        destino = if (desdePrincipal) Destino.PRINCIPAL else destino.padre ?: Destino.PRINCIPAL
+        desdePrincipal = false
+    }
+    BackHandler(enabled = destino != Destino.PRINCIPAL) { regresar() }
     MonitorDeLaSesion(vm, destino)
 
     // En el primer cuadro solo el visor (LocalSoloVisor). Si la pantalla no es la principal no hay visor que esperar.
@@ -131,7 +139,7 @@ fun AppEscaner(
                 TopAppBar(
                     title = { Text(destino.titulo) },
                     navigationIcon = {
-                        IconButton(onClick = { destino = destino.padre ?: Destino.PRINCIPAL }) {
+                        IconButton(onClick = regresar) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
                         }
                     },
@@ -142,11 +150,18 @@ fun AppEscaner(
     ) { relleno ->
         when (destino) {
             // A pantalla completa: el visor deja libre el hueco de abajo y el panel del modo se dibuja encima de él.
-            Destino.PRINCIPAL -> PantallaPrincipal(vm, relleno, alAbrirAjustes = { destino = Destino.AJUSTES })
+            Destino.PRINCIPAL -> PantallaPrincipal(vm, relleno, alAbrir = {
+                desdePrincipal = it != Destino.AJUSTES
+                destino = it
+            })
             else -> if (!soloVisor) {
                 Box(Modifier.fillMaxSize().padding(relleno)) {
                     when (destino) {
-                        Destino.AJUSTES -> PantallaAjustes(vm, alAbrir = { destino = it })
+                        Destino.AJUSTES -> PantallaAjustes(vm, alAbrir = {
+                            desdePrincipal = false
+                            destino = it
+                        })
+                        Destino.ACTUALIZAR -> PantallaActualizar()
                         Destino.CONEXION -> PantallaConexion()
                         Destino.ESCANER -> PantallaAjustesEscaner(vm)
                         Destino.SESION -> PantallaSesion(vm)

@@ -28,6 +28,12 @@ import java.util.UUID
 /** Con los productos de prueba no se manda: la caja no los conoce. */
 const val CON_PRODUCTOS_DE_PRUEBA = "Con los productos de prueba no se manda: apágalos en Ajustes › Herramientas de medición › El escáner."
 
+/** Lo que dice «Cobrar» (y «Mandar a una caja») sin nada que mandar. */
+const val TICKET_VACIO = "El ticket está vacío: escanea lo que lleva el cliente."
+
+/** El servicio todavía no recibe artículos comunes del celular (se le pidió al POS con el cobro). */
+const val CON_ARTICULO_COMUN = "El artículo común todavía no se puede mandar a una caja: cóbralo en la caja o quítalo del ticket."
+
 /**
  * Por qué todavía no se puede mandar el ticket (lo que dice «Mandar» apagado), o null si sí. El ticket vacío lo dice el botón
  * rápido aparte. Sin alta, [SIN_CONEXION_MANDAR].
@@ -37,6 +43,7 @@ fun razonParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos?, conAl
     dePrueba -> CON_PRODUCTOS_DE_PRUEBA
     ticket.renglones.isEmpty() -> null
     catalogo == null -> "Esperando la copia del catálogo para mandarlo."
+    ticket.renglones.any { it.comunCentavos != null } -> CON_ARTICULO_COMUN
     else -> {
         val sinProducto = ticket.renglones.filter { catalogo.de(it)?.cobro == null }
         when (sinProducto.size) {

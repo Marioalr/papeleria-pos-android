@@ -3,13 +3,14 @@ package mx.papeleriapos.android.botonrapido
 import mx.papeleriapos.android.principal.ModoApp
 
 /*
- * Qué ofrece el botón rápido en cada modo (docs/propuesta-interfaz.md, «Qué lleva cada modo»). Cada dirección quiere
- * decir siempre lo mismo: ← busca; ↑ entrega lo que se tiene; ↖ es lo propio del modo. Lo que un modo no tiene deja su
- * lugar vacío (se porta como cancelar) y lo apagado se queda en su lugar con su razón.
+ * Qué ofrece el botón rápido (docs/propuesta-interfaz.md, «Qué lleva cada modo»; 0.5). Cada dirección quiere decir
+ * siempre lo mismo: ← busca; ↑ enseña lo que se tiene; ↖ es lo propio de la venta. Lo que un modo no tiene deja su lugar
+ * vacío (se porta como cancelar) y lo apagado se queda en su lugar con su razón. Cobrar ya no va aquí: es el botón grande
+ * de abajo.
  */
 
 /** Lo que hace cada opción. */
-enum class Accion { MANDAR, IMPRESIONES, BUSCAR, ENSENAR }
+enum class Accion { IMPRESIONES, BUSCAR, ENSENAR }
 
 /** Una opción: en su [lugar], con su [nombre] y, si está apagada, [razonApagada] (lo que se dice al soltar en ella). */
 data class OpcionRapida(val lugar: Lugar, val accion: Accion, val nombre: String, val razonApagada: String? = null) {
@@ -18,43 +19,31 @@ data class OpcionRapida(val lugar: Lugar, val accion: Accion, val nombre: String
 
 /** Lo que se sabe del modo para decidir qué está encendido. */
 data class EstadoOpciones(
-    /** En Precio: hay un producto en la tarjeta, que es lo que enseña ↑. */
+    /** En la venta: la tarjeta tiene un producto, que es lo que enseña ↑. */
     val hayProducto: Boolean = false,
-    /** En Ticket: no trae nada. */
-    val ticketVacio: Boolean = true,
-    /** En Ticket: por qué todavía no se puede mandar (sin alta, con los productos de prueba…); null si se puede. */
-    val razonMandar: String? = SIN_CONEXION_MANDAR,
 )
 
 /**
- * Lo que tiene el botón en [modo]. Vacío: no hay botón (en Conteo, mientras no se cuente contra el POS, el lugar del botón
- * queda vacío; los modos no se recorren). «Mandar» se enciende con el alta y un ticket que la caja conoce (0.4.4);
- * «Impresiones» sigue apagada, en su lugar, para que el gesto se aprenda igual.
+ * Lo que tiene el botón en [modo]. En la venta: ↑ «Enseñar al cliente» (el producto de la tarjeta, en grande),
+ * ↖ «Impresiones» (apagada, en su lugar, para que el gesto se aprenda igual) y ← «Buscar». En Conteo, solo ← «Buscar».
  */
 fun opcionesDe(modo: ModoApp, estado: EstadoOpciones): List<OpcionRapida> = when (modo) {
-    ModoApp.TICKET -> listOf(
-        OpcionRapida(
-            Lugar.ARRIBA, Accion.MANDAR, "Mandar a una caja",
-            if (estado.ticketVacio) "El ticket está vacío: escanea lo que lleva el cliente." else estado.razonMandar,
-        ),
-        OpcionRapida(Lugar.DIAGONAL, Accion.IMPRESIONES, "Impresiones", SIN_CONEXION_IMPRESIONES),
-        OpcionRapida(Lugar.LADO, Accion.BUSCAR, "Buscar"),
-    )
-    ModoApp.PRECIO -> listOf(
+    ModoApp.VENTA -> listOf(
         OpcionRapida(
             Lugar.ARRIBA, Accion.ENSENAR, "Enseñar al cliente",
             if (estado.hayProducto) null else "Escanea un producto para enseñarlo.",
         ),
+        OpcionRapida(Lugar.DIAGONAL, Accion.IMPRESIONES, "Impresiones", SIN_CONEXION_IMPRESIONES),
         OpcionRapida(Lugar.LADO, Accion.BUSCAR, "Buscar"),
     )
-    ModoApp.CONTEO -> emptyList()
+    ModoApp.CONTEO -> listOf(OpcionRapida(Lugar.LADO, Accion.BUSCAR, "Buscar"))
 }
 
-/** Mandar el ticket a una caja necesita el alta de este celular (la entrega 4). */
+/** Mandar el ticket a una caja necesita el alta de este celular. */
 const val SIN_CONEXION_MANDAR = "Mandarlo a una caja pide el alta del celular (Ajustes › La conexión)."
 
-/** Las impresiones por cobrar viven en la caja principal (entrega 5). */
-const val SIN_CONEXION_IMPRESIONES = "Las impresiones llegan con la conexión al POS. Mientras, la caja las agrega con F2."
+/** Las impresiones por cobrar viven en la caja principal (llegan en una entrega posterior). */
+const val SIN_CONEXION_IMPRESIONES = "Las impresiones llegan en una entrega posterior. Mientras, la caja las agrega con F2."
 
 /** La flecha de cada lugar; en zurdo, en espejo (↗ y →). */
 fun flecha(lugar: Lugar, zurdo: Boolean): String = when (lugar) {
@@ -68,8 +57,7 @@ fun etiqueta(opcion: OpcionRapida, zurdo: Boolean): String = "${flecha(opcion.lu
 
 /** Lo que dice TalkBack del botón: «Opciones del ticket». */
 fun nombreDelBoton(modo: ModoApp): String = when (modo) {
-    ModoApp.PRECIO -> "Opciones del precio"
-    ModoApp.TICKET -> "Opciones del ticket"
+    ModoApp.VENTA -> "Opciones del ticket"
     ModoApp.CONTEO -> "Opciones del conteo"
 }
 
@@ -83,7 +71,6 @@ fun pistaDe(modo: ModoApp, zurdo: Boolean): String? {
 }
 
 private fun corto(accion: Accion): String = when (accion) {
-    Accion.MANDAR -> "mandar"
     Accion.IMPRESIONES -> "impresiones"
     Accion.BUSCAR -> "buscar"
     Accion.ENSENAR -> "enseñar"

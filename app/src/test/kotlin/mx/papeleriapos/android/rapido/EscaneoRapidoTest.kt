@@ -178,7 +178,7 @@ class EscaneoRapidoTest {
         // Las de la app, en disco: las mismas que ve la pantalla principal.
         val listas = ListasCompartidas.delProceso(app)
         hasta { listas.cargadas }
-        for (modo in listOf(ModoApp.TICKET, ModoApp.CONTEO)) {
+        for (modo in listOf(ModoApp.VENTA, ModoApp.CONTEO)) {
             guardarModo(modo)
             val vm = vm()
             assertEquals("El escáner, en el modo del núcleo de Precio", Modo.VENTA, vm.controlador.config.value.modo)

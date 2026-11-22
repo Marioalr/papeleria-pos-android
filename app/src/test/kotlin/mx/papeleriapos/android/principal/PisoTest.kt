@@ -45,7 +45,7 @@ class PisoTest {
     private val conteo = MutableStateFlow(ListaLecturas())
     private val almacen = AlmacenEnMemoria()
 
-    private fun piso(modoAnterior: ModoApp = ModoApp.TICKET) =
+    private fun piso(modoAnterior: ModoApp = ModoApp.VENTA) =
         Piso(venta, conteo, almacen, modoAnterior) { ahora }.also { it.cargarCatalogo(catalogo) }
 
     // ---- Los modos ----
@@ -54,20 +54,31 @@ class PisoTest {
     fun `abre en el ultimo modo usado y si nunca se eligio en el de antes`() {
         assertEquals(ModoApp.CONTEO, piso(ModoApp.CONTEO).modo.value)
         val p = piso()
-        p.cambiarModo(ModoApp.PRECIO)
-        assertEquals(ModoApp.PRECIO, almacen.modo)
-        assertEquals(ModoApp.PRECIO, piso(ModoApp.TICKET).modo.value)
+        p.cambiarModo(ModoApp.CONTEO)
+        assertEquals(ModoApp.CONTEO, almacen.modo)
+        assertEquals("Manda el guardado, no el de antes", ModoApp.CONTEO, piso(ModoApp.VENTA).modo.value)
     }
 
     @Test
-    fun `en precio escanear solo ensena y no agrega nada`() {
+    fun `cada lectura entra al ticket y lo que no esta en el catalogo se queda fuera`() {
         val p = piso()
-        p.cambiarModo(ModoApp.PRECIO)
         assertTrue(p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1))
-        assertEquals(ConsultaPrecio.Encontrado(cuaderno), p.precio.value)
-        assertTrue(venta.value.renglones.isEmpty())
-        p.alLeer("7509990100194", Simbologia.EAN_13, 2)
-        assertEquals(ConsultaPrecio.NoEsta("7509990100194"), p.precio.value)
+        assertEquals(cuaderno.clave, venta.value.actual!!.clave)
+        assertNull(p.noEsta.value)
+        assertTrue("Vibra y la sesión la anota, pero no entra", p.alLeer("7509990100194", Simbologia.EAN_13, 2))
+        assertEquals(NoEsta("7509990100194"), p.noEsta.value)
+        assertEquals(1, venta.value.total)
+        // La siguiente que sí está se lleva el «no está».
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 3)
+        assertNull(p.noEsta.value)
+        // Al contar, igual: no entra al conteo.
+        p.cambiarModo(ModoApp.CONTEO)
+        p.alLeer("7509990100194", Simbologia.EAN_13, 4)
+        assertEquals(NoEsta("7509990100194"), p.noEsta.value)
+        assertTrue(conteo.value.renglones.isEmpty())
+        // Cambiar de modo también se lo lleva.
+        p.cambiarModo(ModoApp.VENTA)
+        assertNull(p.noEsta.value)
     }
 
     @Test
@@ -76,9 +87,9 @@ class PisoTest {
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
         p.alLeer("7509990100194", Simbologia.EAN_13, 3)
-        assertEquals(3, venta.value.total)
+        assertEquals("Lo que no está no entra", 2, venta.value.total)
+        assertEquals(1, venta.value.renglones.size)
         assertEquals(lapiz.clave, venta.value.renglones.first { it.codigo == lapiz.clave }.clave)
-        assertNull("Un código sin producto entra sin clave", venta.value.actual!!.clave)
     }
 
     @Test
@@ -105,7 +116,7 @@ class PisoTest {
     @Test
     fun `al ticket desde precio avisa arriba con el producto, cuantos van y el total`() {
         val p = piso()
-        p.cambiarModo(ModoApp.PRECIO)
+        p.cambiarModo(ModoApp.VENTA)
         p.alTicket(cuaderno)
         p.alTicket(cuaderno)
         val a = p.aviso.value!!
@@ -124,9 +135,6 @@ class PisoTest {
         p.elegirDeBusqueda(lapiz)
         assertNull(p.hoja.value)
         assertEquals(lapiz.clave, venta.value.actual!!.clave)
-        p.cambiarModo(ModoApp.PRECIO)
-        p.elegirDeBusqueda(cuaderno)
-        assertEquals(ConsultaPrecio.Encontrado(cuaderno), p.precio.value)
         p.cambiarModo(ModoApp.CONTEO)
         p.elegirDeBusqueda(cuaderno)
         assertEquals(1, conteo.value.total)
@@ -199,10 +207,10 @@ class PisoTest {
     @Test
     fun `la pista de la primera vez se va al abrir el menu en ese modo`() {
         val p = piso()
-        assertFalse(ModoApp.TICKET in p.pistasVistas.value)
+        assertFalse(ModoApp.VENTA in p.pistasVistas.value)
         p.alAbrirMenu(conToque = true)
-        assertTrue(ModoApp.TICKET in p.pistasVistas.value)
-        assertFalse(ModoApp.PRECIO in p.pistasVistas.value)
+        assertTrue(ModoApp.VENTA in p.pistasVistas.value)
+        assertFalse(ModoApp.CONTEO in p.pistasVistas.value)
         assertEquals(1, p.contadores.value.abiertoConToque)
         p.volverAVerPistas()
         assertTrue(p.pistasVistas.value.isEmpty())
@@ -334,7 +342,7 @@ class PisoTest {
         assertEquals(listOf(lapiz.clave to 1, cuaderno.clave to 1), claves())
         // «… al ticket»: el deshacer de la hoja quita esa pieza y el aviso ya no quita otra.
         p.cerrarHoja()
-        p.cambiarModo(ModoApp.PRECIO)
+        p.cambiarModo(ModoApp.VENTA)
         p.alTicket(lapiz)
         p.abrir(Hoja.Ticket)
         p.deshacerTicket()
@@ -373,7 +381,7 @@ class PisoTest {
         val p = piso()
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
-        p.cambiarModo(ModoApp.PRECIO)
+        p.cambiarModo(ModoApp.VENTA)
         // «Al ticket» del lápiz, que ya estaba abajo: lo sube; deshacer lo regresa abajo, no solo le quita uno.
         p.alTicket(lapiz)
         p.accionDelAviso(p.aviso.value!!.id)
@@ -460,7 +468,7 @@ class PisoTest {
     @Test
     fun `con el precio en grande el aviso del ticket espera y sale completo al regresar`() {
         val p = piso()
-        p.cambiarModo(ModoApp.PRECIO)
+        p.cambiarModo(ModoApp.VENTA)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
         p.alTicket(cuaderno)
         val a = p.aviso.value!!
@@ -481,18 +489,16 @@ class PisoTest {
     @Test
     fun `cada lectura anuncia lo que hizo en su modo`() {
         val p = piso()
-        p.cambiarModo(ModoApp.PRECIO)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
-        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00", p.anuncio.value!!.texto)
+        assertEquals("Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$46.00", p.anuncio.value!!.texto)
         val primero = p.anuncio.value!!.id
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
         assertTrue("El mismo producto otra vez es otro anuncio", p.anuncio.value!!.id != primero)
         p.alLeer("7509990100194", Simbologia.EAN_13, 3)
-        assertEquals("No está en el catálogo", p.anuncio.value!!.texto)
-        p.cambiarModo(ModoApp.TICKET)
+        assertEquals("No está en el catálogo: no entró al ticket", p.anuncio.value!!.texto)
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 4)
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 5)
-        assertEquals("Lápiz HB No. 2 al ticket, van 2. Total \$11.00", p.anuncio.value!!.texto)
+        assertEquals("Lápiz HB No. 2, \$5.50, al ticket, van 2. Total \$103.00", p.anuncio.value!!.texto)
         p.cambiarModo(ModoApp.CONTEO)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 6)
         assertEquals("De uno, en singular", "Cuaderno profesional cuadro chico 100 hojas, va 1", p.anuncio.value!!.texto)
@@ -508,7 +514,7 @@ class PisoTest {
     // ---- Lo que llega de fuera: «Abrir la app» del escaneo rápido (docs/propuesta-interfaz.md, «Del bolsillo al precio») ----
 
     @Test
-    fun `lo que llega de fuera cierra las hojas, pasa a precio y lo ensena como leido sin tocar el ticket`() {
+    fun `lo que llega de fuera cierra las hojas, pasa a la venta y entra al ticket como leido`() {
         val p = piso()
         p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
         val ticket = venta.value
@@ -517,11 +523,14 @@ class PisoTest {
         val antes = p.deFuera.value
         p.ensenarDeFuera(cuaderno.clave)
         assertNull("Ni la cantidad ni el ticket completo de abajo", p.hoja.value)
-        assertEquals(ModoApp.PRECIO, p.modo.value)
-        assertEquals(ModoApp.PRECIO, almacen.modo)
-        assertEquals(ConsultaPrecio.Encontrado(cuaderno), p.precio.value)
-        assertEquals("TalkBack lo dice, como una lectura", "Cuaderno profesional cuadro chico 100 hojas, \$46.00", p.anuncio.value!!.texto)
-        assertTrue(ticket === venta.value)
+        assertEquals(ModoApp.VENTA, p.modo.value)
+        assertNull(p.noEsta.value)
+        assertEquals("Entra al ticket, arriba, para quitarlo deslizando si solo preguntaba", cuaderno.clave, venta.value.actual!!.clave)
+        assertEquals(2, venta.value.total)
+        assertEquals(
+            "TalkBack lo dice, como una lectura",
+            "Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$51.50", p.anuncio.value!!.texto,
+        )
         assertTrue("La pantalla vuelve a la principal y cierra el menú una vez por cada uno", p.deFuera.value != antes)
         // El mismo producto otra vez: otra vez a la principal, y se anuncia otra vez.
         val primero = p.deFuera.value
@@ -535,21 +544,20 @@ class PisoTest {
     fun `lo que llega de fuera y no esta en el catalogo sale como no esta con su codigo`() {
         val p = piso()
         p.ensenarDeFuera("7509990100194")
-        assertEquals(ConsultaPrecio.NoEsta("7509990100194"), p.precio.value)
-        assertEquals("No está en el catálogo", p.anuncio.value!!.texto)
+        assertEquals(NoEsta("7509990100194"), p.noEsta.value)
+        assertEquals("No está en el catálogo: no entró al ticket", p.anuncio.value!!.texto)
+        assertTrue(venta.value.renglones.isEmpty())
     }
 
     @Test
-    fun `si los productos no han llegado lo ensena al llegar`() {
-        val p = Piso(venta, conteo, almacen, ModoApp.TICKET) { ahora }
-        p.cambiarModo(ModoApp.PRECIO)
-        p.alLeer("7509990100194", Simbologia.EAN_13, 1)
+    fun `si los productos no han llegado entra al ticket al llegar`() {
+        val p = Piso(venta, conteo, almacen, ModoApp.VENTA) { ahora }
         p.ensenarDeFuera(caja.clave)
-        assertNull("La tarjeta espera vacía, sin lo de antes", p.precio.value)
-        assertNull(p.anuncio.value?.texto?.takeIf { it.contains("caja") })
+        assertTrue("Espera a los productos", venta.value.renglones.isEmpty())
+        assertNull(p.anuncio.value)
         p.cargarCatalogo(catalogo)
-        assertEquals(ConsultaPrecio.Encontrado(catalogo.porClave(caja.clave)!!), p.precio.value)
-        assertEquals("Lápiz HB No. 2 · caja con 12, \$54.00", p.anuncio.value!!.texto)
+        assertEquals(caja.clave, venta.value.actual!!.clave)
+        assertEquals("Lápiz HB No. 2 · caja con 12, \$54.00, al ticket. Total \$54.00", p.anuncio.value!!.texto)
     }
 
     @Test
@@ -557,7 +565,7 @@ class PisoTest {
         val p = piso()
         // La principal a la vista y TalkBack ya conoce su región viva.
         p.alConocerseLosAnuncios()
-        p.cambiarModo(ModoApp.PRECIO)
+        p.cambiarModo(ModoApp.VENTA)
         p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
         val leido = p.anuncio.value
         p.alConocerseLosAnuncios()
@@ -589,7 +597,7 @@ class PisoTest {
     @Test
     fun `lo que no trae clave se busca por su codigo y la toma al cargar los productos`() {
         venta.value = ListaLecturas().sumar(cuaderno.clave, Simbologia.EAN_13, 1)
-        val p = Piso(venta, conteo, almacen, ModoApp.TICKET) { ahora }
+        val p = Piso(venta, conteo, almacen, ModoApp.VENTA) { ahora }
         assertNull(venta.value.actual!!.clave)
         assertEquals("Sin productos no se sabe: no suma", 0L, totalDe(venta.value, null))
         p.cargarCatalogo(catalogo)
@@ -610,5 +618,115 @@ class PisoTest {
         assertTrue(csv.contains("←: con el gesto,1\r\n"))
         assertTrue(csv.contains("↑: cerrada en menos de 2 s,1\r\n"))
         assertEquals(1 + c.renglones().size, csv.trimEnd().lines().size)
+    }
+
+    // ---- 0.5: los gestos de la tarjeta, el artículo común y el conteo desde el menú ----
+
+    @Test
+    fun `deslizar hasta el fondo quita el renglon entero y deshacer lo regresa con todas sus piezas`() {
+        val p = piso()
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        val id = venta.value.actual!!.id
+        repeat(2) { p.masUno(id) }
+        assertEquals(3, venta.value.actual!!.cantidad)
+        p.quitar(id)
+        assertEquals(listOf(cuaderno.clave), venta.value.renglones.map { it.clave })
+        val a = p.aviso.value!!
+        assertEquals("Quitados los 3 del ticket", a.texto)
+        assertEquals("Deshacer", a.accion)
+        p.accionDelAviso(a.id)
+        assertEquals("Regresa arriba, donde estaba, con sus 3", lapiz.clave to 3, venta.value.actual!!.let { it.clave to it.cantidad })
+        assertEquals(4, venta.value.total)
+    }
+
+    @Test
+    fun `un tramo corto quita uno y con una sola pieza el renglon sale, con deshacer`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        val id = venta.value.actual!!.id
+        p.masUno(id)
+        p.menosUno(id)
+        assertEquals(1, venta.value.total)
+        assertNull("Quitar una de varias no avisa: se ve en la tarjeta", p.aviso.value)
+        p.menosUno(id)
+        assertTrue(venta.value.renglones.isEmpty())
+        assertEquals("Quitado del ticket", p.aviso.value!!.texto)
+        p.accionDelAviso(p.aviso.value!!.id)
+        assertEquals(1, venta.value.total)
+    }
+
+    @Test
+    fun `tocar un renglon lo sube a la tarjeta sin sumarle y se lleva el no esta`() {
+        val p = piso()
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 2)
+        p.alLeer("7509990100194", Simbologia.EAN_13, 3)
+        assertEquals(NoEsta("7509990100194"), p.noEsta.value)
+        val deAbajo = venta.value.renglones.last()
+        p.subir(deAbajo.id)
+        assertEquals(cuaderno.clave, venta.value.actual!!.clave)
+        assertEquals("Sin sumarle", 2, venta.value.total)
+        assertNull(p.noEsta.value)
+    }
+
+    @Test
+    fun `el articulo comun entra al ticket con su precio a mano y suma al total`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.alLeer("7509990100194", Simbologia.EAN_13, 2)
+        p.abrir(Hoja.Comun)
+        p.agregarComun(1550)
+        assertNull("Su hoja se cierra", p.hoja.value)
+        assertNull("Y el «no está» se va", p.noEsta.value)
+        val r = venta.value.actual!!
+        assertEquals(1550L, r.comunCentavos)
+        assertEquals("Artículo común", catalogo.de(r)!!.nombre)
+        assertEquals(550L + 1550L, totalDe(venta.value, catalogo))
+        // Otro artículo común es otro renglón: no se juntan, aunque cuesten lo mismo.
+        p.agregarComun(1550)
+        assertEquals(3, venta.value.renglones.size)
+        // La cantidad se cambia en su tarjeta, como la de cualquiera.
+        p.masUno(venta.value.actual!!.id)
+        assertEquals(550L + 1550L * 3, totalDe(venta.value, catalogo))
+        // Un precio de cero no entra.
+        p.agregarComun(0)
+        assertEquals(3, venta.value.renglones.size)
+    }
+
+    @Test
+    fun `al contar los gestos van al conteo y su deshacer tambien`() {
+        val p = piso()
+        p.alLeer(lapiz.clave, Simbologia.EAN_13, 1)
+        p.cambiarModo(ModoApp.CONTEO)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
+        val id = conteo.value.actual!!.id
+        p.masUno(id)
+        p.conCantidad(id, 12)
+        assertEquals(12, conteo.value.total)
+        p.quitar(id)
+        assertTrue(conteo.value.renglones.isEmpty())
+        assertEquals("Quitados los 12 del conteo", p.aviso.value!!.texto)
+        // El aviso sigue a la vista al volver a vender: su «Deshacer» regresa lo del conteo, no toca el ticket.
+        p.cambiarModo(ModoApp.VENTA)
+        p.accionDelAviso(p.aviso.value!!.id)
+        assertEquals(12, conteo.value.total)
+        assertEquals("El ticket, como estaba", 1, venta.value.total)
+    }
+
+    @Test
+    fun `empezar otro conteo lo vacia y se puede deshacer`() {
+        val p = piso()
+        p.cambiarModo(ModoApp.CONTEO)
+        // Vacío, no hay nada que vaciar ni que avisar.
+        p.empezarOtroConteo()
+        assertNull(p.aviso.value)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1)
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 2)
+        p.empezarOtroConteo()
+        assertTrue(conteo.value.renglones.isEmpty())
+        assertEquals("Conteo vacío: empieza otro", p.aviso.value!!.texto)
+        p.accionDelAviso(p.aviso.value!!.id)
+        assertEquals(2, conteo.value.total)
     }
 }

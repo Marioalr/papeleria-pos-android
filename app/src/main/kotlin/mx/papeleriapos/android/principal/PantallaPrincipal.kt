@@ -22,16 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Sell
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,6 +41,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +50,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
@@ -74,17 +70,23 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
+import mx.papeleriapos.android.actualizar.Actualizador
+import mx.papeleriapos.android.actualizar.EstadoActualizacion
+import mx.papeleriapos.android.ajustes.textoConexion
 import mx.papeleriapos.android.botonrapido.Accion
 import mx.papeleriapos.android.botonrapido.AccionesBotonRapido
 import mx.papeleriapos.android.botonrapido.BotonRapido
@@ -99,26 +101,31 @@ import mx.papeleriapos.android.botonrapido.opcionesDe
 import mx.papeleriapos.android.botonrapido.pistaDe
 import mx.papeleriapos.android.caja.Conexion
 import mx.papeleriapos.android.catalogo.FuenteDeProductos
+import mx.papeleriapos.android.catalogo.Producto
+import mx.papeleriapos.android.catalogo.pesos
+import mx.papeleriapos.android.catalogo.pzs
 import mx.papeleriapos.android.sesion.ALTO_BARRA_COMPLETA
 import mx.papeleriapos.android.sesion.BarraSesion
 import mx.papeleriapos.android.tema.LocalColoresModo
 import mx.papeleriapos.android.ui.ALTO_BARRA_MODOS
 import mx.papeleriapos.android.ui.CicloPropio
+import mx.papeleriapos.android.ui.Destino
 import mx.papeleriapos.escaner.Fase
 import mx.papeleriapos.escaner.camara.franjaPara
 import mx.papeleriapos.escaner.ui.LocalSoloVisor
 import mx.papeleriapos.escaner.ui.PantallaEscaner
 
 /*
- * La pantalla principal (docs/propuesta-interfaz.md, «La pantalla principal: el escáner con tres modos»): el escáner de
- * hoy, del mismo tamaño, con el panel del modo bajo la franja y, abajo, los modos con el botón rápido. Nada tapa la franja.
+ * La pantalla principal (0.5; docs/propuesta-interfaz/prototipo-0.5.html): el escáner de siempre, del mismo tamaño, con el
+ * panel bajo la franja (la tarjeta de lo último y el ticket) y, abajo, «Cobrar» con el botón rápido. Precio y Ticket son
+ * una sola pantalla, la venta; Conteo se abre desde el menú «Este celular», arriba a la izquierda. Nada tapa la franja.
  */
 
 /** Entre el final de la franja y el panel, como en el prototipo. */
 private val RESPIRO_FRANJA = 10.dp
 
 @Composable
-fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjustes: () -> Unit) {
+fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (Destino) -> Unit) {
     val config by vm.config.collectAsStateWithLifecycle()
     val sesion by vm.sesion.collectAsStateWithLifecycle()
     // Solo la fase: el escáner publica un estado nuevo en cada cuadro con un código a la vista (la caja) y cada 500 ms con
@@ -127,7 +134,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     val sinPermiso by remember(estadoEscaner) { derivedStateOf { estadoEscaner.value.fase == Fase.SIN_PERMISO } }
     val piso = vm.piso
     val modo by piso.modo.collectAsStateWithLifecycle()
-    val precio by piso.precio.collectAsStateWithLifecycle()
+    val noEsta by piso.noEsta.collectAsStateWithLifecycle()
     val ticket by vm.venta.collectAsStateWithLifecycle()
     val conteo by vm.conteo.collectAsStateWithLifecycle()
     val catalogo by piso.catalogo.collectAsStateWithLifecycle()
@@ -146,6 +153,8 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     val conAlta by conAltaFlujo.collectAsStateWithLifecycle(initialValue = false)
     val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
     val razonMandar = razonParaMandar(ticket, catalogo, conAlta, dePrueba)
+    // Lo que dice «Cobrar» apagado; mientras el celular no cobre (falta el POS), cobrar es mandarlo a una caja.
+    val razonCobrar = if (ticket.renglones.isEmpty()) TICKET_VACIO else razonMandar
     val soloVisor = LocalSoloVisor.current
     LaunchedEffect(soloVisor) { if (!soloVisor) vm.prepararProductos() }
 
@@ -154,7 +163,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     var panel by remember { mutableStateOf(Rect.Zero) }
     // «Enseñar» enseña el producto que estaba en la tarjeta al bajar el dedo en el botón (también con el menú ya abierto),
     // no uno leído a medio gesto; con un toque en ↑ del menú abierto o desde TalkBack, el de la tarjeta en ese momento.
-    var productoAlPulsar by remember { mutableStateOf<ConsultaPrecio?>(null) }
+    var productoAlPulsar by remember { mutableStateOf<Producto?>(null) }
+    // El producto de la tarjeta: el del renglón de arriba del ticket, si la tarjeta lo enseña (no con «no está» encima).
+    val deLaTarjeta = if (modo == ModoApp.VENTA && noEsta == null) ticket.actual?.let { catalogo?.de(it) } else null
+    val deLaTarjetaAhora by rememberUpdatedState(deLaTarjeta)
     val zonaCerrar = remember { ZonaCerrar() }
 
     // ---- El menú se cierra con lo que lo deja atrás, y Piso (los avisos que esperan) siempre dice lo mismo que él ----
@@ -176,11 +188,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
     DisposableEffect(piso) { onDispose { piso.alCerrarMenu() } }
 
     // Mientras el dedo está abajo en el botón, ↑ se enciende con lo que había al pulsar, no con lo que se lea a medio gesto.
-    val precioDeLasOpciones = if (boton.pulsando) productoAlPulsar else precio
-    val opciones = opcionesDe(
-        modo,
-        EstadoOpciones(hayProducto = precioDeLasOpciones is ConsultaPrecio.Encontrado, ticketVacio = ticket.renglones.isEmpty(), razonMandar = razonMandar),
-    )
+    val opciones = opcionesDe(modo, EstadoOpciones(hayProducto = (if (boton.pulsando) productoAlPulsar else deLaTarjeta) != null))
     val colorModo = LocalColoresModo.current.de(modo)
     val accionesBoton = remember(piso) {
         AccionesBotonRapido(
@@ -191,32 +199,55 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                 when (o.accion) {
                     Accion.BUSCAR -> piso.abrir(Hoja.Buscar)
                     Accion.ENSENAR -> {
-                        val p = if (conGesto) productoAlPulsar else piso.precio.value
+                        val p = if (conGesto) productoAlPulsar else deLaTarjetaAhora
                         productoAlPulsar = null
-                        (p as? ConsultaPrecio.Encontrado)?.let { piso.ensenar(it.producto) }
+                        p?.let(piso::ensenar)
                     }
-                    // El gesto nunca manda solo: abre «¿A qué caja?», donde se toca «Mandar».
-                    Accion.MANDAR -> piso.abrir(Hoja.Mandar)
-                    // Apagada en esta entrega (las impresiones, con la entrega 5): no llega aquí.
+                    // Apagada (las impresiones llegan en una entrega posterior): no llega aquí.
                     Accion.IMPRESIONES -> Unit
                 }
             },
             alRechazar = { o -> o.razonApagada?.let(piso::rechazar) },
-            alPulsar = { productoAlPulsar = piso.precio.value },
+            alPulsar = { productoAlPulsar = deLaTarjetaAhora },
         )
     }
     // Las mismas en cada pasada: así el panel se salta cuando no cambia lo suyo.
     val accionesPanel = remember(piso) {
         AccionesPanel(
-            alTicket = piso::alTicket,
             buscar = { piso.abrir(Hoja.Buscar) },
             verTicket = { piso.abrir(Hoja.Ticket) },
             masUno = piso::masUno,
             menosUno = piso::menosUno,
+            quitar = piso::quitar,
             teclearCantidad = { piso.abrir(Hoja.Cantidad(it)) },
-            menosUnoConteo = piso::menosUnoConteo,
-            deshacerConteo = piso::deshacerConteo,
-            vaciarConteo = piso::vaciarConteo,
+            subir = piso::subir,
+            comun = { piso.abrir(Hoja.Comun) },
+        )
+    }
+    val alAbrirAhora by rememberUpdatedState(alAbrir)
+    val accionesMenu = remember(piso, vm) {
+        // Ir a otra pantalla cierra el menú: al volver, la principal está como se dejó.
+        fun ir(d: Destino) {
+            piso.cerrarHoja(hizoAlgo = true)
+            alAbrirAhora(d)
+        }
+        AccionesMenu(
+            contar = {
+                piso.cerrarHoja(hizoAlgo = true)
+                vm.cambiarModoApp(ModoApp.CONTEO)
+            },
+            vender = {
+                piso.cerrarHoja(hizoAlgo = true)
+                vm.cambiarModoApp(ModoApp.VENTA)
+            },
+            otroConteo = {
+                piso.cerrarHoja(hizoAlgo = true)
+                vm.cambiarModoApp(ModoApp.CONTEO)
+                piso.empezarOtroConteo()
+            },
+            actualizar = { ir(Destino.ACTUALIZAR) },
+            conexion = { ir(Destino.CONEXION) },
+            ajustes = { ir(Destino.AJUSTES) },
         )
     }
     val accionesTicket = remember(piso) {
@@ -305,11 +336,12 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
             }
         }
         if (soloVisor) return@BoxWithConstraints
-        // Arriba a la izquierda, Ajustes: la única entrada a las herramientas, encima de lo que dibuja el escáner. Dentro
-        // de lo de encima del visor quedaba debajo de su aviso de sin volumen, su diagnóstico y su error (se dibujan
-        // después) y no se veía. Sin permiso de cámara también se alcanza: el banco no necesita cámara.
-        BotonAjustes(
-            alAbrirAjustes,
+        // Arriba a la izquierda, el menú «Este celular»: contar, actualizar, la conexión y Ajustes (la única entrada a las
+        // herramientas), encima de lo que dibuja el escáner. Dentro de lo de encima del visor quedaba debajo de su aviso de
+        // sin volumen, su diagnóstico y su error (se dibujan después) y no se veía. Sin permiso de cámara también se
+        // alcanza: el banco no necesita cámara.
+        BotonMenu(
+            { piso.abrir(Hoja.Menu) },
             Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 12.dp, top = arriba + 12.dp)
@@ -318,7 +350,22 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
         )
         // Sin permiso de cámara el escáner pide el permiso a pantalla completa (y no dibuja lo de encima): el panel lo
         // taparía.
-        if (sinPermiso) return@BoxWithConstraints
+        if (sinPermiso) {
+            // El menú se abre igual, sobre el aviso del permiso.
+            if (hoja == Hoja.Menu) ElMenu(vm, piso, modo, conteo.total, catalogo, dePrueba, accionesMenu)
+            return@BoxWithConstraints
+        }
+        // Mientras se cuenta, la pantalla lo dice arriba y ofrece volver (con la sesión de prueba, ahí va su barra).
+        if (modo == ModoApp.CONTEO && sesion == null) {
+            Contando(
+                alVolver = { vm.cambiarModoApp(ModoApp.VENTA) },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(start = 80.dp, end = 80.dp, top = arriba + 16.dp)
+                    .focusProperties { canFocus = !menuAbierto }
+                    .then(if (tapado) Modifier.clearAndSetSemantics { } else Modifier),
+            )
+        }
 
         // ---- El panel del modo ----
         Surface(
@@ -339,23 +386,29 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                 .then(if (menuAbierto || tapado) Modifier.clearAndSetSemantics { } else Modifier),
         ) {
             Column(Modifier.fillMaxSize()) {
-                Asidero(alAbrir = if (modo == ModoApp.TICKET) accionesPanel.verTicket else null)
+                Asidero(alAbrir = if (modo == ModoApp.VENTA) accionesPanel.verTicket else null)
                 ContenidoPanel(
                     modo = modo,
-                    precio = precio,
+                    noEsta = noEsta,
                     ticket = ticket,
                     conteo = conteo,
                     catalogo = catalogo,
                     acciones = accionesPanel,
                     modifier = Modifier.weight(1f),
+                    tapado = tapado,
                     zurdo = zurdo,
                     sinAcceso = sinAcceso,
                 )
-                BarraModos(
+                BarraDeAbajo(
                     modo = modo,
                     articulos = ticket.total,
+                    // Mientras los productos se cargan, el total todavía no se sabe.
+                    total = if (catalogo == null && ticket.renglones.isNotEmpty()) "…" else pesos(totalDe(ticket, catalogo)),
+                    razonCobrar = razonCobrar,
+                    contadas = conteo.total,
                     zurdo = zurdo,
-                    alElegir = elegirModo,
+                    alCobrar = { if (razonCobrar == null) piso.abrir(Hoja.Mandar) else piso.rechazar(razonCobrar) },
+                    alTerminarConteo = { vm.cambiarModoApp(ModoApp.VENTA) },
                     hueco = {
                         // El botón va en la capa de encima, sobre este hueco (arriba del velo del menú): a 16 dp de la
                         // orilla (la barra trae 8 de margen y la zona de 64 deja 4 alrededor del botón de 56).
@@ -375,9 +428,8 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
 
         // ---- La burbuja de la primera vez en cada modo, sobre el botón: solo con el panel vacío (no tapa renglones) ----
         val pista = pistaDe(modo, zurdo)
-        val panelVacio = when (modo) {
-            ModoApp.PRECIO -> precio == null
-            ModoApp.TICKET -> ticket.renglones.isEmpty()
+        val panelVacio = noEsta == null && when (modo) {
+            ModoApp.VENTA -> ticket.renglones.isEmpty()
             ModoApp.CONTEO -> conteo.renglones.isEmpty()
         }
         if (pista != null && panelVacio && modo !in pistasVistas && !menuAbierto && aviso == null && hoja == null && boton.centro != Offset.Unspecified) {
@@ -462,8 +514,11 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrirAjust
                             alMandar = { catalogo?.let { c -> vm.mandador.mandar(ticket, c, piso::mandado) } },
                         ) { piso.cerrarHoja() }
                     }
+                    Hoja.Menu -> ElMenu(vm, piso, modo, conteo.total, catalogo, dePrueba, accionesMenu)
+                    Hoja.Comun -> HojaComun(piso::agregarComun) { piso.cerrarHoja() }
                     is Hoja.Cantidad -> {
-                        val r = ticket.renglones.firstOrNull { it.id == h.idRenglon }
+                        // El renglón de la tarjeta: del ticket o, al contar, del conteo.
+                        val r = (if (modo == ModoApp.CONTEO) conteo else ticket).renglones.firstOrNull { it.id == h.idRenglon }
                         if (r == null) {
                             LaunchedEffect(h) { piso.cerrarHoja() }
                         } else {
@@ -548,92 +603,136 @@ private fun AnuncioDeLectura(anuncio: Anuncio?, piso: Piso, modifier: Modifier =
 /** Lo que tarda en repetir lo que se anunció sin la región viva: más que dos vueltas del delegado de accesibilidad. */
 private const val MS_PARA_CONOCER_EL_ANUNCIO = 250L
 
-/** Arriba a la izquierda, Ajustes (con la entrega 2, la ficha de quien entró y su menú, «Este celular»). */
+/** «Este celular», con cómo está la conexión: se lee solo mientras el menú está abierto (cambia con cada latido). */
 @Composable
-private fun BotonAjustes(alTocar: () -> Unit, modifier: Modifier = Modifier) {
+private fun ElMenu(vm: EscanerViewModel, piso: Piso, modo: ModoApp, contadas: Int, catalogo: mx.papeleriapos.android.catalogo.CatalogoDeProductos?, dePrueba: Boolean, acciones: AccionesMenu) {
+    val contexto = LocalContext.current.applicationContext
+    val conexion by remember(contexto) { Conexion.del(contexto).estado }.collectAsStateWithLifecycle()
+    // Si ya se buscó y hay una versión nueva, el menú lo dice; la app nunca busca sola.
+    val actualizacion by remember(contexto) { Actualizador.de(contexto).estado }.collectAsStateWithLifecycle()
+    val nueva = (actualizacion as? EstadoActualizacion.Hay)?.version?.version
+    HojaMenu(
+        modo = modo,
+        contadas = contadas,
+        version = BuildConfig.VERSION_NAME + if (nueva != null) " · hay una nueva: $nueva" else "",
+        conexion = textoConexion(conexion, catalogo, dePrueba),
+        acciones = acciones,
+    ) { piso.cerrarHoja() }
+}
+
+/** Arriba a la izquierda, el menú «Este celular»: contar, actualizar la app, la conexión y Ajustes. */
+@Composable
+private fun BotonMenu(alTocar: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = alTocar,
         shape = CircleShape,
         color = Color.Black.copy(alpha = 0.45f),
         contentColor = Color.White,
-        modifier = modifier.size(56.dp).semantics { contentDescription = "Ajustes" }.testTag("boton-ajustes"),
+        modifier = modifier.size(56.dp).semantics { contentDescription = "Este celular: contar, actualizar y ajustes" }.testTag("boton-menu"),
     ) {
-        Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.Settings, contentDescription = null) }
+        Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.Menu, contentDescription = null) }
     }
 }
 
-/**
- * Desde esta escala de la letra, en los 80 dp de la barra no caben el ícono, el nombre y el número del ticket encima
- * (medido en el chico: al 200 % el número salía 9 dp arriba de la barra, sobre la lista).
- */
-private const val BARRA_SOLO_ICONOS = 1.6f
+/** Mientras se cuenta: lo que se lee no entra al ticket. Se toca para volver a vender. */
+@Composable
+private fun Contando(alVolver: () -> Unit, modifier: Modifier = Modifier) {
+    val color = LocalColoresModo.current.conteo
+    Surface(
+        onClick = alVolver,
+        shape = CircleShape,
+        color = color.contenedor,
+        contentColor = color.enContenedor,
+        modifier = modifier.heightIn(min = 48.dp).testTag("contando"),
+    ) {
+        Box(Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+            Text("Contando · Volver a vender", style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Desde esta escala de la letra, en los 80 dp de la barra no caben los dos renglones de «Cobrar»: se queda el primero. */
+private const val BARRA_UN_RENGLON = 1.6f
 
 /**
- * Los modos: Precio · Ticket · Conteo, y al final el hueco del botón rápido (al principio, en zurdo). Se cambia tocando el
- * nombre: deslizar sobre la cámara no cambia de modo. Si hay un ticket armado, Ticket dice cuántos artículos trae, sobre su
- * icono (como las burbujas de Material: junto al nombre apretaría a los otros dos). Van abajo, con el botón a 4 dp de la
- * barra de gestos (docs/propuesta-interfaz.md, «Medidas») y los modos centrados con él.
- *
- * Con la letra muy grande, como dice la propuesta («Letra al 200 %»), los modos no elegidos se quedan con su ícono (el
- * nombre, para TalkBack) y el elegido con los dos; elegido, Ticket no lleva el número (lo dice el encabezado del panel).
+ * Abajo, donde iban los modos (0.5): «Cobrar», con el total y cuántos artículos, y al final el hueco del botón rápido (al
+ * principio, en zurdo). El objetivo de la pantalla es agregar productos y cobrar rápido: lo que más se toca va bajo el
+ * pulgar. Mientras el celular no cobre por sí mismo (falta el POS), cobrar es mandar el ticket a una caja: abre «¿A qué
+ * caja?». Apagado se ve apagado y, al tocarlo, dice por qué ([razonCobrar]). Al contar, el botón termina el conteo y
+ * regresa a vender; lo contado se queda guardado.
  */
 @Composable
-private fun BarraModos(modo: ModoApp, articulos: Int, zurdo: Boolean, alElegir: (ModoApp) -> Unit, hueco: @Composable () -> Unit) {
-    val colores = LocalColoresModo.current
-    val soloIconos = LocalDensity.current.fontScale >= BARRA_SOLO_ICONOS
+private fun BarraDeAbajo(
+    modo: ModoApp,
+    articulos: Int,
+    total: String,
+    razonCobrar: String?,
+    contadas: Int,
+    zurdo: Boolean,
+    alCobrar: () -> Unit,
+    alTerminarConteo: () -> Unit,
+    hueco: @Composable () -> Unit,
+) {
+    val color = LocalColoresModo.current.de(modo)
+    val unRenglon = LocalDensity.current.fontScale >= BARRA_UN_RENGLON
+    val venta = modo == ModoApp.VENTA
+    val apagado = venta && razonCobrar != null
     Row(
         Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
             .height(ALTO_BARRA_MODOS)
             .padding(horizontal = 8.dp)
-            .testTag("barra-modos"),
+            .testTag("barra-abajo"),
+        // Abajo, como iban los modos: el botón rápido queda a 4 dp de la barra de gestos, donde se aprendió el gesto.
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (zurdo) hueco()
-        for (m in ModoApp.entries) {
-            val elegido = m == modo
-            val c = colores.de(m)
-            val conNombre = !soloIconos || elegido
-            val conNumero = m == ModoApp.TICKET && articulos > 0 && (!soloIconos || !elegido)
-            Column(
-                Modifier
-                    .weight(1f)
-                    .padding(bottom = 4.dp)
-                    .heightIn(min = 56.dp)
-                    // Sin recortar: el número del ticket, sobre el ícono, crece con la letra grande y el recorte lo cortaba.
-                    .background(if (elegido) c.contenedor else Color.Transparent, RoundedCornerShape(16.dp))
-                    .selectable(selected = elegido, role = Role.Tab, onClick = { alElegir(m) })
-                    // TalkBack: «Ticket, 2 artículos», no «2 Ticket»; sin el nombre a la vista, lo dice igual.
-                    .semantics {
-                        if (!conNombre) contentDescription = m.nombre
-                        if (m == ModoApp.TICKET && articulos > 0) stateDescription = if (articulos == 1) "1 artículo" else "$articulos artículos"
-                    }
-                    .padding(vertical = 6.dp)
-                    .testTag("modo-${m.name}"),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                val tinta = if (elegido) c.enContenedor else MaterialTheme.colorScheme.onSurfaceVariant
-                if (conNumero) {
-                    BadgedBox(badge = { Badge { Text(articulos.toString(), Modifier.testTag("numero-ticket").clearAndSetSemantics { }) } }) {
-                        Icon(iconoDe(m), contentDescription = null, tint = tinta)
-                    }
-                } else {
-                    Icon(iconoDe(m), contentDescription = null, tint = tinta)
-                }
-                if (conNombre) Text(m.nombre, style = MaterialTheme.typography.labelLarge, color = tinta, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(start = 4.dp, end = 4.dp, bottom = 4.dp)
+                .heightIn(min = 56.dp)
+                .background(if (apagado) MaterialTheme.colorScheme.surfaceVariant else color.color, RoundedCornerShape(18.dp))
+                .clickable(role = Role.Button, onClick = if (venta) alCobrar else alTerminarConteo)
+                .semantics { if (apagado) razonCobrar?.let { stateDescription = "apagado: $it" } }
+                .padding(horizontal = 18.dp, vertical = 6.dp)
+                .testTag(if (venta) "cobrar" else "terminar-conteo"),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            val tinta = if (apagado) MaterialTheme.colorScheme.onSurfaceVariant else color.enColor
+            Text(
+                when {
+                    !venta -> "Terminar conteo · ${pzs(contadas)}"
+                    articulos == 0 -> "Cobrar"
+                    else -> "Cobrar · $total"
+                },
+                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                fontWeight = FontWeight.SemiBold,
+                color = tinta,
+                maxLines = 1,
+                // El total nunca se corta: con la letra muy grande o un total largo, se achica lo que haga falta.
+                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 22.sp),
+                modifier = Modifier.testTag(if (venta) "total-ticket" else "total-conteo"),
+            )
+            if (!unRenglon) {
+                Text(
+                    when {
+                        !venta -> "Lo contado se queda guardado en este celular"
+                        articulos == 0 -> "Ticket vacío"
+                        else -> "$articulos art. · se manda a una caja"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = tinta,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("detalle-cobrar"),
+                )
             }
         }
         if (!zurdo) hueco()
     }
-}
-
-private fun iconoDe(m: ModoApp): ImageVector = when (m) {
-    ModoApp.PRECIO -> Icons.Filled.Sell
-    ModoApp.TICKET -> Icons.AutoMirrored.Filled.ReceiptLong
-    ModoApp.CONTEO -> Icons.Filled.Inventory2
 }
 
 /**
