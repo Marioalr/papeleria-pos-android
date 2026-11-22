@@ -91,13 +91,13 @@ class MandarTest {
         assertEquals(cajaDeLapices, r[1].presentacionId)
         assertEquals(listOf(2000L, 1000L), r.map { it.cantidadMilesimas })
         assertEquals("7509990100200", r[1].codigo)
-        // Lo que se manda no tiene dónde llevar un precio.
+        // Un producto del catálogo nunca lleva precio: lo pone la caja principal.
         assertFalse(JsonDelPos.encodeToString(SolicitudMandarTicket.serializer(), SolicitudMandarTicket("x", "c2", r)).contains("precio", ignoreCase = true))
     }
 
     private fun TestScope.mandador(canal: Canal, ultima: String? = null, guardadas: MutableList<String> = ArrayList()): Mandador {
         var n = 0
-        return Mandador(canal, this, { ultima }, { guardadas.add(it) }, nuevoId = { "id-${++n}" })
+        return Mandador(canal, this, { ultima }, { guardadas.add(it) }, ids = IdsDeTicket { "id-${++n}" })
     }
 
     @Test
@@ -183,10 +183,20 @@ class MandarTest {
     }
 
     @Test
-    fun `con un articulo comun todavia no se manda y lo dice`() {
-        val ticket = ListaLecturas().agregarComun(1500, 1)
+    fun `el articulo comun viaja con su descripcion y su precio, sin variante`() {
+        val ticket = ListaLecturas().agregarComun(3550, 1).let { it.masUno(it.actual!!.id, 2) }
         val catalogo = mx.papeleriapos.android.catalogo.CatalogoDeProductos(emptyList())
-        assertEquals(CON_ARTICULO_COMUN, razonParaMandar(ticket, catalogo, conAlta = true, dePrueba = false))
-        assertEquals("Sin alta, primero eso", SIN_CONEXION_MANDAR, razonParaMandar(ticket, catalogo, conAlta = false, dePrueba = false))
+        assertNull("Ya se puede mandar y cobrar", razonParaMandar(ticket, catalogo, conAlta = true, dePrueba = false))
+        val r = renglonesParaMandar(ticket, catalogo).single()
+        assertNull(r.varianteId)
+        assertNull("Sin código: con él el servicio lo buscaría en el catálogo", r.codigo)
+        assertEquals("Artículo común", r.descripcion)
+        assertEquals(3550L, r.precioCentavos)
+        assertEquals(2000L, r.cantidadMilesimas)
+        // Como lo espera el servicio (docs/celular-como-caja.md del POS, paso 10, «Los renglones»).
+        assertEquals(
+            """{"cantidadMilesimas":2000,"descripcion":"Artículo común","precioCentavos":3550}""",
+            JsonDelPos.encodeToString(mx.papeleriapos.android.caja.RenglonMandado.serializer(), r),
+        )
     }
 }

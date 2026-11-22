@@ -294,7 +294,7 @@ class PantallaPrincipalAccesibleTest : PruebaDePantalla() {
         assertEquals("Ver el ticket completo", asidero.config[SemanticsProperties.ContentDescription].single())
         // «Cobrar» dice el total y cuántos van; apagado (sin alta), por qué.
         val cobrar = compose.onNodeWithTag("cobrar").fetchSemanticsNode()
-        assertEquals(listOf("Cobrar · \$51.50", "2 art. · se manda a una caja"), cobrar.config[SemanticsProperties.Text].map { it.text })
+        assertEquals(listOf("Cobrar · \$51.50", "2 artículos"), cobrar.config[SemanticsProperties.Text].map { it.text })
         assertTrue(cobrar.config[SemanticsProperties.StateDescription].startsWith("apagado: Mandarlo a una caja"))
         // La tarjeta ofrece sus gestos como acciones, para quien no puede deslizar.
         val tarjeta = compose.onNodeWithTag("renglon-actual").fetchSemanticsNode()

@@ -153,7 +153,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
     val conAlta by conAltaFlujo.collectAsStateWithLifecycle(initialValue = false)
     val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
     val razonMandar = razonParaMandar(ticket, catalogo, conAlta, dePrueba)
-    // Lo que dice «Cobrar» apagado; mientras el celular no cobre (falta el POS), cobrar es mandarlo a una caja.
+    // Lo que dice «Cobrar» apagado: lo mismo que impide mandarlo (sin alta, los productos de prueba, un código sin producto).
     val razonCobrar = if (ticket.renglones.isEmpty()) TICKET_VACIO else razonMandar
     val soloVisor = LocalSoloVisor.current
     LaunchedEffect(soloVisor) { if (!soloVisor) vm.prepararProductos() }
@@ -222,6 +222,17 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
             teclearCantidad = { piso.abrir(Hoja.Cantidad(it)) },
             subir = piso::subir,
             comun = { piso.abrir(Hoja.Comun) },
+        )
+    }
+    val accionesCobro = remember(piso, vm) {
+        AccionesCobro(
+            reintentar = { piso.catalogo.value?.let { c -> vm.cobrador.abrir(vm.venta.value, c) } },
+            forma = { vm.cobrador.elegirForma(it) },
+            recibir = { vm.cobrador.recibir(it) },
+            referencia = { vm.cobrador.referencia(it) },
+            caja = { vm.cobrador.elegirCaja(it) },
+            cobrar = { vm.cobrador.cobrar { piso.cobrado() } },
+            mandar = { piso.abrir(Hoja.Mandar) },
         )
     }
     val alAbrirAhora by rememberUpdatedState(alAbrir)
@@ -407,7 +418,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                     razonCobrar = razonCobrar,
                     contadas = conteo.total,
                     zurdo = zurdo,
-                    alCobrar = { if (razonCobrar == null) piso.abrir(Hoja.Mandar) else piso.rechazar(razonCobrar) },
+                    alCobrar = { if (razonCobrar == null) piso.abrir(Hoja.Cobrar) else piso.rechazar(razonCobrar) },
                     alTerminarConteo = { vm.cambiarModoApp(ModoApp.VENTA) },
                     hueco = {
                         // El botón va en la capa de encima, sobre este hueco (arriba del velo del menú): a 16 dp de la
@@ -513,6 +524,16 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                             alElegir = vm.mandador::elegir,
                             alMandar = { catalogo?.let { c -> vm.mandador.mandar(ticket, c, piso::mandado) } },
                         ) { piso.cerrarHoja() }
+                    }
+                    Hoja.Cobrar -> {
+                        val estadoCobro by vm.cobrador.estado.collectAsStateWithLifecycle()
+                        // Al abrirse (y al volver de «¿A qué caja?»): lo que costaría y en qué caja entra.
+                        LaunchedEffect(Unit) { piso.catalogo.value?.let { c -> vm.cobrador.abrir(vm.venta.value, c) } }
+                        HojaCobrar(estadoCobro, accionesCobro) { piso.cerrarHoja() }
+                    }
+                    Hoja.Cobrado -> {
+                        val cobrada = vm.cobrador.estado.collectAsStateWithLifecycle().value.cobrada
+                        if (cobrada == null) LaunchedEffect(Unit) { piso.cerrarHoja() } else HojaCobrado(cobrada) { piso.cerrarHoja(hizoAlgo = true) }
                     }
                     Hoja.Menu -> ElMenu(vm, piso, modo, conteo.total, catalogo, dePrueba, accionesMenu)
                     Hoja.Comun -> HojaComun(piso::agregarComun) { piso.cerrarHoja() }
@@ -657,8 +678,8 @@ private const val BARRA_UN_RENGLON = 1.6f
 /**
  * Abajo, donde iban los modos (0.5): «Cobrar», con el total y cuántos artículos, y al final el hueco del botón rápido (al
  * principio, en zurdo). El objetivo de la pantalla es agregar productos y cobrar rápido: lo que más se toca va bajo el
- * pulgar. Mientras el celular no cobre por sí mismo (falta el POS), cobrar es mandar el ticket a una caja: abre «¿A qué
- * caja?». Apagado se ve apagado y, al tocarlo, dice por qué ([razonCobrar]). Al contar, el botón termina el conteo y
+ * pulgar. Abre el cobro (el total, cómo paga y el cambio), desde donde también se puede mandar a una caja. Apagado se ve
+ * apagado y, al tocarlo, dice por qué ([razonCobrar]). Al contar, el botón termina el conteo y
  * regresa a vender; lo contado se queda guardado.
  */
 @Composable
@@ -721,7 +742,8 @@ private fun BarraDeAbajo(
                     when {
                         !venta -> "Lo contado se queda guardado en este celular"
                         articulos == 0 -> "Ticket vacío"
-                        else -> "$articulos art. · se manda a una caja"
+                        articulos == 1 -> "1 artículo"
+                        else -> "$articulos artículos"
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = tinta,

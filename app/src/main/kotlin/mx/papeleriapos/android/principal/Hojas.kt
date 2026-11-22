@@ -129,7 +129,7 @@ val LocalZonaCerrarHoja = staticCompositionLocalOf<(Rect) -> Unit> { {} }
  * lo de abajo también para TalkBack: la lista de Buscar, que crece hacia arriba, no le tapa el subtítulo.
  */
 @Composable
-private fun BarraHoja(
+internal fun BarraHoja(
     titulo: String,
     subtitulo: String? = null,
     alCerrar: () -> Unit,
@@ -167,7 +167,7 @@ private fun BarraHoja(
 
 /** Una hoja a pantalla completa. */
 @Composable
-private fun HojaCompleta(etiqueta: String, contenido: @Composable ColumnScope.() -> Unit) {
+internal fun HojaCompleta(etiqueta: String, contenido: @Composable ColumnScope.() -> Unit) {
     Surface(Modifier.fillMaxSize().testTag(etiqueta), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) { contenido() }
     }
@@ -576,31 +576,37 @@ fun HojaComun(alListo: (centavos: Long) -> Unit, alCerrar: () -> Unit) {
                         liveRegion = LiveRegionMode.Polite
                     }.testTag("precio-comun"),
                 )
-                val filas = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(".", "0", "⌫"))
-                for (fila in filas) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        for (t in fila) {
-                            val modifier = Modifier.weight(1f).height(52.dp)
-                            if (t == "⌫") {
-                                OutlinedButton(onClick = { tecleado = tecleado.dropLast(1) }, modifier = modifier) {
-                                    Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Borrar")
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { tecleado = teclearPrecio(tecleado, t) },
-                                    modifier = modifier
-                                        .semantics { if (t == ".") contentDescription = "Punto" }
-                                        .testTag(if (t == ".") "tecla-punto" else "tecla-$t"),
-                                ) { Text(t, fontSize = 22.sp) }
-                            }
-                        }
-                    }
-                }
+                TeclasDePrecio(tecleado) { tecleado = it }
                 Button(
                     onClick = { alListo(centavos) },
                     enabled = centavos > 0,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).heightIn(min = 56.dp).testTag("comun-listo"),
                 ) { Text(if (centavos > 0) "Agregar al ticket · ${pesos(centavos)}" else "Agregar al ticket", maxLines = 1) }
+            }
+        }
+    }
+}
+
+/** Las teclas de un precio en pesos (con punto para los centavos), de 52 dp, a la altura del pulgar. */
+@Composable
+internal fun TeclasDePrecio(tecleado: String, alCambiar: (String) -> Unit) {
+    val filas = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(".", "0", "⌫"))
+    for (fila in filas) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (t in fila) {
+                val modifier = Modifier.weight(1f).height(52.dp)
+                if (t == "⌫") {
+                    OutlinedButton(onClick = { alCambiar(tecleado.dropLast(1)) }, modifier = modifier.testTag("tecla-borrar")) {
+                        Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Borrar")
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { alCambiar(teclearPrecio(tecleado, t)) },
+                        modifier = modifier
+                            .semantics { if (t == ".") contentDescription = "Punto" }
+                            .testTag(if (t == ".") "tecla-punto" else "tecla-$t"),
+                    ) { Text(t, fontSize = 22.sp) }
+                }
             }
         }
     }

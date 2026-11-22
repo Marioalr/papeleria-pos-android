@@ -75,8 +75,18 @@ interface CanalDeMandar {
     suspend fun mandar(solicitud: SolicitudMandarTicket): TicketMandadoDto
 }
 
-/** No se pudo: el mensaje es para enseñarlo tal cual; [codigo], el del servicio si contestó; [sinRed], si no contestó. */
-class NoSeMando(mensaje: String, val codigo: String? = null, val sinRed: Boolean = false) : Exception(mensaje)
+/** Cobrar en el celular (paso 10): las cajas con turno, lo que costaría y el cobro. Las pruebas ponen el suyo. */
+interface CanalDeCobrar {
+    suspend fun cajasParaMandar(): List<CajaParaMandarDto>
+    suspend fun cotizar(solicitud: SolicitudCotizar): CotizacionDto
+    suspend fun cobrar(solicitud: SolicitudCobrar): VentaCobradaDto
+}
+
+/**
+ * No se pudo: el mensaje es para enseñarlo tal cual; [codigo], el del servicio si contestó; [sinRed], si no contestó;
+ * [http], el estado con que contestó (404: ese servicio todavía no tiene esa ruta).
+ */
+class NoSeMando(mensaje: String, val codigo: String? = null, val sinRed: Boolean = false, val http: Int? = null) : Exception(mensaje)
 
 class Conexion(
     private val almacenAlta: AlmacenAlta,
@@ -92,7 +102,7 @@ class Conexion(
     private val msEntreLatidos: Long = MS_ENTRE_LATIDOS,
     /** Las interfaces de red del celular, para decir la causa cuando no contesta ([Diagnostico]); las pruebas pasan la suya. */
     private val leerRed: () -> EstadoDeRed? = EstadoDeRed::actual,
-) : CanalDeMandar {
+) : CanalDeMandar, CanalDeCobrar {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val hilo: CoroutineDispatcher = hilo ?: Dispatchers.IO.limitedParallelism(1)
     private val alcance = CoroutineScope(SupervisorJob() + this.hilo)
@@ -425,6 +435,18 @@ class Conexion(
         conLlave("Mandar el ticket no contestó") { a -> cliente.mandar(a.direccion, a.llave, a.caja.id, solicitud) }
     }
 
+    // ---- Cobrar en el celular ----
+
+    /** Lo que costaría el ticket con los precios y las promociones de hoy del servicio; no cobra nada. */
+    override suspend fun cotizar(solicitud: SolicitudCotizar): CotizacionDto = withContext(hilo) {
+        conLlave("Cotizar el ticket no contestó") { a -> cliente.cotizar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    /** Cobra el ticket: entra al turno abierto de una caja de la sucursal. El mismo Id otra vez no cobra dos veces. */
+    override suspend fun cobrar(solicitud: SolicitudCobrar): VentaCobradaDto = withContext(hilo) {
+        conLlave("Cobrar el ticket no contestó") { a -> cliente.cobrar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
     /**
      * Una llamada con la llave, como el latido: antes, si hace falta, la dirección prueba quién es (la llave nunca sale hacia
      * otro equipo). Lo que sale mal regresa como [NoSeMando], con un mensaje para enseñarlo tal cual.
@@ -449,7 +471,7 @@ class Conexion(
                 sinLlave(a, gen)
                 throw NoSeMando("La caja principal ya no reconoce este celular: revisa Ajustes › La conexión.", e.codigo)
             }
-            throw NoSeMando(e.message ?: "La caja principal no lo aceptó.", e.codigo)
+            throw NoSeMando(e.message ?: "La caja principal no lo aceptó.", e.codigo, http = e.http)
         } catch (e: IOException) {
             if (gen == generacion) sinComprobar = true
             throw noContesto(a, que, e)

@@ -39,6 +39,12 @@ sealed interface Hoja {
     /** El precio a mano de un artículo común: lo que no está en el catálogo y se cobra de todos modos. */
     data object Comun : Hoja
 
+    /** «Cobrar»: el total, cómo paga y el cambio. Desde ella, «Mejor que lo cobre una caja» abre [Mandar]. */
+    data object Cobrar : Hoja
+
+    /** «Cobrado»: el cambio, el folio y en el turno de qué caja entró. */
+    data object Cobrado : Hoja
+
     /** ↑ «Enseñar al cliente»: el nombre y el precio a pantalla completa, para voltear el celular. */
     data class PrecioGrande(val producto: Producto) : Hoja
 
@@ -423,6 +429,20 @@ class Piso(
         avisar(texto)
     }
 
+    /**
+     * El servicio ya cobró el ticket: se vacía (sin «Deshacer»: ya es una venta) y, en lugar del cobro, queda «Cobrado» con
+     * el cambio. Lo siguiente que se escanee es otro ticket.
+     */
+    fun cobrado() {
+        venta.update { it.vaciar() }
+        _noEsta.value = null
+        hojaDeAbajo = null
+        abiertaPor = null
+        _aviso.value = null
+        avisoEnEspera = null
+        _hoja.value = Hoja.Cobrado
+    }
+
     /** «Empezar otro ticket»: lo vacía; se puede deshacer (lo leído después queda arriba). */
     fun empezarOtroTicket() {
         var antes: List<Renglon> = emptyList()
@@ -472,7 +492,12 @@ class Piso(
      */
     fun abrir(h: Hoja) {
         val actual = _hoja.value
-        hojaDeAbajo = if (actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar || h == Hoja.Mandar || h == Hoja.Comun)) actual else null
+        hojaDeAbajo = when {
+            actual == Hoja.Ticket && (h is Hoja.Cantidad || h == Hoja.Buscar || h == Hoja.Mandar || h == Hoja.Comun) -> actual
+            // «Mejor que lo cobre una caja»: si no se manda, se regresa al cobro.
+            actual == Hoja.Cobrar && h == Hoja.Mandar -> actual
+            else -> null
+        }
         _hoja.value = h
         if (h is Hoja.PrecioGrande) esconderAviso()
     }

@@ -249,9 +249,8 @@ celular de la tienda. Precio y Ticket son una sola pantalla; la cantidad se pone
 dos grados, dejar el dedo abre el teclado); el mismo código solo vuelve a contar si se retiró de la mira; lo que no está
 en el catálogo se queda fuera, con «Buscar por nombre» y «Artículo común»; Conteo va en el menú «Este celular»; y la app se
 actualiza desde la propia app, solo cuando el dueño lo pide, con los APK de GitHub
-([prototipo](propuesta-interfaz/prototipo-0.5.html), [cambios](../CAMBIOS.md#050-sin-publicar)). **El celular cobra** y
-**manda lo contado a una caja** (nunca aplica existencias por sí solo): las dos cosas esperan al POS, al que se le
-pidieron ese día. De «Red y privacidad» cambia una cosa: la app sale de la red de la tienda solo para actualizarse, a
+([prototipo](propuesta-interfaz/prototipo-0.5.html), [cambios](../CAMBIOS.md#050-sin-publicar)). **El celular cobra** (0.5.1, con el paso 10 del documento del POS, rama `celular/cobrar`: el cobro entra al turno abierto de
+una caja) y **manda lo contado a una caja** (nunca aplica existencias por sí solo; espera al POS). De «Red y privacidad» cambia una cosa: la app sale de la red de la tienda solo para actualizarse, a
 GitHub, por HTTPS y a petición; y suma el permiso de instalar su actualización.
 
 **Lo que cambió de las decisiones de arriba con la 0.4.0:** «Red y privacidad» pasó a **solo la red de la tienda** (la

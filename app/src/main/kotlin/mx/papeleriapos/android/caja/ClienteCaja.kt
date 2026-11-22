@@ -74,6 +74,14 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         pedir(direccion, "api/cajas/$cajaId/mandar", llave, MS_MANDAR, cuerpo = JsonDelPos.encodeToString(SolicitudMandarTicket.serializer(), solicitud))
 
     @OptIn(ExperimentalSerializationApi::class)
+    /** `POST /api/cajas/{id}/cotizar`: lo que costaría el ticket, sin cobrarlo. */
+    suspend fun cotizar(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudCotizar): CotizacionDto =
+        pedir(direccion, "api/cajas/$cajaId/cotizar", llave, msRespuesta, cuerpo = JsonDelPos.encodeToString(SolicitudCotizar.serializer(), solicitud))
+
+    /** `POST /api/cajas/{id}/cobrar`: en el piloto el servicio espera a eleventa, así que se le dan [MS_COBRAR]. */
+    suspend fun cobrar(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudCobrar): VentaCobradaDto =
+        pedir(direccion, "api/cajas/$cajaId/cobrar", llave, MS_COBRAR, cuerpo = JsonDelPos.encodeToString(SolicitudCobrar.serializer(), solicitud))
+
     private suspend inline fun <reified T> pedir(direccion: Direccion, ruta: String, llave: String?, msLeer: Long, cuerpo: String? = null): T =
         withContext(Dispatchers.IO) {
             val peticion = Request.Builder().url(direccion.url + ruta).apply {
@@ -129,6 +137,9 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         const val MS_CAMBIOS = 10_000L
         const val MS_PAQUETE = 60_000L
         const val MS_MANDAR = 15_000L
+
+        /** El servicio contesta el cobro en hasta unos 15 s (docs/celular-como-caja.md, paso 10); un poco más de margen. */
+        const val MS_COBRAR = 20_000L
 
         /** Un solo cliente por proceso (sus hilos y su piscina de conexiones); cada llamada ajusta su tiempo de lectura. */
         fun clienteBase(): OkHttpClient = OkHttpClient.Builder()
