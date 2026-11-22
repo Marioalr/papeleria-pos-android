@@ -27,43 +27,43 @@ import org.robolectric.annotation.GraphicsMode
 class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
-    fun `precio ensena la tarjeta y al ticket agrega sin salir`() {
-        abrir(ModoApp.PRECIO)
+    fun `la venta ensena el precio en la tarjeta y lo que no esta se queda fuera`() {
+        abrir(ModoApp.VENTA)
         compose.onNodeWithTag("panel-vacio").assertIsDisplayed()
         captura("01-precio-vacio")
         leer(CUADERNO)
-        compose.onNodeWithTag("tarjeta-precio").assertIsDisplayed()
-        compose.onNodeWithText("\$46.00").assertIsDisplayed()
+        compose.onNodeWithTag("tarjeta").assertIsDisplayed()
+        compose.onNodeWithTag("precio", useUnmergedTree = true).assertIsDisplayed()
         captura("02-precio-cuaderno")
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         compose.waitForIdle()
-        assertEquals(1, vm.venta.value.total)
+        assertEquals(2, vm.venta.value.total)
         compose.onNodeWithTag("aviso").assertIsDisplayed()
         captura("03-precio-al-ticket")
         leer("7509990100200")
         captura("04-precio-caja")
         leer(NO_ESTA)
         compose.onNodeWithTag("no-esta").assertIsDisplayed()
+        compose.onNodeWithTag("articulo-comun").assertIsDisplayed()
         captura("05-precio-no-esta")
         leer(SACAPUNTAS)
         captura("06-precio-queda-1")
     }
 
     @Test
-    fun `ticket suma cada lectura y el renglon de arriba lleva menos y mas`() {
-        abrir(ModoApp.TICKET)
+    fun `el ticket suma cada lectura y la tarjeta quita deslizando`() {
+        abrir(ModoApp.VENTA)
         captura("10-ticket-vacio")
         leer(CUADERNO)
         leer(LAPIZ)
         leer(LAPIZ)
-        leer(NO_ESTA)
-        assertEquals(4, vm.venta.value.total)
-        compose.onNodeWithTag("encabezado-ticket").assertIsDisplayed()
+        assertEquals(3, vm.venta.value.total)
+        compose.onNodeWithTag("cobrar").assertIsDisplayed()
         compose.onNodeWithTag("renglon-actual").assertIsDisplayed()
         captura("11-ticket")
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         compose.waitForIdle()
-        assertEquals(3, vm.venta.value.total)
+        assertEquals(2, vm.venta.value.total)
         captura("12-ticket-quitado")
         // Seis productos distintos: lo último sigue a la vista, con su − y su +.
         for (c in listOf(GOMA, SACAPUNTAS, PEGAMENTO, TIJERAS, FOLDER)) leer(c)
@@ -73,7 +73,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
     fun `el boton rapido se abre con un toque y busca`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput {
             down(center)
@@ -91,7 +91,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
     fun `deslizar hacia arriba desde el boton elige arriba`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput {
             down(center)
@@ -105,7 +105,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
     fun `zurdo el boton y el menu van en espejo`() {
-        abrir(ModoApp.PRECIO) { it.piso.cambiarZurdo(true) }
+        abrir(ModoApp.VENTA) { it.piso.cambiarZurdo(true) }
         captura("23-zurdo-precio-vacio")
         leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput { down(center); up() }
@@ -115,7 +115,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
 
     @Test
     fun `las hojas del ticket`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
@@ -141,7 +141,8 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
         leer(CUADERNO)
         leer(CUADERNO)
         leer(LAPIZ)
-        compose.onNodeWithTag("contador").assertIsDisplayed()
+        compose.onNodeWithTag("cantidad", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("contando").assertIsDisplayed()
         captura("41-conteo")
     }
 
@@ -150,7 +151,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
     @Test
     @Config(fontScale = 2.0f)
     fun `con la letra al 200 por ciento`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         captura("50-precio-vacio-200")
         leer(CUADERNO)
         captura("51-precio-cuaderno-200")
@@ -160,7 +161,7 @@ class PantallaPrincipalCapturasTest : PruebaDePantalla() {
         idle()
         captura("53-menu-precio-200")
         atras()
-        vm.cambiarModoApp(ModoApp.TICKET)
+        vm.cambiarModoApp(ModoApp.VENTA)
         idle()
         captura("54-ticket-vacio-200")
         for (c in listOf(CUADERNO, LAPIZ, LAPIZ, SACAPUNTAS)) leer(c)

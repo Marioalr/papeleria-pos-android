@@ -147,6 +147,13 @@ fun quedanPocos(p: Producto): Boolean = p.existencia != null && p.existencia <= 
  */
 const val POCA_EXISTENCIA = 3.0
 
+/** El nombre con que entra al ticket lo que se cobra con el precio a mano, como en la caja (Ctrl+P). */
+const val ARTICULO_COMUN = "Artículo común"
+
+/** Un artículo común como producto: su precio a mano, sin inventario, sin código y sin lo que la caja necesita para cobrarlo. */
+fun articuloComun(codigoDelRenglon: String, centavos: Long): Producto =
+    Producto(clave = codigoDelRenglon, nombre = ARTICULO_COMUN, departamento = "", escalas = listOf(Escala(1, centavos)), existencia = null, codigo = null)
+
 /** «Queda 1» con una sola y «Quedan 3» con más (docs/propuesta-interfaz.md, «Precio» y «Ticket»: «Queda 1» en ámbar). */
 fun quedan(existencia: Double): String = if (existencia == 1.0) "Queda 1" else "Quedan ${cantidadCorta(existencia)}"
 
@@ -241,7 +248,8 @@ class CatalogoDeProductos private constructor(
      * antes de la 0.3 o lo que guardó la 0.1) o ya no la encuentra (la clave era de otro catálogo), por su código con la
      * regla de UPC y EAN, como al escanearlo. Así un producto que sí está no sale en rojo ni deja de sumar al total.
      */
-    fun de(r: Renglon): Producto? = r.clave?.let { porClave[it] } ?: porLectura(r.codigo, r.simbologia)
+    fun de(r: Renglon): Producto? =
+        r.comunCentavos?.let { articuloComun(r.codigo, it) } ?: r.clave?.let { porClave[it] } ?: porLectura(r.codigo, r.simbologia)
 
     /**
      * Lo que se escribe en Buscar, con las reglas de la caja: pedazos de palabra en cualquier orden («lus az» da el papel

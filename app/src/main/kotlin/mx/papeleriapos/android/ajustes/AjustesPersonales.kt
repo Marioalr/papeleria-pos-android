@@ -198,6 +198,14 @@ fun ContenidoAjustesPersonales(
             "Sin el nombre de nadie: sirven para mover las fronteras del gesto si ↖ junta los errores. Salen solo con la " +
                 "medición de la sesión de prueba (contadores-rapido.csv).",
         )
+
+        // Al final: también está en el menú «Este celular» de la pantalla principal, que es por donde se llega.
+        TituloSeccion("Esta app")
+        FilaNavegacion(
+            "Actualizar la app", { alAbrir(Destino.ACTUALIZAR) },
+            descripcion = "Instalada: ${BuildConfig.VERSION_NAME}. Busca la versión nueva en GitHub solo cuando lo pides",
+            modifier = Modifier.testTag("abrir-actualizar"),
+        )
         Nota("Versión ${BuildConfig.VERSION_NAME} · ${BuildConfig.COMMIT}")
     }
 }
@@ -206,7 +214,7 @@ fun ContenidoAjustesPersonales(
 internal fun textoConexion(c: EstadoConexion, productos: CatalogoDeProductos?, dePrueba: Boolean): String {
     if (!c.leida) return "Leyendo…"
     if (c.alta == null && c.sinAcceso) return "La caja le quitó el acceso a este celular: sin copia del catálogo. Ábrelo para darlo de alta otra vez"
-    val alta = c.alta ?: return "Este celular no está dado de alta: sin copia del catálogo" + if (dePrueba) "" else ", Precio no encuentra nada"
+    val alta = c.alta ?: return "Este celular no está dado de alta: sin copia del catálogo" + if (dePrueba) "" else ", al escanear no encuentra nada"
     val red = when (c.red) {
         Red.SIN_PROBAR -> ""
         Red.BUENA -> " · red buena"

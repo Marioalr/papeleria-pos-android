@@ -11,7 +11,7 @@ plugins {
 }
 
 // La versión de la app (docs/plan.md, «Versiones»): MAYOR.MENOR.PARCHE; el código de versión se deriva de ella.
-val versionApp = "0.4.4"
+val versionApp = "0.5.0"
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
 
 // La llave de los APK de prueba (docs/plan.md, «Versiones»): en GitHub Actions llega por variables de entorno (de los
@@ -107,9 +107,11 @@ baselineProfile {
 }
 
 // Solo la red de la tienda (docs/plan.md, «Decisiones», «Red y privacidad»): el manifiesto final de cada variante pide solo
-// cámara, vibración, Internet (para hablar con la caja principal; la app solo acepta direcciones privadas) y la huella
-// (un permiso normal, para entrar), y no trae el envío de estadísticas de ML Kit (datatransport). Una biblioteca nueva puede meter otros permisos al combinar los
-// manifiestos; esta revisión corre antes de armar cada APK y lo detiene.
+// cámara, vibración, Internet (para hablar con la caja principal; la app solo acepta direcciones privadas, y a GitHub solo
+// sale cuando el dueño toca «Buscar versión nueva»), la huella (un permiso normal, para entrar) e instalar paquetes (para
+// entregarle a Android la actualización bajada), y no trae el envío de estadísticas de ML Kit (datatransport). Una
+// biblioteca nueva puede meter otros permisos al combinar los manifiestos; esta revisión corre antes de armar cada APK y
+// lo detiene.
 abstract class VerificarPermisos : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
@@ -125,9 +127,12 @@ abstract class VerificarPermisos : DefaultTask() {
         // El de AndroidX es de firma: solo protege los receptores de la propia app, no da acceso a nada.
         val sobran = permisos.filterNot {
             it == "android.permission.CAMERA" || it == "android.permission.VIBRATE" || it == "android.permission.INTERNET" ||
-                it == "android.permission.USE_BIOMETRIC" || it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+                it == "android.permission.USE_BIOMETRIC" || it == "android.permission.REQUEST_INSTALL_PACKAGES" ||
+                it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
         }
-        check(sobran.isEmpty()) { "El manifiesto pide permisos de más (la app solo usa cámara, vibración, Internet y la huella): $sobran" }
+        check(sobran.isEmpty()) {
+            "El manifiesto pide permisos de más (la app solo usa cámara, vibración, Internet, la huella e instalar su actualización): $sobran"
+        }
         check("ACCESS_NETWORK_STATE" !in texto) { "El manifiesto pide el estado de la red: la app no lo usa" }
         check("datatransport" !in texto) { "El manifiesto trae el envío de estadísticas de ML Kit (datatransport)" }
         marca.get().asFile.writeText("ok\n")

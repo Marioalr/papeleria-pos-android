@@ -30,7 +30,7 @@ class SinAccesoEnPrecioTest {
         compose.setContent {
             TemaEscaner(oscuro = false) {
                 ContenidoPanel(
-                    ModoApp.PRECIO, ConsultaPrecio.NoEsta("7509990000013"), ListaLecturas(), ListaLecturas(),
+                    ModoApp.VENTA, NoEsta("7509990000013"), ListaLecturas(), ListaLecturas(),
                     catalogo = null, acciones = AccionesPanel(), sinAcceso = sinAcceso.value,
                 )
             }

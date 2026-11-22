@@ -20,6 +20,7 @@ import mx.papeleriapos.android.catalogo.FuenteDeProductos
 import mx.papeleriapos.android.estimarVisor
 import mx.papeleriapos.android.fabrica.crearControlador
 import mx.papeleriapos.android.principal.ModoApp
+import mx.papeleriapos.android.sinRepetirALaVista
 import mx.papeleriapos.android.sesion.CsvAperturas
 import mx.papeleriapos.android.sesion.RegistroAperturas
 import mx.papeleriapos.android.sesion.aperturaMasReciente
@@ -64,7 +65,7 @@ class EscaneoRapidoViewModel(
     private val prefs = app.getSharedPreferences(PreferenciasEscaner.ARCHIVO, Context.MODE_PRIVATE)
 
     /** Los ajustes guardados con el modo del núcleo de Precio (venta), sea cual sea el de la app. */
-    private val config = PreferenciasEscaner(prefs).leer().copy(modo = ModoApp.PRECIO.delNucleo)
+    private val config = PreferenciasEscaner(prefs).leer().copy(modo = ModoApp.VENTA.delNucleo).sinRepetirALaVista()
     val controlador: ControladorEscaner = fabrica(app, config)
 
     private val _leido = MutableStateFlow<LecturaRapida?>(null)

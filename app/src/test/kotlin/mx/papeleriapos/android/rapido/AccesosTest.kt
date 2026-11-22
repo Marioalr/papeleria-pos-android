@@ -43,7 +43,7 @@ class AccesosTest {
         assertEquals(listOf("Ticket" to "Armar ticket", "Contar" to "Contar"), accesos.map { it.shortLabel.toString() to it.longLabel.toString() })
         val icono = Intent.makeMainActivity(ComponentName(ctx, MainActivity::class.java))
         val fijos = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_TASK_ON_HOME
-        for ((acceso, modo) in accesos.zip(listOf(ModoApp.TICKET, ModoApp.CONTEO))) {
+        for ((acceso, modo) in accesos.zip(listOf(ModoApp.VENTA, ModoApp.CONTEO))) {
             val intent = acceso.intent
             assertEquals(Intent.ACTION_MAIN, intent.action)
             assertEquals(setOf(Intent.CATEGORY_LAUNCHER), intent.categories)

@@ -25,6 +25,12 @@ data class Renglon(
      * + del ticket completo no mueve nada y no lo cambia. No va a disco; al leerlo, sale del orden de la lista.
      */
     val llegada: Long = 0,
+    /**
+     * Un artículo común (0.5): lo que no está en el catálogo y se cobra con el precio a mano, en centavos, sin inventario,
+     * como el Ctrl+P de la caja. Su [codigo] es propio de este renglón (no se junta con otro) y no es de ningún producto.
+     * null en lo demás.
+     */
+    val comunCentavos: Long? = null,
 )
 
 /**
@@ -65,6 +71,23 @@ class ListaLecturas private constructor(
     /** Agrega lo que se eligió al buscar en el catálogo, por su [clave]: suma como una lectura de ese producto. */
     fun agregarDelCatalogo(clave: String, hora: Long, cantidad: Int = 1): ListaLecturas =
         sumar(clave, Simbologia.OTRA, hora, cantidad, clave)
+
+    /** Un artículo común de [centavos] (el precio a mano): siempre un renglón nuevo, arriba. */
+    fun agregarComun(centavos: Long, hora: Long): ListaLecturas {
+        val nuevo = Renglon(siguienteId, "$PREFIJO_COMUN$siguienteId", Simbologia.OTRA, 1, hora, llegada = siguienteLlegada, comunCentavos = centavos)
+        return cambiar(listOf(nuevo) + renglones, siguienteId + 1, siguienteLlegada + 1)
+    }
+
+    /**
+     * Sube el renglón [id] arriba, sin sumarle: queda como el actual, el de la tarjeta, donde se le suma y se le quita. La
+     * misma lista si ya está arriba o no está.
+     */
+    fun subir(id: Long): ListaLecturas {
+        val i = renglones.indexOfFirst { it.id == id }
+        if (i <= 0) return this
+        val r = renglones[i].copy(llegada = siguienteLlegada)
+        return cambiar(listOf(r) + renglones.filterIndexed { k, _ -> k != i }, siguienteId, siguienteLlegada + 1)
+    }
 
     /** +1 al renglón [id], sin moverlo (en el ticket completo, cada renglón tiene su − y su +). */
     fun masUno(id: Long, hora: Long): ListaLecturas = cambiarRenglon(id) { it.copy(cantidad = it.cantidad + 1, hora = hora) }
@@ -208,7 +231,10 @@ class ListaLecturas private constructor(
         Csv.renglon(COLUMNAS, sb)
         for (r in renglones) {
             Csv.renglon(
-                listOf(r.id.toString(), r.codigo, r.simbologia.name, r.cantidad.toString(), r.hora.toString(), r.clave.orEmpty()),
+                listOf(
+                    r.id.toString(), r.codigo, r.simbologia.name, r.cantidad.toString(), r.hora.toString(), r.clave.orEmpty(),
+                    r.comunCentavos?.toString().orEmpty(),
+                ),
                 sb,
             )
         }
@@ -219,10 +245,16 @@ class ListaLecturas private constructor(
         /** Suficiente para corregir una racha de lecturas de más sin guardar la historia entera. */
         const val PASOS_PARA_DESHACER = 50
 
-        private val COLUMNAS = listOf("id", "codigo", "simbologia", "cantidad", "hora", "clave")
+        private val COLUMNAS = listOf("id", "codigo", "simbologia", "cantidad", "hora", "clave", "comun")
 
-        /** Las de la versión 0.1, sin la clave: lo que quedó guardado se sigue leyendo al actualizar la app. */
-        private val COLUMNAS_SIN_CLAVE = COLUMNAS.dropLast(1)
+        /** Las de antes de la 0.5, sin el artículo común: lo que quedó guardado se sigue leyendo al actualizar la app. */
+        private val COLUMNAS_SIN_COMUN = COLUMNAS.dropLast(1)
+
+        /** Las de la versión 0.1, sin la clave. */
+        private val COLUMNAS_SIN_CLAVE = COLUMNAS.dropLast(2)
+
+        /** Con lo que empieza el código de un artículo común (seguido del id de su renglón). */
+        const val PREFIJO_COMUN = "comun-"
 
         /**
          * Lo contrario de [aTexto]; un renglón que no se entiende se salta. Sin pasos para deshacer, y la
@@ -230,14 +262,15 @@ class ListaLecturas private constructor(
          */
         fun deTexto(texto: String): ListaLecturas {
             val filas = Csv.leer(texto)
-            if (filas.isEmpty() || (filas[0] != COLUMNAS && filas[0] != COLUMNAS_SIN_CLAVE)) return ListaLecturas()
+            if (filas.isEmpty() || (filas[0] != COLUMNAS && filas[0] != COLUMNAS_SIN_COMUN && filas[0] != COLUMNAS_SIN_CLAVE)) return ListaLecturas()
             val leidos = filas.drop(1).mapNotNull { f ->
                 if (f.size < COLUMNAS_SIN_CLAVE.size) return@mapNotNull null
                 val id = f[0].toLongOrNull() ?: return@mapNotNull null
                 val simbologia = Simbologia.entries.firstOrNull { it.name == f[2] } ?: return@mapNotNull null
                 val cantidad = f[3].toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
                 val clave = f.getOrNull(5)?.takeIf { it.isNotEmpty() }
-                Renglon(id, f[1], simbologia, cantidad, f[4].toLongOrNull() ?: 0L, clave)
+                val comun = f.getOrNull(6)?.toLongOrNull()?.takeIf { it > 0 }
+                Renglon(id, f[1], simbologia, cantidad, f[4].toLongOrNull() ?: 0L, clave, comunCentavos = comun)
             }.distinctBy { it.codigo }
             val renglones = leidos.mapIndexed { k, r -> r.copy(llegada = (leidos.size - k).toLong()) }
             return ListaLecturas(renglones, emptyList(), (renglones.maxOfOrNull { it.id } ?: 0L) + 1, renglones.size + 1L)

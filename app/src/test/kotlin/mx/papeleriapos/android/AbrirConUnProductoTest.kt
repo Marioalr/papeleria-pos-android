@@ -16,7 +16,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mx.papeleriapos.android.ajustes.PreferenciasEscaner
 import mx.papeleriapos.android.lista.ListasCompartidas
-import mx.papeleriapos.android.principal.ConsultaPrecio
+import mx.papeleriapos.android.principal.NoEsta
 import mx.papeleriapos.android.principal.Hoja
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.principal.PreferenciasPiso
@@ -119,19 +119,19 @@ class AbrirConUnProductoTest {
     private fun producto(clave: String) = vm.piso.catalogo.value!!.porClave(clave)!!
 
     @Test
-    fun `abre en precio con el producto del escaneo rapido, sin tocar el ticket`() {
+    fun `abre en la venta con el producto del escaneo rapido en el ticket`() {
         guardarModo(ModoApp.CONTEO)
         listas.venta.value = listas.venta.value.sumar(LAPIZ, Simbologia.EAN_13, 1, clave = LAPIZ)
         listas.conteo.value = listas.conteo.value.sumar(LAPIZ, Simbologia.EAN_13, 1, clave = LAPIZ)
-        val ticket = listas.venta.value
         val conteo = listas.conteo.value
         abrir(intentAbrirApp(app, CUADERNO))
-        assertEquals(ModoApp.PRECIO, vm.piso.modo.value)
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
         assertEquals("El escáner, en el modo del núcleo de Precio", Modo.VENTA, muestra.config.value.modo)
-        assertEquals(ConsultaPrecio.Encontrado(producto(CUADERNO)), vm.piso.precio.value)
-        assertEquals("TalkBack lo dice", "Cuaderno profesional cuadro chico 100 hojas, \$46.00", vm.piso.anuncio.value?.texto)
-        assertSame("El ticket no cambia", ticket, listas.venta.value)
-        assertSame("Ni el conteo", conteo, listas.conteo.value)
+        assertNull(vm.piso.noEsta.value)
+        assertEquals("Entra al ticket, arriba: si solo preguntaba, se desliza y sale", producto(CUADERNO).clave, listas.venta.value.actual!!.clave)
+        assertEquals(2, listas.venta.value.total)
+        assertEquals("TalkBack lo dice", "Cuaderno profesional cuadro chico 100 hojas, \$46.00, al ticket. Total \$51.50", vm.piso.anuncio.value?.texto)
+        assertSame("El conteo no cambia", conteo, listas.conteo.value)
         // No es una lectura: el escáner no leyó nada, así que no vibra ni suena (lo hace con cada una de las suyas).
         assertEquals(0, muestra.estado.value.lecturas)
     }
@@ -147,23 +147,24 @@ class AbrirConUnProductoTest {
         idle()
         assertSame("Se queda con el intent nuevo (setIntent)", intent, c.get().intent)
         assertNull("Las hojas se cierran", vm.piso.hoja.value)
-        assertEquals(ModoApp.PRECIO, vm.piso.modo.value)
-        assertEquals("Lo que no está, con su código", ConsultaPrecio.NoEsta(NO_ESTA), vm.piso.precio.value)
-        assertEquals("No está en el catálogo", vm.piso.anuncio.value?.texto)
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
+        assertEquals("Lo que no está, con su código", NoEsta(NO_ESTA), vm.piso.noEsta.value)
+        assertEquals("No está en el catálogo: no entró al ticket", vm.piso.anuncio.value?.texto)
         assertTrue("No es una lectura: la sesión no la anota", vm.sesion.value!!.intentos.isEmpty())
         // Otro producto con la app abierta, ahora sí en el catálogo.
         c.newIntent(intentAbrirApp(app, CAJA_LAPICES))
         idle()
-        assertEquals(ConsultaPrecio.Encontrado(producto(CAJA_LAPICES)), vm.piso.precio.value)
+        assertNull(vm.piso.noEsta.value)
+        assertEquals(producto(CAJA_LAPICES).clave, vm.venta.value.actual!!.clave)
     }
 
     @Test
     fun `relanzada desde recientes no vuelve a ensenar el producto de entonces`() {
-        guardarModo(ModoApp.TICKET)
+        guardarModo(ModoApp.VENTA)
         // Después de reiniciar, Recientes relanza la tarea vacía con su intent: el de «Abrir la app» de hace días.
         abrir(intentAbrirApp(app, CUADERNO).addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY))
-        assertEquals("Ni el modo", ModoApp.TICKET, vm.piso.modo.value)
-        assertNull(vm.piso.precio.value)
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
+        assertTrue("No entra al ticket otra vez", vm.venta.value.renglones.isEmpty())
     }
 
     @Test
@@ -172,15 +173,15 @@ class AbrirConUnProductoTest {
         // Android mató el proceso en segundo plano: el intent es el de cuando se abrió, y ya se aplicó entonces.
         abrir(intentAbrirApp(app, CUADERNO), guardado = Bundle())
         assertEquals(ModoApp.CONTEO, vm.piso.modo.value)
-        assertNull(vm.piso.precio.value)
+        assertTrue("No entra al ticket otra vez", vm.venta.value.renglones.isEmpty())
     }
 
     @Test
     fun `los accesos del icono de los modos tambien abren en su modo`() {
-        guardarModo(ModoApp.PRECIO)
+        guardarModo(ModoApp.VENTA)
         abrir(icono().putExtra(MainActivity.EXTRA_MODO, MainActivity.MODO_CONTEO))
         assertEquals(ModoApp.CONTEO, vm.piso.modo.value)
-        assertNull("Sin producto, nada en la tarjeta", vm.piso.precio.value)
+        assertNull("Sin producto, nada en la tarjeta", vm.piso.noEsta.value)
     }
 
     @Test

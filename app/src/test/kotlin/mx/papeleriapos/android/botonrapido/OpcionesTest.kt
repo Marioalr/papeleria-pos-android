@@ -16,44 +16,41 @@ class OpcionesTest {
     @Test
     fun `cada direccion quiere decir siempre lo mismo`() {
         assertEquals(
-            listOf(Lugar.ARRIBA to Accion.MANDAR, Lugar.DIAGONAL to Accion.IMPRESIONES, Lugar.LADO to Accion.BUSCAR),
-            lugares(ModoApp.TICKET),
+            listOf(Lugar.ARRIBA to Accion.ENSENAR, Lugar.DIAGONAL to Accion.IMPRESIONES, Lugar.LADO to Accion.BUSCAR),
+            lugares(ModoApp.VENTA),
         )
-        assertEquals(listOf(Lugar.ARRIBA to Accion.ENSENAR, Lugar.LADO to Accion.BUSCAR), lugares(ModoApp.PRECIO))
+        assertEquals(listOf(Lugar.LADO to Accion.BUSCAR), lugares(ModoApp.CONTEO))
         // ← siempre busca.
-        for (m in listOf(ModoApp.TICKET, ModoApp.PRECIO)) {
+        for (m in ModoApp.entries) {
             assertEquals(Accion.BUSCAR, opcionesDe(m, EstadoOpciones()).single { it.lugar == Lugar.LADO }.accion)
         }
     }
 
     @Test
-    fun `en precio el hueco de la diagonal y sin producto no se ensena nada`() {
-        val sin = opcionesDe(ModoApp.PRECIO, EstadoOpciones(hayProducto = false))
-        assertTrue(sin.none { it.lugar == Lugar.DIAGONAL })
+    fun `sin producto en la tarjeta no se ensena nada`() {
+        val sin = opcionesDe(ModoApp.VENTA, EstadoOpciones(hayProducto = false))
         assertFalse(sin.single { it.accion == Accion.ENSENAR }.encendida)
-        val con = opcionesDe(ModoApp.PRECIO, EstadoOpciones(hayProducto = true))
+        val con = opcionesDe(ModoApp.VENTA, EstadoOpciones(hayProducto = true))
         assertTrue(con.single { it.accion == Accion.ENSENAR }.encendida)
     }
 
     @Test
-    fun `sin la conexion al pos mandar e impresiones salen apagadas con su razon`() {
-        val vacio = opcionesDe(ModoApp.TICKET, EstadoOpciones(ticketVacio = true))
-        assertTrue(vacio.single { it.accion == Accion.MANDAR }.razonApagada!!.startsWith("El ticket está vacío"))
-        val lleno = opcionesDe(ModoApp.TICKET, EstadoOpciones(ticketVacio = false))
-        assertEquals(SIN_CONEXION_MANDAR, lleno.single { it.accion == Accion.MANDAR }.razonApagada)
-        assertEquals(SIN_CONEXION_IMPRESIONES, lleno.single { it.accion == Accion.IMPRESIONES }.razonApagada)
-        assertTrue(lleno.single { it.accion == Accion.BUSCAR }.encendida)
+    fun `impresiones sale apagada con su razon y cobrar ya no va en el boton`() {
+        val venta = opcionesDe(ModoApp.VENTA, EstadoOpciones(hayProducto = true))
+        assertEquals(SIN_CONEXION_IMPRESIONES, venta.single { it.accion == Accion.IMPRESIONES }.razonApagada)
+        assertTrue(venta.single { it.accion == Accion.BUSCAR }.encendida)
+        assertTrue("Mandar a una caja es el botón «Cobrar», no una opción del gesto", Accion.entries.none { it.name == "MANDAR" })
     }
 
     @Test
-    fun `conteo no tiene boton`() {
-        assertTrue(opcionesDe(ModoApp.CONTEO, EstadoOpciones()).isEmpty())
-        assertNull(pistaDe(ModoApp.CONTEO, zurdo = false))
+    fun `en conteo el boton solo busca`() {
+        assertEquals(listOf(Accion.BUSCAR), opcionesDe(ModoApp.CONTEO, EstadoOpciones()).map { it.accion })
+        assertEquals("Pulsa y desliza: ← buscar", pistaDe(ModoApp.CONTEO, zurdo = false))
     }
 
     @Test
     fun `las etiquetas llevan su flecha y en zurdo va en espejo`() {
-        val buscar = opcionesDe(ModoApp.TICKET, EstadoOpciones()).single { it.accion == Accion.BUSCAR }
+        val buscar = opcionesDe(ModoApp.VENTA, EstadoOpciones()).single { it.accion == Accion.BUSCAR }
         assertEquals("← Buscar", etiqueta(buscar, zurdo = false))
         assertEquals("→ Buscar", etiqueta(buscar, zurdo = true))
         assertEquals("↗", flecha(Lugar.DIAGONAL, zurdo = true))
@@ -62,37 +59,39 @@ class OpcionesTest {
 
     @Test
     fun `la pista de la primera vez dice las direcciones del modo`() {
-        assertEquals("Pulsa y desliza: ↑ mandar · ↖ impresiones · ← buscar", pistaDe(ModoApp.TICKET, zurdo = false))
-        assertEquals("Pulsa y desliza: ↑ enseñar · ← buscar", pistaDe(ModoApp.PRECIO, zurdo = false))
-        assertEquals("Pulsa y desliza: ↑ enseñar · → buscar", pistaDe(ModoApp.PRECIO, zurdo = true))
+        assertEquals("Pulsa y desliza: ↑ enseñar · ↖ impresiones · ← buscar", pistaDe(ModoApp.VENTA, zurdo = false))
+        assertEquals("Pulsa y desliza: ↑ enseñar · ↗ impresiones · → buscar", pistaDe(ModoApp.VENTA, zurdo = true))
     }
 
     @Test
     fun `el nombre del boton para talkback dice de que modo es`() {
-        assertEquals("Opciones del ticket", nombreDelBoton(ModoApp.TICKET))
-        assertEquals("Opciones del precio", nombreDelBoton(ModoApp.PRECIO))
+        assertEquals("Opciones del ticket", nombreDelBoton(ModoApp.VENTA))
+        assertEquals("Opciones del conteo", nombreDelBoton(ModoApp.CONTEO))
     }
 
     // ---- Los modos de la app y los del núcleo ----
 
     @Test
-    fun `precio y ticket escanean como venta y conteo como conteo`() {
-        assertEquals(Modo.VENTA, ModoApp.PRECIO.delNucleo)
-        assertEquals(Modo.VENTA, ModoApp.TICKET.delNucleo)
+    fun `la venta escanea como venta y conteo como conteo`() {
+        assertEquals(Modo.VENTA, ModoApp.VENTA.delNucleo)
         assertEquals(Modo.CONTEO, ModoApp.CONTEO.delNucleo)
-        assertEquals(ModoApp.TICKET, ModoApp.deNucleo(Modo.VENTA))
+        assertEquals(ModoApp.VENTA, ModoApp.deNucleo(Modo.VENTA))
         assertEquals(ModoApp.CONTEO, ModoApp.deNucleo(Modo.CONTEO))
     }
 
     @Test
-    fun `los accesos directos viejos de venta abren el ticket`() {
-        assertEquals(ModoApp.TICKET, ModoApp.deExtra("venta"))
-        assertEquals(ModoApp.TICKET, ModoApp.deExtra("ticket"))
-        assertEquals(ModoApp.PRECIO, ModoApp.deExtra("precio"))
+    fun `los modos y los accesos de antes de la 0_5 abren la venta`() {
+        assertEquals(ModoApp.VENTA, ModoApp.deExtra("venta"))
+        assertEquals(ModoApp.VENTA, ModoApp.deExtra("ticket"))
+        assertEquals(ModoApp.VENTA, ModoApp.deExtra("precio"))
         assertEquals(ModoApp.CONTEO, ModoApp.deExtra("conteo"))
         assertNull(ModoApp.deExtra(null))
         assertNull(ModoApp.deExtra("otro"))
-        assertEquals(ModoApp.PRECIO, ModoApp.deNombre("PRECIO"))
+        // Lo que guardó una versión anterior como último modo.
+        assertEquals(ModoApp.VENTA, ModoApp.deNombre("PRECIO"))
+        assertEquals(ModoApp.VENTA, ModoApp.deNombre("TICKET"))
+        assertEquals(ModoApp.VENTA, ModoApp.deNombre("VENTA"))
+        assertEquals(ModoApp.CONTEO, ModoApp.deNombre("CONTEO"))
         assertNull(ModoApp.deNombre("precio"))
     }
 }

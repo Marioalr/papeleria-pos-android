@@ -38,6 +38,13 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
@@ -92,10 +99,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
-import mx.papeleriapos.android.botonrapido.Accion
-import mx.papeleriapos.android.botonrapido.EstadoOpciones
+import mx.papeleriapos.android.botonrapido.SIN_CONEXION_IMPRESIONES
 import mx.papeleriapos.android.botonrapido.SIN_CONEXION_MANDAR
-import mx.papeleriapos.android.botonrapido.opcionesDe
+import mx.papeleriapos.android.catalogo.ARTICULO_COMUN
+import mx.papeleriapos.android.catalogo.pzs
 import mx.papeleriapos.android.catalogo.CatalogoDeProductos
 import mx.papeleriapos.android.catalogo.Producto
 import mx.papeleriapos.android.catalogo.cantidadCorta
@@ -170,7 +177,7 @@ private fun HojaCompleta(etiqueta: String, contenido: @Composable ColumnScope.()
 
 /**
  * El campo va abajo, pegado al teclado, y los resultados encima: el mejor queda junto al campo y junto al pulgar (con el
- * teclado abierto, la mitad de arriba de la pantalla no se alcanza con una mano). En Ticket agrega, en Precio enseña y en
+ * teclado abierto, la mitad de arriba de la pantalla no se alcanza con una mano). En la venta agrega al ticket y en
  * Conteo cuenta. TalkBack no va por la geometría (empezaría por el peor): lee la barra, el campo y luego los resultados
  * del mejor al peor.
  *
@@ -191,8 +198,7 @@ fun HojaBuscar(
     val resultados = remember(texto, catalogo) { buscar(texto) }
     val foco = remember { FocusRequester() }
     val titulo = when (modo) {
-        ModoApp.TICKET -> "Agregar al ticket"
-        ModoApp.PRECIO -> "Ver el precio"
+        ModoApp.VENTA -> "Agregar al ticket"
         ModoApp.CONTEO -> "Contar un producto"
     }
     HojaCompleta("hoja-buscar") {
@@ -385,8 +391,8 @@ fun HojaTicket(
 ) {
     val color = LocalColoresModo.current.ticket
     val cargando = catalogo == null
-    // Las razones de lo apagado, las mismas del botón rápido.
-    val apagadas = opcionesDe(ModoApp.TICKET, EstadoOpciones(ticketVacio = ticket.renglones.isEmpty(), razonMandar = razonMandar)).associateBy { it.accion }
+    // Las razones de lo apagado: las mismas de «Cobrar» en la pantalla principal.
+    val razonDeMandar = if (ticket.renglones.isEmpty()) TICKET_VACIO else razonMandar
     HojaCompleta("hoja-ticket") {
         BarraHoja("Ticket · ${ticket.total} art.", "Los precios los pone la caja al recibirlo", alCerrar) {
             IconButton(onClick = acciones.deshacer, enabled = ticket.puedeDeshacer, modifier = Modifier.size(48.dp).testTag("deshacer-ticket")) {
@@ -411,13 +417,12 @@ fun HojaTicket(
                             Spacer(Modifier.width(6.dp))
                             Text("Buscar", maxLines = 1)
                         }
-                        val impresiones = apagadas[Accion.IMPRESIONES]
                         FilledTonalButton(
                             onClick = {},
-                            enabled = impresiones?.encendida == true,
+                            enabled = false,
                             modifier = Modifier
                                 .heightIn(min = 48.dp)
-                                .semantics { impresiones?.razonApagada?.let { stateDescription = "apagada: $it" } }
+                                .semantics { stateDescription = "apagada: $SIN_CONEXION_IMPRESIONES" }
                                 .testTag("impresiones-ticket"),
                         ) {
                             Icon(Icons.Filled.Print, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -425,7 +430,7 @@ fun HojaTicket(
                             Text("Impresiones", maxLines = 1)
                         }
                     }
-                    apagadas[Accion.IMPRESIONES]?.razonApagada?.let { RazonApagada(it) }
+                    RazonApagada(SIN_CONEXION_IMPRESIONES)
                 }
             }
         }
@@ -440,14 +445,13 @@ fun HojaTicket(
                         style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                     )
                 }
-                val mandar = apagadas[Accion.MANDAR]
                 Button(
                     onClick = acciones.mandar,
-                    enabled = mandar?.encendida == true,
+                    enabled = razonDeMandar == null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 56.dp)
-                        .semantics { mandar?.razonApagada?.let { stateDescription = "apagada: $it" } }
+                        .semantics { razonDeMandar?.let { stateDescription = "apagada: $it" } }
                         .testTag("mandar-ticket"),
                     colors = ButtonDefaults.buttonColors(containerColor = color.color, contentColor = color.enColor),
                 ) {
@@ -455,7 +459,7 @@ fun HojaTicket(
                     Spacer(Modifier.width(8.dp))
                     Text("Mandar a una caja", maxLines = 1)
                 }
-                mandar?.razonApagada?.let { RazonApagada(it) }
+                razonDeMandar?.let { RazonApagada(it) }
                 OutlinedButton(
                     onClick = acciones.empezarOtro,
                     enabled = ticket.renglones.isNotEmpty(),
@@ -511,6 +515,174 @@ private fun RenglonDelTicket(r: Renglon, p: Producto?, cargando: Boolean, accion
 @Composable
 private fun RazonApagada(texto: String) {
     Text(texto, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.semantics { hideFromAccessibility() })
+}
+
+// ---- El artículo común ----
+
+/** Lo más que se teclea de pesos en un artículo común: más de 99,999 es un error de dedo. */
+private const val MAXIMO_PESOS = 5
+
+/** Lo tecleado («15», «2.5», «.50») en centavos; 0 si todavía no es un precio. */
+internal fun centavosDe(tecleado: String): Long {
+    val (pesos, centavos) = tecleado.split('.', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+    return (pesos.toLongOrNull() ?: 0L) * 100 + (centavos.padEnd(2, '0').take(2).toLongOrNull() ?: 0L)
+}
+
+/** Lo tecleado más [tecla] (un dígito o el punto), o lo mismo si no cabe: un solo punto, dos decimales, cinco cifras de pesos. */
+internal fun teclearPrecio(tecleado: String, tecla: String): String {
+    val punto = tecleado.indexOf('.')
+    return when {
+        tecla == "." -> if (punto >= 0) tecleado else tecleado.ifEmpty { "0" } + "."
+        punto >= 0 -> if (tecleado.length - punto > 2) tecleado else tecleado + tecla
+        tecleado == "0" -> tecla
+        tecleado.length >= MAXIMO_PESOS -> tecleado
+        else -> tecleado + tecla
+    }
+}
+
+/**
+ * El precio a mano de un artículo común (0.5), como el Ctrl+P de la caja: lo que no está en el catálogo y se cobra de
+ * todos modos, sin tocar el inventario. Entra al ticket como «Artículo común», con una pieza; la cantidad se cambia en su
+ * tarjeta, como la de cualquier renglón.
+ */
+@Composable
+fun HojaComun(alListo: (centavos: Long) -> Unit, alCerrar: () -> Unit) {
+    var tecleado by rememberSaveable { mutableStateOf("") }
+    val centavos = centavosDe(tecleado)
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
+                .pointerInput(Unit) { detectTapGestures { alCerrar() } }
+                .testTag("velo-comun"),
+        )
+        Surface(
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("hoja-comun"),
+        ) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = 8.dp)) {
+                BarraHoja(ARTICULO_COMUN, "Teclea el precio: entra al ticket sin tocar el inventario", alCerrar)
+                Text(
+                    "$" + tecleado.ifEmpty { "0" },
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = "tnum"),
+                    color = if (centavos == 0L) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics {
+                        contentDescription = "Precio: ${pesos(centavos)}"
+                        liveRegion = LiveRegionMode.Polite
+                    }.testTag("precio-comun"),
+                )
+                val filas = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(".", "0", "⌫"))
+                for (fila in filas) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (t in fila) {
+                            val modifier = Modifier.weight(1f).height(52.dp)
+                            if (t == "⌫") {
+                                OutlinedButton(onClick = { tecleado = tecleado.dropLast(1) }, modifier = modifier) {
+                                    Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Borrar")
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { tecleado = teclearPrecio(tecleado, t) },
+                                    modifier = modifier
+                                        .semantics { if (t == ".") contentDescription = "Punto" }
+                                        .testTag(if (t == ".") "tecla-punto" else "tecla-$t"),
+                                ) { Text(t, fontSize = 22.sp) }
+                            }
+                        }
+                    }
+                }
+                Button(
+                    onClick = { alListo(centavos) },
+                    enabled = centavos > 0,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).heightIn(min = 56.dp).testTag("comun-listo"),
+                ) { Text(if (centavos > 0) "Agregar al ticket · ${pesos(centavos)}" else "Agregar al ticket", maxLines = 1) }
+            }
+        }
+    }
+}
+
+// ---- Este celular: el menú de arriba a la izquierda ----
+
+/** Lo que abre cada renglón de «Este celular». */
+class AccionesMenu(
+    /** Entrar a contar (o seguir contando). */
+    val contar: () -> Unit = {},
+    /** Salir del conteo: lo contado se queda guardado. */
+    val vender: () -> Unit = {},
+    val otroConteo: () -> Unit = {},
+    val actualizar: () -> Unit = {},
+    val conexion: () -> Unit = {},
+    val ajustes: () -> Unit = {},
+)
+
+/**
+ * «Este celular» (0.5): lo que no es vender. Conteo salió de la barra de abajo: es una tarea aparte, que se empieza y se
+ * deja aquí. Lo demás son las otras pantallas: actualizar la app, la conexión con la caja principal y Ajustes.
+ *
+ * @param contadas Las piezas del conteo guardado: con ellas, «Seguir contando» y «Empezar otro conteo».
+ * @param version La instalada, como la dice Ajustes.
+ * @param conexion Cómo está la conexión, en una línea.
+ */
+@Composable
+fun HojaMenu(modo: ModoApp, contadas: Int, version: String, conexion: String, acciones: AccionesMenu, alCerrar: () -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
+                .pointerInput(Unit) { detectTapGestures { alCerrar() } }
+                .testTag("velo-menu"),
+        )
+        Surface(
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("hoja-menu"),
+        ) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = 8.dp)) {
+                BarraHoja("Este celular", null, alCerrar)
+                if (modo == ModoApp.CONTEO) {
+                    OpcionDelMenu(Icons.Filled.PointOfSale, "Volver a vender", "Lo contado se queda guardado", "menu-vender", acciones.vender)
+                } else {
+                    OpcionDelMenu(
+                        Icons.Filled.Inventory2, "Contar inventario",
+                        if (contadas > 0) "Seguir contando · ${pzs(contadas)}" else "El escáner cuenta piezas en lugar de vender",
+                        "menu-contar", acciones.contar,
+                    )
+                }
+                if (contadas > 0) {
+                    OpcionDelMenu(Icons.Filled.RestartAlt, "Empezar otro conteo", "Vacía lo contado; se puede deshacer", "menu-otro-conteo", acciones.otroConteo)
+                }
+                OpcionDelMenu(Icons.Filled.SystemUpdate, "Actualizar la app", "Instalada: $version", "menu-actualizar", acciones.actualizar)
+                OpcionDelMenu(Icons.Filled.Wifi, "La conexión", conexion, "menu-conexion", acciones.conexion)
+                OpcionDelMenu(Icons.Filled.Settings, "Ajustes", "Vibración, linterna, mano izquierda y herramientas de medición", "menu-ajustes", acciones.ajustes)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OpcionDelMenu(icono: ImageVector, titulo: String, detalle: String, etiqueta: String, alTocar: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(role = Role.Button, onClick = alTocar)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .testTag(etiqueta),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(titulo, style = MaterialTheme.typography.bodyLarge)
+            Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }
 
 // ---- Enseñar al cliente ----

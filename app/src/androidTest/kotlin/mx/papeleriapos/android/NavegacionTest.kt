@@ -8,6 +8,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -52,45 +55,64 @@ class NavegacionTest {
         if (hayCamara) {
             assertTrue("La app no empezó a escanear", dispositivo.wait(Until.hasObject(By.res(ETIQUETA_ESCANEANDO)), ESPERA_ESCANEO_MS))
         }
-        // Los tres modos están abajo, con el escáner encendido.
-        for (modo in listOf("Precio", "Ticket", "Conteo")) {
-            assertNotNull("No está el modo «$modo»", dispositivo.wait(Until.findObject(By.text(modo)), ESPERA_MS))
-        }
+        // «Cobrar» está abajo, con el escáner encendido (0.5: la venta es una sola pantalla).
+        assertNotNull("No está «Cobrar»", dispositivo.wait(Until.findObject(By.textContains("Cobrar")), ESPERA_MS))
         abrirAjustes()
         // Desde Ajustes, cada herramienta y de regreso: atrás sube a Ajustes y luego a la principal.
         val recorrido = listOf(
             "El escáner" to "Simbologías",
             "Sesión de prueba" to "Iniciar sesión",
-            "Banco de pruebas" to "Exportar CSV",
+            "Banco de pruebas" to "Correr banco",
             "Pruebas de estrés" to "Abrir y cerrar la cámara",
         )
         for ((fila, senal) in recorrido) {
-            val boton = dispositivo.wait(Until.findObject(By.text(fila)), ESPERA_MS)
+            val boton = enAjustes(fila)
             assertNotNull("No está «$fila» en Ajustes", boton)
-            boton.click()
-            assertTrue("No se vio «$senal» en «$fila»", dispositivo.wait(Until.hasObject(By.textContains(senal)), ESPERA_MS))
+            boton!!.click()
+            assertTrue("No se vio «$senal» en «$fila»", seVe(senal))
             dispositivo.pressBack()
-            assertTrue("Atrás no regresó a Ajustes desde «$fila»", dispositivo.wait(Until.hasObject(By.text("Herramientas de medición")), ESPERA_MS))
+            assertTrue("Atrás no regresó a Ajustes desde «$fila»", dispositivo.wait(Until.hasObject(By.text("Al escanear")), ESPERA_MS))
             assertEquals("La app dejó el primer plano en «$fila»", paquete, dispositivo.currentPackageName)
         }
         // Atrás desde Ajustes vuelve al escáner (no sale de la app), y vuelve a escanear.
         dispositivo.pressBack()
-        assertTrue(dispositivo.wait(Until.hasObject(By.text("Precio")), ESPERA_MS))
+        assertTrue(dispositivo.wait(Until.hasObject(By.textContains("Cobrar")), ESPERA_MS))
         if (hayCamara) {
             assertTrue("Al volver no volvió a escanear", dispositivo.wait(Until.hasObject(By.res(ETIQUETA_ESCANEANDO)), ESPERA_ESCANEO_MS))
         }
         assertEquals(paquete, dispositivo.currentPackageName)
     }
 
-    /** El botón de arriba a la izquierda: fuera del escáner la cámara se apaga (no le roba batería ni CPU a lo demás). */
+    /**
+     * El menú de arriba a la izquierda («Este celular») y, en él, Ajustes: fuera del escáner la cámara se apaga (no le roba
+     * batería ni CPU a lo demás).
+     */
     private fun abrirAjustes() {
-        val ajustes = dispositivo.wait(Until.findObject(By.desc("Ajustes")), ESPERA_MS)
-        assertNotNull("No está el botón de Ajustes", ajustes)
+        val menu = dispositivo.wait(Until.findObject(By.descContains("Este celular")), ESPERA_MS)
+        assertNotNull("No está el menú «Este celular»", menu)
+        menu.click()
+        assertNotNull("El menú no trae «Contar inventario»", dispositivo.wait(Until.findObject(By.text("Contar inventario")), ESPERA_MS))
+        val ajustes = dispositivo.wait(Until.findObject(By.text("Ajustes")), ESPERA_MS)
+        assertNotNull("No está Ajustes en el menú", ajustes)
         ajustes.click()
         assertTrue("No abrió Ajustes", dispositivo.wait(Until.hasObject(By.text("Al escanear")), ESPERA_MS))
         if (hayCamara) {
             assertTrue("La cámara siguió escaneando en Ajustes", dispositivo.wait(Until.gone(By.res(ETIQUETA_ESCANEANDO)), ESPERA_MS))
         }
+    }
+
+    /** Un renglón de Ajustes, que ya no cabe en una pantalla: si no se ve, se desplaza hasta él. */
+    private fun enAjustes(texto: String): UiObject2? {
+        dispositivo.findObject(By.text(texto))?.let { return it }
+        runCatching { UiScrollable(UiSelector().scrollable(true)).scrollTextIntoView(texto) }
+        return dispositivo.wait(Until.findObject(By.text(texto)), ESPERA_MS)
+    }
+
+    /** Si [texto] está en la pantalla, aunque haya que desplazarla para verlo. */
+    private fun seVe(texto: String): Boolean {
+        if (dispositivo.wait(Until.hasObject(By.textContains(texto)), 2_000L)) return true
+        runCatching { UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().textContains(texto)) }
+        return dispositivo.wait(Until.hasObject(By.textContains(texto)), ESPERA_MS)
     }
 
     private companion object {

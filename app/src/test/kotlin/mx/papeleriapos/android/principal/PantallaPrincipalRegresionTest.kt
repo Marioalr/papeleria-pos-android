@@ -85,20 +85,22 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
     // ---- Ticket: lo último siempre se ve ----
 
     @Test
-    fun `en ticket lo ultimo leido siempre se ve con su menos y su mas`() {
-        abrir(ModoApp.TICKET)
+    fun `lo ultimo leido siempre se ve en su tarjeta, con la cantidad y la pista de los gestos`() {
+        abrir(ModoApp.VENTA)
         for (c in listOf(CUADERNO, LAPIZ, GOMA, SACAPUNTAS, PEGAMENTO, TIJERAS, FOLDER)) {
             leer(c)
             val panel = limites("panel")!!
-            val barra = limites("barra-modos")!!
+            val barra = limites("barra-abajo")!!
             val renglon = sinRecorte(compose.onNodeWithTag("renglon-actual", useUnmergedTree = true).fetchSemanticsNode())
             assertTrue("Con ${nombreDe(c)}, el renglón de lo último ($renglon) no cabe en el panel", renglon.top >= panel.top && renglon.bottom <= barra.top)
             val nombre = compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText(nombreDe(c)), useUnmergedTree = true)
             assertEquals("El renglón de lo último es lo que se acaba de leer", 1, nombre.fetchSemanticsNodes().size)
-            for (t in listOf("menos-uno", "mas-uno")) {
+            for (t in listOf("cantidad", "pista-tarjeta")) {
                 val b = limites(t)!!
-                assertTrue("$t se ve entero", b.height >= 47f && b.bottom <= barra.top)
+                assertTrue("$t se ve entero ($b)", b.height > 0f && b.top >= panel.top && b.bottom <= barra.top)
             }
+            // Toda la tarjeta es para el pulgar: a lo ancho del panel y de 56 dp o más de alto.
+            assertTrue("La tarjeta ($renglon) es un blanco grande", renglon.height >= 56f && renglon.width >= 320f)
         }
         captura("regresion/ticket-siete")
     }
@@ -107,7 +109,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `tocar arriba con el menu abierto ensena la tarjeta de ese momento`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         tocarBoton()
         assertTrue(menuAbierto())
@@ -120,7 +122,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `talkback ensena la tarjeta de ahora y no la de un gesto anterior`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         compose.onNodeWithTag("boton-rapido").performTouchInput { down(center); moveBy(Offset(0f, -50.dp.toPx())); up() }
         idle()
@@ -146,7 +148,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con el gesto ensena lo que habia al bajar el dedo aunque a medio gesto se lea otro`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val c = centroBoton()
         compose.onRoot().performTouchInput { down(0, c); moveTo(0, c + Offset(0f, -50.dp.toPx())) }
@@ -159,7 +161,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `arriba no se enciende con un producto leido a medio gesto`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(NO_ESTA)
         val c = centroBoton()
         compose.onRoot().performTouchInput { down(0, c); moveTo(0, c + Offset(0f, -60.dp.toPx())) }
@@ -177,7 +179,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con una hoja encima el boton no esta ni excluye el gesto de atras`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         assertTrue(existe("boton-rapido"))
         assertTrue("Sin hoja, el botón se excluye del gesto de atrás", exclusiones().isNotEmpty())
@@ -209,7 +211,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el rebote no deja que un toque por reflejo cierre el precio en grande`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val c = centroBoton()
         relojesJuntos()
@@ -237,7 +239,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `durante el rebote la equis de la hoja si responde y lo demas no`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val c = centroBoton()
         relojesJuntos()
@@ -272,7 +274,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `la sesion de prueba no anota lo leido bajo una hoja`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         vm.iniciarSesion("prueba")
         vm.cambiarEsperado(LAPIZ)
         idle()
@@ -297,10 +299,10 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el deshacer del aviso regresa lo quitado aunque en medio se lea otro`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         idle()
         assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
         leer(GOMA)
@@ -313,11 +315,11 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `tras el deshacer del aviso el renglon actual es lo ultimo leido aunque ya estuviera arriba`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(LAPIZ)
         leer(GOMA) // por error
         // El bote del renglón actual (la goma, en 1) y, con el aviso a la vista, el segundo lápiz.
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         idle()
         assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
         leer(LAPIZ)
@@ -326,14 +328,14 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         assertEquals(listOf(LAPIZ to 2, GOMA to 1), claves())
         // El − y el + del panel son del lápiz: el siguiente + es otro lápiz.
         assertEquals(1, compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText(nombreDe(LAPIZ)), useUnmergedTree = true).fetchSemanticsNodes().size)
-        compose.onNodeWithTag("mas-uno").performClick()
+        tocarTarjeta()
         idle()
         assertEquals(listOf(LAPIZ to 3, GOMA to 1), claves())
     }
 
     @Test
     fun `el deshacer del ticket completo se lleva el aviso de lo que deshizo`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
@@ -351,7 +353,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el deshacer de ticket vacio regresa lo de antes con lo leido despues arriba`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
@@ -369,7 +371,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el menu se cierra al salir de la app y si la pantalla sale con el abierto`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         tocarBoton()
@@ -388,7 +390,9 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         mostrar = true
         idle()
         assertFalse(vm.piso.menuAbierto)
-        compose.onNodeWithTag("menos-uno").performClick()
+        // Pasado el rebote del botón (300 ms en que solo él responde), la tarjeta vuelve a ser del pulgar.
+        compose.mainClock.advanceTimeBy(400)
+        quitarUno()
         idle()
         assertEquals("Quitado del ticket", vm.piso.aviso.value?.texto)
         assertTrue(existe("aviso"))
@@ -396,7 +400,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `cambiar de modo con el menu abierto lo cierra`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         tocarBoton()
         assertTrue(menuAbierto())
@@ -406,16 +410,16 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         assertFalse(menuAbierto())
         assertFalse(existe("pista-deslizar"))
         assertFalse(vm.piso.menuAbierto)
-        vm.cambiarModoApp(ModoApp.TICKET)
+        vm.cambiarModoApp(ModoApp.VENTA)
         idle()
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         idle()
         assertTrue("Los avisos no se quedan esperando", existe("aviso"))
     }
 
     @Test
     fun `un segundo dedo que cierra el menu cancela el gesto del primero`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val c = centroBoton()
         val fuera = Offset(c.x - 150 * densidad, 200 * densidad)
@@ -437,7 +441,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         idle()
         assertFalse(menuAbierto())
         assertFalse(vm.piso.menuAbierto)
-        compose.onNodeWithTag("al-ticket").performSemanticsAction(SemanticsActions.OnClick)
+        otroAlTicket()
         idle()
         assertNotNull("El aviso de «Al ticket» sale", vm.piso.aviso.value)
         assertTrue(existe("aviso"))
@@ -447,10 +451,10 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `un aviso que se veia al abrir el menu se esconde y sale completo al cerrarlo`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         idle()
         val a = vm.piso.aviso.value!!
         tocarBoton()
@@ -474,7 +478,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el aviso de quitado sale encima del ticket completo sin tapar su accion principal`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
@@ -511,7 +515,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el aviso sobre el ticket completo no tapa el menos ni el mas del primer renglon`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         leer(GOMA)
@@ -550,7 +554,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con el ticket completo desplazado el aviso tampoco tapa los renglones que se ven`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         val codigos = listOf(CUADERNO, LAPIZ, GOMA, SACAPUNTAS, PEGAMENTO, TIJERAS, FOLDER) +
             listOf("7509990100088", "7509990100095", "7509990100101", "7509990100118", "7509990100125")
         for (c in codigos) leer(c)
@@ -580,9 +584,9 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el aviso que sigue a la vista no tapa los resultados de buscar`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         idle()
         assertTrue(vm.piso.aviso.value!!.texto.contains("al ticket"))
         // ← Buscar con «… al ticket» todavía a la vista: sale bajo la barra de la hoja, como sobre el ticket completo.
@@ -606,8 +610,8 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
     // ---- Lo que llega de fuera: «Abrir la app» del escaneo rápido ----
 
     @Test
-    fun `lo que llega de fuera cierra el menu y las hojas y ensena el producto sin tocar el ticket`() {
-        abrir(ModoApp.TICKET)
+    fun `lo que llega de fuera cierra el menu y las hojas y entra al ticket`() {
+        abrir(ModoApp.VENTA)
         leer(LAPIZ)
         val ticket = vm.venta.value
         tocarBoton()
@@ -615,9 +619,10 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         vm.ensenarDeFuera(CUADERNO)
         idle()
         assertFalse("El menú se cierra", menuAbierto())
-        assertEquals(ModoApp.PRECIO, vm.piso.modo.value)
-        compose.onNode(hasText(nombreDe(CUADERNO)) and hasAnyAncestor(hasTestTag("tarjeta-precio"))).assertExists()
-        assertTrue("El ticket no cambia", ticket === vm.venta.value)
+        assertEquals(ModoApp.VENTA, vm.piso.modo.value)
+        compose.onNode(hasText(nombreDe(CUADERNO)) and hasAnyAncestor(hasTestTag("tarjeta"))).assertExists()
+        assertEquals("Entra al ticket, arriba", CUADERNO, vm.venta.value.actual!!.clave)
+        assertEquals(ticket.total + 1, vm.venta.value.total)
         // Con el precio en grande encima (una hoja), lo que no está: la hoja se cierra y sale «No está» con su código.
         vm.piso.ensenar(vm.piso.catalogo.value!!.porClave(CUADERNO)!!)
         idle()
@@ -625,15 +630,15 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         vm.ensenarDeFuera(NO_ESTA)
         idle()
         assertNull(vm.piso.hoja.value)
-        compose.onNode(hasText(NO_ESTA) and hasAnyAncestor(hasTestTag("no-esta"))).assertExists()
+        compose.onNode(hasText(NO_ESTA, substring = true) and hasAnyAncestor(hasTestTag("no-esta"))).assertExists()
         captura("regresion/de-fuera-no-esta")
     }
 
     @Test
     fun `el aviso de al ticket no sale encima del precio en grande y espera a que se regrese`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         idle()
         val a = vm.piso.aviso.value!!
         // Enseguida, ↑ «Enseñar al cliente»: lo que ve el cliente no lleva el aviso del ticket.
@@ -659,9 +664,9 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
                 containsControls: Boolean,
             ): Long = if (containsControls) 20_000L else originalTimeoutMillis
         }
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
-        compose.onNodeWithTag("menos-uno").performClick()
+        quitarUno()
         idle()
         compose.mainClock.advanceTimeBy(10_000)
         idle()
@@ -673,14 +678,14 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el aviso de arriba no tapa la indicacion del escaner`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         // Lo leído se confirma medio segundo; luego vuelve la indicación.
         compose.mainClock.advanceTimeBy(700)
         idle()
         val aviso = limites("aviso")!!
-        val ajustes = limites("boton-ajustes")!!
+        val ajustes = limites("boton-menu")!!
         val indicacion = limites(EtiquetasEscaner.INDICACION)!!
         assertEquals("A la barra de estado + 72: 4 dp abajo de Ajustes y la linterna", 24f + 72f, aviso.top, 1f)
         assertTrue("Bajo Ajustes", aviso.top >= ajustes.bottom)
@@ -689,13 +694,13 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con la sesion de prueba el aviso de arriba no tapa no leyo ni su deshacer`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         vm.iniciarSesion("prueba")
         idle()
         leer(CUADERNO)
         compose.mainClock.advanceTimeBy(1_500)
         idle()
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         idle()
         assertNotNull(vm.piso.aviso.value)
         fun noLosTapa(caso: String) {
@@ -712,13 +717,13 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         idle()
         assertEquals(antes + 1, vm.sesion.value!!.intentos.size)
         // Y otro toque al centro de «Al ticket» agrega otro: el aviso de abajo no lo tapa.
-        compose.onNodeWithTag("al-ticket").performClick()
+        otroAlTicket()
         idle()
-        assertEquals(listOf(CUADERNO to 2), claves())
+        assertEquals(listOf(CUADERNO to 3), claves())
         // En Ticket, lo elegido en Buscar desde el panel también avisa arriba.
         compose.mainClock.advanceTimeBy(30_000)
         idle()
-        vm.cambiarModoApp(ModoApp.TICKET)
+        vm.cambiarModoApp(ModoApp.VENTA)
         idle()
         vm.piso.abrir(Hoja.Buscar)
         idle()
@@ -731,7 +736,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con barra de estado el escaner no la vuelve a sumar arriba`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         controlador.cambiar { it.copy(hayLinterna = true) }
         vm.piso.abrir(Hoja.Buscar)
         idle()
@@ -750,7 +755,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         vm.piso.cerrarHoja()
         idle()
         // El relleno del Scaffold ya trae la barra: Ajustes y la linterna van a la barra + 12, no a la barra + 24 + 12.
-        val ajustes = limites("boton-ajustes")!!
+        val ajustes = limites("boton-menu")!!
         val linterna = limites(EtiquetasEscaner.LINTERNA)!!
         assertEquals("Ajustes a la barra + 12", 24f + 12f, ajustes.top, 1f)
         assertEquals("La linterna a la barra + 12, como Ajustes", ajustes.top, linterna.top, 1f)
@@ -771,8 +776,8 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `ajustes se ve encima del diagnostico y del error del escaner`() {
-        abrir(ModoApp.PRECIO)
-        val ajustes = limites("boton-ajustes")!!
+        abrir(ModoApp.VENTA)
+        val ajustes = limites("boton-menu")!!
         val engrane = blancos(captura("regresion/ajustes-solo"), ajustes)
         assertTrue(engrane.size > 200)
         // Con el diagnóstico (que el escáner dibuja en esa esquina) el engrane se sigue viendo entero.
@@ -788,8 +793,13 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         assertTrue(existe(EtiquetasEscaner.ERROR))
         val conError = blancos(captura("regresion/ajustes-error"), ajustes)
         assertTrue("Con el error: ${engrane.count { it in conError }} de ${engrane.size}", engrane.all { it in conError })
-        compose.onNodeWithTag("boton-ajustes").performClick()
+        compose.onNodeWithTag("boton-menu").performClick()
+        idle()
+        assertEquals("El menú se abre igual", Hoja.Menu, vm.piso.hoja.value)
+        compose.onNodeWithTag("menu-ajustes").performClick()
+        idle()
         assertEquals(1, ajustesAbiertos)
+        assertNull("Ir a otra pantalla cierra el menú", vm.piso.hoja.value)
     }
 
     @Test
@@ -798,8 +808,8 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         val app = androidx.test.core.app.ApplicationProvider.getApplicationContext<Application>()
         val audio = app.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
         audio.setStreamVolume(android.media.AudioManager.STREAM_SYSTEM, 0, 0)
-        abrir(ModoApp.PRECIO)
-        val ajustes = limites("boton-ajustes")!!
+        abrir(ModoApp.VENTA)
+        val ajustes = limites("boton-menu")!!
         val engrane = blancos(captura("regresion/ajustes-con-sonido"), ajustes)
         assertTrue(engrane.size > 200)
         vm.cambiarConfig(vm.config.value.copy(sonido = true))
@@ -813,7 +823,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `la cantidad y buscar abiertas desde el ticket completo regresan a el`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Ticket)
@@ -849,13 +859,13 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `lo que sumo el escaneo rapido sale con su nombre y suma al total`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         // Como lo suma el escaneo rápido: sin la clave del catálogo.
         listas.venta.update { it.sumar(CUADERNO, Simbologia.EAN_13, 1L) }
         idle()
         assertTrue(compose.onAllNodesWithText("Código sin producto", substring = true, useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
         assertEquals(1, compose.onAllNodes(hasText(nombreDe(CUADERNO)), useUnmergedTree = true).fetchSemanticsNodes().size)
-        assertEquals("\$46.00", textoDe(compose.onNodeWithTag("total-ticket", useUnmergedTree = true).fetchSemanticsNode()))
+        assertEquals("Cobrar · \$46.00", textoDe(compose.onNodeWithTag("total-ticket", useUnmergedTree = true).fetchSemanticsNode()))
     }
 
     @Test
@@ -863,12 +873,12 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         val ticket = ListaLecturas().sumar(CUADERNO, Simbologia.EAN_13, 1L, clave = CUADERNO)
         compose.setContent {
             TemaEscaner(oscuro = false) {
-                ContenidoPanel(ModoApp.TICKET, null, ticket, ListaLecturas(), catalogo = null, acciones = AccionesPanel())
+                ContenidoPanel(ModoApp.VENTA, null, ticket, ListaLecturas(), catalogo = null, acciones = AccionesPanel())
             }
         }
         compose.waitForIdle()
         assertTrue(compose.onAllNodesWithText("Código sin producto", substring = true, useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
-        assertEquals("…", textoDe(compose.onNodeWithTag("total-ticket", useUnmergedTree = true).fetchSemanticsNode()))
+        assertFalse("Sin el producto todavía no hay importe que decir", existe("importe-actual"))
         assertEquals(1, compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText(CUADERNO), useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
@@ -879,9 +889,9 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `con el boton a la izquierda el panel vacio dice abajo a la izquierda`() {
-        abrir(ModoApp.TICKET) { it.piso.cambiarZurdo(true) }
+        abrir(ModoApp.VENTA) { it.piso.cambiarZurdo(true) }
         assertTrue(textoDelPanelVacio(), textoDelPanelVacio().contains("en el botón de abajo a la izquierda"))
-        vm.cambiarModoApp(ModoApp.PRECIO)
+        vm.cambiarModoApp(ModoApp.VENTA)
         idle()
         assertTrue(textoDelPanelVacio(), textoDelPanelVacio().contains("en el botón de abajo a la izquierda"))
         vm.piso.cambiarZurdo(false)
@@ -894,30 +904,29 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         abrir(ModoApp.CONTEO)
         val texto = textoDelPanelVacio()
         assertFalse(texto, texto.contains("lugares") || texto.contains("ciegas"))
-        assertTrue(texto, texto.contains("Contar contra el POS llega después del piloto."))
+        assertTrue(texto, texto.contains("en este celular"))
     }
 
     @Test
     fun `con una sola pieza dice queda 1 en la tarjeta y en el renglon`() {
-        abrir(ModoApp.PRECIO)
+        abrir(ModoApp.VENTA)
         leer(SACAPUNTAS)
         assertEquals(1, compose.onAllNodes(hasText("Queda 1"), useUnmergedTree = true).fetchSemanticsNodes().size)
         assertTrue(compose.onAllNodes(hasText("Quedan 1"), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
-        vm.cambiarModoApp(ModoApp.TICKET)
+        // En el ticket completo, el renglón lo dice primero (para que no se corte en el chico).
+        vm.piso.abrir(Hoja.Ticket)
         idle()
-        leer(SACAPUNTAS)
-        val detalle = compose.onAllNodes(hasAnyAncestor(hasTestTag("renglon-actual")) and hasText("Queda 1", substring = true), useUnmergedTree = true)
-        assertEquals("Queda 1 · \$9.00 c/u · \$9.00", textoDe(detalle.fetchSemanticsNodes().single()))
+        assertEquals(1, compose.onAllNodes(hasText("Queda 1 · \$9.00 c/u · \$9.00"), useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
     @Test
     fun `de a uno dice pza, va, encontrado e intento en singular`() {
         abrir(ModoApp.CONTEO)
         leer(GOMA)
-        assertEquals(1, compose.onAllNodes(hasText("Conteo de prueba · 1 pza"), useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodes(hasText("Terminar conteo · 1 pza"), useUnmergedTree = true).fetchSemanticsNodes().size)
         assertEquals("Goma blanca chica, va 1", vm.piso.anuncio.value?.texto)
         leer(GOMA)
-        assertEquals(1, compose.onAllNodes(hasText("Conteo de prueba · 2 pzs"), useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodes(hasText("Terminar conteo · 2 pzs"), useUnmergedTree = true).fetchSemanticsNodes().size)
         assertEquals("Goma blanca chica, van 2", vm.piso.anuncio.value?.texto)
         // Buscar con un solo resultado.
         vm.piso.abrir(Hoja.Buscar)
@@ -938,7 +947,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         vm.terminarSesion()
         idle()
         // El teclado de la cantidad de un renglón con una pieza.
-        vm.cambiarModoApp(ModoApp.TICKET)
+        vm.cambiarModoApp(ModoApp.VENTA)
         idle()
         leer(LAPIZ)
         vm.piso.abrir(Hoja.Cantidad(vm.venta.value.actual!!.id))
@@ -948,20 +957,20 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `la burbuja de la primera vez sale solo con el panel vacio`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         assertTrue(existe("pista-boton"))
         leer(CUADERNO)
-        assertFalse("Con renglones no tapa importes ni el − y el +", existe("pista-boton"))
-        vm.cambiarModoApp(ModoApp.PRECIO)
+        assertFalse("Con la tarjeta no tapa el precio ni los renglones", existe("pista-boton"))
+        vm.cambiarModoApp(ModoApp.CONTEO)
         idle()
-        assertTrue(existe("pista-boton"))
+        assertTrue("Al contar, la suya (← buscar)", existe("pista-boton"))
         leer(GOMA)
-        assertFalse("Con la tarjeta no tapa la promoción", existe("pista-boton"))
+        assertFalse(existe("pista-boton"))
     }
 
     @Test
     fun `el ticket completo trae mandar e impresiones apagadas con su razon`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         vm.piso.abrir(Hoja.Ticket)
         idle()
@@ -980,28 +989,23 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `el boton queda a 16 dp de la orilla y a 4 de la barra de gestos`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         // Robolectric no da la barra de gestos: la ventana termina donde ella empieza (716).
         val zona = limites("boton-rapido")!!
         assertEquals(360f - 16f - 28f, zona.center.x, 0.5f)
         assertEquals(716f - 4f - 28f, zona.center.y, 0.5f)
-        // Y centrado con los modos.
-        assertEquals(zona.center.y, limites("modo-PRECIO")!!.center.y, 0.5f)
+        // Y centrado con «Cobrar».
+        assertEquals(zona.center.y, limites("cobrar")!!.center.y, 0.5f)
         vm.piso.cambiarZurdo(true)
         idle()
         assertEquals(16f + 28f, limites("boton-rapido")!!.center.x, 0.5f)
     }
 
     @Test
-    fun `jalar el asidero o el encabezado abre el ticket completo`() {
-        abrir(ModoApp.TICKET)
+    fun `jalar el asidero abre el ticket completo`() {
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         compose.onNodeWithTag("asidero").performTouchInput { swipe(center, center - Offset(0f, 120.dp.toPx()), durationMillis = 300) }
-        idle()
-        assertEquals(Hoja.Ticket, vm.piso.hoja.value)
-        vm.piso.cerrarHoja()
-        idle()
-        compose.onNodeWithTag("encabezado-ticket").performTouchInput { swipe(center, center - Offset(0f, 120.dp.toPx()), durationMillis = 300) }
         idle()
         assertEquals(Hoja.Ticket, vm.piso.hoja.value)
         vm.piso.cerrarHoja()
@@ -1017,7 +1021,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `en la barra de la sesion caben no leyo y su deshacer`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         vm.iniciarSesion("prueba")
         idle()
         val barra = limites("barra-sesion")!!
@@ -1034,7 +1038,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `las opciones salen del boton en 150 ms y hacia cancelar se marca la equis`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val zona = limites("boton-rapido")!!
         compose.mainClock.autoAdvance = false
@@ -1062,7 +1066,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
         android.provider.Settings.Global.putFloat(
             compose.activity.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 0f,
         )
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         val zona = limites("boton-rapido")!!
         compose.mainClock.autoAdvance = false
@@ -1103,7 +1107,7 @@ class PantallaPrincipalRegresionTest : PruebaDePantalla() {
 
     @Test
     fun `la pantalla no se recompone con cada cuadro del escaner`() {
-        abrir(ModoApp.TICKET)
+        abrir(ModoApp.VENTA)
         leer(CUADERNO)
         leer(LAPIZ)
         compose.mainClock.advanceTimeBy(700)

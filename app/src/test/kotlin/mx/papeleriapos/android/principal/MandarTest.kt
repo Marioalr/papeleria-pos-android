@@ -181,4 +181,12 @@ class MandarTest {
         assertEquals("Hay una VPN encendida en el celular", m.estado.value.error)
         assertFalse(m.estado.value.puedeMandar)
     }
+
+    @Test
+    fun `con un articulo comun todavia no se manda y lo dice`() {
+        val ticket = ListaLecturas().agregarComun(1500, 1)
+        val catalogo = mx.papeleriapos.android.catalogo.CatalogoDeProductos(emptyList())
+        assertEquals(CON_ARTICULO_COMUN, razonParaMandar(ticket, catalogo, conAlta = true, dePrueba = false))
+        assertEquals("Sin alta, primero eso", SIN_CONEXION_MANDAR, razonParaMandar(ticket, catalogo, conAlta = false, dePrueba = false))
+    }
 }

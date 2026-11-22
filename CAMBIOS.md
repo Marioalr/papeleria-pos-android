@@ -2,6 +2,86 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.0 (sin publicar)
+
+La interfaz que pidió y aprobó el dueño el 2026-11-22, después de probarla en el
+[prototipo](docs/propuesta-interfaz/prototipo-0.5.html): el objetivo es el flujo, agregar productos y cobrar rápido, sin
+perder la fluidez del escáner. La app es de uso personal (el dueño o alguien de igual confianza). El escáner, la franja y
+el tamaño del visor no cambian.
+
+- **Precio y Ticket son una sola pantalla, la venta.** Cada lectura enseña el precio en grande (ya con el mayoreo o la
+  promoción de lo que va), el mayoreo, la existencia y lo que sale la pieza de una presentación, y entra al ticket. Si el
+  cliente solo preguntaba, la tarjeta se desliza y sale. Quien traía el modo Precio o Ticket guardado abre en la venta, y
+  los accesos del ícono que ya estaban anclados siguen abriendo.
+- **La cantidad, con el pulgar, en la tarjeta de lo último** (sumar piezas escaneando el mismo producto fue problemático
+  en las pruebas):
+  - Un toque en cualquier parte de la tarjeta: uno más.
+  - Deslizarla a la izquierda un tramo corto (48 dp): uno menos; con una sola pieza, sale del ticket.
+  - Deslizarla hasta el fondo (más de la mitad de la tarjeta): sale el renglón entero, con todas sus piezas.
+  - Dejar el dedo: el teclado de la cantidad («20» copias).
+  - Antes de soltar, la tarjeta dice qué va a pasar: atrás asoma «−1» o «Quitar los 3» (en rojo fuerte al llegar al fondo)
+    y el renglón de abajo lo explica. Lo quitado se puede deshacer y regresa con sus piezas. Vibra distinto en cada grado.
+  - Tocar un renglón de la lista lo sube a la tarjeta sin sumarle. El ticket completo (el asidero) conserva su − y su +.
+  - Para TalkBack, lo mismo como acciones de la tarjeta: «Uno más», «Quitar uno», «Quitar los 3 del ticket», «Teclear la
+    cantidad».
+- **El mismo código solo vuelve a contar si se retiró de la mira.** Antes volvía a contar cada 1.5 s aunque siguiera a la
+  vista: sostener el producto mientras el cliente veía el precio sumaba de más. También en el escaneo rápido. Es un valor
+  de las reglas del núcleo (`msParaRepetirAVista = 0`); el núcleo no cambia.
+- **Lo que no está en el catálogo se queda fuera del ticket** (y del conteo). Sale en rojo con su código y dos salidas:
+  «Buscar por nombre» o, en la venta, **«Artículo común»**: el precio a mano (con centavos), sin tocar el inventario, como
+  el Ctrl+P de la caja. Entra como un renglón más, con sus gestos. Los renglones de códigos sin producto que guardó una
+  versión anterior se siguen viendo, en rojo, para quitarlos.
+- **«Cobrar» es el botón grande de abajo,** donde estaban los modos, con el total y cuántos artículos. Mientras el
+  celular no cobre por sí mismo (falta el POS, abajo), cobrar abre «¿A qué caja?» y manda el ticket, como la 0.4.4.
+  Apagado se ve apagado y, al tocarlo, dice por qué (sin alta, ticket vacío, un artículo común).
+- **El botón rápido se queda en su esquina,** con su gesto y en su lugar exacto: ↑ «Enseñar al cliente» (el producto de la
+  tarjeta, en grande), ↖ «Impresiones» (apagada) y ← «Buscar». Al contar, solo ← «Buscar». En oscuro su velo va más
+  cargado y sus opciones llevan un borde claro, para separarse de la tarjeta que ahora queda debajo.
+- **Conteo sale de la barra** y va al menú «Este celular», arriba a la izquierda (donde estaba Ajustes): «Contar
+  inventario» o «Seguir contando · 37 pzs», y «Empezar otro conteo» (se puede deshacer). Mientras se cuenta, la pantalla
+  lo dice arriba en violeta («Contando · Volver a vender») y el botón de abajo termina el conteo; lo contado se queda
+  guardado en el celular. Los mismos gestos de la tarjeta. Mandar lo contado a una caja llega cuando el POS lo reciba.
+- **El menú «Este celular»** lleva además «Actualizar la app», «La conexión» (con cómo está) y «Ajustes». Lo que se abre
+  desde ahí regresa a la pantalla principal.
+- **Actualizar desde la propia app** (menú y Ajustes › Esta app). **La app nunca busca sola:** solo al tocar «Buscar
+  versión nueva» lee la última versión publicada en GitHub, dice qué trae, y con «Descargar e instalar» baja el APK y se
+  lo entrega a Android, que pide confirmar. Antes de entregarlo comprueba el tamaño y el sha256 que publica GitHub, que
+  sea este paquete, una versión más nueva y **la misma firma que la instalada**. El alta, la copia y el ticket se
+  conservan. Al terminar hay que volver a abrir la app (Android la cierra para cambiarla).
+  - Es la única salida de la app fuera de la red de la tienda: solo por HTTPS y solo a github.com y a los servidores
+    desde donde GitHub entrega la descarga; cualquier otro host o redirección se rechaza. No viaja nada del celular ni de
+    la tienda.
+  - **Permiso nuevo:** instalar paquetes (`REQUEST_INSTALL_PACKAGES`); Android pide además permitirle a esta app
+    «Instalar apps desconocidas» la primera vez. La revisión `verificarPermisos` lo acepta, y nada más.
+  - **La firma:** las actualizaciones solo entran sobre una app con la firma del proyecto (la de los APK de GitHub). Un
+    celular con la app de depuración o de otra firma tiene que desinstalarla una vez e instalar la de GitHub; eso borra el
+    alta, que se vuelve a dar en la caja principal.
+- **«Abrir la app» desde el mosaico «Precio»** ahora mete ese producto al ticket (ya no hay un modo que solo consulte);
+  si solo preguntaba, se desliza y sale. El mosaico sobre el bloqueo sigue sin tocar el ticket.
+- Pruebas: `TarjetaTest` (los gestos con el dedo sobre la tarjeta, el artículo común, «Cobrar», el menú y Conteo),
+  `PisoTest` y `ListaLecturasTest` (quitar entero y deshacer, subir, el artículo común y lo guardado por la 0.4),
+  `HojaComunTest`, `OpcionesTest`, `MandarTest` y las del paquete `actualizar` (el JSON de GitHub, la elección del APK, los
+  hosts y las redirecciones, el sha256, la firma, cada paso del estado y la pantalla).
+
+**Lo que falta y de quién depende:**
+
+- **Cobrar en el celular** (efectivo con el cambio, tarjeta, transferencia) y **mandar un artículo común**: se le pidió
+  al POS (encargo del 2026-11-22). Hasta que documente sus rutas, «Cobrar» manda el ticket a una caja y un ticket con
+  artículo común no se puede mandar.
+- **Mandar lo contado a una caja** con turno y permiso, para aceptarlo o modificarlo ahí: también se le pidió al POS.
+- **Falta el Pixel:** todo se probó en el emulador (Pixel 8 Pro, Android 17), no en el celular. Ahí se vio y se corrigió
+  que el deslizamiento se medía en la tarjeta mientras se movía con el dedo (el recorrido contaba la mitad), que las
+  pruebas de escritorio no veían.
+- La apertura se mide contra la 0.4.2 antes de publicar.
+
+**La actualización, probada de punta a punta en el emulador (2026-11-22):** un APK 0.4.3 firmado con la llave del proyecto
+buscó la versión, encontró la 0.4.4 publicada con sus notas, abrió el permiso «Instalar apps desconocidas», bajó los
+15.4 MB de GitHub, comprobó tamaño, sha256, paquete, versión y firma, y Android la instaló: quedó en 0.4.4, con la app
+como su instaladora. Además del cuadro «¿Actualizar esta app?», **Google Play Protect pidió revisar la app** («App scan
+recommended», porque no viene de su tienda) y, tras revisarla, «Instalar»: la pantalla lo avisa. `NavegacionTest` (la
+instrumentada) pasa en el emulador; se puso al día (ya no encontraba los renglones de Ajustes que quedan abajo ni el
+botón del banco, que cambió en la entrega 8).
+
 ## 0.4.4 (sin publicar)
 
 Dos pedidos del dueño (2026-11-21): que la app no pida la huella al abrir, y mandar el ticket a la caja. Va después de la

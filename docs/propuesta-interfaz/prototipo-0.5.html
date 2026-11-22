@@ -1,0 +1,758 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Papelería POS 0.5</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Composición: el celular que funciona a la izquierda (arriba y a pantalla completa en un teléfono) y, al lado, las notas
+   de la propuesta. El celular usa los colores de la app; la página alrededor, sus neutros. */
+:root {
+  --mesa: #e3e8ec; --sup: #f7f9fb; --sup-1: #eef2f5; --sup-2: #e2e8ed; --linea: #d3dbe2; --borde: #a9b5bf;
+  --texto: #181c1f; --suave: #40484d; --tenue: #687279;
+  --pri: #1d5c7a; --en-pri: #ffffff; --pri-c: #c8e6f7; --en-pri-c: #001e2c;
+  --conteo: #5f5a7d; --en-conteo: #ffffff; --conteo-c: #e5defb; --en-conteo-c: #1b1736;
+  --exito: #2e7d32; --exito-c: #d6efd7; --en-exito-c: #0b2e0d;
+  --error: #b3261e; --en-error: #ffffff; --error-c: #f9dedc; --en-error-c: #410e0b;
+  --aviso-c: #fff0d0; --en-aviso-c: #4a2c00;
+  --inv: #2d3135; --en-inv: #eef1f4; --inv-pri: #8ecff0;
+  --velo: rgba(12, 20, 28, .45); --sombra: rgba(14, 26, 36, .22);
+  /* La cámara se ve igual en los dos temas: es la imagen del visor. */
+  --cam: #11161a; --cam-2: #27313a; --cam-texto: #ffffff; --cam-chip: rgba(0, 0, 0, .55); --cam-verde: #4caf50;
+  --f-texto: Roboto, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-codigo: "Roboto Mono", "Cascadia Mono", Consolas, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mesa: #0c1115; --sup: #101417; --sup-1: #1b2024; --sup-2: #262c30; --linea: #343c42; --borde: #59646c;
+    --texto: #dfe3e7; --suave: #bfc8ce; --tenue: #8e979d;
+    --pri: #8ecff0; --en-pri: #003549; --pri-c: #004c68; --en-pri-c: #c8e6f7;
+    --conteo: #c9c1ea; --en-conteo: #312c4c; --conteo-c: #47426a; --en-conteo-c: #e5defb;
+    --exito: #81c784; --exito-c: #1d3d1f; --en-exito-c: #c8ecc9;
+    --error: #f2b8b5; --en-error: #601410; --error-c: #8c1d18; --en-error-c: #f9dedc;
+    --aviso-c: #3a2a00; --en-aviso-c: #ffdf9e;
+    --inv: #dfe3e7; --en-inv: #2d3135; --inv-pri: #1d5c7a;
+    --velo: rgba(0, 0, 0, .6); --sombra: rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --mesa: #0c1115; --sup: #101417; --sup-1: #1b2024; --sup-2: #262c30; --linea: #343c42; --borde: #59646c;
+  --texto: #dfe3e7; --suave: #bfc8ce; --tenue: #8e979d;
+  --pri: #8ecff0; --en-pri: #003549; --pri-c: #004c68; --en-pri-c: #c8e6f7;
+  --conteo: #c9c1ea; --en-conteo: #312c4c; --conteo-c: #47426a; --en-conteo-c: #e5defb;
+  --exito: #81c784; --exito-c: #1d3d1f; --en-exito-c: #c8ecc9;
+  --error: #f2b8b5; --en-error: #601410; --error-c: #8c1d18; --en-error-c: #f9dedc;
+  --aviso-c: #3a2a00; --en-aviso-c: #ffdf9e;
+  --inv: #dfe3e7; --en-inv: #2d3135; --inv-pri: #1d5c7a;
+  --velo: rgba(0, 0, 0, .6); --sombra: rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--mesa); color: var(--texto); font-family: var(--f-texto); font-size: 16px; line-height: 1.5; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible, input:focus-visible, label:focus-within { outline: 3px solid var(--pri); outline-offset: 2px; }
+
+.pagina {
+  max-width: 1120px; margin: 0 auto; padding-block: 16px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: minmax(0, 448px) minmax(0, 1fr); gap: 40px; align-items: start;
+}
+.escena { position: sticky; top: 16px; min-width: 0; }
+.notas { min-width: 0; max-width: 62ch; }
+@media (max-width: 860px) {
+  .pagina { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .escena { position: static; display: flex; justify-content: center; }
+}
+
+/* ---------- Las notas ---------- */
+.notas h1 { font-size: 28px; line-height: 1.15; margin: 0 0 8px; font-weight: 700; text-wrap: balance; }
+.notas .entrada { color: var(--suave); margin: 0 0 20px; }
+.notas h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); font-weight: 700; margin: 28px 0 10px; }
+.notas ul, .notas ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+.notas li { padding-left: 2px; }
+.notas strong { font-weight: 700; }
+.opciones { display: grid; gap: 14px; }
+.opciones fieldset { border: 1px solid var(--linea); border-radius: 12px; margin: 0; padding: 10px 12px 12px; background: var(--sup); min-width: 0; }
+.opciones legend { font-weight: 700; padding: 0 6px; font-size: 14px; }
+.opciones label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+.opciones input { margin-top: 4px; accent-color: var(--pri); flex: none; }
+.opciones small { display: block; color: var(--tenue); font-size: 13px; line-height: 1.35; }
+
+/* ---------- El celular ---------- */
+.tel {
+  --m: var(--pri); --en-m: var(--en-pri); --m-c: var(--pri-c); --en-m-c: var(--en-pri-c);
+  --barra: 80px;
+  position: relative; width: 100%; max-width: 448px; height: min(997px, calc(100svh - 32px)); min-height: 640px;
+  border-radius: 28px; overflow: hidden; background: var(--cam); isolation: isolate;
+  font-size: 16px; line-height: 1.3; user-select: none; -webkit-user-select: none; box-shadow: 0 12px 40px var(--sombra);
+}
+.tel[data-modo="conteo"] { --m: var(--conteo); --en-m: var(--en-conteo); --m-c: var(--conteo-c); --en-m-c: var(--en-conteo-c); }
+
+.visor {
+  position: absolute; inset: 0 0 var(--barra) 0; color: var(--cam-texto);
+  background: radial-gradient(120% 70% at 30% 45%, var(--cam-2), var(--cam) 70%);
+}
+.franja {
+  position: absolute; left: 14px; right: 14px; top: 32%; height: 36%; border-radius: 14px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, .38); border: 2px solid rgba(255, 255, 255, .7);
+  display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow: hidden; transition: border-color .15s;
+}
+.franja.leyo { border-color: var(--cam-verde); box-shadow: 0 0 0 2000px rgba(0, 0, 0, .38), inset 0 0 0 3px var(--cam-verde); }
+.franja p { margin: 0; font-size: 12px; opacity: .8; }
+.productos { display: flex; flex-wrap: wrap; gap: 8px; }
+.productos button {
+  min-height: 40px; padding: 6px 12px; border-radius: 10px; background: rgba(255, 255, 255, .92); color: #14181b;
+  font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px;
+}
+.productos button::before { content: ""; width: 18px; height: 16px; flex: none; background: repeating-linear-gradient(90deg, #14181b 0 2px, transparent 2px 3px, #14181b 3px 4px, transparent 4px 7px); }
+.productos button:active { transform: scale(.96); }
+.indicacion { position: absolute; left: 50%; top: calc(32% - 44px); transform: translateX(-50%); white-space: nowrap; background: var(--cam-chip); padding: 7px 14px; border-radius: 999px; font-size: 14px; }
+.redondo { position: absolute; top: 14px; width: 56px; height: 56px; border-radius: 50%; background: var(--cam-chip); color: var(--cam-texto); display: grid; place-items: center; }
+.redondo svg, .rapido svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.redondo.izq { left: 12px; } .redondo.der { right: 12px; }
+.redondo .punto { position: absolute; top: 9px; right: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--cam-verde); border: 2px solid var(--cam); }
+.contando { position: absolute; top: 20px; left: 78px; right: 78px; display: flex; justify-content: center; }
+.contando button { background: var(--conteo-c); color: var(--en-conteo-c); min-height: 44px; padding: 0 14px; border-radius: 999px; font-weight: 500; font-size: 14px; }
+
+.panel {
+  position: absolute; left: 0; right: 0; bottom: 0; top: calc((100% - var(--barra)) * .68 + 10px);
+  background: var(--sup-1); color: var(--texto); border-radius: 28px 28px 0 0; display: flex; flex-direction: column;
+}
+.asidero { height: 18px; flex: none; display: grid; place-items: center; }
+.asidero::before { content: ""; width: 32px; height: 4px; border-radius: 2px; background: var(--borde); }
+.contenido { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.vacio { padding: 6px 20px; }
+.vacio b { display: block; font-size: 17px; margin-bottom: 4px; }
+.vacio span { color: var(--suave); font-size: 14px; }
+
+/* La tarjeta de lo último: aquí viven los gestos. */
+.tarjeta { position: relative; margin: 0 8px; border-radius: 16px; overflow: hidden; flex: none; background: var(--sup-2); }
+.tarjeta .atras { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding: 0 16px; color: var(--tenue); font-weight: 700; font-size: 20px; white-space: nowrap; transition: background-color .12s; }
+.tarjeta .atras.uno { background: var(--error-c); color: var(--en-error-c); }
+.tarjeta .atras.todo { background: var(--error); color: var(--en-error); }
+.tarjeta .atras.mas { justify-content: flex-start; padding: 0 9px; font-size: 17px; background: var(--exito-c); color: var(--en-exito-c); }
+.frente {
+  position: relative; background: var(--m-c); color: var(--en-m-c); border-radius: 16px; padding: 10px 8px 10px 14px;
+  display: flex; align-items: center; gap: 8px; touch-action: pan-y; will-change: transform;
+}
+.frente.vuelve { transition: transform .18s ease-out; }
+.frente.salto { animation: salto .16s ease-out; }
+@keyframes salto { 50% { transform: scale(.975); } }
+.t-info { flex: 1; min-width: 0; }
+.t-nombre { font-weight: 500; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.t-precio { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: 2px; }
+.t-precio small { font-size: 14px; font-weight: 500; opacity: .8; }
+.datos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.dato { font-size: 12.5px; font-weight: 500; padding: 2px 8px; border-radius: 8px; background: var(--sup); color: var(--texto); }
+.dato.mayoreo { background: var(--exito-c); color: var(--en-exito-c); }
+.dato.pocos { background: var(--aviso-c); color: var(--en-aviso-c); }
+.t-cant {
+  flex: none; min-width: 84px; min-height: 76px; border-radius: 14px; background: var(--m); color: var(--en-m);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 10px;
+}
+.t-cant b { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.t-cant small { font-size: 13px; margin-top: 5px; font-variant-numeric: tabular-nums; opacity: .92; }
+.pasos { flex: none; display: flex; align-items: center; gap: 2px; }
+.pasos button { width: 48px; height: 48px; border-radius: 50%; font-size: 26px; line-height: 1; }
+.pasos button.num { width: auto; min-width: 44px; font-size: 24px; font-weight: 700; border-radius: 10px; font-variant-numeric: tabular-nums; }
+.pista { margin: 5px 18px 2px; font-size: 12.5px; color: var(--tenue); flex: none; }
+.tarjeta.noesta { background: var(--error-c); }
+.tarjeta.noesta .frente { background: var(--error-c); color: var(--en-error-c); display: block; padding: 12px 14px; }
+.tarjeta.noesta b { display: block; font-size: 16px; }
+.tarjeta.noesta code { font-family: var(--f-codigo); font-size: 14px; }
+.tarjeta.noesta .salidas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.tarjeta.noesta button { min-height: 44px; padding: 0 16px; border: 1px solid currentColor; border-radius: 999px; font-weight: 500; }
+
+.filas { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 0 4px; }
+.fila { width: 100%; min-height: 42px; display: flex; align-items: center; gap: 10px; padding: 4px 20px; text-align: left; font-size: 14.5px; }
+.fila span:first-child { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fila .q { color: var(--suave); font-variant-numeric: tabular-nums; }
+.fila .imp { min-width: 68px; text-align: right; font-variant-numeric: tabular-nums; }
+.fila:active { background: var(--sup-2); }
+
+.barra { height: var(--barra); flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 6px; }
+.cobrar {
+  flex: 1; min-width: 0; height: 60px; border-radius: 18px; background: var(--m); color: var(--en-m);
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 18px;
+}
+.cobrar b { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cobrar small { font-size: 13px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cobrar:disabled { background: var(--sup-2); color: var(--tenue); cursor: default; }
+.rapido { flex: none; width: 60px; height: 60px; border-radius: 18px; background: var(--m-c); color: var(--en-m-c); display: grid; place-items: center; }
+.rapido svg { fill: currentColor; stroke: none; }
+.hueco { flex: none; width: 60px; }
+
+/* El menú del botón rápido, el aviso y las hojas. */
+.velo { position: absolute; inset: 0; background: var(--velo); z-index: 5; }
+.menu-rapido { position: absolute; right: 12px; bottom: calc(var(--barra) + 4px); z-index: 6; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.menu-rapido button { min-height: 48px; padding: 0 18px; border-radius: 999px; background: var(--sup); color: var(--texto); font-weight: 500; box-shadow: 0 2px 8px var(--sombra); }
+.menu-rapido button[aria-disabled="true"] { color: var(--tenue); }
+.aviso {
+  position: absolute; left: 12px; right: 12px; bottom: calc(var(--barra) + 8px); z-index: 4; background: var(--inv); color: var(--en-inv);
+  border-radius: 12px; min-height: 48px; padding: 6px 6px 6px 16px; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 12px var(--sombra);
+}
+.aviso span { flex: 1; min-width: 0; }
+.aviso button { min-height: 40px; padding: 0 12px; color: var(--inv-pri); font-weight: 700; }
+.hoja { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; max-height: 100%; background: var(--sup); color: var(--texto); border-radius: 28px 28px 0 0; padding: 8px 16px 18px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.hoja.entera { top: 0; border-radius: 0; padding-top: 18px; }
+.hoja header { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+.hoja header h3 { flex: 1; margin: 0; font-size: 20px; font-weight: 700; }
+.hoja header button { width: 48px; height: 48px; border-radius: 50%; font-size: 22px; }
+.opcion { width: 100%; text-align: left; border: 1px solid var(--linea); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; min-height: 60px; background: var(--sup); }
+.opcion > span { flex: 1; min-width: 0; }
+.opcion b { display: block; font-weight: 500; }
+.opcion small { display: block; color: var(--tenue); font-size: 13px; }
+.opcion.elegida { border-color: var(--m); background: var(--m-c); color: var(--en-m-c); }
+.opcion.elegida small { color: inherit; opacity: .85; }
+.opcion.apagada { color: var(--tenue); background: var(--sup-1); cursor: default; }
+.etiqueta { flex: none; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--exito-c); color: var(--en-exito-c); }
+.principal { width: 100%; min-height: 56px; border-radius: 16px; background: var(--m); color: var(--en-m); font-weight: 700; font-size: 17px; }
+.secundario { width: 100%; min-height: 48px; border-radius: 16px; border: 1px solid var(--borde); font-weight: 500; }
+.campo { width: 100%; height: 52px; border-radius: 14px; border: 1px solid var(--borde); background: var(--sup-1); color: var(--texto); font: inherit; padding: 0 14px; }
+.resultados { display: flex; flex-direction: column-reverse; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; }
+.teclas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.teclas button { height: 54px; border-radius: 14px; background: var(--sup-2); font-size: 22px; font-weight: 500; }
+.total { display: flex; align-items: baseline; gap: 10px; }
+.total b { font-size: 38px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.total span { color: var(--tenue); }
+.formas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.forma, .billete { min-height: 48px; border-radius: 12px; border: 1px solid var(--borde); font-weight: 500; font-size: 15px; padding: 0 12px; }
+.forma.elegida, .billete.elegida { background: var(--m-c); color: var(--en-m-c); border-color: var(--m); }
+.rotulo { margin: 4px 0 0; font-size: 13px; color: var(--tenue); font-weight: 500; }
+.billetes { display: flex; flex-wrap: wrap; gap: 6px; }
+.billete { font-variant-numeric: tabular-nums; }
+.cambio { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 14px; border-radius: 14px; background: var(--exito-c); color: var(--en-exito-c); }
+.cambio b { font-size: 30px; font-variant-numeric: tabular-nums; }
+.hoja.cobrado { align-items: center; justify-content: center; text-align: center; gap: 12px; }
+.hoja.cobrado h3 { margin: 0; font-size: 26px; }
+.palomita { width: 72px; height: 72px; border-radius: 50%; background: var(--exito-c); color: var(--en-exito-c); display: grid; place-items: center; font-size: 40px; font-weight: 700; }
+.elcambio { font-size: 72px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.visorcant { text-align: center; font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; min-height: 58px; }
+.grande { position: absolute; inset: 0; z-index: 9; background: var(--sup); color: var(--texto); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 28px; text-align: center; width: 100%; }
+.grande .n { font-size: 26px; font-weight: 500; }
+.grande .p { font-size: 80px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.grande .t { color: var(--tenue); font-size: 14px; }
+.version { border: 1px solid var(--linea); border-radius: 14px; padding: 12px 14px; background: var(--sup-1); }
+.version h4 { margin: 0 0 4px; font-size: 16px; }
+.version p, .version ul { margin: 0; font-size: 14px; color: var(--suave); }
+.version ul { padding-left: 18px; margin-top: 6px; display: grid; gap: 4px; }
+.progreso { height: 8px; border-radius: 4px; background: var(--sup-2); overflow: hidden; }
+.progreso i { display: block; height: 100%; width: 0; background: var(--m); transition: width .25s linear; }
+.sistema { border-radius: 20px; background: var(--sup-2); padding: 16px; display: grid; gap: 12px; }
+.sistema .fila2 { display: flex; justify-content: flex-end; gap: 8px; }
+.sistema button { min-height: 44px; padding: 0 16px; border-radius: 999px; font-weight: 700; color: var(--pri); }
+.interruptor { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; }
+.interruptor input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--pri); flex: none; }
+.nota { font-size: 13px; color: var(--tenue); margin: 0; }
+@media (prefers-reduced-motion: reduce) { .frente.vuelve, .progreso i { transition: none; } .frente.salto { animation: none; } }
+</style>
+
+<div class="pagina">
+  <section class="escena" aria-label="Prototipo del celular">
+    <div class="tel" id="tel" data-modo="venta">
+      <div class="visor">
+        <button class="redondo izq" data-a="menu" aria-label="Menú de este celular">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><i class="punto" id="punto"></i>
+        </button>
+        <div class="contando" id="contando" hidden><button data-a="vender">Contando · Volver a vender</button></div>
+        <button class="redondo der" aria-label="Linterna"><svg viewBox="0 0 24 24"><path d="M8 3h8v4l-2 3v10h-4V10L8 7z"/></svg></button>
+        <div class="indicacion">Apunta al código de barras</div>
+        <div class="franja" id="franja">
+          <p>Prototipo: toca un producto para escanearlo.</p>
+          <div class="productos" id="productos"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="asidero"></div>
+        <div class="contenido" id="contenido"></div>
+        <div class="barra" id="barra"></div>
+      </div>
+      <div id="encima"></div>
+    </div>
+  </section>
+
+  <section class="notas">
+    <h1>Papelería POS 0.5</h1>
+    <p class="entrada">La interfaz que se propone, con lo decidido el 22 de noviembre. El celular funciona: los productos de la franja hacen de escáner. Todo es ficticio.</p>
+
+    <h2>Para comparar</h2>
+    <div class="opciones">
+      <fieldset>
+        <legend>Gesto para la cantidad</legend>
+        <label><input type="radio" name="gesto" id="g-deslizar" value="deslizar" checked><span>Deslizar <small>Lo elegido. A la derecha suma, uno por cada tramo. A la izquierda, corto: quita uno; hasta el fondo: quita todo el renglón. Tocar el «×2» abre el teclado.</small></span></label>
+        <label><input type="radio" name="gesto" id="g-toque" value="toque"><span>Tocar suma, deslizar quita <small>Un toque en la tarjeta suma uno. A la izquierda, los mismos dos grados. Dejar el dedo abre el teclado.</small></span></label>
+        <label><input type="radio" name="gesto" id="g-botones" value="botones"><span>Botones − y + <small>Como hoy, para comparar.</small></span></label>
+      </fieldset>
+    </div>
+
+    <h2>Qué cambia</h2>
+    <ul>
+      <li><strong>Precio y Ticket son una sola pantalla.</strong> Cada lectura enseña el precio en grande y entra al ticket. Si solo preguntaba, la tarjeta se desliza a la izquierda y sale; «Deshacer» la regresa.</li>
+      <li><strong>La cantidad se pone deslizando la tarjeta de lo último.</strong> A la derecha suma. A la izquierda hay dos grados: un tramo corto quita uno y, hasta el fondo, quita el renglón entero. La tarjeta dice qué va a pasar antes de soltar.</li>
+      <li><strong>El mismo código solo vuelve a contar si se retiró de la mira.</strong> Sostener el producto frente a la cámara ya no suma de más.</li>
+      <li><strong>El celular cobra.</strong> «Cobrar» abre el cobro: efectivo con el cambio, tarjeta o transferencia. Mandarlo a una caja sigue ahí, como segunda opción. Necesita trabajo del POS.</li>
+      <li><strong>Lo que no está en el catálogo no entra al ticket.</strong> Sale en rojo con su código y dos salidas: «Buscar por nombre» o «Artículo común», con el precio a mano.</li>
+      <li><strong>Conteo sale de la barra</strong> y va al menú de arriba a la izquierda. Mientras se cuenta, la pantalla lo dice en morado y el botón de abajo lo termina. Los mismos gestos.</li>
+      <li><strong>Actualizar desde la app,</strong> en el mismo menú, solo cuando se toca «Buscar versión nueva»: pregunta a GitHub, dice qué trae, la descarga y Android pide confirmar.</li>
+      <li><strong>Uso personal.</strong> Se van los perfiles, el celular de la tienda y lo que se ocultaba por permisos: quien tiene la app ve todo.</li>
+      <li><strong>No cambia:</strong> el escáner, la franja y el tamaño del visor, el mosaico «Precio» sobre el bloqueo y la conexión con la caja principal.</li>
+    </ul>
+
+    <h2>Qué probar</h2>
+    <ol>
+      <li>Toca «Marcador» en la franja: sale su precio y entra al ticket.</li>
+      <li>Desliza la tarjeta a la derecha, sin soltar, hasta que diga ×4.</li>
+      <li>Deslízala un poco a la izquierda y suelta: van 3.</li>
+      <li>Deslízala a la izquierda hasta el fondo: sale el renglón entero. «Deshacer» lo regresa con sus 3.</li>
+      <li>Toca «No está» y luego «Artículo común»: ponle precio.</li>
+      <li>Toca «Cobrar», elige cuánto te dieron y cobra: sale el cambio.</li>
+      <li>En el menú de arriba a la izquierda, abre «Contar inventario» y después «Actualizar la app».</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(() => {
+  const PRODUCTOS = {
+    cuaderno: { corto: 'Cuaderno', n: 'Cuaderno profesional cuadro chico 100 hojas', c: '7509990100019', p: 4600, may: [12, 4100], ex: 38 },
+    lapiz: { corto: 'Lápiz', n: 'Lápiz HB No. 2', c: '7509990200016', p: 600, ex: 143 },
+    pegamento: { corto: 'Pegamento', n: 'Pegamento blanco 250 g', c: '7509990300013', p: 3200, ex: 1 },
+    caja: { corto: 'Caja de lápices', n: 'Lápiz HB No. 2 · caja de 12', c: '7509990200122', p: 5400, ex: 11, pieza: '$4.50 c/u (12)' },
+    marcador: { corto: 'Marcador', n: 'Marcador permanente negro punto fino', c: '7509990400010', p: 1800, ex: 24 },
+  };
+  const NO_ESTA = '7509990999996';
+  const COMUN = { corto: 'Artículo común', n: 'Artículo común', c: '', comun: true };
+  const S = {
+    modo: 'venta', gesto: 'deslizar',
+    ticket: [{ k: 'cuaderno', q: 1 }, { k: 'lapiz', q: 2 }, { k: 'pegamento', q: 1 }],
+    conteo: [], noEsta: null, hoja: null, teclado: null, rapido: false, aviso: null, tecleado: '', busca: '',
+    pago: 'efectivo', recibido: null, cobrado: null, folio: 123, comunes: 0,
+    version: 'sin', progreso: 0,
+  };
+  const $ = id => document.getElementById(id);
+  const tel = $('tel');
+  const pesos = c => '$' + (c / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = t => String(t).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  /** El producto de un renglón; el artículo común trae su precio en el renglón. */
+  const P = r => (r.comun ? { ...COMUN, p: r.p } : PRODUCTOS[r.k]);
+  const unitario = (p, q) => (p.may && q >= p.may[0] ? p.may[1] : p.p);
+  const importe = r => unitario(P(r), r.q) * r.q;
+  const lista = () => (S.modo === 'venta' ? S.ticket : S.conteo);
+  const donde = () => (S.modo === 'venta' ? 'ticket' : 'conteo');
+  const articulos = l => l.reduce((a, r) => a + r.q, 0);
+  const total = l => l.reduce((a, r) => a + importe(r), 0);
+  const vibra = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* sin vibración */ } };
+  let relojAviso = 0;
+
+  function avisar(texto, deshacer) {
+    clearTimeout(relojAviso);
+    S.aviso = { texto, deshacer };
+    relojAviso = setTimeout(() => { S.aviso = null; pintarEncima(); }, 4200);
+  }
+
+  // ---- Lo que hace cada cosa ----
+  function leer(k) {
+    const f = $('franja');
+    f.classList.add('leyo');
+    setTimeout(() => f.classList.remove('leyo'), 260);
+    vibra(25);
+    S.rapido = false;
+    if (k === 'x') { S.noEsta = NO_ESTA; return pintar(); }
+    S.noEsta = null;
+    sumar(k);
+    pintar();
+  }
+  function sumar(k) {
+    const l = lista();
+    const i = l.findIndex(r => r.k === k);
+    const r = i < 0 ? { k, q: 0 } : l.splice(i, 1)[0];
+    r.q += 1;
+    l.unshift(r);
+  }
+  /** Quita el renglón entero; «Deshacer» lo regresa a su lugar con su cantidad. */
+  function quitar(i) {
+    const l = lista();
+    const [r] = l.splice(i, 1);
+    if (!r) return;
+    avisar('Quitado del ' + donde() + ': ' + P(r).corto + (r.q > 1 ? ' ×' + r.q : ''), () => { l.splice(Math.min(i, l.length), 0, r); });
+  }
+  function cambiar(d) {
+    const r = lista()[0];
+    if (!r) return;
+    if (r.q + d <= 0) quitar(0); else r.q += d;
+  }
+  function cobrar() {
+    const l = S.ticket;
+    const t = total(l);
+    const recibido = S.pago === 'efectivo' ? (S.recibido || t) : t;
+    S.folio += 1;
+    S.cobrado = { total: t, art: articulos(l), pago: S.pago, cambio: recibido - t, folio: 'CEL-' + String(S.folio).padStart(6, '0') };
+    S.ticket = [];
+    S.noEsta = null;
+    S.recibido = null;
+    S.hoja = 'cobrado';
+    vibra(40);
+  }
+  function mandar() {
+    const l = S.ticket;
+    avisar('Enviado a Caja 2 · ' + articulos(l) + ' art. · ' + pesos(total(l)));
+    S.ticket = [];
+    S.hoja = null;
+    S.noEsta = null;
+    vibra(40);
+  }
+
+  // ---- Lo que se dibuja ----
+  const PISTAS = {
+    deslizar: 'Desliza →: más · ← corto: quita uno · ← hasta el fondo: quita todo',
+    toque: 'Toca: uno más · ← corto: quita uno · ← hasta el fondo: quita todo',
+    botones: 'Toca el número para teclear la cantidad',
+  };
+  function tarjeta(r) {
+    const p = P(r);
+    const venta = S.modo === 'venta';
+    const datos = [];
+    if (p.comun) datos.push('<span class="dato">Sin inventario · precio a mano</span>');
+    if (p.pieza) datos.push('<span class="dato">' + p.pieza + '</span>');
+    if (p.may) datos.push('<span class="dato mayoreo" id="c-may">' + (r.q >= p.may[0] ? 'Mayoreo' : 'Desde ' + p.may[0] + ': ' + pesos(p.may[1]) + ' c/u') + '</span>');
+    if (p.ex != null) datos.push(p.ex <= 2 ? '<span class="dato pocos">Queda ' + p.ex + '</span>' : '<span class="dato">Existencia: ' + p.ex + '</span>');
+    const pie = venta ? '<small id="c-imp">' + pesos(importe(r)) + '</small>' : '<small>piezas</small>';
+    let cant;
+    if (S.gesto === 'botones') {
+      cant = '<div class="pasos"><button data-a="menos" aria-label="Uno menos">−</button><button class="num" data-a="teclear" id="c-cant" aria-label="Teclear la cantidad">' + r.q + '</button><button data-a="mas" aria-label="Uno más">+</button></div>';
+    } else if (S.gesto === 'toque') {
+      cant = '<div class="t-cant"><b id="c-cant">×' + r.q + '</b>' + pie + '</div>';
+    } else {
+      cant = '<button class="t-cant" data-a="teclear" aria-label="Cantidad ' + r.q + '. Tocar para teclear"><b id="c-cant">×' + r.q + '</b>' + pie + '</button>';
+    }
+    return '<div class="tarjeta"><div class="atras" id="c-atras"></div><div class="frente" id="frente"><div class="t-info"><div class="t-nombre">' + esc(p.n) + '</div>'
+      + (venta ? '<div class="t-precio"><span id="c-pu">' + pesos(unitario(p, r.q)) + '</span> <small>c/u</small></div>' : '')
+      + '<div class="datos">' + (venta ? datos.join('') : '<span class="dato">' + p.c + '</span>') + '</div></div>' + cant + '</div></div><p class="pista" id="c-pista">' + PISTAS[S.gesto] + '</p>';
+  }
+  function pintarPanel() {
+    const l = lista();
+    const venta = S.modo === 'venta';
+    let h = '';
+    if (S.noEsta) {
+      h += '<div class="tarjeta noesta"><div class="frente"><b>No está en el catálogo</b><code>' + S.noEsta + '</code> · no entró al ' + donde()
+        + '<div class="salidas"><button data-a="buscar">Buscar por nombre</button>' + (venta ? '<button data-a="comun">Artículo común</button>' : '') + '</div></div></div>';
+    } else if (l.length) {
+      h += tarjeta(l[0]);
+    } else {
+      h += venta
+        ? '<div class="vacio"><b>Escanea lo que lleva el cliente</b><span>Sale su precio y entra al ticket. Si solo preguntaba, desliza la tarjeta a la izquierda.</span></div>'
+        : '<div class="vacio"><b>Escanea para contar</b><span>Cada lectura suma una pieza. Las demás se suman deslizando la tarjeta.</span></div>';
+    }
+    const resto = S.noEsta ? l : l.slice(1);
+    const desde = S.noEsta ? 0 : 1;
+    h += '<div class="filas">' + resto.map((r, i) => '<button class="fila" data-a="subir" data-i="' + (i + desde) + '"><span>' + esc(P(r).n) + '</span><span class="q">×' + r.q + '</span>' + (venta ? '<span class="imp">' + pesos(importe(r)) + '</span>' : '') + '</button>').join('') + '</div>';
+    $('contenido').innerHTML = h;
+  }
+  function pintarBarra() {
+    const l = lista();
+    const n = articulos(l);
+    if (S.modo === 'venta') {
+      $('barra').innerHTML = '<button class="cobrar" data-a="cobrar"' + (n ? '' : ' disabled') + '><b>' + (n ? 'Cobrar · ' + pesos(total(l)) : 'Ticket vacío') + '</b><small>' + (n ? n + ' art.' : 'Escanea para empezar') + '</small></button>'
+        + '<button class="rapido" data-a="rapido" aria-label="Opciones: enseñar, impresiones y buscar"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.2"/><circle cx="10" cy="10" r="2.2"/><circle cx="18" cy="6" r="2.2"/></svg></button>';
+    } else {
+      $('barra').innerHTML = '<button class="cobrar" data-a="vender"><b>Terminar conteo · ' + n + (n === 1 ? ' pza' : ' pzs') + '</b><small>Contar contra el POS llega después del piloto</small></button><button class="rapido" data-a="buscar" aria-label="Buscar"><svg viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.4"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></button>';
+    }
+  }
+  const BILLETES = [2000, 5000, 10000, 20000, 50000, 100000];
+  function hojaTeclado(cerrar) {
+    const teclas = '<div class="teclas">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => '<button data-a="tecla" data-n="' + n + '">' + n + '</button>').join('')
+      + '<button data-a="borrar" aria-label="Borrar">⌫</button><button data-a="tecla" data-n="0">0</button><button data-a="listo" style="background:var(--m);color:var(--en-m)">Listo</button></div>';
+    const n = +S.tecleado || 0;
+    if (S.teclado === 'cantidad') {
+      const r = lista()[0];
+      if (!r) return '';
+      return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>' + esc(P(r).corto) + '</h3>' + cerrar + '</header><div class="visorcant">' + (S.tecleado || r.q) + '</div>' + teclas
+        + '<button class="secundario" data-a="quitar-actual">Quitar del ' + donde() + '</button></div>';
+    }
+    if (S.teclado === 'recibido') {
+      const falta = total(S.ticket) - n * 100;
+      return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>¿Cuánto te dio?</h3>' + cerrar + '</header><div class="visorcant">$' + n.toLocaleString('es-MX') + '</div>'
+        + '<p class="nota">' + (n && falta > 0 ? 'Faltan ' + pesos(falta) + '.' : n ? 'Cambio: ' + pesos(-falta) : 'A cobrar: ' + pesos(total(S.ticket))) + '</p>' + teclas + '</div>';
+    }
+    return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>Artículo común</h3>' + cerrar + '</header><div class="visorcant">$' + n.toLocaleString('es-MX') + '</div>'
+      + '<p class="nota">Entra al ticket como «Artículo común», con este precio y sin tocar el inventario.</p>' + teclas + '</div>';
+  }
+  function hojaHtml() {
+    const l = lista();
+    const cerrar = '<button data-a="cerrar" aria-label="Cerrar">✕</button>';
+    switch (S.hoja) {
+      case 'cobrar': {
+        const t = total(S.ticket);
+        const formas = [['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']]
+          .map(([k, n]) => '<button class="forma' + (S.pago === k ? ' elegida' : '') + '" data-a="pago" data-k="' + k + '" aria-pressed="' + (S.pago === k) + '">' + n + '</button>').join('');
+        let medio;
+        if (S.pago === 'efectivo') {
+          const sug = BILLETES.filter(b => b > t).slice(0, 3);
+          const otro = S.recibido && !sug.includes(S.recibido);
+          medio = '<p class="rotulo">¿Cuánto te dio?</p><div class="billetes"><button class="billete' + (S.recibido ? '' : ' elegida') + '" data-a="recibido" data-c="0">Exacto</button>'
+            + sug.map(b => '<button class="billete' + (S.recibido === b ? ' elegida' : '') + '" data-a="recibido" data-c="' + b + '">$' + (b / 100).toLocaleString('es-MX') + '</button>').join('')
+            + '<button class="billete' + (otro ? ' elegida' : '') + '" data-a="otro-recibido">' + (otro ? pesos(S.recibido) : 'Otro…') + '</button></div>'
+            + '<div class="cambio"><span>Cambio</span><b>' + pesos(S.recibido ? S.recibido - t : 0) + '</b></div>';
+        } else if (S.pago === 'tarjeta') {
+          medio = '<p class="nota">Cóbrala en la terminal y confirma aquí. La referencia es opcional, como en la caja.</p>';
+        } else {
+          medio = '<p class="nota">Queda por verificar hasta que alguien confirme que llegó, como en la caja.</p>';
+        }
+        return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>Cobrar</h3>' + cerrar + '</header>'
+          + '<div class="total"><b>' + pesos(t) + '</b><span>' + articulos(S.ticket) + ' art.</span></div><div class="formas">' + formas + '</div>' + medio
+          + '<button class="principal" data-a="cobrado">Cobrar ' + pesos(t) + '</button>'
+          + '<button class="secundario" data-a="a-caja">Mejor que lo cobre una caja</button></div>';
+      }
+      case 'cobrado': {
+        const c = S.cobrado;
+        return '<div class="hoja entera cobrado"><div class="palomita" aria-hidden="true">✓</div><h3>Cobrado</h3>'
+          + (c.pago === 'efectivo' && c.cambio > 0 ? '<p class="rotulo">Cambio</p><div class="elcambio">' + pesos(c.cambio) + '</div>' : '')
+          + '<p class="nota">' + pesos(c.total) + ' · ' + c.art + ' art. · ' + { efectivo: 'efectivo', tarjeta: 'tarjeta', transferencia: 'transferencia por verificar' }[c.pago] + '<br>Folio ' + c.folio + '</p>'
+          + '<button class="principal" data-a="cerrar">Siguiente cliente</button><button class="secundario" data-a="imprimir">Imprimir el ticket en Caja 2</button></div>';
+      }
+      case 'mandar':
+        return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>¿A qué caja?</h3>' + cerrar + '</header>'
+          + '<div class="opcion elegida"><span><b>Caja 2</b><small>Atiende Ana · 1 ticket en espera</small></span><span class="etiqueta">La última</span></div>'
+          + '<div class="opcion apagada"><span><b>Caja 1</b><small>Sin la venta abierta: que entren a vender ahí.</small></span></div>'
+          + '<button class="principal" data-a="mandar">Mandar a Caja 2 · ' + pesos(total(l)) + '</button></div>';
+      case 'menu': {
+        const hay = ['hay', 'bajando', 'dialogo'].includes(S.version);
+        return '<div class="velo" data-a="cerrar"></div><div class="hoja"><header><h3>Este celular</h3>' + cerrar + '</header>'
+          + (S.modo === 'venta'
+            ? '<button class="opcion" data-a="contar"><span><b>Contar inventario</b><small>' + (S.conteo.length ? 'Seguir contando · ' + articulos(S.conteo) + ' pzs' : 'El escáner cuenta piezas en lugar de vender') + '</small></span></button>'
+            : '<button class="opcion" data-a="vender"><span><b>Volver a vender</b><small>Lo contado se queda guardado</small></span></button>')
+          + '<button class="opcion" data-a="actualizar"><span><b>Actualizar la app</b><small>Instalada: ' + (S.version === 'lista' ? '0.5.1' : '0.5.0') + '</small></span>' + (hay ? '<span class="etiqueta">0.5.1 disponible</span>' : '') + '</button>'
+          + '<div class="opcion"><span><b>La conexión</b><small>Conectado con la caja principal · catálogo de hoy 8:47</small></span></div>'
+          + '<div class="opcion"><span><b>Ajustes</b><small>Vibración, linterna, mano izquierda y herramientas de medición</small></span></div></div>';
+      }
+      case 'actualizar': {
+        let cuerpo;
+        if (S.version === 'lista') {
+          cuerpo = '<div class="version"><h4>La app está al día</h4><p>Instalada: 0.5.1 · se actualizó hoy. El alta, la copia del catálogo y el ticket siguen aquí.</p></div>';
+        } else {
+          cuerpo = '<div class="version"><h4>Instalada: 0.5.0</h4><p>Commit a1b2c3d · firmada con la llave del proyecto</p></div>';
+          if (S.version === 'sin') cuerpo += '<button class="principal" data-a="buscar-version">Buscar versión nueva</button>';
+          if (S.version === 'buscando') cuerpo += '<p class="nota">Preguntando a GitHub…</p>';
+          if (['hay', 'bajando', 'dialogo'].includes(S.version)) cuerpo += '<div class="version"><h4>Hay una versión nueva: 0.5.1</h4><p>Publicada el 28 nov 2026 · 15.4 MB</p><ul><li>El teclado de la cantidad acepta medias piezas.</li><li>Buscar recuerda lo último que se eligió.</li></ul></div>';
+          if (S.version === 'hay') cuerpo += '<button class="principal" data-a="descargar">Descargar e instalar</button>';
+          if (S.version === 'bajando') cuerpo += '<div class="progreso"><i id="avance" style="width:' + S.progreso + '%"></i></div><p class="nota">' + (S.progreso < 100 ? 'Descargando de GitHub…' : 'Comprobando que es la misma app y la misma firma…') + '</p>';
+          if (S.version === 'dialogo') cuerpo += '<div class="sistema"><b>Papelería POS</b><span>¿Quieres actualizar esta app? Tus datos no se pierden.</span><div class="fila2"><button data-a="cancelar-inst">Cancelar</button><button data-a="instalar">Actualizar</button></div><p class="nota">Este cuadro es de Android, no de la app.</p></div>';
+        }
+        return '<div class="hoja entera"><header><h3>Actualizar la app</h3>' + cerrar + '</header>' + cuerpo
+          + '<p class="nota">La app nunca busca sola. Solo al tocar «Buscar versión nueva» sale de la red de la tienda: lee la lista de versiones de github.com y, si lo pides, baja el APK. No manda nada del celular ni de la tienda.</p></div>';
+      }
+      case 'buscar': {
+        const t = S.busca.trim().toLowerCase();
+        const res = Object.entries(PRODUCTOS).filter(([, p]) => !t || t.split(/\s+/).every(x => p.n.toLowerCase().includes(x)));
+        return '<div class="hoja entera"><header><h3>Buscar</h3>' + cerrar + '</header><div class="resultados" id="resultados">'
+          + (res.length ? res.map(([k, p]) => '<button class="opcion" data-a="elegir" data-k="' + k + '"><span><b>' + esc(p.n) + '</b><small>' + p.c + '</small></span><b>' + pesos(p.p) + '</b></button>').join('') : '<p class="nota">Nada con ese texto.</p>')
+          + '</div><input class="campo" id="campo-buscar" placeholder="Dos pedazos de palabra: «cua pro»" value="' + esc(S.busca) + '" autocomplete="off"></div>';
+      }
+      case 'teclado': return hojaTeclado(cerrar);
+      case 'grande': {
+        const r = l[0];
+        if (!r) return '';
+        const p = P(r);
+        return '<button class="grande" data-a="cerrar"><span class="n">' + esc(p.n) + '</span><span class="p">' + pesos(p.p) + '</span>' + (p.may ? '<span class="n">Desde ' + p.may[0] + ': ' + pesos(p.may[1]) + ' c/u</span>' : '') + '<span class="t">Toca para regresar</span></button>';
+      }
+      default: return '';
+    }
+  }
+  function pintarEncima() {
+    let h = '';
+    if (S.rapido) {
+      h += '<div class="velo" data-a="rapido"></div><div class="menu-rapido"><button data-a="grande">↑ Enseñar al cliente</button><button aria-disabled="true" data-a="impresiones">↖ Impresiones</button><button data-a="buscar">← Buscar</button></div>';
+    }
+    if (S.aviso && !S.hoja) h += '<div class="aviso" role="status"><span>' + esc(S.aviso.texto) + '</span>' + (S.aviso.deshacer ? '<button data-a="deshacer">Deshacer</button>' : '') + '</div>';
+    h += hojaHtml();
+    $('encima').innerHTML = h;
+    if (S.hoja === 'buscar') {
+      const c = $('campo-buscar');
+      c.addEventListener('input', () => { S.busca = c.value; const pos = c.selectionStart; pintarEncima(); const n = $('campo-buscar'); n.focus(); n.setSelectionRange(pos, pos); });
+    }
+  }
+  function pintar() {
+    tel.dataset.modo = S.modo;
+    $('contando').hidden = S.modo !== 'conteo';
+    $('punto').hidden = S.version !== 'hay';
+    pintarPanel();
+    pintarBarra();
+    pintarEncima();
+  }
+  /** Solo los números de la tarjeta y la barra: a medio gesto la tarjeta no se rehace (se perdería el dedo). */
+  function pintarNumeros() {
+    const r = lista()[0];
+    if (!r) return;
+    const p = P(r);
+    if ($('c-cant')) $('c-cant').textContent = S.gesto === 'botones' ? r.q : '×' + r.q;
+    if ($('c-imp')) $('c-imp').textContent = pesos(importe(r));
+    if ($('c-pu')) $('c-pu').textContent = pesos(unitario(p, r.q));
+    if ($('c-may')) $('c-may').textContent = r.q >= p.may[0] ? 'Mayoreo' : 'Desde ' + p.may[0] + ': ' + pesos(p.may[1]) + ' c/u';
+    pintarBarra();
+  }
+
+  // ---- Los toques ----
+  const abrirTeclado = cual => { S.tecleado = ''; S.teclado = cual; S.hoja = 'teclado'; };
+  const ACCIONES = {
+    menu: () => { S.hoja = 'menu'; S.rapido = false; },
+    cerrar: () => {
+      const volver = S.hoja === 'teclado' && S.teclado === 'recibido';
+      S.hoja = volver ? 'cobrar' : null;
+      S.tecleado = '';
+      S.busca = '';
+    },
+    cobrar: () => { S.pago = 'efectivo'; S.recibido = null; S.hoja = 'cobrar'; },
+    pago: e => { S.pago = e.dataset.k; },
+    recibido: e => { S.recibido = +e.dataset.c || null; },
+    'otro-recibido': () => abrirTeclado('recibido'),
+    cobrado: cobrar,
+    imprimir: () => { S.hoja = null; avisar('Imprimiendo el ticket ' + S.cobrado.folio + ' en Caja 2'); },
+    'a-caja': () => { S.hoja = 'mandar'; },
+    mandar,
+    rapido: () => { S.rapido = !S.rapido; },
+    grande: () => { S.rapido = false; if (lista()[0]) S.hoja = 'grande'; else avisar('Escanea un producto para enseñarlo.'); },
+    impresiones: () => { S.rapido = false; avisar('Las impresiones por cobrar llegan en una entrega posterior.'); },
+    buscar: () => { S.rapido = false; S.busca = ''; S.hoja = 'buscar'; },
+    comun: () => abrirTeclado('comun'),
+    elegir: e => { S.noEsta = null; sumar(e.dataset.k); S.hoja = null; },
+    subir: e => { const l = lista(); const [r] = l.splice(+e.dataset.i, 1); if (r) l.unshift(r); S.noEsta = null; },
+    mas: () => { cambiar(1); vibra(12); },
+    menos: () => cambiar(-1),
+    teclear: () => abrirTeclado('cantidad'),
+    tecla: e => { S.tecleado = (S.tecleado + e.dataset.n).replace(/^0+/, '').slice(0, 4); },
+    borrar: () => { S.tecleado = S.tecleado.slice(0, -1); },
+    listo: () => {
+      const n = +S.tecleado || 0;
+      if (S.teclado === 'cantidad') {
+        const r = lista()[0];
+        if (r && n) r.q = n;
+        S.hoja = null;
+      } else if (S.teclado === 'recibido') {
+        if (n * 100 < total(S.ticket)) return;
+        S.recibido = n * 100;
+        S.hoja = 'cobrar';
+      } else {
+        if (!n) return;
+        S.comunes += 1;
+        S.ticket.unshift({ k: 'comun' + S.comunes, q: 1, comun: true, p: n * 100 });
+        S.noEsta = null;
+        S.hoja = null;
+      }
+      S.tecleado = '';
+    },
+    'quitar-actual': () => { S.hoja = null; S.tecleado = ''; quitar(0); },
+    deshacer: () => { clearTimeout(relojAviso); const d = S.aviso && S.aviso.deshacer; S.aviso = null; if (d) d(); },
+    contar: () => { S.modo = 'conteo'; S.hoja = null; S.noEsta = null; },
+    vender: () => { S.modo = 'venta'; S.hoja = null; S.noEsta = null; },
+    actualizar: () => { S.hoja = 'actualizar'; },
+    'buscar-version': () => {
+      S.version = 'buscando';
+      setTimeout(() => { if (S.version === 'buscando') { S.version = 'hay'; pintar(); } }, 900);
+    },
+    descargar: () => {
+      S.version = 'bajando'; S.progreso = 0;
+      const t = setInterval(() => {
+        S.progreso = Math.min(100, S.progreso + 9);
+        if (S.hoja !== 'actualizar') { clearInterval(t); S.version = 'hay'; return; }
+        if (S.progreso >= 100) { clearInterval(t); pintarEncima(); setTimeout(() => { if (S.version === 'bajando') { S.version = 'dialogo'; pintarEncima(); } }, 900); return; }
+        const a = $('avance'); if (a) a.style.width = S.progreso + '%';
+      }, 220);
+    },
+    'cancelar-inst': () => { S.version = 'hay'; },
+    instalar: () => { S.version = 'lista'; },
+  };
+  tel.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]');
+    if (!el || el.disabled) return;
+    if (gestoReciente) return; // el toque que cierra un gesto en la tarjeta no es además un toque a un botón
+    ACCIONES[el.dataset.a](el);
+    pintar();
+  });
+  $('productos').innerHTML = Object.entries(PRODUCTOS).map(([k, p]) => '<button data-k="' + k + '">' + p.corto + '</button>').join('') + '<button data-k="x">No está</button>';
+  $('productos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) leer(b.dataset.k); });
+
+  // ---- El gesto de la tarjeta ----
+  const TRAMO = 44;    // a la derecha: lo que hay que deslizar por cada pieza
+  const UNO = 48;      // a la izquierda: desde aquí, quita uno
+  const TODO = 0.55;   // a la izquierda: desde esta parte del ancho de la tarjeta, quita el renglón entero
+  let g = null;
+  let gestoReciente = false;
+  $('contenido').addEventListener('pointerdown', e => {
+    const fr = e.target.closest('#frente');
+    const r = lista()[0];
+    if (!fr || !r || S.gesto === 'botones') return;
+    const este = g = { x: e.clientX, y: e.clientY, t: performance.now(), fr, id: e.pointerId, movido: false, grado: 0, q0: r.q, ancho: fr.offsetWidth, enBoton: !!e.target.closest('[data-a]') };
+    fr.classList.remove('vuelve', 'salto');
+    try { fr.setPointerCapture(e.pointerId); } catch (err) { /* sin captura */ }
+    // En «Tocar suma», dejar el dedo sin moverlo abre el teclado de la cantidad.
+    if (S.gesto === 'toque') setTimeout(() => {
+      if (g !== este || g.movido) return;
+      g = null;
+      vibra(20);
+      abrirTeclado('cantidad');
+      pintar();
+    }, 450);
+  });
+  $('contenido').addEventListener('pointermove', e => {
+    if (!g || e.pointerId !== g.id) return;
+    const dx = e.clientX - g.x;
+    if (Math.abs(dx) > 8 || Math.abs(e.clientY - g.y) > 8) g.movido = true;
+    if (!g.movido) return;
+    const r = lista()[0];
+    const izq = Math.max(0, -dx);
+    const grado = izq >= g.ancho * TODO ? 2 : izq >= UNO ? 1 : 0;
+    const mas = S.gesto === 'deslizar' ? Math.max(0, Math.trunc(dx / TRAMO)) : 0;
+    if (r.q !== g.q0 + mas) { r.q = g.q0 + mas; vibra(8); pintarNumeros(); }
+    if (grado !== g.grado) { g.grado = grado; vibra(grado === 2 ? 30 : 10); }
+    const atras = $('c-atras');
+    const pista = $('c-pista');
+    if (dx > 0) {
+      const suma = S.gesto === 'deslizar';
+      atras.className = 'atras' + (suma ? ' mas' : '');
+      atras.textContent = suma && mas ? '+' + mas : '';
+      pista.textContent = suma ? (mas ? 'Suelta: van ' + r.q + ' · sigue para sumar más' : 'Sigue deslizando para sumar') : PISTAS[S.gesto];
+      g.fr.style.transform = suma ? 'translateX(' + Math.min(46, dx * 0.22) + 'px)' : '';
+    } else {
+      const sale = g.q0 === 1;
+      atras.className = 'atras' + (grado === 2 ? ' todo' : grado === 1 ? ' uno' : '');
+      atras.textContent = grado === 2 ? (sale ? 'Quitar' : 'Quitar los ' + g.q0) : (sale ? 'Quitar' : '−1');
+      pista.textContent = grado === 2 ? 'Suelta: sale del ' + donde() + (sale ? '' : ' con sus ' + g.q0)
+        : grado === 1 ? (sale ? 'Suelta: sale del ' + donde() : 'Suelta: quita uno · sigue hasta el fondo para quitar todo')
+        : 'Sigue deslizando para quitar uno';
+      g.fr.style.transform = 'translateX(' + Math.max(dx, -g.ancho) + 'px)';
+    }
+  });
+  function soltar(e) {
+    if (!g || e.pointerId !== g.id) return;
+    const dx = e.clientX - g.x;
+    const { fr, grado, q0, movido, enBoton } = g;
+    const fueToque = !movido && performance.now() - g.t < 400;
+    g = null;
+    fr.classList.add('vuelve');
+    fr.style.transform = '';
+    const r = lista()[0];
+    if (e.type === 'pointercancel') { if (r) r.q = q0; return pintar(); }
+    if (fueToque) {
+      // Un toque: en «Tocar suma» es uno más; en «Deslizar», el botón de la cantidad abre el teclado (lo ve su clic).
+      if (S.gesto === 'toque') { cambiar(1); vibra(12); pintarNumeros(); fr.classList.remove('vuelve'); fr.classList.add('salto'); }
+      else if (enBoton) { abrirTeclado('cantidad'); pintar(); gestoReciente = true; setTimeout(() => { gestoReciente = false; }, 80); }
+      return;
+    }
+    if (dx < 0 && grado === 2) quitar(0);
+    else if (dx < 0 && grado === 1) cambiar(-1);
+    pintar();
+    if (enBoton || movido) { gestoReciente = true; setTimeout(() => { gestoReciente = false; }, 80); }
+  }
+  $('contenido').addEventListener('pointerup', soltar);
+  $('contenido').addEventListener('pointercancel', soltar);
+
+  // ---- Las opciones para comparar ----
+  for (const i of document.querySelectorAll('input[name="gesto"]')) {
+    i.addEventListener('change', () => { if (i.checked) { S.gesto = i.value; pintar(); } });
+    if (i.checked) S.gesto = i.value;
+  }
+  pintar();
+})();
+</script>

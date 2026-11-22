@@ -89,7 +89,7 @@ class EscanerViewModel(
     private val _config = MutableStateFlow(preferencias.leer())
     val config: StateFlow<ConfigEscaner> = _config.asStateFlow()
 
-    val controlador: ControladorEscaner = fabrica(app, _config.value)
+    val controlador: ControladorEscaner = fabrica(app, _config.value.sinRepetirALaVista())
 
     /**
      * La pantalla principal: abre en el último modo usado; una app que viene de la 0.1 abre en el modo de antes (venta
@@ -177,13 +177,13 @@ class EscanerViewModel(
     }
 
     /**
-     * «Abrir la app» desde el escaneo rápido con [producto] (su clave o, si no estaba en el catálogo, su código): Precio
-     * con ese producto en la tarjeta ([Piso.ensenarDeFuera]). No pasa por el escáner: no vibra, la sesión de prueba no lo
-     * anota y el ticket no cambia. Si los productos todavía no están (la app se acaba de abrir), la tarjeta lo enseña en
+     * «Abrir la app» desde el escaneo rápido con [producto] (su clave o, si no estaba en el catálogo, su código): la
+     * venta, con ese producto en el ticket y en la tarjeta ([Piso.ensenarDeFuera]). No pasa por el escáner: no vibra y la
+     * sesión de prueba no lo anota. Si los productos todavía no están (la app se acaba de abrir), la tarjeta lo enseña en
      * cuanto lleguen; los pide la pantalla al dibujarse completa, como siempre, fuera de la apertura de la cámara.
      */
     fun ensenarDeFuera(producto: String) {
-        cambiarModoApp(ModoApp.PRECIO)
+        cambiarModoApp(ModoApp.VENTA)
         piso.ensenarDeFuera(producto)
     }
 
@@ -255,7 +255,7 @@ class EscanerViewModel(
      * motor ni el Confirmador.
      */
     private fun configurarControlador() {
-        val c = _config.value
+        val c = _config.value.sinRepetirALaVista()
         controlador.configurar(if (piso.hoja.value != null || piso.bloqueada) c.copy(vibracion = false, sonido = false) else c)
     }
 
@@ -384,6 +384,13 @@ private fun dimensionDelSistema(actividad: Activity, nombre: String): Int {
     val id = actividad.resources.getIdentifier(nombre, "dimen", "android")
     return if (id > 0) actividad.resources.getDimensionPixelSize(id) else 0
 }
+
+/**
+ * El mismo código solo vuelve a contar si se retiró de la mira (0.5, lo pidió el dueño): sostener el producto mientras el
+ * cliente ve el precio ya no suma de más. Las demás piezas se suman con un toque en la tarjeta. Es un valor de las reglas
+ * del núcleo, que no cambia: 0 es «nunca mientras siga a la vista».
+ */
+internal fun ConfigEscaner.sinRepetirALaVista(): ConfigEscaner = if (msParaRepetirAVista == 0L) this else copy(msParaRepetirAVista = 0)
 
 /** Dónde se recuerda la última caja a la que se mandó un ticket (sin nada de la caja más que su id). */
 private const val ARCHIVO_MANDAR = "mandar"

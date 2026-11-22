@@ -27,7 +27,7 @@ import mx.papeleriapos.android.principal.ModoApp
 
 /** Un acceso dinámico: su id (nunca uno de shortcuts.xml) y el modo con que abre la app. */
 enum class AccesoDinamico(val id: String, val modo: ModoApp) {
-    TICKET("ticket", ModoApp.TICKET),
+    TICKET("ticket", ModoApp.VENTA),
     CONTAR("contar", ModoApp.CONTEO),
 }
 
@@ -173,8 +173,7 @@ object Accesos {
     }
 
     private fun extraDe(modo: ModoApp): String = when (modo) {
-        ModoApp.PRECIO -> MainActivity.MODO_PRECIO
-        ModoApp.TICKET -> MainActivity.MODO_TICKET
+        ModoApp.VENTA -> MainActivity.MODO_TICKET
         ModoApp.CONTEO -> MainActivity.MODO_CONTEO
     }
 }
