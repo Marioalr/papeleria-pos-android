@@ -65,7 +65,7 @@ pero la pantalla y las pruebas se hacen para dos.
 ### Dónde se cambia (sin comprobaciones periódicas)
 
 1. **En Ajustes › La conexión**, con alta: una sección «Sucursales de este celular».
-   - Cada enlace muestra su nombre, su caja («Celular de Luis, serie L»), su dirección y de cuándo es su copia. El activo
+   - Cada enlace muestra su nombre, el nombre y la serie de la caja que es en esa sucursal (cada una le pone el suyo), su dirección y de cuándo es su copia. El activo
      lleva una marca; los demás, un botón «Usar esta».
    - Abajo, «Conectar a otra sucursal» abre los mismos tres pasos del alta de hoy (`PasoAlta`): buscar o escribir la IP,
      usuario y PIN, sucursal, nombre y serie. La diferencia es que *agrega* el enlace en vez de reemplazarlo.
@@ -97,15 +97,22 @@ En `Conexion`, «usar este enlace» hace lo mismo que ya hace cuando se olvida o
 4. El renglón de la conexión y Ajustes muestran la sucursal activa. En la pantalla principal conviene un indicador
    discreto con su nombre, para que se note en cuál está.
 
-**El ticket o el conteo a medias.** Los renglones se guardan por código y se resuelven contra el catálogo cuando se
-dibujan, así que al cambiar de copia toman los precios y las existencias de la otra sucursal. Si hay algo en la lista,
-la app pregunta antes:
+**El ticket o el conteo a medias.** Si hay algo en la lista, la app pregunta antes de cambiar:
 
-> El ticket tiene 4 productos. Con Sucursal Norte se cobran con sus precios.
-> [Llevarlo] [Empezar otro] [Cancelar]
+> El ticket tiene 4 productos.
+> [Guardar] [Mandar a caja] [Cancelar]
 
-Si un producto no existe en la otra base, queda como hoy queda un código desconocido. No se puede cambiar mientras se
-manda o se cobra un ticket: ese botón queda deshabilitado mientras `trabajando`.
+- **Guardar (se lo lleva):** el ticket se queda en la lista y viaja con el celular a la otra sucursal. Los renglones se
+  guardan por código y se resuelven contra el catálogo cuando se dibujan, así que ahí toman los precios y las
+  existencias de la otra sucursal sin hacer nada más. Si un producto no existe en la otra base, queda como hoy queda un
+  código desconocido.
+- **Mandar a caja:** abre la hoja de Mandar de hoy (`cajasParaMandar` → `mandar`) contra la sucursal *de la que se va*.
+  Cuando se manda, la lista queda vacía y se cambia. Para eso tiene que contestar la caja principal de esa sucursal: si
+  se llega desde la vista de «no contesta», el botón sale deshabilitado con «No contesta Sucursal Centro: no se puede
+  mandar».
+- **El conteo a medias** solo tiene «Guardar»: un conteo no se manda a una caja.
+
+No se puede cambiar mientras se manda o se cobra un ticket: ese botón queda deshabilitado mientras `trabajando`.
 
 **Quitar el acceso.** Si una sucursal le quita el acceso (`sinLlave` → `olvidarAlta`), se olvida *solo ese enlace*. Si
 era el activo, el aviso de hoy agrega «[Usar Sucursal Norte]». Hoy `olvidarAlta` borra todo `conexion.xml`. Tiene que
@@ -138,8 +145,10 @@ precios por sucursal: `PrecioDto.sucursalId` ya existe). La propuesta se prepara
 | 5 | La sugerencia en la vista de «no contesta» y el indicador de la sucursal activa; la pregunta del ticket a medias | 4 |
 | 6 | (Opcional) La sugerencia por UDP con `Identidad` contra los otros enlaces | 5 y uso real |
 
-## Para decidir
+## Decidido
 
-- **¿Se lleva el ticket a medias o se vacía al cambiar?** Recomiendo preguntar, con «Llevarlo» como opción por omisión.
-- **El nombre de la caja en cada sucursal:** recomiendo el mismo, «Celular de Luis», con la serie que esté libre en cada
-  base. Así, cuando las bases se unan, se ve que es el mismo celular.
+- **El ticket a medias al cambiar:** se pregunta si guardarlo (se lo lleva a la otra sucursal) o mandarlo a una caja de
+  la sucursal de la que se va.
+- **El nombre de la caja:** cada sucursal le pone el suyo. El paso 3 del alta lo pide en cada enlace, como hoy, y la
+  serie es la que esté libre en esa base. Que es el mismo celular lo dice `equipo` (el modelo), no el nombre. Cuando las
+  bases se unan con el servidor, se decide ahí qué nombre se queda.
