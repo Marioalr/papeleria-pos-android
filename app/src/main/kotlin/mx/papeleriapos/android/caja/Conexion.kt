@@ -82,6 +82,16 @@ interface CanalDeCobrar {
     suspend fun cobrar(solicitud: SolicitudCobrar): VentaCobradaDto
 }
 
+/** La foto del producto (paso 12): ponerla, quitarla y bajarla, con la llave del celular. Las pruebas ponen el suyo. */
+interface CanalDeFotos {
+    /** Manda el JPEG ya achicado; al guardarse, la copia del celular ya dice que ese producto tiene foto. */
+    suspend fun ponerFoto(varianteId: String, jpeg: ByteArray): FotoGuardadaDto
+    suspend fun quitarFoto(varianteId: String)
+
+    /** El JPEG guardado en la caja principal, o null si ese producto no tiene foto. */
+    suspend fun bajarFoto(varianteId: String): ByteArray?
+}
+
 /**
  * No se pudo: el mensaje es para enseñarlo tal cual; [codigo], el del servicio si contestó; [sinRed], si no contestó;
  * [http], el estado con que contestó (404: ese servicio todavía no tiene esa ruta).
@@ -102,7 +112,7 @@ class Conexion(
     private val msEntreLatidos: Long = MS_ENTRE_LATIDOS,
     /** Las interfaces de red del celular, para decir la causa cuando no contesta ([Diagnostico]); las pruebas pasan la suya. */
     private val leerRed: () -> EstadoDeRed? = EstadoDeRed::actual,
-) : CanalDeMandar, CanalDeCobrar {
+) : CanalDeMandar, CanalDeCobrar, CanalDeFotos {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val hilo: CoroutineDispatcher = hilo ?: Dispatchers.IO.limitedParallelism(1)
     private val alcance = CoroutineScope(SupervisorJob() + this.hilo)
@@ -433,6 +443,26 @@ class Conexion(
     /** Manda el ticket; el servicio contesta cuando la caja ya lo guardó en su espera. */
     override suspend fun mandar(solicitud: SolicitudMandarTicket): TicketMandadoDto = withContext(hilo) {
         conLlave("Mandar el ticket no contestó") { a -> cliente.mandar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    // ---- La foto del producto ----
+
+    override suspend fun ponerFoto(varianteId: String, jpeg: ByteArray): FotoGuardadaDto = withContext(hilo) {
+        val solicitud = SolicitudFoto(okio.ByteString.of(*jpeg).base64())
+        val guardada = conLlave("Guardar la foto no contestó") { a -> cliente.ponerFoto(a.direccion, a.llave, varianteId, solicitud) }
+        // La copia ya lo dice, sin esperar al latido (que traerá lo mismo).
+        _copia.value?.let { publicar(it.conFoto(varianteId, guardada.huella)) }
+        guardada
+    }
+
+    override suspend fun quitarFoto(varianteId: String) = withContext(hilo) {
+        conLlave("Quitar la foto no contestó") { a -> cliente.quitarFoto(a.direccion, a.llave, varianteId) }
+        _copia.value?.let { c -> c.sinFoto(varianteId).takeIf { it !== c }?.let(::publicar) }
+        Unit
+    }
+
+    override suspend fun bajarFoto(varianteId: String): ByteArray? = withContext(hilo) {
+        conLlave("Bajar la foto no contestó") { a -> cliente.bajarFoto(a.direccion, a.llave, varianteId) }
     }
 
     // ---- Cobrar en el celular ----

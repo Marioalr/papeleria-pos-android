@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="exports" path="exports/" />
+    <!-- Donde la cámara del celular deja la foto de un producto mientras la app la prepara (fotos/PantallaFotos.kt). -->
+    <cache-path name="capturas" path="capturas/" />
 </paths>

@@ -82,11 +82,42 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
     suspend fun cobrar(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudCobrar): VentaCobradaDto =
         pedir(direccion, "api/cajas/$cajaId/cobrar", llave, MS_COBRAR, cuerpo = JsonDelPos.encodeToString(SolicitudCobrar.serializer(), solicitud))
 
-    private suspend inline fun <reified T> pedir(direccion: Direccion, ruta: String, llave: String?, msLeer: Long, cuerpo: String? = null): T =
+    // ---- La foto del producto (paso 12) ----
+
+    /** `PUT /api/fotos/{varianteId}`: el servicio las prepara de una en una y cada una espera su turno hasta 30 s. */
+    suspend fun ponerFoto(direccion: Direccion, llave: String, varianteId: String, solicitud: SolicitudFoto): FotoGuardadaDto =
+        pedir(direccion, "api/fotos/$varianteId", llave, MS_FOTO, cuerpo = JsonDelPos.encodeToString(SolicitudFoto.serializer(), solicitud), metodo = "PUT")
+
+    /** `POST /api/fotos/{varianteId}/quitar` con `{}`: contesta 204 sin cuerpo, también si no tenía foto. */
+    suspend fun quitarFoto(direccion: Direccion, llave: String, varianteId: String) = withContext(Dispatchers.IO) {
+        val peticion = Request.Builder().url(direccion.url + "api/fotos/$varianteId/quitar").header(ENCABEZADO_LLAVE, llave).post("{}".toRequestBody(JSON)).build()
+        conTiempo(msRespuesta).newCall(peticion).execute().use { if (!it.isSuccessful) throw errorDe(it) }
+    }
+
+    /** `GET /api/fotos/{varianteId}`: el JPEG guardado (unos 20 KB); null si ese producto no tiene foto (404). */
+    suspend fun bajarFoto(direccion: Direccion, llave: String, varianteId: String): ByteArray? = withContext(Dispatchers.IO) {
+        val peticion = Request.Builder().url(direccion.url + "api/fotos/$varianteId").header(ENCABEZADO_LLAVE, llave).build()
+        conTiempo(msRespuesta).newCall(peticion).execute().use { respuesta ->
+            if (respuesta.code == 404) return@use null
+            if (!respuesta.isSuccessful) throw errorDe(respuesta)
+            val cuerpo = respuesta.body ?: throw IOException("Sin respuesta")
+            // Una foto guardada pesa unos 20 KB: más de 1 MB no es una foto del POS.
+            if (cuerpo.contentLength() > MAXIMO_FOTO) throw IOException("La foto pesa demasiado")
+            cuerpo.source().use { fuente ->
+                if (fuente.request(MAXIMO_FOTO + 1)) throw IOException("La foto pesa demasiado")
+                fuente.readByteArray()
+            }
+        }
+    }
+
+    private fun conTiempo(msLeer: Long): OkHttpClient =
+        base.newBuilder().readTimeout(msLeer, TimeUnit.MILLISECONDS).callTimeout(msLeer + MS_CONEXION, TimeUnit.MILLISECONDS).build()
+
+    private suspend inline fun <reified T> pedir(direccion: Direccion, ruta: String, llave: String?, msLeer: Long, cuerpo: String? = null, metodo: String = "POST"): T =
         withContext(Dispatchers.IO) {
             val peticion = Request.Builder().url(direccion.url + ruta).apply {
                 if (llave != null) header(ENCABEZADO_LLAVE, llave)
-                if (cuerpo != null) post(cuerpo.toRequestBody(JSON))
+                if (cuerpo != null) method(metodo, cuerpo.toRequestBody(JSON))
             }.build()
             val cliente = base.newBuilder().readTimeout(msLeer, TimeUnit.MILLISECONDS).callTimeout(msLeer + MS_CONEXION, TimeUnit.MILLISECONDS).build()
             cliente.newCall(peticion).execute().use { respuesta ->
@@ -137,6 +168,10 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         const val MS_CAMBIOS = 10_000L
         const val MS_PAQUETE = 60_000L
         const val MS_MANDAR = 15_000L
+
+        /** Subir una foto: hasta 30 s de fila en el servicio, más lo que tarde en llegar por el Wi-Fi. */
+        const val MS_FOTO = 45_000L
+        const val MAXIMO_FOTO = 1_000_000L
 
         /** El servicio contesta el cobro en hasta unos 15 s (docs/celular-como-caja.md, paso 10); un poco más de margen. */
         const val MS_COBRAR = 20_000L

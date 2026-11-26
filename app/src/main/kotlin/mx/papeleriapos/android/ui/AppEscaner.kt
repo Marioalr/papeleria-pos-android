@@ -43,7 +43,11 @@ import mx.papeleriapos.android.actualizar.PantallaActualizar
 import mx.papeleriapos.android.ajustes.PantallaAjustes
 import mx.papeleriapos.android.ajustes.PantallaAjustesEscaner
 import mx.papeleriapos.android.banco.BancoViewModel
+import mx.papeleriapos.android.caja.Conexion
 import mx.papeleriapos.android.caja.PantallaConexion
+import mx.papeleriapos.android.fotos.AlmacenFotos
+import mx.papeleriapos.android.fotos.Fotos
+import mx.papeleriapos.android.fotos.PantallaFotos
 import mx.papeleriapos.android.entrada.Entrada
 import mx.papeleriapos.android.entrada.PantallaEntrada
 import mx.papeleriapos.android.banco.PantallaBanco
@@ -67,6 +71,7 @@ enum class Destino(val titulo: String, val padre: Destino?) {
     PRINCIPAL("Escanear", null),
     AJUSTES("Ajustes", PRINCIPAL),
     ACTUALIZAR("Actualizar la app", AJUSTES),
+    FOTOS("Fotos de productos", AJUSTES),
     CONEXION("La conexión", AJUSTES),
     ESCANER("El escáner", AJUSTES),
     SESION("Sesión de prueba", AJUSTES),
@@ -162,6 +167,7 @@ fun AppEscaner(
                             destino = it
                         })
                         Destino.ACTUALIZAR -> PantallaActualizar()
+                        Destino.FOTOS -> FotosDeProductos(vm)
                         Destino.CONEXION -> PantallaConexion()
                         Destino.ESCANER -> PantallaAjustesEscaner(vm)
                         Destino.SESION -> PantallaSesion(vm)
@@ -173,6 +179,19 @@ fun AppEscaner(
             }
         }
     }
+}
+
+/** «Fotos de productos»: la copia de la caja, lo último escaneado en la venta y las fotos guardadas en el celular. */
+@Composable
+private fun FotosDeProductos(vm: EscanerViewModel) {
+    val contexto = LocalContext.current.applicationContext
+    val conexion = remember(contexto) { Conexion.del(contexto) }
+    val copia by conexion.copia.collectAsStateWithLifecycle()
+    val fotos = remember(conexion) { Fotos(conexion, AlmacenFotos(java.io.File(contexto.filesDir, AlmacenFotos.CARPETA))) }
+    val ticket by vm.venta.collectAsStateWithLifecycle()
+    val catalogo by vm.piso.catalogo.collectAsStateWithLifecycle()
+    val ultimo = ticket.actual?.let { catalogo?.de(it)?.cobro?.presentacion?.varianteId }
+    PantallaFotos(copia, ultimo, fotos)
 }
 
 /**

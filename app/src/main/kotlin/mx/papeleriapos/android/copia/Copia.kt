@@ -41,8 +41,19 @@ data class Copia(
     val vendidos: List<VecesVendidoDto> = emptyList(),
     val elegidos: List<ElegidoDto> = emptyList(),
     val promociones: List<PromocionDto> = emptyList(),
+    /** Qué productos tienen foto: su variante (en minúsculas) y la huella de su foto (paso 12 del documento del POS). */
+    val fotos: Map<String, String> = emptyMap(),
     val guardadaEn: Long,
 ) {
+    /** La huella de la foto de esa variante, o null si no tiene. */
+    fun huellaDe(varianteId: String): String? = fotos[varianteId.lowercase()]
+
+    /** Con la foto que se acaba de poner (o cambiar), sin esperar a los cambios. */
+    fun conFoto(varianteId: String, huella: String): Copia = copy(fotos = fotos + (varianteId.lowercase() to huella))
+
+    /** Sin la foto que se acaba de quitar. */
+    fun sinFoto(varianteId: String): Copia = if (varianteId.lowercase() in fotos) copy(fotos = fotos - varianteId.lowercase()) else this
+
     /** Si el latido trae otras versiones que las de aquí: hay que pedir los cambios. */
     fun desactualizada(versionDatos: Long, versionExistencias: Long?, base: String?, formato: Int?): Boolean =
         versionDatos != version ||
@@ -89,6 +100,9 @@ data class Copia(
             vendidos = c.vendidos ?: vendidos,
             elegidos = c.elegidos?.let { nuevos -> (elegidos.filter { e -> nuevos.none { it.texto == e.texto } } + nuevos) } ?: elegidos,
             promociones = c.promociones ?: promociones,
+            // Las fotos no se reemplazan todas: las que llegan van encima, y se van las quitadas y las de productos quitados.
+            fotos = (fotos + c.fotos.orEmpty().associate { it.varianteId.lowercase() to it.huella })
+                .filterKeys { it !in quitados && c.fotosQuitadas.orEmpty().none { q -> q.equals(it, ignoreCase = true) } },
             guardadaEn = ahora,
         )
     }
@@ -115,6 +129,7 @@ data class Copia(
             vendidos = p.vendidos.orEmpty(),
             elegidos = p.elegidos.orEmpty(),
             promociones = p.promociones.orEmpty(),
+            fotos = p.fotos.orEmpty().associate { it.varianteId.lowercase() to it.huella },
             guardadaEn = ahora,
         )
     }

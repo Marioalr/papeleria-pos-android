@@ -1,5 +1,6 @@
 package mx.papeleriapos.android.caja
 
+import org.junit.Assert.assertNull
 import org.junit.Assert.fail
 import mx.papeleriapos.android.principal.totalDe
 import mx.papeleriapos.android.principal.renglonesParaMandar
@@ -176,6 +177,65 @@ class ContraElPosTest {
         } catch (e: ErrorDelPos) {
             println("Mandar con artículo común: ${e.codigo}: ${e.message}")
             assertEquals("Sin la venta abierta en esa caja no lo recoge, pero el artículo común ya no es el problema", "caja-no-recibe", e.codigo)
+        }
+    }
+
+    /** La foto del producto (docs/celular-como-caja.md del POS, paso 12), contra el servicio de verdad: con la llave del celular. */
+    @Test
+    fun `poner, ver, bajar y quitar la foto de un producto se entienden tal cual`() = runBlocking {
+        assumeTrue("Sin POS_URL no corre", url != null)
+        val direccion = RedLocal.direccionDe(url!!)!!
+        val cliente = ClienteCaja()
+        val sucursal = cliente.opcionesDeAlta(direccion, usuario, pin)[0]
+        val alta = cliente.darDeAlta(direccion, SolicitudAltaCaja(usuario, pin, sucursal.id, null, "Celular de prueba", Conexion.seriePropuesta(sucursal.cajas), "Prueba JVM"))
+        val celular = alta.caja.id
+        val antes = Copia.dePaquete(cliente.paquete(direccion, alta.llave, celular), 1L)
+        val variante = antes.productos.first { antes.huellaDe(it.varianteId) == null }.varianteId
+
+        // Una imagen cualquiera, del tamaño que manda la app: 960 × 720 en JPEG.
+        val imagen = java.awt.image.BufferedImage(960, 720, java.awt.image.BufferedImage.TYPE_INT_RGB).apply {
+            createGraphics().run { color = java.awt.Color(40, 120, 200); fillRect(0, 0, 960, 720); color = java.awt.Color.WHITE; fillOval(300, 200, 360, 320); dispose() }
+        }
+        val jpeg = java.io.ByteArrayOutputStream().also { javax.imageio.ImageIO.write(imagen, "jpg", it) }.toByteArray()
+        val guardada = try {
+            cliente.ponerFoto(direccion, alta.llave, variante, SolicitudFoto(java.util.Base64.getEncoder().encodeToString(jpeg)))
+        } catch (e: ErrorDelPos) {
+            assumeTrue("Este POS todavía no acepta la foto con la llave del celular: ${e.http} ${e.message}", false)
+            throw e
+        }
+        println("Foto guardada: huella ${guardada.huella}, ${guardada.ancho} × ${guardada.alto}, ${guardada.bytes} bytes")
+        assertEquals(16, guardada.huella.length)
+        assertEquals("Queda de 240 px por su lado más largo", 240, guardada.ancho)
+        assertEquals(180, guardada.alto)
+        assertTrue(guardada.jpegBase64.isNotEmpty())
+
+        // La misma otra vez (se perdió la respuesta): contesta lo mismo.
+        assertEquals(guardada.huella, cliente.ponerFoto(direccion, alta.llave, variante, SolicitudFoto(java.util.Base64.getEncoder().encodeToString(jpeg))).huella)
+
+        // Bajarla: el JPEG guardado.
+        val bajada = cliente.bajarFoto(direccion, alta.llave, variante)!!
+        assertEquals(guardada.bytes, bajada.size)
+        assertEquals("Empieza como un JPEG", listOf(0xFF.toByte(), 0xD8.toByte()), bajada.take(2))
+
+        // La copia ya lo dice: en los cambios (solo esa) y en la copia completa.
+        val cambios = cliente.cambios(direccion, alta.llave, antes)
+        println("Cambios tras la foto: paqueteCompleto=${cambios.paqueteCompleto}, fotos=${cambios.fotos?.size}")
+        if (cambios.paqueteCompleto == null) assertEquals(guardada.huella, antes.aplicar(cambios, 2L).huellaDe(variante))
+        assertEquals(guardada.huella, Copia.dePaquete(cliente.paquete(direccion, alta.llave, celular), 3L).huellaDe(variante))
+
+        // Quitarla: 204, y ya no está; quitarla otra vez tampoco es un error.
+        cliente.quitarFoto(direccion, alta.llave, variante)
+        assertNull(cliente.bajarFoto(direccion, alta.llave, variante))
+        cliente.quitarFoto(direccion, alta.llave, variante)
+        assertNull(Copia.dePaquete(cliente.paquete(direccion, alta.llave, celular), 4L).huellaDe(variante))
+
+        // Lo que no es una imagen lo dice con su código.
+        try {
+            cliente.ponerFoto(direccion, alta.llave, variante, SolicitudFoto("QUJD"))
+            fail("Tres letras no son una foto")
+        } catch (e: ErrorDelPos) {
+            println("No es una imagen: ${e.codigo}: ${e.message}")
+            assertEquals("imagen", e.codigo)
         }
     }
 }
