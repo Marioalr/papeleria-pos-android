@@ -141,7 +141,7 @@ class ContraElPosTest {
         }
 
         // En efectivo, con $50 de más: el cambio.
-        val solicitud = SolicitudCobrar(id, renglones, listOf(CobroPedido(0, recibido)), caja = conTurno[0].id, totalVisto = local)
+        val solicitud = SolicitudCobrar(id, renglones, listOf(CobroPedido(0, recibido)), caja = conTurno[0].id, totalVisto = local, imprimir = true)
         val venta = cliente.cobrar(direccion, alta.llave, celular, solicitud)
         println("Cobrado: folio ${venta.folio} en ${venta.caja}, cajero ${venta.cajero}, cobrado ${venta.cobradoCentavos}, cambio ${venta.cambioCentavos}")
         assertTrue(venta.folio.isNotBlank())
@@ -151,6 +151,16 @@ class ContraElPosTest {
         assertEquals(5_000L, venta.cambioCentavos)
         assertFalse(venta.yaCobrada)
         assertEquals("efectivo", Cobrador.comoPago(venta))
+
+        // El ticket (paso 11): las cajas dicen si pueden imprimirlo, el cobro dice qué pasó y se puede pedir después.
+        println("Impresión posible: ${conTurno[0].impresion}; al cobrar: ${venta.impresion}")
+        if (venta.impresion != null) {
+            assertNotNull("Con un POS que imprime, cada caja dice si puede", conTurno[0].impresion)
+            assertTrue(venta.impresion!!.estado in setOf("impreso", "en-camino", "no-pedida", "no-impreso"))
+            val despues = cliente.imprimirVenta(direccion, alta.llave, celular, venta.id, SolicitudImprimir(UUID.randomUUID().toString()))
+            println("Pedido después: ${despues.estado} ${despues.codigo}: ${despues.mensaje}")
+            assertTrue(despues.mensaje.isNotBlank())
+        }
 
         // El mismo Id otra vez (se perdió la respuesta): la misma venta, sin cobrar dos veces.
         val otraVez = cliente.cobrar(direccion, alta.llave, celular, solicitud)

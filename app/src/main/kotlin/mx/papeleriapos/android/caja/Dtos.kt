@@ -207,7 +207,38 @@ data class CajaParaMandarDto(
     val esperan: Int? = null,
     /** Tiene un turno abierto (paso 10): el celular puede cobrar en él, aunque no tenga la venta abierta. */
     val turnoAbierto: Boolean = false,
+    /** Si el ticket de lo que se cobre en esta caja puede salir, y por dónde (paso 11). null: un POS que todavía no imprime. */
+    val impresion: ImpresionPosibleDto? = null,
 )
+
+/** [puede]: la casilla «Imprimir ticket» se puede marcar; si no, sale apagada con [mensaje]. */
+@Serializable
+data class ImpresionPosibleDto(
+    val puede: Boolean = false,
+    val por: String? = null,
+    val codigo: String? = null,
+    val mensaje: String = "",
+    val automatico: Boolean = false,
+)
+
+/**
+ * Lo que pasó con el ticket (al cobrar o al pedirlo después): [estado] «impreso», «en-camino», «no-pedida» o «no-impreso»
+ * (con su [codigo]); [mensaje], para enseñarse tal cual. [salio] solo con «impreso».
+ */
+@Serializable
+data class ImpresionDto(
+    val estado: String = "",
+    val codigo: String? = null,
+    val mensaje: String = "",
+    val cajaId: String? = null,
+    val caja: String? = null,
+    val por: String? = null,
+    val salio: Boolean = false,
+)
+
+/** `POST /api/cajas/{id}/ventas/{ventaId}/imprimir`: [id], el de esta petición (la misma otra vez no saca otro papel). */
+@Serializable
+data class SolicitudImprimir(val id: String, val cajeroId: String? = null, val motivo: String? = null)
 
 /**
  * Un renglón, el mismo al mandar, cotizar y cobrar: el producto de la copia (su variante y presentación) y, por si acaso,
@@ -298,8 +329,8 @@ data class SolicitudCobrar(
     val cajeroId: String? = null,
     val totalVisto: Long? = null,
     /**
-     * Que la caja principal imprima el ticket de esta venta (la casilla del cobro). Se le pidió al POS el 2026-11-26; uno
-     * que todavía no lo recibe ignora el campo y la venta queda «sin imprimir», como antes.
+     * Que salga el ticket de esta venta (la casilla del cobro; paso 11 del documento del POS): cierto, que salga; falso, que
+     * no. Un POS anterior ignora el campo y la venta queda «sin imprimir».
      */
     val imprimir: Boolean? = null,
 )
@@ -332,6 +363,8 @@ data class VentaCobradaDto(
     val cobros: List<CobroHechoDto> = emptyList(),
     /** Ese Id ya era una venta: no se cobró otra vez. */
     val yaCobrada: Boolean = false,
+    /** Qué pasó con el ticket (paso 11); null con un POS que todavía no imprime lo del celular. */
+    val impresion: ImpresionDto? = null,
 )
 
 // ---- La foto del producto (docs/celular-como-caja.md del POS, paso 12) ----

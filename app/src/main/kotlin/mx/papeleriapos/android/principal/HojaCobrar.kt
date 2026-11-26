@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import mx.papeleriapos.android.caja.ImpresionDto
 import mx.papeleriapos.android.caja.VentaCobradaDto
 import mx.papeleriapos.android.catalogo.pesos
 import mx.papeleriapos.android.tema.LocalColoresEstado
@@ -249,19 +250,27 @@ fun HojaCobrar(estado: EstadoCobro, acciones: AccionesCobro, alCerrar: () -> Uni
                     for (c in conTurno) Billete(c.nombre, c.id == estado.cajaDelCobro?.id, "caja-cobro-${c.serie}") { acciones.caja(c.id) }
                 }
             }
-            // Imprimir el ticket: marcada como diga Ajustes; aquí se cambia solo para esta venta.
+            // Imprimir el ticket: marcada como diga Ajustes; aquí se cambia solo para esta venta. Si esa caja no puede
+            // imprimirlo (el interruptor apagado, sin impresora, su ventana cerrada), sale apagada con su razón.
+            val puedeImprimir = estado.impresionPosible?.puede != false
             Row(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .toggleable(value = estado.imprimir, enabled = !estado.cobrando, role = Role.Checkbox, onValueChange = acciones.imprimir)
+                    .toggleable(value = estado.pideTicket, enabled = !estado.cobrando && puedeImprimir, role = Role.Checkbox, onValueChange = acciones.imprimir)
                     .testTag("cobro-imprimir"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Checkbox(checked = estado.imprimir, onCheckedChange = null)
+                Checkbox(checked = estado.pideTicket, onCheckedChange = null, enabled = puedeImprimir)
                 Spacer(Modifier.width(12.dp))
-                Text("Imprimir ticket", style = MaterialTheme.typography.bodyLarge)
+                Column {
+                    Text("Imprimir ticket", style = MaterialTheme.typography.bodyLarge, color = if (puedeImprimir) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Dónde va a salir o por qué no se puede, como lo dice la caja principal.
+                    estado.impresionPosible?.mensaje?.takeIf { it.isNotBlank() }?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("cobro-imprimir-donde"))
+                    }
+                }
             }
             estado.cajaDelCobro?.let { c ->
                 Nota(
@@ -340,7 +349,16 @@ private fun Nota(texto: String, modifier: Modifier = Modifier) {
  * ventas del día.
  */
 @Composable
-fun HojaCobrado(venta: VentaCobradaDto, pidioImprimir: Boolean = false, alCerrar: () -> Unit) {
+fun HojaCobrado(
+    venta: VentaCobradaDto,
+    pidioImprimir: Boolean = false,
+    /** Qué pasó con el ticket; null: el POS no lo dijo (uno anterior al paso 11). */
+    impresion: ImpresionDto? = venta.impresion,
+    imprimiendo: Boolean = false,
+    errorDeImpresion: String? = null,
+    alImprimir: () -> Unit = {},
+    alCerrar: () -> Unit,
+) {
     val colores = LocalColoresEstado.current
     val color = LocalColoresModo.current.ticket
     val enEfectivo = venta.cobros.any { it.forma == FormaDePago.EFECTIVO.numero }
@@ -395,10 +413,13 @@ fun HojaCobrado(venta: VentaCobradaDto, pidioImprimir: Boolean = false, alCerrar
                 modifier = Modifier.testTag("cobrado-folio"),
             )
             Text(
-                (if (enEfectivo) "Deja el efectivo en el cajón de la ${venta.caja}. " else "") +
-                    // El servicio todavía no dice si lo imprimió (se le pidió al POS): se dice lo que se pidió y qué hacer si no sale.
-                    if (pidioImprimir) "Se pidió imprimir el ticket. Si no sale, imprímelo en la ${venta.caja}, desde sus ventas del día."
-                    else "Sin ticket. Si lo piden, se imprime en la ${venta.caja}, desde sus ventas del día.",
+                (if (enEfectivo) "Deja el efectivo en el cajón de la ${venta.caja}. " else "") + when {
+                    // Lo que dijo la caja principal del ticket, tal cual.
+                    impresion != null && impresion.mensaje.isNotBlank() -> impresion.mensaje
+                    // Un POS que todavía no lo dice: lo que se pidió y qué hacer si no sale.
+                    pidioImprimir -> "Se pidió imprimir el ticket. Si no sale, imprímelo en la ${venta.caja}, desde sus ventas del día."
+                    else -> "Sin ticket. Si lo piden, se imprime en la ${venta.caja}, desde sus ventas del día."
+                },
                 modifier = Modifier.testTag("cobrado-ticket"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -406,7 +427,19 @@ fun HojaCobrado(venta: VentaCobradaDto, pidioImprimir: Boolean = false, alCerrar
             )
         }
         Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-            Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp)) {
+            Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                errorDeImpresion?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("cobrado-error-ticket"))
+                }
+                // Mientras el ticket no haya salido se puede pedir (otra vez, o por primera si no se pidió). Ya salido,
+                // otro es una reimpresión, que pide motivo y permiso: esa se hace en la caja.
+                if (impresion != null && !impresion.salio) {
+                    OutlinedButton(
+                        onClick = alImprimir,
+                        enabled = listo && !imprimiendo,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("imprimir-ticket"),
+                    ) { Text(if (imprimiendo) "Pidiendo el ticket…" else if (impresion.estado == "no-pedida") "Imprimir el ticket" else "Imprimir otra vez") }
+                }
                 Button(
                     onClick = alCerrar,
                     enabled = listo,

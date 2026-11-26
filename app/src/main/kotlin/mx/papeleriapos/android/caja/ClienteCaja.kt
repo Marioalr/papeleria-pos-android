@@ -82,6 +82,10 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
     suspend fun cobrar(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudCobrar): VentaCobradaDto =
         pedir(direccion, "api/cajas/$cajaId/cobrar", llave, MS_COBRAR, cuerpo = JsonDelPos.encodeToString(SolicitudCobrar.serializer(), solicitud))
 
+    /** `POST /api/cajas/{id}/ventas/{ventaId}/imprimir`: el ticket de una venta ya cobrada. Que no salga no es un error: lo dice. */
+    suspend fun imprimirVenta(direccion: Direccion, llave: String, cajaId: String, ventaId: String, solicitud: SolicitudImprimir): ImpresionDto =
+        pedir(direccion, "api/cajas/$cajaId/ventas/$ventaId/imprimir", llave, MS_COBRAR, cuerpo = JsonDelPos.encodeToString(SolicitudImprimir.serializer(), solicitud))
+
     // ---- La foto del producto (paso 12) ----
 
     /** `PUT /api/fotos/{varianteId}`: el servicio las prepara de una en una y cada una espera su turno hasta 30 s. */
@@ -173,8 +177,8 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
         const val MS_FOTO = 45_000L
         const val MAXIMO_FOTO = 1_000_000L
 
-        /** El servicio contesta el cobro en hasta unos 15 s (docs/celular-como-caja.md, paso 10); un poco más de margen. */
-        const val MS_COBRAR = 20_000L
+        /** El servicio contesta el cobro en hasta unos 15 s y, con el ticket, la app espera hasta 25 s (pasos 10 y 11); un poco más. */
+        const val MS_COBRAR = 30_000L
 
         /** Un solo cliente por proceso (sus hilos y su piscina de conexiones); cada llamada ajusta su tiempo de lectura. */
         fun clienteBase(): OkHttpClient = OkHttpClient.Builder()

@@ -1,5 +1,8 @@
 package mx.papeleriapos.android.principal
 
+import mx.papeleriapos.android.caja.SolicitudImprimir
+import mx.papeleriapos.android.caja.ImpresionPosibleDto
+import mx.papeleriapos.android.caja.ImpresionDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -357,5 +360,68 @@ class CobroTest {
         c.abrir(ticket(), catalogo)
         advanceUntilIdle()
         assertFalse(c.estado.value.imprimir)
+    }
+
+    // ---- El ticket: dónde sale, qué pasó y pedirlo después (paso 11 del POS) ----
+
+    private class CanalConTicket(cajas: List<CajaParaMandarDto>, var alCobrar: ImpresionDto?, var despues: ImpresionDto? = null, var fallaAlImprimir: NoSeMando? = null) : CanalDeCobrar {
+        private val base = Canal(cajas)
+        val pedidas = ArrayList<Pair<String, String>>()
+        val cobradas get() = base.cobradas
+        override suspend fun cajasParaMandar() = base.cajasParaMandar()
+        override suspend fun cotizar(solicitud: SolicitudCotizar) = base.cotizar(solicitud)
+        override suspend fun cobrar(solicitud: SolicitudCobrar) = base.cobrar(solicitud).copy(impresion = alCobrar)
+        override suspend fun imprimir(ventaId: String, solicitud: SolicitudImprimir): ImpresionDto {
+            pedidas.add(ventaId to solicitud.id)
+            fallaAlImprimir?.let { throw it }
+            return despues!!
+        }
+    }
+
+    @Test
+    fun `si la caja no puede imprimir, la casilla no cuenta y el cobro no pide el ticket`() = runTest(hilo) {
+        val apagada = caja1.copy(impresion = ImpresionPosibleDto(puede = false, codigo = "apagado", mensaje = "Está apagado «Imprimir lo que cobra el celular»: se prende en la caja, en Configuración › Ticket."))
+        val canal = CanalConTicket(listOf(apagada), alCobrar = ImpresionDto("no-pedida", mensaje = "No se pidió imprimir el ticket."))
+        val c = Cobrador(canal, this, { null }, {}, IdsDeTicket())
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertTrue("La casilla sigue como diga Ajustes", c.estado.value.imprimir)
+        assertFalse(c.estado.value.pideTicket)
+        c.cobrar { }
+        advanceUntilIdle()
+        assertEquals(false, canal.cobradas.single().imprimir)
+        assertEquals("no-pedida", c.estado.value.impresion!!.estado)
+    }
+
+    @Test
+    fun `cobrado sabe que paso con el ticket y lo pide otra vez con un Id nuevo cada vez`() = runTest(hilo) {
+        val puede = caja1.copy(impresion = ImpresionPosibleDto(puede = true, por = "red", mensaje = "Sale en la impresora de la Caja 1."))
+        val sinPapel = ImpresionDto("no-impreso", "sin-papel", "Se acabó el papel de la impresora de la Caja 1: pon papel y pídelo otra vez.")
+        val canal = CanalConTicket(listOf(puede), alCobrar = sinPapel, despues = sinPapel)
+        val c = Cobrador(canal, this, { null }, {}, IdsDeTicket { "venta-1" })
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertTrue(c.estado.value.pideTicket)
+        c.cobrar { }
+        advanceUntilIdle()
+        assertEquals(true, canal.cobradas.single().imprimir)
+        assertEquals("El cobro no falla por el ticket: se cobró y dice que no salió", "sin-papel", c.estado.value.impresion!!.codigo)
+        // Pusieron papel: otra vez. Sigue sin salir, y luego sale.
+        var n = 0
+        c.imprimirTicket { "peticion-${++n}" }
+        assertTrue(c.estado.value.imprimiendo)
+        advanceUntilIdle()
+        canal.despues = ImpresionDto("impreso", mensaje = "Salió en la impresora de la Caja 1.", salio = true)
+        c.imprimirTicket { "peticion-${++n}" }
+        advanceUntilIdle()
+        assertEquals(listOf("venta-1" to "peticion-1", "venta-1" to "peticion-2"), canal.pedidas)
+        assertTrue(c.estado.value.impresion!!.salio)
+        assertFalse(c.estado.value.imprimiendo)
+        // Sin red al pedirlo: lo dice y lo de antes se queda.
+        canal.fallaAlImprimir = NoSeMando("No contestó la caja principal.", sinRed = true)
+        c.imprimirTicket()
+        advanceUntilIdle()
+        assertEquals("No contestó la caja principal.", c.estado.value.errorDeImpresion)
+        assertTrue(c.estado.value.impresion!!.salio)
     }
 }

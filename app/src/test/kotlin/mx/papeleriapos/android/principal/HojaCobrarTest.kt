@@ -1,5 +1,9 @@
 package mx.papeleriapos.android.principal
 
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import mx.papeleriapos.android.caja.ImpresionPosibleDto
+import mx.papeleriapos.android.caja.ImpresionDto
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -196,5 +200,36 @@ class HojaCobrarTest {
         compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Se pidió imprimir el ticket. Si no sale, imprímelo en la Caja 1, desde sus ventas del día.")
         pidio = false
         compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Sin ticket. Si lo piden, se imprime en la Caja 1, desde sus ventas del día.")
+    }
+
+    @Test
+    fun `la casilla dice donde sale el ticket, o sale apagada con su razon`() {
+        abrir(listo.copy(cajas = listOf(caja1.copy(impresion = ImpresionPosibleDto(puede = true, por = "red", mensaje = "Sale en la impresora de la Caja 1.")))))
+        compose.onNodeWithTag("cobro-imprimir-donde", useUnmergedTree = true).assertTextEquals("Sale en la impresora de la Caja 1.")
+        compose.onNodeWithTag("cobro-imprimir").assertIsEnabled()
+        estado = estado.copy(cajas = listOf(caja1.copy(impresion = ImpresionPosibleDto(puede = false, codigo = "ventana-cerrada", mensaje = "La Caja 1 no tiene su ventana abierta (o está apagada): ábrela para que imprima."))))
+        compose.waitForIdle()
+        compose.onNodeWithTag("cobro-imprimir").assertIsNotEnabled()
+        compose.onNodeWithTag("cobro-imprimir-donde", useUnmergedTree = true).assertTextEquals("La Caja 1 no tiene su ventana abierta (o está apagada): ábrela para que imprima.")
+        assertFalse(estado.pideTicket)
+    }
+
+    @Test
+    fun `cobrado dice lo que paso con el ticket y deja pedirlo mientras no haya salido`() {
+        val venta = VentaCobradaDto(id = "t1", folio = "000123", caja = "Caja 1", articulos = 1.0, cobradoCentavos = 2300, cobros = listOf(CobroHechoDto(1, 2300)))
+        var impresion by mutableStateOf(ImpresionDto("no-impreso", "sin-papel", "Se acabó el papel de la impresora de la Caja 1: pon papel y pídelo otra vez."))
+        var pedidas = 0
+        compose.setContent { TemaEscaner(oscuro = false) { HojaCobrado(venta, pidioImprimir = true, impresion = impresion, alImprimir = { pedidas++ }) {} } }
+        compose.mainClock.advanceTimeBy(MS_REBOTE_COBRADO + 50)
+        compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Se acabó el papel de la impresora de la Caja 1: pon papel y pídelo otra vez.")
+        compose.onNodeWithTag("imprimir-ticket").assertTextEquals("Imprimir otra vez").performClick()
+        assertEquals(1, pedidas)
+        // Ya salió: lo dice y ya no ofrece otro (sería una reimpresión, que se hace en la caja).
+        impresion = ImpresionDto("impreso", mensaje = "Salió en la impresora de la Caja 1.", salio = true)
+        compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Salió en la impresora de la Caja 1.")
+        assertTrue(compose.onAllNodes(androidx.compose.ui.test.hasTestTag("imprimir-ticket")).fetchSemanticsNodes().isEmpty())
+        // No se pidió: se puede pedir ahora.
+        impresion = ImpresionDto("no-pedida", mensaje = "No se pidió imprimir el ticket.")
+        compose.onNodeWithTag("imprimir-ticket").assertTextEquals("Imprimir el ticket")
     }
 }
