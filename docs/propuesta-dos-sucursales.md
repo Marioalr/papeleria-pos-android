@@ -102,6 +102,8 @@ En `Conexion`, «usar este enlace» hace lo mismo que ya hace cuando se olvida o
 > El ticket tiene 4 productos.
 > [Guardar] [Mandar a caja] [Cancelar]
 
+(Con un conteo dice «El conteo tiene 4 productos» y ofrece lo mismo.)
+
 - **Guardar (se lo lleva):** el ticket se queda en la lista y viaja con el celular a la otra sucursal. Los renglones se
   guardan por código y se resuelven contra el catálogo cuando se dibujan, así que ahí toman los precios y las
   existencias de la otra sucursal sin hacer nada más. Si un producto no existe en la otra base, queda como hoy queda un
@@ -110,7 +112,10 @@ En `Conexion`, «usar este enlace» hace lo mismo que ya hace cuando se olvida o
   Cuando se manda, la lista queda vacía y se cambia. Para eso tiene que contestar la caja principal de esa sucursal: si
   se llega desde la vista de «no contesta», el botón sale deshabilitado con «No contesta Sucursal Centro: no se puede
   mandar».
-- **El conteo a medias** solo tiene «Guardar»: un conteo no se manda a una caja.
+- **El conteo a medias** tiene las mismas dos opciones: guardarlo (se lo lleva) o mandarlo a una caja de la sucursal
+  de la que se va, con la misma condición de que esa caja principal conteste. Al guardarlo, lo contado se queda por
+  código, igual que el ticket. Hoy la app todavía no tiene cómo mandar un conteo (`Mandar.kt` y `CanalDeMandar` solo
+  mandan tickets), así que «Mandar a caja» en el conteo llega cuando llegue eso.
 
 No se puede cambiar mientras se manda o se cobra un ticket: ese botón queda deshabilitado mientras `trabajando`.
 
@@ -147,8 +152,8 @@ precios por sucursal: `PrecioDto.sucursalId` ya existe). La propuesta se prepara
 
 ## Decidido
 
-- **El ticket a medias al cambiar:** se pregunta si guardarlo (se lo lleva a la otra sucursal) o mandarlo a una caja de
-  la sucursal de la que se va.
+- **El ticket o el conteo a medias al cambiar:** se pregunta si guardarlo (se lo lleva a la otra sucursal) o mandarlo a
+  una caja de la sucursal de la que se va.
 - **El nombre de la caja:** cada sucursal le pone el suyo. El paso 3 del alta lo pide en cada enlace, como hoy, y la
   serie es la que esté libre en esa base. Que es el mismo celular lo dice `equipo` (el modelo), no el nombre. Cuando las
   bases se unan con el servidor, se decide ahí qué nombre se queda.
