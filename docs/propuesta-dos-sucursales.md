@@ -20,20 +20,21 @@ caja principal.
   contra el catálogo cuando se dibujan) y la entrada con huella (`AlmacenAlta.hayAlta`, que revisa si existe la llave en
   `conexion.xml`).
 
-## Lo que falta en el POS (bloquea)
+## El estado del POS (2026-11-26)
 
-**La segunda sucursal está instalada como «La única caja»** (docs/propuesta-interfaz.md, «Con "La única caja"»). Ese
-modo no da de alta otros equipos: el celular lo detecta con `unaSolaCaja` y muestra «no da de alta otros equipos». Sin
-un cambio en el POS, el celular no se puede enlazar a esa sucursal. Hay dos caminos:
+- **La segunda sucursal:** una sola caja, instalada como **caja principal** (no como «La única caja»). El ensayo ya salió
+  bien. El alta del celular funciona como hoy, y también la búsqueda por UDP.
+- **La matriz:** dos cajas. Ya se aprobó instalar la principal y la segunda caja conectada a ella. **Todavía no está
+  instalada.**
+- **Ya se aprobó vender en las dos sucursales**, aunque todavía se reporta a Eleventa. Cada sucursal tiene su propia
+  base, con sus propios ids y nombres: sigue siendo el caso de «dos bases distintas».
 
-1. **Que «La única caja» acepte celulares** (no otras PC): el alta como hoy, con usuario y PIN, solo para equipos que no
-   venden. Es lo más corto.
-2. **Pasar esa instalación a caja principal normal.** Es más trabajo en la tienda y no aporta nada hasta que llegue el
-   servidor.
+No hay nada que bloquee del lado del POS. El orden práctico: el celular se enlaza primero a la segunda sucursal, que ya
+está instalada. Cuando se instale la matriz, se agrega el segundo enlace con «Conectar a otra sucursal». Por eso la
+migración importa: el primer enlace ya va a existir, con su copia, antes de que llegue el segundo.
 
-Además, con «La única caja» no hay búsqueda por UDP. En esa sucursal la IP se escribe a mano, así que conviene
-reservarla en el router (DHCP fijo). Si cambia, el celular no la vuelve a encontrar solo. Por eso también encaja el
-botón explícito.
+En las dos sucursales hay caja principal, así que la búsqueda por UDP funciona en ambas. Conviene igual reservar la IP
+de cada caja principal en su router (DHCP fijo).
 
 ## La propuesta
 
@@ -80,8 +81,8 @@ pero la pantalla y las pruebas se hacen para dos.
    cajas principales que no prueban ser la propia. En ese mismo recorrido se puede probar `Identidad` también contra los
    *otros* enlaces, con sus llaves. Si uno lo prueba, la sugerencia sube a «Parece que estás en Sucursal Norte: [Cambiar]».
    - **Nunca cambia solo:** el ticket a medias es de una sucursal, y un cambio sin avisar confunde precios y existencias.
-   - En la sucursal de «La única caja» no hay UDP, así que esto solo ayuda al llegar a la principal. Recomiendo dejarlo
-     para después del primer uso real.
+   - Funciona en las dos sucursales, porque las dos tienen caja principal con UDP. Recomiendo dejarlo para después del
+     primer uso real con la matriz instalada.
 
 ### Al cambiar de sucursal
 
@@ -130,16 +131,15 @@ precios por sucursal: `PrecioDto.sucursalId` ya existe). La propuesta se prepara
 
 | # | Qué | Depende de |
 |---|---|---|
-| 1 | El POS: «La única caja» da de alta celulares | El POS |
+| 1 | Enlazar el celular a la segunda sucursal con el alta de hoy (ya se puede) | Nada |
 | 2 | Almacén de enlaces (`conexion.xml` + `conexion-2.xml` + `enlaces.xml`) y copia por caja, con la migración de la copia y pruebas de que un celular con una sola alta sigue igual | Nada |
 | 3 | `Conexion.usar(enlace)`, `olvidarAlta` por enlace, `hayAlta` con cualquiera; pruebas del cambio con algo en vuelo (`generacion`) | 2 |
-| 4 | Ajustes › La conexión: la lista, «Usar esta», «Conectar a otra sucursal» (el alta que agrega) y el aviso de duplicado por `base` + `sucursalId` | 3 |
+| 4 | Ajustes › La conexión: la lista, «Usar esta», «Conectar a otra sucursal» (el alta que agrega) y el aviso de duplicado por `base` + `sucursalId`. Se prueba de verdad cuando se instale la matriz | 3 |
 | 5 | La sugerencia en la vista de «no contesta» y el indicador de la sucursal activa; la pregunta del ticket a medias | 4 |
 | 6 | (Opcional) La sugerencia por UDP con `Identidad` contra los otros enlaces | 5 y uso real |
 
 ## Para decidir
 
-- **Cuál de los dos caminos para la segunda sucursal:** recomiendo que «La única caja» acepte celulares.
 - **¿Se lleva el ticket a medias o se vacía al cambiar?** Recomiendo preguntar, con «Llevarlo» como opción por omisión.
 - **El nombre de la caja en cada sucursal:** recomiendo el mismo, «Celular de Luis», con la serie que esté libre en cada
   base. Así, cuando las bases se unan, se ve que es el mismo celular.
