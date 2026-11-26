@@ -1,8 +1,10 @@
 package mx.papeleriapos.android.entrada
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -18,9 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import mx.papeleriapos.android.R
+import mx.papeleriapos.android.tema.FuentesClip
 import mx.papeleriapos.android.ui.ALTO_TOCABLE
 
 /**
@@ -41,6 +46,23 @@ fun PantallaEntrada(alEntrar: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(bottom = 24.dp),
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_escaner),
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+            )
+            Text(
+                "Clip · Papelería",
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = FuentesClip.Marca,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
         Icon(Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
         Text("Entra con tu huella", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
         Text(

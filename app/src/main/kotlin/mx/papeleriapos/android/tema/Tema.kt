@@ -8,8 +8,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.CompositionLocalProvider
+import mx.papeleriapos.android.R
 import mx.papeleriapos.android.principal.ModoApp
+
+/** Tipografías empacadas offline (SIL OFL) de Clip: marca y códigos. */
+object FuentesClip {
+    val Marca: FontFamily = FontFamily(
+        Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold),
+    )
+    val Codigo: FontFamily = FontFamily(
+        Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+        Font(R.font.jetbrains_mono_bold, FontWeight.SemiBold),
+        Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+    )
+}
 
 /**
  * Colores propios, sobrios (azul petróleo y grises) y sin los dinámicos del sistema: así la app se ve igual en todos los

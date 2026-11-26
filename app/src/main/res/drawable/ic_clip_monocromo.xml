@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Silueta monocroma (solo tinta negra + huecos transparentes para ícono temático de Android 13+) -->
+    <path
+        android:pathData="M42.30,36.84 V33.72 A6.24,6.24 0 0,1 54.78,33.72 V36.84"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeWidth="4.06" />
+    <!-- Hoja con ranura para el clip y huecos de renglones -->
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M40.74,36.84 H62.58 L71.94,46.20 V72.72 A4.68,4.68 0 0,1 67.26,77.40 H40.74 A4.68,4.68 0 0,1 36.06,72.72 V41.52 A4.68,4.68 0 0,1 40.74,36.84 Z M38.8,36.84 V45.42 A9.74,9.74 0 0,0 58.28,45.42 V36.84 Z M44.0,55.56 H64.0 A1.72,1.72 0 0,1 64.0,59.0 H44.0 A1.72,1.72 0 0,1 44.0,55.56 Z M44.0,62.19 H57.7 A1.72,1.72 0 0,1 57.7,65.63 H44.0 A1.72,1.72 0 0,1 44.0,62.19 Z M44.0,68.82 H52.3 A1.72,1.72 0 0,1 52.3,72.26 H44.0 A1.72,1.72 0 0,1 44.0,68.82 Z" />
+    <!-- Bucle frontal dentro de la ranura -->
+    <path
+        android:pathData="M42.30,33.72 V45.42 A6.24,6.24 0 0,0 54.78,45.42 V33.72"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeWidth="4.06" />
+</vector>
