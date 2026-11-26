@@ -12,6 +12,9 @@ import mx.papeleriapos.android.caja.CajaParaMandarDto
 import mx.papeleriapos.android.caja.CanalDeCobrar
 import mx.papeleriapos.android.caja.CobroPedido
 import mx.papeleriapos.android.caja.CotizacionDto
+import mx.papeleriapos.android.caja.ImpresionDto
+import mx.papeleriapos.android.caja.ImpresionPosibleDto
+import mx.papeleriapos.android.caja.SolicitudImprimir
 import mx.papeleriapos.android.caja.NoSeMando
 import mx.papeleriapos.android.caja.RenglonMandado
 import mx.papeleriapos.android.caja.SolicitudCobrar
@@ -59,6 +62,9 @@ const val LARGO_REFERENCIA = 60
 /** Ese servicio todavía no tiene las rutas del cobro (un POS anterior al paso 10). */
 const val POS_SIN_COBRO = "La caja principal todavía no cobra desde el celular: hay que actualizar Papelería POS en esa PC. Mientras, mándalo a una caja."
 
+/** Ese servicio todavía no imprime lo que cobra el celular (un POS anterior al paso 11). */
+const val POS_SIN_TICKET = "La caja principal todavía no imprime lo que cobra el celular: imprímelo en esa caja, desde sus ventas del día."
+
 const val SIN_TURNO_PARA_COBRAR = "Ninguna caja tiene un turno abierto: abre el turno en la caja principal y vuelve a cobrar."
 
 /** Lo que enseña la hoja de cobro. */
@@ -83,7 +89,18 @@ data class EstadoCobro(
     val error: String? = null,
     /** La venta ya cobrada: lo que enseña «Cobrado». */
     val cobrada: VentaCobradaDto? = null,
+    /** Qué pasó con el ticket: lo que contestó el cobro o, después, «Imprimir el ticket». null: el POS no lo dijo. */
+    val impresion: ImpresionDto? = null,
+    val imprimiendo: Boolean = false,
+    /** Por qué no se pudo pedir el ticket después (sin red, la venta ya no está…). */
+    val errorDeImpresion: String? = null,
 ) {
+    /** Si el ticket puede salir en la caja del cobro y por dónde; null si el POS no lo dice (uno anterior al paso 11). */
+    val impresionPosible: ImpresionPosibleDto? get() = cajaDelCobro?.impresion
+
+    /** Lo que viaja en `imprimir`: la casilla, salvo que esa caja diga que no puede. */
+    val pideTicket: Boolean get() = imprimir && impresionPosible?.puede != false
+
     /** El total exacto: el de tarjeta y transferencia. */
     val total: Long get() = cotizacion?.totalCentavos ?: totalLocal
 
@@ -188,14 +205,14 @@ class Cobrador(
             FormaDePago.TARJETA -> CobroPedido(e.forma.numero, e.total, e.referencia.trim().ifEmpty { null })
             FormaDePago.TRANSFERENCIA -> CobroPedido(e.forma.numero, e.total)
         }
-        val solicitud = SolicitudCobrar(ids.de(renglones), renglones, listOf(cobro), caja = caja.id, totalVisto = e.total, imprimir = e.imprimir)
+        val solicitud = SolicitudCobrar(ids.de(renglones), renglones, listOf(cobro), caja = caja.id, totalVisto = e.total, imprimir = e.pideTicket)
         _estado.update { it.copy(cobrando = true, error = null) }
         trabajo = alcance.launch {
             try {
                 val venta = canal.cobrar(solicitud)
                 guardarUltima(caja.id)
                 ids.olvidar()
-                _estado.update { it.copy(cobrando = false, cobrada = venta) }
+                _estado.update { it.copy(cobrando = false, cobrada = venta, impresion = venta.impresion, errorDeImpresion = null) }
                 alCobrar(venta)
             } catch (ex: CancellationException) {
                 throw ex
@@ -203,6 +220,27 @@ class Cobrador(
                 _estado.update { it.copy(cobrando = false, error = mensajeDe(ex)) }
                 // El total del servicio es otro (cambió un precio o una promoción): se vuelve a cotizar para enseñarlo.
                 if (ex.codigo == "total-distinto") recotizar()
+            }
+        }
+    }
+
+    /**
+     * «Imprimir el ticket» en «Cobrado»: no salió al cobrar, o no se pidió y ahora sí lo quieren. Cada toque es una petición
+     * nueva (con su Id: si la respuesta se pierde, la misma no saca otro papel).
+     */
+    fun imprimirTicket(nuevoId: () -> String = { java.util.UUID.randomUUID().toString() }) {
+        val e = _estado.value
+        val venta = e.cobrada ?: return
+        if (e.imprimiendo) return
+        _estado.update { it.copy(imprimiendo = true, errorDeImpresion = null) }
+        alcance.launch {
+            try {
+                val r = canal.imprimir(venta.id, SolicitudImprimir(nuevoId()))
+                _estado.update { it.copy(imprimiendo = false, impresion = r) }
+            } catch (ex: CancellationException) {
+                throw ex
+            } catch (ex: NoSeMando) {
+                _estado.update { it.copy(imprimiendo = false, errorDeImpresion = if (ex.http == 404 && ex.codigo == null) POS_SIN_TICKET else ex.message) }
             }
         }
     }

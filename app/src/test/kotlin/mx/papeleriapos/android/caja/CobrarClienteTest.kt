@@ -135,4 +135,30 @@ class CobrarClienteTest {
         val cajas = cliente.paraMandar(direccion, "LLAVE", "cel")
         assertEquals(listOf(true, false), cajas.map { it.turnoAbierto })
     }
+
+    @Test
+    fun `las cajas dicen si pueden imprimir, el cobro dice que paso con el ticket y se puede pedir despues`() = runBlocking {
+        servidor.enqueue(MockResponse().setBody("""[{"id": "c1", "nombre": "Caja 1", "serie": "", "recibe": true, "atiende": "Ana López", "esperan": 0, "turnoAbierto": true,
+            "impresion": {"puede": true, "por": "caja", "codigo": null, "mensaje": "Sale en la impresora de la Caja 1.", "automatico": true}}]"""))
+        val caja = cliente.paraMandar(direccion, "LLAVE", "cel").single()
+        assertEquals(true, caja.impresion!!.puede)
+        assertEquals("caja", caja.impresion!!.por)
+        assertEquals("Sale en la impresora de la Caja 1.", caja.impresion!!.mensaje)
+
+        servidor.enqueue(MockResponse().setBody("""{"id": "t1", "folio": "000123", "caja": "Caja 1", "yaCobrada": false, "ticket": {"x": 1},
+            "impresion": {"estado": "impreso", "codigo": null, "mensaje": "Salió en la impresora de la Caja 1.", "cajaId": "c1", "caja": "Caja 1", "por": "red", "salio": true}}"""))
+        val venta = cliente.cobrar(direccion, "LLAVE", "cel", SolicitudCobrar("t1", renglones, listOf(CobroPedido(0, 10_000)), totalVisto = 5950, imprimir = true))
+        assertTrue(venta.impresion!!.salio)
+        assertEquals("impreso", venta.impresion!!.estado)
+        assertTrue(servidor.takeRequest().let { servidor.takeRequest() }.body.readUtf8().endsWith(""""totalVisto":5950,"imprimir":true}"""))
+
+        servidor.enqueue(MockResponse().setBody("""{"estado": "no-impreso", "codigo": "sin-papel", "mensaje": "Se acabó el papel de la impresora de la Caja 1: pon papel y pídelo otra vez.", "caja": "Caja 1", "por": "red", "salio": false}"""))
+        val despues = cliente.imprimirVenta(direccion, "LLAVE", "cel", "t1", SolicitudImprimir("p1"))
+        assertEquals("sin-papel", despues.codigo)
+        assertFalse(despues.salio)
+        val pedido = servidor.takeRequest()
+        assertEquals("POST", pedido.method)
+        assertEquals("/api/cajas/cel/ventas/t1/imprimir", pedido.path)
+        assertEquals("""{"id":"p1"}""", pedido.body.readUtf8())
+    }
 }

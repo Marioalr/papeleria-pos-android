@@ -80,6 +80,9 @@ interface CanalDeCobrar {
     suspend fun cajasParaMandar(): List<CajaParaMandarDto>
     suspend fun cotizar(solicitud: SolicitudCotizar): CotizacionDto
     suspend fun cobrar(solicitud: SolicitudCobrar): VentaCobradaDto
+
+    /** El ticket de una venta ya cobrada, en la impresora de la caja donde entró. */
+    suspend fun imprimir(ventaId: String, solicitud: SolicitudImprimir): ImpresionDto = throw NoSeMando("Esta caja principal todavía no imprime lo que cobra el celular.")
 }
 
 /** La foto del producto (paso 12): ponerla, quitarla y bajarla, con la llave del celular. Las pruebas ponen el suyo. */
@@ -475,6 +478,10 @@ class Conexion(
     /** Cobra el ticket: entra al turno abierto de una caja de la sucursal. El mismo Id otra vez no cobra dos veces. */
     override suspend fun cobrar(solicitud: SolicitudCobrar): VentaCobradaDto = withContext(hilo) {
         conLlave("Cobrar el ticket no contestó") { a -> cliente.cobrar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    override suspend fun imprimir(ventaId: String, solicitud: SolicitudImprimir): ImpresionDto = withContext(hilo) {
+        conLlave("Pedir el ticket no contestó") { a -> cliente.imprimirVenta(a.direccion, a.llave, a.caja.id, ventaId, solicitud) }
     }
 
     /**

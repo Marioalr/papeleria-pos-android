@@ -536,7 +536,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                     Hoja.Cobrado -> {
                         val cobro by vm.cobrador.estado.collectAsStateWithLifecycle()
                         val cobrada = cobro.cobrada
-                        if (cobrada == null) LaunchedEffect(Unit) { piso.cerrarHoja() } else HojaCobrado(cobrada, pidioImprimir = cobro.imprimir) { piso.cerrarHoja(hizoAlgo = true) }
+                        if (cobrada == null) LaunchedEffect(Unit) { piso.cerrarHoja() } else HojaCobrado(
+                            cobrada, pidioImprimir = cobro.pideTicket, impresion = cobro.impresion, imprimiendo = cobro.imprimiendo,
+                            errorDeImpresion = cobro.errorDeImpresion, alImprimir = { vm.cobrador.imprimirTicket() },
+                        ) { piso.cerrarHoja(hizoAlgo = true) }
                     }
                     Hoja.Menu -> ElMenu(vm, piso, modo, conteo.total, catalogo, dePrueba, accionesMenu)
                     Hoja.Comun -> HojaComun(piso::agregarComun) { piso.cerrarHoja() }

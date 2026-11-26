@@ -2,6 +2,26 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.4 (sin publicar)
+
+**El ticket de lo que cobra el celular ya se imprime,** con el paso 11 del documento del POS (rama
+`celular/imprimir-ticket` de ese repo). El celular nunca le habla a la impresora: se lo pide al servicio, y sale en la
+impresora de la caja en cuyo turno entró la venta (de red, directo; de Windows, por la ventana de esa caja).
+
+- **La casilla «Imprimir ticket» dice dónde va a salir** («Sale en la impresora de la Caja 1.»). Si esa caja no puede
+  (el interruptor «Imprimir lo que cobra el celular» apagado, sin impresora, su ventana cerrada), sale apagada con la
+  razón que da la caja principal, y el cobro no pide el ticket.
+- **«Cobrado» dice qué pasó con el ticket,** con el mensaje del servicio: salió, va en camino, se acabó el papel, la
+  impresora no contesta… El cobro nunca falla por la impresora.
+- **«Imprimir el ticket» / «Imprimir otra vez»** en «Cobrado», mientras no haya salido (también si no se pidió y ahora sí
+  lo quieren). Cada toque es una petición con su Id: si la respuesta se pierde, no saca otro papel. Ya salido, otro es una
+  reimpresión (pide motivo y permiso): esa se hace en la caja.
+- El cobro espera hasta 30 s (con el ticket, el servicio puede tardar hasta 25).
+- Con un POS anterior todo queda como en la 0.5.2: la casilla manda la petición y «Cobrado» dice qué hacer si no sale.
+- Pruebas: `CobroTest`, `CobrarClienteTest` (los ejemplos del documento del POS) y `HojaCobrarTest`.
+
+**Sin probar:** con una impresora de verdad, ni con la ventana de la caja de Windows.
+
 ## 0.5.3 (sin publicar)
 
 **La foto de cada producto desde el celular** (dueño, 2026-11-26), con el paso 12 del documento del POS (rama
