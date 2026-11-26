@@ -292,6 +292,11 @@ data class SolicitudCobrar(
     val caja: String? = null,
     val cajeroId: String? = null,
     val totalVisto: Long? = null,
+    /**
+     * Que la caja principal imprima el ticket de esta venta (la casilla del cobro). Se le pidió al POS el 2026-11-26; uno
+     * que todavía no lo recibe ignora el campo y la venta queda «sin imprimir», como antes.
+     */
+    val imprimir: Boolean? = null,
 )
 
 @Serializable

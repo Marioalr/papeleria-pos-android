@@ -15,6 +15,9 @@ class PreferenciasPiso(private val prefs: SharedPreferences) : AlmacenPiso {
     override fun leerZurdo(): Boolean = prefs.getBoolean(ZURDO, false)
     override fun guardarZurdo(zurdo: Boolean) = prefs.edit { putBoolean(ZURDO, zurdo) }
 
+    override fun leerImprimirTicket(): Boolean = prefs.getBoolean(IMPRIMIR_TICKET, true)
+    override fun guardarImprimirTicket(imprimir: Boolean) = prefs.edit { putBoolean(IMPRIMIR_TICKET, imprimir) }
+
     override fun leerPistasVistas(): Set<ModoApp> =
         prefs.getStringSet(PISTAS_VISTAS, null).orEmpty().mapNotNull { ModoApp.deNombre(it) }.toSet()
 
@@ -48,6 +51,7 @@ class PreferenciasPiso(private val prefs: SharedPreferences) : AlmacenPiso {
     private companion object {
         const val MODO = "modo_app"
         const val ZURDO = "boton_rapido_izquierda"
+        const val IMPRIMIR_TICKET = "imprimir_ticket"
         const val PISTAS_VISTAS = "pistas_vistas"
         const val ELEGIDAS_DESLIZANDO = "elegidas_deslizando"
         const val ABIERTO_CON_TOQUE = "rapido_abierto_con_toque"

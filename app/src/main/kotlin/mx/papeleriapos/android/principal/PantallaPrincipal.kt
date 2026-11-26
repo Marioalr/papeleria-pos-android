@@ -231,6 +231,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
             recibir = { vm.cobrador.recibir(it) },
             referencia = { vm.cobrador.referencia(it) },
             caja = { vm.cobrador.elegirCaja(it) },
+            imprimir = { vm.cobrador.imprimir(it) },
             cobrar = { vm.cobrador.cobrar { piso.cobrado() } },
             mandar = { piso.abrir(Hoja.Mandar) },
         )
@@ -532,8 +533,9 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                         HojaCobrar(estadoCobro, accionesCobro) { piso.cerrarHoja() }
                     }
                     Hoja.Cobrado -> {
-                        val cobrada = vm.cobrador.estado.collectAsStateWithLifecycle().value.cobrada
-                        if (cobrada == null) LaunchedEffect(Unit) { piso.cerrarHoja() } else HojaCobrado(cobrada) { piso.cerrarHoja(hizoAlgo = true) }
+                        val cobro by vm.cobrador.estado.collectAsStateWithLifecycle()
+                        val cobrada = cobro.cobrada
+                        if (cobrada == null) LaunchedEffect(Unit) { piso.cerrarHoja() } else HojaCobrado(cobrada, pidioImprimir = cobro.imprimir) { piso.cerrarHoja(hizoAlgo = true) }
                     }
                     Hoja.Menu -> ElMenu(vm, piso, modo, conteo.total, catalogo, dePrueba, accionesMenu)
                     Hoja.Comun -> HojaComun(piso::agregarComun) { piso.cerrarHoja() }

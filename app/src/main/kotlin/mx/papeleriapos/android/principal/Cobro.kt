@@ -76,6 +76,8 @@ data class EstadoCobro(
     /** Lo que entregó el cliente; null: exacto. */
     val recibidoCentavos: Long? = null,
     val referencia: String = "",
+    /** La casilla «Imprimir ticket» de esta venta; al abrir sale como diga Ajustes. */
+    val imprimir: Boolean = true,
     val cobrando: Boolean = false,
     /** Lo que salió mal, en español para enseñarlo tal cual; null si nada. */
     val error: String? = null,
@@ -114,8 +116,10 @@ class Cobrador(
     private val ultima: () -> String?,
     private val guardarUltima: (String) -> Unit,
     private val ids: IdsDeTicket = IdsDeTicket(),
+    /** Ajustes › Al cobrar › «Imprimir ticket»: cómo sale la casilla en cada cobro. */
+    private val imprimirDeFabrica: () -> Boolean = { true },
 ) {
-    private val _estado = MutableStateFlow(EstadoCobro())
+    private val _estado = MutableStateFlow(EstadoCobro(imprimir = imprimirDeFabrica()))
     val estado: StateFlow<EstadoCobro> = _estado.asStateFlow()
 
     private var trabajo: Job? = null
@@ -132,6 +136,8 @@ class Cobrador(
             // Lo elegido se conserva al volver a intentar: no se le pregunta otra vez cómo paga.
             forma = antes.forma.takeIf { antes.cobrada == null } ?: FormaDePago.EFECTIVO,
             elegida = antes.elegida ?: ultima(),
+            // Otro ticket: como diga Ajustes. El mismo, al volver a intentar: como se dejó.
+            imprimir = if (antes.cobrada == null && antes.error != null) antes.imprimir else imprimirDeFabrica(),
         )
         val pedido = renglones
         trabajo = alcance.launch {
@@ -164,6 +170,9 @@ class Cobrador(
 
     fun referencia(texto: String) = _estado.update { it.copy(referencia = texto.take(LARGO_REFERENCIA)) }
 
+    /** La casilla «Imprimir ticket», solo para esta venta. */
+    fun imprimir(si: Boolean) = _estado.update { if (it.cobrando) it else it.copy(imprimir = si) }
+
     fun elegirCaja(id: String) = _estado.update { if (it.cobrando) it else it.copy(elegida = id, error = null) }
 
     /**
@@ -179,7 +188,7 @@ class Cobrador(
             FormaDePago.TARJETA -> CobroPedido(e.forma.numero, e.total, e.referencia.trim().ifEmpty { null })
             FormaDePago.TRANSFERENCIA -> CobroPedido(e.forma.numero, e.total)
         }
-        val solicitud = SolicitudCobrar(ids.de(renglones), renglones, listOf(cobro), caja = caja.id, totalVisto = e.total)
+        val solicitud = SolicitudCobrar(ids.de(renglones), renglones, listOf(cobro), caja = caja.id, totalVisto = e.total, imprimir = e.imprimir)
         _estado.update { it.copy(cobrando = true, error = null) }
         trabajo = alcance.launch {
             try {
