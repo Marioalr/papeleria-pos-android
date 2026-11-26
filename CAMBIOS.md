@@ -2,6 +2,27 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.3 (sin publicar)
+
+**La foto de cada producto desde el celular** (dueño, 2026-11-26), con el paso 12 del documento del POS (rama
+`celular/foto-del-producto`). Necesita ese POS en la caja principal.
+
+- **Este celular › «Fotos de productos»:** la lista de los productos de la copia, de fábrica los que no tienen foto, con
+  cuántos la tienen. Se busca por pedazos del nombre o por su código. Lo último que se escaneó en la venta sale arriba: se
+  escanea el producto, se abre esta pantalla y ahí está.
+- **En cada producto:** «Tomar foto» (con la cámara del celular), «Elegir del celular» (el selector de fotos de Android, sin
+  permisos nuevos) y «Quitar la foto». La foto guardada se ve en grande.
+- **Lo que viaja:** la app endereza la imagen y la deja en JPEG de 960 px por su lado más largo (el servicio no lee HEIC
+  ni AVIF) y la manda solo a la caja principal, con la llave del celular. La original que deja la cámara se borra enseguida.
+  El servicio guarda una de 240 px, que es la que ven todas las cajas y la que este celular guarda en su memoria propia.
+- **La copia ya sabe qué productos tienen foto** (`fotos` del paquete y de los cambios, con su huella), también sin red.
+  Cada foto se baja una vez y después sale del celular.
+- Si no se pudo mandar (sin red, la caja ocupada), lo dice con el mensaje del servicio y «Volver a intentar» manda la misma
+  sin tomarla otra vez. Al salir de la pantalla, lo que no se mandó se pierde: no hay cola.
+- Pruebas: `FotosTest` (la copia y sus cambios, las rutas tal cual, lo guardado, el tamaño, la lista) y `PantallaFotosTest`.
+
+**Sin probar:** la cámara y el selector en un celular de verdad, y la tarjeta de la venta todavía no enseña la foto.
+
 ## 0.5.2 (sin publicar)
 
 - **«Imprimir ticket» en el cobro** (dueño, 2026-11-26): una casilla, marcada de fábrica, arriba de «Cobrar». Se cambia

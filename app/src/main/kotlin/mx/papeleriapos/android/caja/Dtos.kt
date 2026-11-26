@@ -150,6 +150,8 @@ data class ConfiguracionSucursalDto(val nombreTienda: String? = null)
 @Serializable
 data class PaqueteDto(
     val version: Long = 0,
+    /** Qué productos tienen foto y su huella (paso 12); nada de la imagen. */
+    val fotos: List<FotoDto>? = null,
     val caja: CajaDto,
     val productos: List<ProductoVentaDto> = emptyList(),
     val codigos: List<CodigoLocalDto> = emptyList(),
@@ -171,6 +173,9 @@ data class PaqueteDto(
 @Serializable
 data class CambiosDto(
     val paqueteCompleto: String? = null,
+    /** Solo las fotos nuevas y las cambiadas: van encima de las de la copia. Sin el campo, no cambiaron. */
+    val fotos: List<FotoDto>? = null,
+    val fotosQuitadas: List<String>? = null,
     val version: Long = 0,
     val versionExistencias: Long = 0,
     val productos: List<ProductoVentaDto> = emptyList(),
@@ -327,4 +332,25 @@ data class VentaCobradaDto(
     val cobros: List<CobroHechoDto> = emptyList(),
     /** Ese Id ya era una venta: no se cobró otra vez. */
     val yaCobrada: Boolean = false,
+)
+
+// ---- La foto del producto (docs/celular-como-caja.md del POS, paso 12) ----
+
+/** Un producto con foto: su variante y la huella del JPEG guardado (16 cifras hexadecimales). */
+@Serializable
+data class FotoDto(val varianteId: String, val huella: String = "")
+
+/** `PUT /api/fotos/{varianteId}`: la imagen en base64, sin «data:…». Con la llave de un celular no hace falta el usuario. */
+@Serializable
+data class SolicitudFoto(val imagenBase64: String, val usuarioId: String? = null)
+
+/** La foto ya guardada (240 px por su lado más largo), para enseñarla sin volver a pedirla. */
+@Serializable
+data class FotoGuardadaDto(
+    val varianteId: String = "",
+    val huella: String = "",
+    val ancho: Int = 0,
+    val alto: Int = 0,
+    val bytes: Int = 0,
+    val jpegBase64: String = "",
 )

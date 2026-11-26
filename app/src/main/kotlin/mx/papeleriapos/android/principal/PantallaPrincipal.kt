@@ -258,6 +258,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                 piso.empezarOtroConteo()
             },
             actualizar = { ir(Destino.ACTUALIZAR) },
+            fotos = { ir(Destino.FOTOS) },
             conexion = { ir(Destino.CONEXION) },
             ajustes = { ir(Destino.AJUSTES) },
         )

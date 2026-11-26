@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Settings
@@ -622,6 +623,8 @@ class AccionesMenu(
     val vender: () -> Unit = {},
     val otroConteo: () -> Unit = {},
     val actualizar: () -> Unit = {},
+    /** «Fotos de productos»: tomar o elegir la foto de cada uno. */
+    val fotos: () -> Unit = {},
     val conexion: () -> Unit = {},
     val ajustes: () -> Unit = {},
 )
@@ -663,6 +666,7 @@ fun HojaMenu(modo: ModoApp, contadas: Int, version: String, conexion: String, ac
                 if (contadas > 0) {
                     OpcionDelMenu(Icons.Filled.RestartAlt, "Empezar otro conteo", "Vacía lo contado; se puede deshacer", "menu-otro-conteo", acciones.otroConteo)
                 }
+                OpcionDelMenu(Icons.Filled.PhotoCamera, "Fotos de productos", "Tomar o elegir la foto de cada producto", "menu-fotos", acciones.fotos)
                 OpcionDelMenu(Icons.Filled.SystemUpdate, "Actualizar la app", "Instalada: $version", "menu-actualizar", acciones.actualizar)
                 OpcionDelMenu(Icons.Filled.Wifi, "La conexión", conexion, "menu-conexion", acciones.conexion)
                 OpcionDelMenu(Icons.Filled.Settings, "Ajustes", "Vibración, linterna, mano izquierda y herramientas de medición", "menu-ajustes", acciones.ajustes)
