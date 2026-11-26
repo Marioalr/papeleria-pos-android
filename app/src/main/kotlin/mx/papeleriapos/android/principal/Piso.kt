@@ -148,6 +148,9 @@ class Piso(
     private val _anuncio = MutableStateFlow<Anuncio?>(null)
     val anuncio: StateFlow<Anuncio?> = _anuncio.asStateFlow()
 
+    private val _imprimirTicket = MutableStateFlow(almacen.leerImprimirTicket())
+    val imprimirTicket: StateFlow<Boolean> = _imprimirTicket.asStateFlow()
+
     private val _zurdo = MutableStateFlow(almacen.leerZurdo())
     val zurdo: StateFlow<Boolean> = _zurdo.asStateFlow()
 
@@ -553,6 +556,12 @@ class Piso(
 
     /** Se soltó en una opción apagada: el aviso dice por qué. */
     fun rechazar(razon: String) = avisar(razon)
+
+    /** Ajustes › Al cobrar: la casilla «Imprimir ticket» del cobro sale marcada o no. En cada venta se puede cambiar. */
+    fun cambiarImprimirTicket(imprimir: Boolean) {
+        _imprimirTicket.value = imprimir
+        almacen.guardarImprimirTicket(imprimir)
+    }
 
     fun cambiarZurdo(z: Boolean) {
         _zurdo.value = z

@@ -27,8 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import mx.papeleriapos.android.tema.FuentesClip
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.papeleriapos.android.BuildConfig
 import mx.papeleriapos.android.EscanerViewModel
@@ -207,7 +207,7 @@ fun ContenidoAjustes(
         Text(
             textoFicha(ficha),
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FuentesClip.Codigo,
             modifier = Modifier.testTag("ficha-camara"),
         )
         Nota(

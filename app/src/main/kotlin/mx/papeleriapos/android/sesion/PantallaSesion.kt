@@ -45,8 +45,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import mx.papeleriapos.android.tema.FuentesClip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -215,7 +215,7 @@ fun ConSesion(
                 Text(
                     "#${u.n} · ${hora.format(Date(u.hora))} · " +
                         (if (u.simbologia.isEmpty()) u.resultado.etiqueta else "${u.simbologia} ${u.valor}"),
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FuentesClip.Codigo,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -373,7 +373,7 @@ private fun FilaIntento(i: Intento, hora: String, condicion: Condicion, nota: St
         Column(Modifier.weight(1f)) {
             Text(
                 if (i.simbologia.isEmpty()) "—" else i.valor,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = FuentesClip.Codigo,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

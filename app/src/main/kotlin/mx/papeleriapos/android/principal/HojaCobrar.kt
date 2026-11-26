@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -77,6 +80,8 @@ class AccionesCobro(
     val recibir: (Long?) -> Unit = {},
     val referencia: (String) -> Unit = {},
     val caja: (String) -> Unit = {},
+    /** La casilla «Imprimir ticket», para esta venta. */
+    val imprimir: (Boolean) -> Unit = {},
     val cobrar: () -> Unit = {},
     /** «Mejor que lo cobre una caja»: abre «¿A qué caja?». */
     val mandar: () -> Unit = {},
@@ -244,6 +249,20 @@ fun HojaCobrar(estado: EstadoCobro, acciones: AccionesCobro, alCerrar: () -> Uni
                     for (c in conTurno) Billete(c.nombre, c.id == estado.cajaDelCobro?.id, "caja-cobro-${c.serie}") { acciones.caja(c.id) }
                 }
             }
+            // Imprimir el ticket: marcada como diga Ajustes; aquí se cambia solo para esta venta.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .toggleable(value = estado.imprimir, enabled = !estado.cobrando, role = Role.Checkbox, onValueChange = acciones.imprimir)
+                    .testTag("cobro-imprimir"),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = estado.imprimir, onCheckedChange = null)
+                Spacer(Modifier.width(12.dp))
+                Text("Imprimir ticket", style = MaterialTheme.typography.bodyLarge)
+            }
             estado.cajaDelCobro?.let { c ->
                 Nota(
                     if (efectivo) "Entra al turno de la ${c.nombre}: el efectivo va a su cajón." else "Entra al turno de la ${c.nombre}.",
@@ -321,7 +340,7 @@ private fun Nota(texto: String, modifier: Modifier = Modifier) {
  * ventas del día.
  */
 @Composable
-fun HojaCobrado(venta: VentaCobradaDto, alCerrar: () -> Unit) {
+fun HojaCobrado(venta: VentaCobradaDto, pidioImprimir: Boolean = false, alCerrar: () -> Unit) {
     val colores = LocalColoresEstado.current
     val color = LocalColoresModo.current.ticket
     val enEfectivo = venta.cobros.any { it.forma == FormaDePago.EFECTIVO.numero }
@@ -377,7 +396,10 @@ fun HojaCobrado(venta: VentaCobradaDto, alCerrar: () -> Unit) {
             )
             Text(
                 (if (enEfectivo) "Deja el efectivo en el cajón de la ${venta.caja}. " else "") +
-                    "El ticket se imprime ahí, desde sus ventas del día.",
+                    // El servicio todavía no dice si lo imprimió (se le pidió al POS): se dice lo que se pidió y qué hacer si no sale.
+                    if (pidioImprimir) "Se pidió imprimir el ticket. Si no sale, imprímelo en la ${venta.caja}, desde sus ventas del día."
+                    else "Sin ticket. Si lo piden, se imprime en la ${venta.caja}, desde sus ventas del día.",
+                modifier = Modifier.testTag("cobrado-ticket"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

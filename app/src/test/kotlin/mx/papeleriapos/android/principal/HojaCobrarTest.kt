@@ -55,6 +55,7 @@ class HojaCobrarTest {
             recibir = { estado = estado.copy(recibidoCentavos = it) },
             referencia = { estado = estado.copy(referencia = it) },
             caja = { estado = estado.copy(elegida = it) },
+            imprimir = { estado = estado.copy(imprimir = it) },
             cobrar = { cobros++ },
             mandar = { mandar++ },
         )
@@ -174,5 +175,26 @@ class HojaCobrarTest {
         compose.mainClock.advanceTimeBy(MS_REBOTE_COBRADO + 50)
         compose.onNodeWithTag("siguiente-cliente").assertIsEnabled().performClick()
         assertEquals(1, cerrada)
+    }
+
+    @Test
+    fun `imprimir ticket sale marcada y se quita con un toque`() {
+        abrir()
+        compose.onNodeWithTag("cobro-imprimir").assertIsDisplayed()
+        assertEquals(true, estado.imprimir)
+        compose.onNodeWithTag("cobro-imprimir").performClick()
+        assertEquals(false, estado.imprimir)
+        compose.onNodeWithTag("cobro-imprimir").performClick()
+        assertEquals(true, estado.imprimir)
+    }
+
+    @Test
+    fun `cobrado dice si se pidio el ticket`() {
+        val venta = VentaCobradaDto(folio = "A-000124", caja = "Caja 1", articulos = 1.0, cobradoCentavos = 2300, cobros = listOf(CobroHechoDto(1, 2300)))
+        var pidio by mutableStateOf(true)
+        compose.setContent { TemaEscaner(oscuro = false) { HojaCobrado(venta, pidioImprimir = pidio) {} } }
+        compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Se pidió imprimir el ticket. Si no sale, imprímelo en la Caja 1, desde sus ventas del día.")
+        pidio = false
+        compose.onNodeWithTag("cobrado-ticket").assertTextEquals("Sin ticket. Si lo piden, se imprime en la Caja 1, desde sus ventas del día.")
     }
 }

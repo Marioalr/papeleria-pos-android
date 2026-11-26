@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icono de la app: barras de un código dentro de una retícula, en el azul del tema. -->
+<!-- Ícono circular de Clip («Clip y Hoja»): usado en accesos del ícono, pantalla de entrada y versiones previas a API 26. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
@@ -9,9 +9,39 @@
         android:fillColor="#FF1D5C7A"
         android:pathData="M24,0A24,24 0,1 1,24 48A24,24 0,1 1,24 0z" />
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M11,13h6v2h-4v4h-2zM31,13h6v6h-2v-4h-4zM11,29h2v4h4v2h-6zM35,29h2v6h-6v-2h4z" />
+        android:pathData="M17.40,15.64 V12.56 A3.52,3.52 0 0,1 24.44,12.56 V15.64"
+        android:strokeColor="#FF8ECFF0"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.29" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M15,19h2v10h-2zM18.5,19h1v10h-1zM21,19h3v10h-3zM25.5,19h1v10h-1zM28,19h2v10h-2zM31.5,19h1v10h-1z" />
+        android:pathData="M16.52,14.32 H28.84 L34.12,19.60 V34.56 A2.64,2.64 0 0,1 31.48,37.20 H16.52 A2.64,2.64 0 0,1 13.88,34.56 V16.96 A2.64,2.64 0 0,1 16.52,14.32 Z" />
+    <path
+        android:fillColor="#FF8ECFF0"
+        android:pathData="M28.84,14.32 V17.84 A1.76,1.76 0 0,0 30.60,19.60 H34.12 Z" />
+    <path
+        android:pathData="M18.37,25.85 H29.63"
+        android:strokeColor="#FF23439B"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.94" />
+    <path
+        android:pathData="M18.37,29.59 H26.11"
+        android:strokeColor="#FF1D5C7A"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.94" />
+    <path
+        android:pathData="M18.37,33.33 H23.03"
+        android:strokeColor="#FF94A3B8"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.94" />
+    <path
+        android:pathData="M17.40,14.32 V19.16 A3.52,3.52 0 0,0 24.44,19.16 V13.00"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.96" />
+    <path
+        android:pathData="M17.40,12.56 V19.16 A3.52,3.52 0 0,0 24.44,19.16 V12.56"
+        android:strokeColor="#FF18B872"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.29" />
 </vector>

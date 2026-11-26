@@ -121,6 +121,7 @@ class EscanerViewModel(
             ultima = { ultima.getString(ULTIMA_CAJA_COBRO, null) },
             guardarUltima = { ultima.edit().putString(ULTIMA_CAJA_COBRO, it).apply() },
             ids = idsDeTicket,
+            imprimirDeFabrica = { piso.imprimirTicket.value },
         )
     }
 

@@ -2,6 +2,16 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.2 (sin publicar)
+
+- **«Imprimir ticket» en el cobro** (dueño, 2026-11-26): una casilla, marcada de fábrica, arriba de «Cobrar». Se cambia
+  solo para esa venta; la siguiente vuelve a lo de Ajustes.
+- **Ajustes › Al cobrar › «Imprimir ticket»:** si la casilla sale marcada o no.
+- Con el cobro viaja `imprimir` (cierto o falso). **El POS todavía no imprime lo que cobra el celular:** se le pidió ese
+  día (que lo imprima la caja principal, con impresora de red o conectada a la PC). Mientras, un POS que no lo recibe
+  ignora el campo y la venta queda «sin imprimir», como en la 0.5.1. «Cobrado» dice lo que se pidió y qué hacer si no sale.
+- Falta, cuando el POS lo documente: saber antes de cobrar dónde sale, lo que contestó la impresión e «Imprimir otra vez».
+
 ## 0.5.1 (sin publicar)
 
 **El celular cobra** (dueño, 2026-11-22), con lo que el POS dejó escrito en el paso 10 de su

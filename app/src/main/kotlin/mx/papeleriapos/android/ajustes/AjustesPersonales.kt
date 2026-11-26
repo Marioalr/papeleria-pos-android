@@ -49,6 +49,7 @@ import mx.papeleriapos.escaner.ConfigEscaner
 fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
     val config by vm.config.collectAsStateWithLifecycle()
     val zurdo by vm.piso.zurdo.collectAsStateWithLifecycle()
+    val imprimirTicket by vm.piso.imprimirTicket.collectAsStateWithLifecycle()
     val contadores by vm.piso.contadores.collectAsStateWithLifecycle()
     val productos by vm.piso.catalogo.collectAsStateWithLifecycle()
     val conexion by Conexion.del(LocalContext.current).estado.collectAsStateWithLifecycle()
@@ -66,6 +67,8 @@ fun PantallaAjustes(vm: EscanerViewModel, alAbrir: (Destino) -> Unit) {
         alCambiar = vm::cambiarConfig,
         zurdo = zurdo,
         alCambiarZurdo = vm.piso::cambiarZurdo,
+        imprimirTicket = imprimirTicket,
+        alCambiarImprimirTicket = vm.piso::cambiarImprimirTicket,
         alVolverAVerPistas = {
             vm.piso.volverAVerPistas()
             pistasDeNuevo = true
@@ -90,6 +93,9 @@ fun ContenidoAjustesPersonales(
     alCambiar: (ConfigEscaner) -> Unit,
     zurdo: Boolean,
     alCambiarZurdo: (Boolean) -> Unit,
+    /** «Imprimir ticket»: cómo sale la casilla del cobro. */
+    imprimirTicket: Boolean = true,
+    alCambiarImprimirTicket: (Boolean) -> Unit = {},
     alVolverAVerPistas: () -> Unit,
     /** Ya se pidieron otra vez: el botón lo dice. */
     pistasDeNuevo: Boolean,
@@ -130,6 +136,13 @@ fun ContenidoAjustesPersonales(
         FilaInterruptor(
             "Linterna automática", config.linternaAutomatica, { alCambiar(config.copy(linternaAutomatica = it)) },
             descripcion = "La enciende sola si hay poca luz.",
+        )
+
+        TituloSeccion("Al cobrar")
+        FilaInterruptor(
+            "Imprimir ticket", imprimirTicket, alCambiarImprimirTicket, Modifier.testTag("ajuste-imprimir-ticket"),
+            descripcion = if (imprimirTicket) "La casilla del cobro sale marcada; en cada venta se puede quitar. Lo imprime la caja principal."
+            else "La casilla del cobro sale sin marcar; en cada venta se puede marcar.",
         )
 
         TituloSeccion("El botón rápido")

@@ -24,6 +24,10 @@ interface AlmacenPiso {
     fun leerElegidasDeslizando(): Int
     fun guardarElegidasDeslizando(veces: Int)
 
+    /** Ajustes › Al cobrar › «Imprimir ticket»: cómo sale la casilla del cobro. De fábrica, marcada. */
+    fun leerImprimirTicket(): Boolean = true
+    fun guardarImprimirTicket(imprimir: Boolean) {}
+
     fun leerContadores(): ContadoresRapido
     fun guardarContadores(contadores: ContadoresRapido)
 }

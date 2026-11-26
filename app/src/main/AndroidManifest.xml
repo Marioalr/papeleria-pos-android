@@ -24,7 +24,8 @@
     <application
         android:name=".EscanerApp"
         android:allowBackup="false"
-        android:icon="@drawable/ic_escaner"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/nombre_app"
         android:networkSecurityConfig="@xml/red_segura"
         android:supportsRtl="true"

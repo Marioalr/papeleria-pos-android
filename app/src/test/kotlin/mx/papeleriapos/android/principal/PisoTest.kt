@@ -729,4 +729,18 @@ class PisoTest {
         p.accionDelAviso(p.aviso.value!!.id)
         assertEquals(2, conteo.value.total)
     }
+
+    @Test
+    fun `imprimir ticket viene marcado de fabrica y el ajuste se guarda`() {
+        val guardado = object : AlmacenPiso by almacen {
+            var imprimir = true
+            override fun leerImprimirTicket() = imprimir
+            override fun guardarImprimirTicket(imprimir: Boolean) { this.imprimir = imprimir }
+        }
+        val p = Piso(venta, conteo, guardado, ModoApp.VENTA) { ahora }
+        assertTrue(p.imprimirTicket.value)
+        p.cambiarImprimirTicket(false)
+        assertFalse(p.imprimirTicket.value)
+        assertFalse("La siguiente vez abre como se dejó", Piso(venta, conteo, guardado, ModoApp.VENTA) { ahora }.imprimirTicket.value)
+    }
 }

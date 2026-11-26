@@ -315,4 +315,47 @@ class CobroTest {
         // Ya cobrado, el siguiente ticket (aunque traiga lo mismo) es otro.
         assertEquals("id-2", ids.de(renglones))
     }
+
+    // ---- Imprimir el ticket ----
+
+    @Test
+    fun `la casilla de imprimir sale como diga ajustes, se cambia por venta y viaja con el cobro`() = runTest(hilo) {
+        val canal = Canal(listOf(caja1))
+        var deFabrica = true
+        val c = Cobrador(canal, this, { null }, {}, IdsDeTicket(), imprimirDeFabrica = { deFabrica })
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertTrue("De fábrica, marcada", c.estado.value.imprimir)
+        c.cobrar { }
+        advanceUntilIdle()
+        assertEquals(true, canal.cobradas.last().imprimir)
+        // En esta venta no quiere ticket: solo esta.
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        c.imprimir(false)
+        c.cobrar { }
+        advanceUntilIdle()
+        assertEquals(false, canal.cobradas.last().imprimir)
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertTrue("La siguiente venta vuelve a lo de Ajustes", c.estado.value.imprimir)
+        // Con el ajuste apagado, sale sin marcar.
+        deFabrica = false
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertFalse(c.estado.value.imprimir)
+    }
+
+    @Test
+    fun `al volver a intentar tras un error la casilla se queda como se dejo`() = runTest(hilo) {
+        val canal = Canal(listOf(caja1)).apply { falla = NoSeMando("No contestó la caja principal.", sinRed = true) }
+        val c = cobrador(canal)
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        c.imprimir(false)
+        canal.falla = null
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertFalse(c.estado.value.imprimir)
+    }
 }

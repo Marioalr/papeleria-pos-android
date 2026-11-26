@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Arco trasero del clip -->
+    <path
+        android:pathData="M42.30,39.18 V33.72 A6.24,6.24 0 0,1 54.78,33.72 V39.18"
+        android:strokeColor="#FF8ECFF0"
+        android:strokeLineCap="round"
+        android:strokeWidth="4.06" />
+    <!-- Hoja con esquina doblada -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40.74,36.84 H62.58 L71.94,46.20 V72.72 A4.68,4.68 0 0,1 67.26,77.40 H40.74 A4.68,4.68 0 0,1 36.06,72.72 V41.52 A4.68,4.68 0 0,1 40.74,36.84 Z" />
+    <path
+        android:fillColor="#FF8ECFF0"
+        android:pathData="M62.58,36.84 V43.08 A3.12,3.12 0 0,0 65.70,46.20 H71.94 Z" />
+    <!-- Renglones de la hoja -->
+    <path
+        android:pathData="M44.02,57.28 H63.98"
+        android:strokeColor="#FF23439B"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.43" />
+    <path
+        android:pathData="M44.02,63.91 H57.74"
+        android:strokeColor="#FF1D5C7A"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.43" />
+    <path
+        android:pathData="M44.02,70.54 H52.28"
+        android:strokeColor="#FF94A3B8"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.43" />
+    <!-- Bucle frontal del clip con halo blanco sobre el borde de la hoja -->
+    <path
+        android:pathData="M42.30,36.84 V45.42 A6.24,6.24 0 0,0 54.78,45.42 V34.50"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="7.02" />
+    <path
+        android:pathData="M42.30,33.72 V45.42 A6.24,6.24 0 0,0 54.78,45.42 V33.72"
+        android:strokeColor="#FF18B872"
+        android:strokeLineCap="round"
+        android:strokeWidth="4.06" />
+</vector>
