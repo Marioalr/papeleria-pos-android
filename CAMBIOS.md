@@ -2,6 +2,34 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.5 (sin publicar)
+
+**El celular enlazado a dos sucursales** (dueño, 2026-11-26; fase 1 de la propuesta, solo la app). Cada sucursal tiene su
+caja principal, su base y su llave, y hoy el mismo producto tiene otro id en cada base: por eso cada una guarda su alta y
+su copia del catálogo. Cambiar de sucursal lo hace siempre el dueño; la app nunca busca sola en cuál está.
+
+- **Ajustes › La conexión › «Sucursales enlazadas»:** en cuál se está («En uso») y «Usar esta» en las otras. Cambia al
+  instante con la copia que ya está en el celular (Precio y Buscar siguen sin red); la llave sale hasta que la caja
+  principal de esa sucursal pruebe quién es, como siempre.
+- **«Enlazar otra sucursal»:** el alta de siempre, sin quitar la que ya está; al terminar, la nueva queda en uso.
+- **«¿Estás en Sucursal 2? Cambiar»** en Cobrar y en «¿A qué caja?» cuando no contesta la caja principal. Solo al tocarlo
+  se busca una vez la caja principal de esa sucursal (en su dirección guardada y, si no, por UDP); si prueba quién es, se
+  cambia y se vuelve a cotizar con sus precios. **No sale después de un cobro o un envío sin respuesta** de ese mismo
+  ticket: en la otra sucursal sería otra venta y se cobraría dos veces.
+- **El ticket que se lleva se queda:** al llegar los productos de la otra sucursal, cada renglón se vuelve a encontrar por
+  su código de barras; lo que no esté allá sale como «no está en el catálogo».
+- **Si una caja le quita el acceso,** solo se olvida esa sucursal; las otras se quedan y se eligen en La conexión.
+- La última caja de Cobrar y de Mandar se recuerda por sucursal. Las fotos ya iban por producto (su id es de su base).
+- **El alta de antes se vuelve la primera** sin darse de alta otra vez (`conexion.xml` y la copia de `files/copia/` se pasan
+  solos al formato nuevo: una carpeta de copia por caja).
+- Pruebas: `DosSucursalesTest` (dos servicios de mentira), `PisoTest`, `CobroTest`, `CambioDeSucursalTest`,
+  `PantallaConexionTest`, y `DosPosDeVerdadTest` contra dos servicios del POS de verdad con bases ficticias
+  (`POS_URL` y `POS_URL_2`). En el emulador: enlazar las dos, «Usar esta» y, con la matriz apagada, «Cambiar» desde Cobrar
+  hasta que cotiza la sucursal 2.
+
+**Sin probar:** en el Pixel y en la tienda; la búsqueda por UDP de la otra sucursal (en el emulador no llega la difusión).
+**Pendiente en el POS:** la sucursal 2 tiene una sola PC; si se instala como «La única caja», no da de alta celulares.
+
 ## 0.5.4 (sin publicar)
 
 **El ticket de lo que cobra el celular ya se imprime,** con el paso 11 del documento del POS (rama

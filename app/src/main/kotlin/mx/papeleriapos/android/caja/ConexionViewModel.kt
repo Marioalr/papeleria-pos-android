@@ -75,6 +75,10 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
     val estado: StateFlow<EstadoConexion> = conexion.estado
     private var trabajo: Job? = null
 
+    private val _enlazando = MutableStateFlow(false)
+    /** Con un alta ya activa, el dueño tocó «Enlazar otra sucursal»: se enseñan los pasos del alta sin quitar nada. */
+    val enlazando: StateFlow<Boolean> = _enlazando.asStateFlow()
+
     init {
         // Por si la pantalla se abre antes de que la Activity haya puesto la conexión al frente (lee el alta del disco).
         conexion.precargar()
@@ -82,6 +86,28 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
 
     /** La pantalla enseñó el aviso de que la caja le quitó el acceso ([Conexion.avisoVisto]). */
     fun avisoVisto() = conexion.avisoVisto()
+
+    /** «Enlazar otra sucursal»: el alta de siempre; la que ya está se queda, y la nueva queda en uso al terminar. */
+    fun enlazarOtra() {
+        _enlazando.value = true
+        empezar()
+    }
+
+    /** Se dejó de enlazar otra sucursal: de regreso a la que está en uso. */
+    fun cancelarEnlace() {
+        trabajo?.cancel()
+        _enlazando.value = false
+        _paso.value = PasoAlta.Buscar()
+    }
+
+    /** «Usar esta»: el dueño eligió otra sucursal enlazada; su caja principal prueba quién es en el siguiente latido. */
+    fun usar(cajaId: String) {
+        viewModelScope.launch {
+            conexion.cambiarA(cajaId)
+            _enlazando.value = false
+            _paso.value = PasoAlta.Buscar()
+        }
+    }
 
     /** Empieza el alta desde el principio, buscando en la red. */
     fun empezar() {
@@ -191,6 +217,7 @@ class ConexionViewModel(app: Application, private val conexion: Conexion) : Andr
         trabajo = viewModelScope.launch {
             try {
                 val alta = conexion.darDeAlta(d.direccion, d.usuario, d.pin, d.sucursalId, d.nombre, d.serie)
+                _enlazando.value = false
                 _paso.value = PasoAlta.Listo(alta)
             } catch (e: ErrorDelPos) {
                 _paso.value = d.copy(trabajando = false, error = e.message)

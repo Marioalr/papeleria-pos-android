@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
@@ -153,4 +154,72 @@ class PantallaConexionTest {
 
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesCount(etiqueta: String): Int =
         onAllNodes(androidx.compose.ui.test.hasTestTag(etiqueta).or(androidx.compose.ui.test.hasText(etiqueta))).fetchSemanticsNodes().size
+
+    // ---- Dos sucursales (0.5.5) ----
+
+    private val matriz = Enlace("c-m", "Matriz", "Celular", "CEL", Direccion("192.168.1.10", 5080))
+    private val sucursal2 = Enlace("c-s2", "Sucursal 2", "Celular", "CEA", Direccion("192.168.0.20", 5080))
+    private val altaMatriz = Alta(matriz.direccion, CajaDto("c-m", "Celular", "CEL", "s1", "Matriz"), "Prueba", "dueno", "llave", null, 1L)
+
+    @Test
+    fun `con alta se ven las sucursales enlazadas, la de ahora en uso y usar esta en la otra`() {
+        var usada: String? = null
+        var enlazar = 0
+        compose.setContent {
+            TemaEscaner {
+                ContenidoConexion(
+                    estado = EstadoConexion(alta = altaMatriz, leida = true, enlaces = listOf(matriz, sucursal2)),
+                    paso = PasoAlta.Buscar(),
+                    hayBloqueo = true,
+                    alAbrirSeguridad = {},
+                    acciones = AccionesAlta(usar = { usada = it }, enlazarOtra = { enlazar++ }),
+                )
+            }
+        }
+        compose.onNodeWithText("En uso").assertExists()
+        compose.onNodeWithTag("enlace-usar-c-m").assertDoesNotExist()
+        compose.onNodeWithTag("enlace-usar-c-s2").performScrollTo().performClick()
+        org.junit.Assert.assertEquals("c-s2", usada)
+        compose.onNodeWithTag("enlazar-otra").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, enlazar)
+    }
+
+    @Test
+    fun `enlazando otra sucursal se ven los pasos del alta y se puede seguir con la de ahora`() {
+        var cancelado = false
+        compose.setContent {
+            TemaEscaner {
+                ContenidoConexion(
+                    estado = EstadoConexion(alta = altaMatriz, leida = true, enlaces = listOf(matriz)),
+                    paso = PasoAlta.Buscar(),
+                    hayBloqueo = true,
+                    alAbrirSeguridad = {},
+                    acciones = AccionesAlta(cancelarEnlace = { cancelado = true }),
+                    enlazando = true,
+                )
+            }
+        }
+        compose.onNodeWithText("Enlazar otra sucursal").assertExists()
+        compose.onNodeWithTag("buscar-caja").assertExists()
+        compose.onNodeWithTag("enlace-cancelar").performScrollTo().performClick()
+        org.junit.Assert.assertTrue(cancelado)
+    }
+
+    @Test
+    fun `sin ninguna en uso las que quedan se pueden usar sin dar de alta otra vez`() {
+        compose.setContent {
+            TemaEscaner {
+                ContenidoConexion(
+                    estado = EstadoConexion(leida = true, enlaces = listOf(matriz), aviso = Conexion.SIN_ACCESO, sinAcceso = true),
+                    paso = PasoAlta.Buscar(),
+                    hayBloqueo = true,
+                    alAbrirSeguridad = {},
+                    acciones = AccionesAlta(),
+                )
+            }
+        }
+        compose.onNodeWithTag("enlace-usar-c-m").assertExists()
+        compose.onNodeWithTag("enlazar-otra").assertDoesNotExist()
+        compose.onNodeWithTag("buscar-caja").assertExists()
+    }
 }

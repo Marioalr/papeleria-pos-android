@@ -98,7 +98,13 @@ const val MS_REBOTE_COBRAR = 300L
 const val MS_REBOTE_COBRADO = 700L
 
 @Composable
-fun HojaCobrar(estado: EstadoCobro, acciones: AccionesCobro, alCerrar: () -> Unit) {
+fun HojaCobrar(
+    estado: EstadoCobro,
+    acciones: AccionesCobro,
+    /** «¿Estás en Sucursal 2? Cambiar» ([BotonesOtraSucursal]), cuando no contestó la caja principal. */
+    otraSucursal: @Composable () -> Unit = {},
+    alCerrar: () -> Unit,
+) {
     val color = LocalColoresModo.current.ticket
     val colores = LocalColoresEstado.current
     var listo by remember { mutableStateOf(false) }
@@ -291,6 +297,7 @@ fun HojaCobrar(estado: EstadoCobro, acciones: AccionesCobro, alCerrar: () -> Uni
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("cobro-error"),
                     )
                 }
+                if (estado.otraSucursal && !estado.cobrando) otraSucursal()
                 if (estado.error != null && (estado.cotizacion == null || estado.cajaDelCobro == null)) {
                     OutlinedButton(onClick = acciones.reintentar, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("cobro-reintentar")) {
                         Text("Volver a intentar")

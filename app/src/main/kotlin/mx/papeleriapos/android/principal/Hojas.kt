@@ -743,6 +743,8 @@ fun HojaMandar(
     alCargar: () -> Unit,
     alElegir: (String) -> Unit,
     alMandar: () -> Unit,
+    /** «¿Estás en Sucursal 2? Cambiar» ([BotonesOtraSucursal]), cuando no contestó la caja principal. */
+    otraSucursal: @Composable () -> Unit = {},
     alCerrar: () -> Unit,
 ) {
     val color = LocalColoresModo.current.ticket
@@ -809,6 +811,7 @@ fun HojaMandar(
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("mandar-error"),
                     )
                 }
+                if (estado.otraSucursal && !estado.mandando) otraSucursal()
                 val elegida = estado.cajaElegida
                 Button(
                     onClick = alMandar,

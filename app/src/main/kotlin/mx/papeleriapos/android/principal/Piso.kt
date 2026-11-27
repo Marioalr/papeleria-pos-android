@@ -209,6 +209,14 @@ class Piso(
     private val elegidos = HashMap<String, String>()
 
     fun cargarCatalogo(c: CatalogoDeProductos) {
+        val antes = _catalogo.value
+        // Los productos de otra sucursal: el mismo producto tiene otro id, así que cada renglón se vuelve a encontrar por
+        // su código de barras (el ticket que se llevaba se queda). Antes de publicar los productos: quien los espera (el
+        // cambio de sucursal, que vuelve a cotizar) puede seguir en ese mismo instante (Main.immediate).
+        if (antes != null && antes !== c) {
+            venta.update { l -> l.conClaves { reclavar(it, antes, c) } }
+            conteo.update { l -> l.conClaves { reclavar(it, antes, c) } }
+        }
         _catalogo.value = c
         // Lo que ya estaba sin clave (de la 0.1 o del escaneo rápido de antes de la 0.3) la toma ahora, sin un paso para
         // deshacer.
@@ -651,3 +659,24 @@ class Piso(
  */
 internal fun totalDe(ticket: ListaLecturas, catalogo: CatalogoDeProductos?): Long =
     ticket.renglones.sumOf { r -> catalogo?.de(r)?.importe(r.cantidad) ?: 0L }
+
+/**
+ * [r] con su clave en [ahora], si la de [antes] ya no está (llegaron los productos de otra sucursal, o se quitó ese
+ * producto): lo escaneado se vuelve a encontrar por lo que se leyó; lo que se agregó buscando, por el código de barras que
+ * tenía en [antes]. Si no está en [ahora], se queda sin clave y con su código, y sale como «no está en el catálogo».
+ * Los artículos comunes y lo que sigue estando no cambian.
+ */
+internal fun reclavar(r: Renglon, antes: CatalogoDeProductos, ahora: CatalogoDeProductos): Renglon {
+    if (r.comunCentavos != null) return r
+    val clave = r.clave ?: return r
+    if (ahora.porClave(clave) != null) return r
+    val escaneado = r.simbologia != Simbologia.OTRA
+    val codigo = if (escaneado) r.codigo else antes.de(r)?.codigo?.takeIf { it != clave }
+    val p = codigo?.let { ahora.porLectura(it, r.simbologia) }
+    return when {
+        escaneado -> r.copy(clave = p?.clave)
+        p != null -> r.copy(codigo = p.clave, clave = p.clave)
+        codigo != null -> r.copy(codigo = codigo, clave = null)
+        else -> r
+    }
+}

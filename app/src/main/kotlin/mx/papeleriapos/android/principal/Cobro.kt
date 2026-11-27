@@ -87,6 +87,11 @@ data class EstadoCobro(
     val cobrando: Boolean = false,
     /** Lo que salió mal, en español para enseñarlo tal cual; null si nada. */
     val error: String? = null,
+    /**
+     * No contestó la caja principal al abrir (cotizar o pedir las cajas) y el ticket no está en duda: si hay otra sucursal
+     * enlazada, se ofrece cambiar a ella. Nunca después de un cobro sin respuesta ([IdsDeTicket.enDuda]).
+     */
+    val otraSucursal: Boolean = false,
     /** La venta ya cobrada: lo que enseña «Cobrado». */
     val cobrada: VentaCobradaDto? = null,
     /** Qué pasó con el ticket: lo que contestó el cobro o, después, «Imprimir el ticket». null: el POS no lo dijo. */
@@ -175,7 +180,7 @@ class Cobrador(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NoSeMando) {
-                _estado.update { it.copy(error = mensajeDe(e)) }
+                _estado.update { it.copy(error = mensajeDe(e), otraSucursal = e.sinRed && !ids.enDuda(pedido)) }
             }
         }
     }
@@ -217,7 +222,8 @@ class Cobrador(
             } catch (ex: CancellationException) {
                 throw ex
             } catch (ex: NoSeMando) {
-                _estado.update { it.copy(cobrando = false, error = mensajeDe(ex)) }
+                if (ex.sinRed) ids.quedoSinRespuesta(solicitud.id)
+                _estado.update { it.copy(cobrando = false, error = mensajeDe(ex), otraSucursal = false) }
                 // El total del servicio es otro (cambió un precio o una promoción): se vuelve a cotizar para enseñarlo.
                 if (ex.codigo == "total-distinto") recotizar()
             }

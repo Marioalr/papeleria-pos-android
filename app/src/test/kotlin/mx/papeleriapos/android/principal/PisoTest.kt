@@ -743,4 +743,43 @@ class PisoTest {
         assertFalse(p.imprimirTicket.value)
         assertFalse("La siguiente vez abre como se dejó", Piso(venta, conteo, guardado, ModoApp.VENTA) { ahora }.imprimirTicket.value)
     }
+
+    // ---- Otra sucursal enlazada (0.5.5) ----
+
+    @Test
+    fun `al llegar los productos de otra sucursal el ticket se queda, con cada producto encontrado por su codigo`() {
+        // Como en la copia: la clave es el id de la variante (otro en cada base) y el código de barras es el mismo.
+        val cuadernoM = cuaderno.copy(clave = "var-m-1", codigo = "7509990100019")
+        val lapizM = lapiz.copy(clave = "var-m-2", codigo = "7509990100026")
+        val soloMatriz = Producto("var-m-3", "Pluma de la matriz", "Escolar", listOf(Escala(1, 900)), 5.0, codigo = "7509990100555")
+        fun comoLaCopia(lista: List<Producto>) =
+            CatalogoDeProductos.deCopia(lista, lista.associate { it.codigo!! to listOf(it.clave) }, emptyList(), emptyList(), emptyList(), emptyMap(), lista.size)
+        val deLaMatriz = comoLaCopia(listOf(cuadernoM, lapizM, soloMatriz))
+        val cuadernoS2 = cuaderno.copy(clave = "var-s2-1", codigo = "7509990100019", escalas = listOf(Escala(1, 4900)))
+        val lapizS2 = lapiz.copy(clave = "var-s2-2", codigo = "7509990100026")
+        val deLaSucursal2 = comoLaCopia(listOf(cuadernoS2, lapizS2))
+        val p = Piso(venta, conteo, almacen, ModoApp.VENTA) { ahora }.also { it.cargarCatalogo(deLaMatriz) }
+        p.alLeer("7509990100019", Simbologia.EAN_13, 1L)
+        venta.value = venta.value.agregarDelCatalogo(lapizM.clave, 2L).agregarDelCatalogo(soloMatriz.clave, 3L).agregarComun(1500, 4L)
+
+        p.cargarCatalogo(deLaSucursal2)
+
+        val r = venta.value.renglones.associateBy { it.codigo }
+        assertEquals("Lo escaneado, por lo que se leyó", "var-s2-1", r.getValue("7509990100019").clave)
+        assertEquals("Lo buscado, por su código en la matriz", "var-s2-2", r.getValue("var-s2-2").clave)
+        assertNull("Lo que no hay en la sucursal 2 se queda sin clave, con su código", r.getValue("7509990100555").clave)
+        assertEquals("El artículo común no cambia", 1500L, venta.value.renglones.first { it.comunCentavos != null }.comunCentavos)
+        assertEquals(4, venta.value.renglones.size)
+        assertEquals(4900L, deLaSucursal2.de(r.getValue("7509990100019"))!!.escalas[0].centavos)
+        assertFalse("Deshacer no regresa las claves de la matriz", venta.value.puedeDeshacer)
+    }
+
+    @Test
+    fun `los productos al dia de la misma sucursal no tocan el ticket`() {
+        val p = piso()
+        p.alLeer(cuaderno.clave, Simbologia.EAN_13, 1L)
+        val antes = venta.value
+        p.cargarCatalogo(CatalogoDeProductos(listOf(cuaderno, lapiz, caja)))
+        assertTrue(antes === venta.value)
+    }
 }

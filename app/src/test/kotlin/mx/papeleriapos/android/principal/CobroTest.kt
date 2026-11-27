@@ -424,4 +424,39 @@ class CobroTest {
         assertEquals("No contestó la caja principal.", c.estado.value.errorDeImpresion)
         assertTrue(c.estado.value.impresion!!.salio)
     }
+
+    // ---- Otra sucursal enlazada (0.5.5) ----
+
+    @Test
+    fun `sin red al abrir se ofrece cambiar de sucursal, pero no si el servicio contesto`() = runTest(hilo) {
+        val canal = Canal(listOf(caja1)).apply { falla = NoSeMando("No contestó la caja principal.", sinRed = true) }
+        val c = cobrador(canal)
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertTrue(c.estado.value.otraSucursal)
+        canal.falla = NoSeMando("El usuario no tiene permiso.")
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertFalse("Contestó: es la caja principal de aquí", c.estado.value.otraSucursal)
+    }
+
+    @Test
+    fun `un cobro sin respuesta no ofrece cambiar de sucursal hasta que se sepa, porque alla se cobraria dos veces`() = runTest(hilo) {
+        val canal = Canal(listOf(caja1)).apply { fallaAlCobrar = NoSeMando("No contestó la caja principal.", sinRed = true) }
+        val c = cobrador(canal)
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        c.cobrar {}
+        advanceUntilIdle()
+        assertFalse(c.estado.value.otraSucursal)
+        // «Volver a intentar» y tampoco contesta: el mismo ticket sigue en duda.
+        canal.falla = NoSeMando("No contestó la caja principal.", sinRed = true)
+        c.abrir(ticket(), catalogo)
+        advanceUntilIdle()
+        assertFalse("El mismo ticket, en duda", c.estado.value.otraSucursal)
+        // Otro ticket (se quitó el lápiz): ese nunca salió.
+        c.abrir(ListaLecturas().sumar(cuaderno.clave, Simbologia.EAN_13, 1L, clave = cuaderno.clave), catalogo)
+        advanceUntilIdle()
+        assertTrue(c.estado.value.otraSucursal)
+    }
 }
