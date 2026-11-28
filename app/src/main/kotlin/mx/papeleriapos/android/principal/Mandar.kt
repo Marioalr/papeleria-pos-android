@@ -78,6 +78,9 @@ fun renglonesParaMandar(ticket: ListaLecturas, catalogo: CatalogoDeProductos): L
 class IdsDeTicket(private val nuevoId: () -> String = { UUID.randomUUID().toString() }) {
     private var intento: Pair<List<RenglonMandado>, String>? = null
 
+    /** El Id que salió (a cobrar o a mandar) y no contestó: no se sabe si llegó. */
+    private var sinRespuesta: String? = null
+
     @Synchronized
     fun de(renglones: List<RenglonMandado>): String =
         intento?.takeIf { it.first == renglones }?.second ?: nuevoId().also { intento = renglones to it }
@@ -86,6 +89,23 @@ class IdsDeTicket(private val nuevoId: () -> String = { UUID.randomUUID().toStri
     @Synchronized
     fun olvidar() {
         intento = null
+        sinRespuesta = null
+    }
+
+    /** Ese Id salió y no contestó: pudo haberse cobrado (o quedado en una espera) en la caja principal de ahora. */
+    @Synchronized
+    fun quedoSinRespuesta(id: String) {
+        sinRespuesta = id
+    }
+
+    /**
+     * El ticket de ahora salió y no se sabe si llegó. Mientras, no se ofrece cambiar de sucursal: en la otra, el mismo Id
+     * es otra venta y se cobraría dos veces.
+     */
+    @Synchronized
+    fun enDuda(renglones: List<RenglonMandado>? = null): Boolean {
+        val i = intento ?: return false
+        return sinRespuesta != null && i.second == sinRespuesta && (renglones == null || i.first == renglones)
     }
 }
 
@@ -96,6 +116,8 @@ data class EstadoMandar(
     val mandando: Boolean = false,
     /** Lo que salió mal, en español para enseñarlo tal cual; null si nada. */
     val error: String? = null,
+    /** No contestó la caja principal al pedir las cajas: si hay otra sucursal enlazada, se ofrece cambiar a ella. */
+    val otraSucursal: Boolean = false,
 ) {
     val cajaElegida: CajaParaMandarDto? get() = cajas?.firstOrNull { it.id == elegida }
     val puedeMandar: Boolean get() = !mandando && cajaElegida?.recibe == true
@@ -136,7 +158,7 @@ class Mandador(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NoSeMando) {
-                _estado.value = EstadoMandar(cajas = emptyList(), error = e.message)
+                _estado.value = EstadoMandar(cajas = emptyList(), error = e.message, otraSucursal = e.sinRed && !ids.enDuda())
             }
         }
     }
@@ -174,6 +196,7 @@ class Mandador(
             } catch (e: NoSeMando) {
                 // Ya se cobró en la caja (se mandó, se perdió la respuesta y se cobró): ya no hay nada que mandar.
                 if (e.codigo == "ya-cobrado") ids.olvidar()
+                if (e.sinRed) ids.quedoSinRespuesta(id)
                 _estado.update { it.copy(mandando = false, error = e.message) }
             }
         }

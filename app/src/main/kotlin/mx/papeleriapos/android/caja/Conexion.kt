@@ -27,6 +27,12 @@ import java.io.IOException
 /** Cómo está la red con la caja principal, por lo que tarda el latido: como la franja de la caja de Windows. */
 enum class Red { SIN_PROBAR, BUENA, LENTA, CAIDA }
 
+/**
+ * Una sucursal enlazada (Ajustes › La conexión › «Sucursales enlazadas»): su caja en esa sucursal y dónde estaba su caja
+ * principal la última vez. Sin la llave: es para la pantalla.
+ */
+data class Enlace(val cajaId: String, val sucursal: String, val caja: String, val serie: String, val direccion: Direccion)
+
 /** Lo que Ajustes › La conexión dice de la copia. */
 data class ResumenCopia(val variantes: Int, val codigos: Int, val guardadaEn: Long, val version: Long, val nombreTienda: String?, val sucursal: String)
 
@@ -55,7 +61,12 @@ data class EstadoConexion(
     val sinAcceso: Boolean = false,
     /** Ya se leyó el disco: antes de esto no se sabe si hay alta. */
     val leida: Boolean = false,
-)
+    /** Todas las sucursales enlazadas, la activa también, en el orden en que se dieron de alta. */
+    val enlaces: List<Enlace> = emptyList(),
+) {
+    /** Las sucursales enlazadas que no son la activa: a las que se puede cambiar. */
+    val otras: List<Enlace> get() = enlaces.filter { e -> !e.cajaId.equals(alta?.caja?.id, ignoreCase = true) }
+}
 
 /**
  * La conexión del celular con la caja principal (docs/celular-como-caja.md, «La secuencia de la app»): el alta, el
@@ -171,12 +182,13 @@ class Conexion(
         leida = true
         alta = almacenAlta.leer()
         sinComprobar = alta != null
-        val c = if (alta != null) almacenCopia.leer()?.takeIf { it.caja.id.equals(alta!!.caja.id, ignoreCase = true) } else null
+        val c = alta?.let { a -> almacenCopia.leer(a.caja.id)?.takeIf { it.caja.id.equals(a.caja.id, ignoreCase = true) } }
         _copia.value = c
         val pendiente = if (alta == null) almacenAlta.leerAviso() else null
+        val enlaces = enlaces()
         _estado.update {
-            if (pendiente != null) it.copy(alta = null, copia = null, aviso = pendiente, sinAcceso = true, leida = true)
-            else it.copy(alta = alta, copia = c?.resumen(), leida = true)
+            if (pendiente != null) it.copy(alta = null, copia = null, aviso = pendiente, sinAcceso = true, leida = true, enlaces = enlaces)
+            else it.copy(alta = alta, copia = c?.resumen(), leida = true, enlaces = enlaces)
         }
     }
 
@@ -415,25 +427,99 @@ class Conexion(
         }
         for (d in candidatas) {
             if (d == a.direccion) continue
-            val reto = Identidad.nuevoReto()
-            val respuesta = try {
-                cliente.identidad(d, a.caja.id, reto)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                continue
-            }
-            if (!Identidad.esLaCajaPrincipal(respuesta, a.llave, a.llaveDelServicio, a.caja.id, reto, d)) continue
+            if (!pruebaEn(a, d)) continue
             if (gen != generacion) return null
             val nueva = a.copy(direccion = d)
-            almacenAlta.guardarDireccion(d)
+            almacenAlta.guardarDireccion(a.caja.id, d)
             alta = nueva
             sinComprobar = false
             fallos = 0
-            _estado.update { it.copy(alta = nueva) }
+            _estado.update { it.copy(alta = nueva, enlaces = enlaces()) }
             return nueva
         }
         return null
+    }
+
+    /** Si en [d] contesta la caja principal que dio de alta [a] y lo prueba ([Identidad]); sin llave en la pregunta. */
+    private suspend fun pruebaEn(a: Alta, d: Direccion): Boolean {
+        val reto = Identidad.nuevoReto()
+        val respuesta = try {
+            cliente.identidad(d, a.caja.id, reto)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return false
+        }
+        return Identidad.esLaCajaPrincipal(respuesta, a.llave, a.llaveDelServicio, a.caja.id, reto, d)
+    }
+
+    // ---- Las sucursales enlazadas ----
+
+    private fun enlaces(): List<Enlace> = almacenAlta.enlaces().map { Enlace(it.caja.id, it.caja.sucursal, it.caja.nombre, it.caja.serie, it.direccion) }
+
+    /**
+     * Usa la sucursal enlazada de [cajaId] (la eligió el dueño): su alta y su copia, que ya está en el disco, así que Precio
+     * y Buscar siguen al instante aunque su caja principal no haya contestado. Nada se borra. La dirección queda sin
+     * comprobar: la llave sale hasta que su caja principal pruebe quién es. false si ese enlace ya no está.
+     */
+    suspend fun cambiarA(cajaId: String): Boolean = withContext(hilo) {
+        leerSiFalta()
+        if (alta?.caja?.id.equals(cajaId, ignoreCase = true)) return@withContext true
+        if (!almacenAlta.activar(cajaId)) return@withContext false
+        val nueva = almacenAlta.leer() ?: return@withContext false
+        activar(nueva, comprobada = false)
+        true
+    }
+
+    /** Deja [nueva] como el alta activa, con su copia del disco; el latido empieza otra vez con ella. */
+    private fun activar(nueva: Alta, comprobada: Boolean) {
+        generacion++
+        descarga?.cancel()
+        alta = nueva
+        sinComprobar = !comprobada
+        fallos = 0
+        caidaRegistrada = null
+        val c = almacenCopia.leer(nueva.caja.id)?.takeIf { it.caja.id.equals(nueva.caja.id, ignoreCase = true) }
+        _copia.value = c
+        _estado.value = EstadoConexion(alta = nueva, copia = c?.resumen(), leida = true, enlaces = enlaces())
+        registrar("Ahora con la sucursal ${nueva.caja.sucursal.ifBlank { nueva.caja.id }} (${nueva.direccion})", aviso = false)
+        // El latido de la otra se tira; con esta empieza ahora, no en 30 s.
+        if (alFrente) {
+            latido?.cancel()
+            latido = null
+            alFrente()
+        }
+    }
+
+    /**
+     * «¿Estás en Sucursal 2? Cambiar»: solo al tocarlo, una vez, se busca la caja principal de ese enlace (en su dirección
+     * guardada y, si ahí no, por UDP) y debe probar quién es con la llave de ese enlace. Si lo prueba, se cambia a ella; si
+     * no, [NoSeMando] con lo que se le dice al dueño. Nunca se cambia solo.
+     */
+    suspend fun buscarYCambiarA(cajaId: String): Alta = withContext(hilo) {
+        leerSiFalta()
+        val e = almacenAlta.enlaces().firstOrNull { it.caja.id.equals(cajaId, ignoreCase = true) }
+            ?: throw NoSeMando("Esa sucursal ya no está enlazada en este celular.")
+        val donde = if (pruebaEn(e, e.direccion)) {
+            e.direccion
+        } else {
+            val candidatas = try {
+                descubrir()
+            } catch (ex: CancellationException) {
+                throw ex
+            } catch (ex: Exception) {
+                emptyList()
+            }
+            candidatas.firstOrNull { it != e.direccion && pruebaEn(e, it) }
+        } ?: throw NoSeMando(
+            "No se encontró la caja principal de ${e.caja.sucursal.ifBlank { "esa sucursal" }} en esta red: revisa que el celular esté en su Wi-Fi y que esté encendida, con Papelería POS abierto.",
+            sinRed = true,
+        )
+        if (donde != e.direccion) almacenAlta.guardarDireccion(e.caja.id, donde)
+        almacenAlta.activar(e.caja.id)
+        val nueva = e.copy(direccion = donde)
+        activar(nueva, comprobada = true)
+        nueva
     }
 
     // ---- Mandar el ticket a una caja ----
@@ -496,7 +582,7 @@ class Conexion(
             a = when (comprobar(a)) {
                 Comprobacion.PROBADA -> a
                 Comprobacion.NO_CONTESTA -> throw noContesto(a, que, fallaDeIdentidad)
-                Comprobacion.OTRO -> reencontrar(a, gen) ?: throw NoSeMando("No se encontró la caja principal en esta red: revisa que esté encendida, con Papelería POS abierto.")
+                Comprobacion.OTRO -> reencontrar(a, gen) ?: throw NoSeMando("No se encontró la caja principal en esta red: revisa que esté encendida, con Papelería POS abierto.", sinRed = true)
             }
             if (gen != generacion) throw NoSeMando(SIN_ALTA_PARA_MANDAR)
             sinComprobar = false
@@ -552,32 +638,38 @@ class Conexion(
         val nueva = Alta(direccion, respuesta.caja, equipo, usuario.trim(), respuesta.llave, respuesta.llaveDelServicio, reloj())
         withContext(hilo) {
             leerSiFalta()
-            almacenCopia.borrar()
+            // Otra sucursal (o la misma con otra caja): las altas que ya había se quedan, con sus copias.
+            almacenCopia.borrar(nueva.caja.id)
             almacenAlta.guardar(nueva)
             generacion++
+            descarga?.cancel()
             alta = nueva
             fallos = 0
             sinComprobar = false
             _copia.value = null
-            _estado.update { EstadoConexion(alta = nueva, red = red, ultimaVez = nueva.altaEn, leida = true) }
+            _estado.update { EstadoConexion(alta = nueva, red = red, ultimaVez = nueva.altaEn, leida = true, enlaces = enlaces()) }
             iniciarDescarga(nueva)
         }
         return nueva
     }
 
     /**
-     * Borra la llave y la copia: la caja le quitó el acceso a este celular (401 «caja-sin-alta»), o se quiere empezar de
-     * nuevo. [aviso] se guarda (solo el aviso, nada de la caja) y se enseña en Ajustes hasta que el dueño lo ve
+     * Borra la llave y la copia del alta activa: su caja le quitó el acceso a este celular (401 «caja-sin-alta»), o se
+     * quiere empezar de nuevo. Las otras sucursales enlazadas se quedan, pero ninguna queda activa: el dueño elige en
+     * Ajustes. [aviso] se guarda (solo el aviso, nada de la caja) y se enseña en Ajustes hasta que el dueño lo ve
      * ([avisoVisto]) o vuelve a dar de alta: puede llegar con la entrada con la huella tapando todo, o reiniciarse la app.
      */
     suspend fun olvidarAlta(aviso: String? = null) = withContext(hilo) {
         generacion++
-        almacenAlta.borrar(aviso)
-        almacenCopia.borrar()
+        descarga?.cancel()
+        alta?.let { a ->
+            almacenAlta.quitar(a.caja.id, aviso)
+            almacenCopia.borrar(a.caja.id)
+        }
         alta = null
         sinComprobar = false
         _copia.value = null
-        _estado.value = EstadoConexion(aviso = aviso, sinAcceso = aviso != null, leida = true)
+        _estado.value = EstadoConexion(aviso = aviso, sinAcceso = aviso != null, leida = true, enlaces = enlaces())
     }
 
     /**

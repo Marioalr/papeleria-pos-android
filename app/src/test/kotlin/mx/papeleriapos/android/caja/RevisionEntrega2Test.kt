@@ -171,7 +171,7 @@ class RevisionEntrega2Test {
         try {
             espera { c.latir() }
             assertNotNull("Un servicio que no probó quién es borró la llave y la copia", c.estado.value.alta)
-            assertNotNull(almacenCopia.leer())
+            assertNotNull(almacenCopia.leer(cajaId))
             espera { c.latir() }
             assertEquals(direccionMudada, c.estado.value.alta?.direccion)
         } finally {
@@ -209,7 +209,7 @@ class RevisionEntrega2Test {
         hasta(3_000) { c.copia.value != null }
         assertNull(c.estado.value.alta)
         assertNull("Quedó la copia de un alta que ya no existe", c.copia.value)
-        assertNull("Y se escribió en el disco", almacenCopia.leer())
+        assertNull("Y se escribió en el disco", almacenCopia.leer(cajaId))
     }
 
     // ---- Hallazgo 6 ----

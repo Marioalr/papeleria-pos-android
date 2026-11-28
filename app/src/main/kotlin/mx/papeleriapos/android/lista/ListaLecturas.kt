@@ -219,6 +219,16 @@ class ListaLecturas private constructor(
         return if (cambio) ListaLecturas(nuevos, anteriores, siguienteId, siguienteLlegada) else this
     }
 
+    /**
+     * Los renglones con su clave en otro catálogo (el de otra sucursal enlazada, donde el mismo producto tiene otro id):
+     * sin un paso para deshacer, y lo de deshacer se olvida (sus claves eran del catálogo de antes).
+     */
+    fun conClaves(nuevo: (Renglon) -> Renglon): ListaLecturas {
+        var cambio = false
+        val nuevos = renglones.map { r -> nuevo(r).also { if (it != r) cambio = true } }
+        return if (cambio) ListaLecturas(nuevos, emptyList(), siguienteId, siguienteLlegada) else this
+    }
+
     /** El mismo código o el mismo producto del catálogo: como lo junta [sumar]. */
     private fun Renglon.mismoQue(otro: Renglon) = codigo == otro.codigo || (otro.clave != null && clave == otro.clave)
 

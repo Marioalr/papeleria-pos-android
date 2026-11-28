@@ -151,6 +151,10 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
     // «Mandar a una caja» se enciende con el alta y un ticket que la caja conoce.
     val conAltaFlujo = remember(contextoApp) { Conexion.del(contextoApp).estado.map { it.alta != null }.distinctUntilChanged() }
     val conAlta by conAltaFlujo.collectAsStateWithLifecycle(initialValue = false)
+    // Las otras sucursales enlazadas: «¿Estás en Sucursal 2? Cambiar» cuando no contesta la caja principal.
+    val otrasFlujo = remember(contextoApp) { Conexion.del(contextoApp).estado.map { it.otras }.distinctUntilChanged() }
+    val otrasSucursales by otrasFlujo.collectAsStateWithLifecycle(initialValue = emptyList())
+    val cambio by vm.cambioDeSucursal.estado.collectAsStateWithLifecycle()
     val dePrueba by FuenteDeProductos.dePrueba.collectAsStateWithLifecycle()
     val razonMandar = razonParaMandar(ticket, catalogo, conAlta, dePrueba)
     // Lo que dice «Cobrar» apagado: lo mismo que impide mandarlo (sin alta, los productos de prueba, un código sin producto).
@@ -525,13 +529,23 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                             alCargar = vm.mandador::cargar,
                             alElegir = vm.mandador::elegir,
                             alMandar = { catalogo?.let { c -> vm.mandador.mandar(ticket, c, piso::mandado) } },
+                            otraSucursal = {
+                                BotonesOtraSucursal(otrasSucursales, cambio) { id -> vm.cambioDeSucursal.cambiar(id, piso.catalogo) { vm.mandador.cargar() } }
+                            },
                         ) { piso.cerrarHoja() }
+                        DisposableEffect(Unit) { onDispose { vm.cambioDeSucursal.olvidar() } }
                     }
                     Hoja.Cobrar -> {
                         val estadoCobro by vm.cobrador.estado.collectAsStateWithLifecycle()
                         // Al abrirse (y al volver de «¿A qué caja?»): lo que costaría y en qué caja entra.
                         LaunchedEffect(Unit) { piso.catalogo.value?.let { c -> vm.cobrador.abrir(vm.venta.value, c) } }
-                        HojaCobrar(estadoCobro, accionesCobro) { piso.cerrarHoja() }
+                        HojaCobrar(
+                            estadoCobro, accionesCobro,
+                            otraSucursal = {
+                                BotonesOtraSucursal(otrasSucursales, cambio) { id -> vm.cambioDeSucursal.cambiar(id, piso.catalogo) { c -> vm.cobrador.abrir(vm.venta.value, c) } }
+                            },
+                        ) { piso.cerrarHoja() }
+                        DisposableEffect(Unit) { onDispose { vm.cambioDeSucursal.olvidar() } }
                     }
                     Hoja.Cobrado -> {
                         val cobro by vm.cobrador.estado.collectAsStateWithLifecycle()

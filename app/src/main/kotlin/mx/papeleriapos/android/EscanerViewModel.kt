@@ -37,6 +37,7 @@ import mx.papeleriapos.android.lista.ListasCompartidas
 import mx.papeleriapos.android.medicion.MonitorDeSesion
 import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.principal.Piso
+import mx.papeleriapos.android.principal.CambioDeSucursal
 import mx.papeleriapos.android.principal.Cobrador
 import mx.papeleriapos.android.principal.IdsDeTicket
 import mx.papeleriapos.android.principal.Mandador
@@ -105,21 +106,26 @@ class EscanerViewModel(
     /** «¿A qué caja?»: manda el ticket con la llave del alta; recuerda la última caja usada. */
     val mandador: Mandador by lazy {
         val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
+        val conexion = Conexion.del(app)
         Mandador(
-            Conexion.del(app), viewModelScope,
-            ultima = { ultima.getString(ULTIMA_CAJA, null) },
-            guardarUltima = { ultima.edit().putString(ULTIMA_CAJA, it).apply() },
+            conexion, viewModelScope,
+            ultima = { ultima.getString(deLaSucursal(ULTIMA_CAJA, conexion), null) ?: ultima.getString(ULTIMA_CAJA, null) },
+            guardarUltima = { ultima.edit().putString(deLaSucursal(ULTIMA_CAJA, conexion), it).apply() },
             ids = idsDeTicket,
         )
     }
 
+    /** «¿Estás en Sucursal 2? Cambiar», en Cobrar y en «¿A qué caja?». */
+    val cambioDeSucursal: CambioDeSucursal by lazy { CambioDeSucursal(Conexion.del(app), viewModelScope) }
+
     /** «Cobrar»: cotiza y cobra con la llave del alta; recuerda en el turno de qué caja entró el último cobro. */
     val cobrador: Cobrador by lazy {
         val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
+        val conexion = Conexion.del(app)
         Cobrador(
-            Conexion.del(app), viewModelScope,
-            ultima = { ultima.getString(ULTIMA_CAJA_COBRO, null) },
-            guardarUltima = { ultima.edit().putString(ULTIMA_CAJA_COBRO, it).apply() },
+            conexion, viewModelScope,
+            ultima = { ultima.getString(deLaSucursal(ULTIMA_CAJA_COBRO, conexion), null) ?: ultima.getString(ULTIMA_CAJA_COBRO, null) },
+            guardarUltima = { ultima.edit().putString(deLaSucursal(ULTIMA_CAJA_COBRO, conexion), it).apply() },
             ids = idsDeTicket,
             imprimirDeFabrica = { piso.imprimirTicket.value },
         )
@@ -412,5 +418,13 @@ internal fun ConfigEscaner.sinRepetirALaVista(): ConfigEscaner = if (msParaRepet
 
 /** Dónde se recuerda la última caja a la que se mandó un ticket (sin nada de la caja más que su id). */
 private const val ARCHIVO_MANDAR = "mandar"
+
+/**
+ * La última caja se recuerda por sucursal enlazada: las cajas de una sucursal no existen en la otra. La de antes de la
+ * 0.5.5 (sin sucursal) se sigue leyendo si la de la sucursal no está: en otra sucursal no coincide con ninguna caja y no
+ * se elige.
+ */
+private fun deLaSucursal(llave: String, conexion: Conexion): String =
+    conexion.estado.value.alta?.caja?.id?.lowercase()?.let { "$llave@$it" } ?: llave
 private const val ULTIMA_CAJA = "ultima-caja"
 private const val ULTIMA_CAJA_COBRO = "ultima-caja-cobro"

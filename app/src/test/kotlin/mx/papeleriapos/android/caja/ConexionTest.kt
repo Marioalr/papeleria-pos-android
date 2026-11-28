@@ -148,7 +148,7 @@ class ConexionTest {
         assertEquals(6, estado.copia!!.variantes)
         assertEquals(41L, estado.copia!!.version)
         assertFalse(estado.bajando)
-        assertEquals("La copia quedó en el disco", 41L, almacenCopia.leer()!!.version)
+        assertEquals("La copia quedó en el disco", 41L, almacenCopia.leer(cajaId)!!.version)
         assertTrue(pedidos.any { it.endsWith("/paquete") })
         // El PIN no quedó en ningún lado.
         assertFalse(prefs.all.values.any { it.toString().contains("1234") })
@@ -184,7 +184,7 @@ class ConexionTest {
         assertTrue(pedidos.toString(), pedidos.any { it.contains("/cambios?desde=41&existencias=7") })
         assertEquals(42L, conexion.copia.value!!.version)
         assertEquals(listOf("SOLO-UNA"), conexion.copia.value!!.marcas)
-        assertEquals(42L, almacenCopia.leer()!!.version)
+        assertEquals(42L, almacenCopia.leer(cajaId)!!.version)
 
         // Si los cambios dicen que se baje entera, se baja.
         versionDatos = 43
@@ -239,7 +239,7 @@ class ConexionTest {
         assertEquals(Conexion.SIN_ACCESO, estado.aviso)
         assertNull(conexion.copia.value)
         assertNull(almacenAlta.leer())
-        assertNull(almacenCopia.leer())
+        assertNull(almacenCopia.leer(cajaId))
         assertTrue(estado.sinAcceso)
     }
 

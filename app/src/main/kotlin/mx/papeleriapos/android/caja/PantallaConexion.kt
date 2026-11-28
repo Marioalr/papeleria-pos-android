@@ -51,6 +51,7 @@ import mx.papeleriapos.android.ui.TituloSeccion
 fun PantallaConexion(vm: ConexionViewModel = viewModel()) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     val paso by vm.paso.collectAsStateWithLifecycle()
+    val enlazando by vm.enlazando.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
     // Aquí el dueño ve el aviso de que la caja le quitó el acceso (esta pantalla no se dibuja con la entrada con la huella
     // encima): deja de guardarse y de salir en la pantalla principal.
@@ -59,6 +60,7 @@ fun PantallaConexion(vm: ConexionViewModel = viewModel()) {
         estado = estado,
         paso = paso,
         hayBloqueo = Entrada.hayBloqueoSeguro(contexto),
+        enlazando = enlazando,
         alAbrirSeguridad = { contexto.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
         acciones = AccionesAlta(
             empezar = vm::empezar,
@@ -73,6 +75,9 @@ fun PantallaConexion(vm: ConexionViewModel = viewModel()) {
             escribirSerie = vm::escribirSerie,
             darDeAlta = vm::darDeAlta,
             atras = vm::atras,
+            enlazarOtra = vm::enlazarOtra,
+            cancelarEnlace = vm::cancelarEnlace,
+            usar = vm::usar,
         ),
     )
 }
@@ -90,6 +95,11 @@ class AccionesAlta(
     val escribirSerie: (String) -> Unit = {},
     val darDeAlta: () -> Unit = {},
     val atras: () -> Unit = {},
+    /** «Enlazar otra sucursal», con un alta ya en uso. */
+    val enlazarOtra: () -> Unit = {},
+    val cancelarEnlace: () -> Unit = {},
+    /** «Usar esta»: el id de la caja de esa sucursal enlazada. */
+    val usar: (String) -> Unit = {},
 )
 
 @Composable
@@ -100,6 +110,8 @@ fun ContenidoConexion(
     hayBloqueo: Boolean,
     alAbrirSeguridad: () -> Unit,
     acciones: AccionesAlta,
+    /** Se tocó «Enlazar otra sucursal»: los pasos del alta, aunque ya haya una en uso. */
+    enlazando: Boolean = false,
 ) {
     Column(
         Modifier
@@ -111,9 +123,22 @@ fun ContenidoConexion(
         val alta = estado.alta
         when {
             !estado.leida -> Text("Leyendo…", style = MaterialTheme.typography.bodyLarge)
-            alta != null -> Conectada(alta, estado)
+            enlazando && alta != null -> {
+                Alta(estado, paso, hayBloqueo, alAbrirSeguridad, acciones, titulo = "Enlazar otra sucursal")
+                TextButton(onClick = acciones.cancelarEnlace, modifier = Modifier.padding(top = 8.dp).heightIn(min = ALTO_TOCABLE).testTag("enlace-cancelar")) {
+                    Text("Seguir con ${alta.caja.sucursal.ifBlank { "la de ahora" }}")
+                }
+            }
+            alta != null -> {
+                Conectada(alta, estado)
+                Sucursales(estado, acciones)
+            }
             paso is PasoAlta.Listo -> Conectada(paso.alta, estado)
-            else -> Alta(estado, paso, hayBloqueo, alAbrirSeguridad, acciones)
+            else -> {
+                // Sin ninguna en uso (a una le quitaron el acceso): las que quedan se pueden usar sin dar de alta otra vez.
+                if (estado.enlaces.isNotEmpty()) Sucursales(estado, acciones)
+                Alta(estado, paso, hayBloqueo, alAbrirSeguridad, acciones)
+            }
         }
     }
 }
@@ -169,10 +194,55 @@ private fun Conectada(alta: Alta, estado: EstadoConexion) {
     estado.aviso?.let { Aviso(it) }
 }
 
+/**
+ * Las sucursales enlazadas: en cuál se está y «Usar esta» en las otras; abajo, «Enlazar otra sucursal». Cambiar es solo
+ * cuando el dueño lo toca: la app nunca busca sola en qué sucursal está.
+ */
+@Composable
+private fun Sucursales(estado: EstadoConexion, acciones: AccionesAlta) {
+    TituloSeccion("Sucursales enlazadas")
+    val activa = estado.alta?.caja?.id
+    for (e in estado.enlaces) {
+        val enUso = e.cajaId.equals(activa, ignoreCase = true)
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("enlace-${e.cajaId}"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(e.sucursal.ifBlank { "Sucursal" }, style = MaterialTheme.typography.bodyLarge)
+                Text("${e.caja} (serie ${e.serie}) · ${e.direccion}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (enUso) {
+                Text("En uso", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            } else {
+                OutlinedButton(onClick = { acciones.usar(e.cajaId) }, modifier = Modifier.heightIn(min = ALTO_TOCABLE).testTag("enlace-usar-${e.cajaId}")) {
+                    Text("Usar esta")
+                }
+            }
+        }
+    }
+    if (activa != null) {
+        OutlinedButton(onClick = acciones.enlazarOtra, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = ALTO_TOCABLE).testTag("enlazar-otra")) {
+            Text("Enlazar otra sucursal")
+        }
+    }
+    Nota(
+        "Cada sucursal tiene su caja principal y su copia del catálogo, las dos guardadas en el celular. Al cambiar, Precio y " +
+            "Buscar siguen al instante con la copia de esa sucursal, y el ticket que lleves se queda (se cobra con sus precios).",
+    )
+}
+
 /** Sin alta: los pasos. */
 @Composable
-private fun Alta(estado: EstadoConexion, paso: PasoAlta, hayBloqueo: Boolean, alAbrirSeguridad: () -> Unit, acciones: AccionesAlta) {
-    TituloSeccion("Conectar con la caja principal")
+private fun Alta(
+    estado: EstadoConexion,
+    paso: PasoAlta,
+    hayBloqueo: Boolean,
+    alAbrirSeguridad: () -> Unit,
+    acciones: AccionesAlta,
+    titulo: String = "Conectar con la caja principal",
+) {
+    TituloSeccion(titulo)
     estado.aviso?.let { Aviso(it) }
     if (!hayBloqueo) {
         Text(
