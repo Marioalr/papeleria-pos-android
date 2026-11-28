@@ -50,6 +50,9 @@ sealed interface Hoja {
 
     /** ↑ «Mandar a una caja»: «¿A qué caja?», donde se elige y se toca «Mandar» (el gesto nunca manda solo). */
     data object Mandar : Hoja
+
+    /** «Terminar conteo»: «¿A qué caja va el conteo?», o volver a vender con lo contado guardado. */
+    data object MandarConteo : Hoja
 }
 
 /**
@@ -434,6 +437,18 @@ class Piso(
      */
     fun mandado(texto: String) {
         venta.update { it.vaciar() }
+        _noEsta.value = null
+        hojaDeAbajo = null
+        cerrarHoja(hizoAlgo = true)
+        avisar(texto)
+    }
+
+    /**
+     * La caja principal recibió el conteo: se vacía (sin «Deshacer»: ya está en la caja, donde lo revisan) y se dice a
+     * qué caja llegó. La pantalla regresa a vender.
+     */
+    fun conteoMandado(texto: String) {
+        conteo.update { it.vaciar() }
         _noEsta.value = null
         hojaDeAbajo = null
         cerrarHoja(hizoAlgo = true)

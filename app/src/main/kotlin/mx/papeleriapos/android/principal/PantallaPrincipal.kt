@@ -263,6 +263,7 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
             },
             actualizar = { ir(Destino.ACTUALIZAR) },
             fotos = { ir(Destino.FOTOS) },
+            conteos = { ir(Destino.CONTEOS) },
             conexion = { ir(Destino.CONEXION) },
             ajustes = { ir(Destino.AJUSTES) },
         )
@@ -425,7 +426,8 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                     contadas = conteo.total,
                     zurdo = zurdo,
                     alCobrar = { if (razonCobrar == null) piso.abrir(Hoja.Cobrar) else piso.rechazar(razonCobrar) },
-                    alTerminarConteo = { vm.cambiarModoApp(ModoApp.VENTA) },
+                    // Con algo contado, a qué caja mandarlo (o volver a vender sin mandar); sin nada, de regreso a vender.
+                    alTerminarConteo = { if (conteo.renglones.isEmpty()) vm.cambiarModoApp(ModoApp.VENTA) else piso.abrir(Hoja.MandarConteo) },
                     hueco = {
                         // El botón va en la capa de encima, sobre este hueco (arriba del velo del menú): a 16 dp de la
                         // orilla (la barra trae 8 de margen y la zona de 64 deja 4 alrededor del botón de 56).
@@ -531,6 +533,33 @@ fun PantallaPrincipal(vm: EscanerViewModel, relleno: PaddingValues, alAbrir: (De
                             alMandar = { catalogo?.let { c -> vm.mandador.mandar(ticket, c, piso::mandado) } },
                             otraSucursal = {
                                 BotonesOtraSucursal(otrasSucursales, cambio) { id -> vm.cambioDeSucursal.cambiar(id, piso.catalogo) { vm.mandador.cargar() } }
+                            },
+                        ) { piso.cerrarHoja() }
+                        DisposableEffect(Unit) { onDispose { vm.cambioDeSucursal.olvidar() } }
+                    }
+                    Hoja.MandarConteo -> {
+                        val estadoConteo by vm.contador.estado.collectAsStateWithLifecycle()
+                        HojaMandarConteo(
+                            estado = estadoConteo,
+                            contadas = conteo.total,
+                            productos = conteo.renglones.size,
+                            alCargar = vm.contador::cargar,
+                            alElegir = vm.contador::elegir,
+                            alMandar = {
+                                catalogo?.let { c ->
+                                    val renglones = conteo.renglones.size
+                                    vm.contador.mandar(conteo, c) { r ->
+                                        piso.conteoMandado(Contador.textoMandado(r, renglones))
+                                        vm.cambiarModoApp(ModoApp.VENTA)
+                                    }
+                                }
+                            },
+                            alVolverAVender = {
+                                piso.cerrarHoja(hizoAlgo = true)
+                                vm.cambiarModoApp(ModoApp.VENTA)
+                            },
+                            otraSucursal = {
+                                BotonesOtraSucursal(otrasSucursales, cambio) { id -> vm.cambioDeSucursal.cambiar(id, piso.catalogo) { vm.contador.cargar() } }
                             },
                         ) { piso.cerrarHoja() }
                         DisposableEffect(Unit) { onDispose { vm.cambioDeSucursal.olvidar() } }

@@ -96,6 +96,13 @@ interface CanalDeCobrar {
     suspend fun imprimir(ventaId: String, solicitud: SolicitudImprimir): ImpresionDto = throw NoSeMando("Esta caja principal todavía no imprime lo que cobra el celular.")
 }
 
+/** Mandar un conteo a una caja: a cuáles se puede, mandarlo y cómo van. Las pruebas ponen el suyo. */
+interface CanalDeContar {
+    suspend fun cajasParaContar(): List<CajaParaContarDto>
+    suspend fun mandarConteo(solicitud: SolicitudMandarConteo): ConteoMandadoDto
+    suspend fun conteosMandados(): List<ConteoMandadoDto>
+}
+
 /** La foto del producto (paso 12): ponerla, quitarla y bajarla, con la llave del celular. Las pruebas ponen el suyo. */
 interface CanalDeFotos {
     /** Manda el JPEG ya achicado; al guardarse, la copia del celular ya dice que ese producto tiene foto. */
@@ -126,7 +133,7 @@ class Conexion(
     private val msEntreLatidos: Long = MS_ENTRE_LATIDOS,
     /** Las interfaces de red del celular, para decir la causa cuando no contesta ([Diagnostico]); las pruebas pasan la suya. */
     private val leerRed: () -> EstadoDeRed? = EstadoDeRed::actual,
-) : CanalDeMandar, CanalDeCobrar, CanalDeFotos {
+) : CanalDeMandar, CanalDeCobrar, CanalDeFotos, CanalDeContar {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val hilo: CoroutineDispatcher = hilo ?: Dispatchers.IO.limitedParallelism(1)
     private val alcance = CoroutineScope(SupervisorJob() + this.hilo)
@@ -532,6 +539,20 @@ class Conexion(
     /** Manda el ticket; el servicio contesta cuando la caja ya lo guardó en su espera. */
     override suspend fun mandar(solicitud: SolicitudMandarTicket): TicketMandadoDto = withContext(hilo) {
         conLlave("Mandar el ticket no contestó") { a -> cliente.mandar(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    // ---- Mandar un conteo a una caja ----
+
+    override suspend fun cajasParaContar(): List<CajaParaContarDto> = withContext(hilo) {
+        conLlave("Las cajas no contestaron") { a -> cliente.paraContar(a.direccion, a.llave, a.caja.id) }
+    }
+
+    override suspend fun mandarConteo(solicitud: SolicitudMandarConteo): ConteoMandadoDto = withContext(hilo) {
+        conLlave("Mandar el conteo no contestó") { a -> cliente.mandarConteo(a.direccion, a.llave, a.caja.id, solicitud) }
+    }
+
+    override suspend fun conteosMandados(): List<ConteoMandadoDto> = withContext(hilo) {
+        conLlave("Los conteos no contestaron") { a -> cliente.conteos(a.direccion, a.llave, a.caja.id) }
     }
 
     // ---- La foto del producto ----

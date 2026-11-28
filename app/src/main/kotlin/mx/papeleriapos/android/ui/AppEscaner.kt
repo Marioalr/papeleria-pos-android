@@ -72,6 +72,7 @@ enum class Destino(val titulo: String, val padre: Destino?) {
     AJUSTES("Ajustes", PRINCIPAL),
     ACTUALIZAR("Actualizar la app", AJUSTES),
     FOTOS("Fotos de productos", AJUSTES),
+    CONTEOS("Conteos mandados", AJUSTES),
     CONEXION("La conexión", AJUSTES),
     ESCANER("El escáner", AJUSTES),
     SESION("Sesión de prueba", AJUSTES),
@@ -168,6 +169,7 @@ fun AppEscaner(
                         })
                         Destino.ACTUALIZAR -> PantallaActualizar()
                         Destino.FOTOS -> FotosDeProductos(vm)
+                        Destino.CONTEOS -> mx.papeleriapos.android.principal.PantallaConteos(Conexion.del(LocalContext.current.applicationContext))
                         Destino.CONEXION -> PantallaConexion()
                         Destino.ESCANER -> PantallaAjustesEscaner(vm)
                         Destino.SESION -> PantallaSesion(vm)

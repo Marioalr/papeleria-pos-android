@@ -194,8 +194,13 @@ class TarjetaTest : PruebaDePantalla() {
         assertEquals("El ticket no se toca", 1, vm.venta.value.total)
         assertEquals("Terminar conteo · 3 pzs", textoEn("total-conteo"))
         captura("0.5/conteo")
+        // Con algo contado, «Terminar conteo» pregunta a qué caja va (0.5.6); sin mandarlo, de vuelta a vender.
         compose.onNodeWithTag("terminar-conteo").performClick()
         idle()
+        assertEquals(Hoja.MandarConteo, vm.piso.hoja.value)
+        compose.onNodeWithTag("conteo-sin-mandar").performClick()
+        idle()
+        assertNull(vm.piso.hoja.value)
         assertEquals(ModoApp.VENTA, vm.piso.modo.value)
         assertFalse(existe("contando"))
         assertEquals(3, vm.conteo.value.total)
