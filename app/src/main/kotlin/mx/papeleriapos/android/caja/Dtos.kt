@@ -387,3 +387,85 @@ data class FotoGuardadaDto(
     val bytes: Int = 0,
     val jpegBase64: String = "",
 )
+
+// ---- Mandar un conteo a una caja (docs/celular-como-caja.md del POS, «Mandar un conteo a una caja») ----
+
+/**
+ * `GET /api/cajas/{id}/para-contar`: una caja de la sucursal y si recibe conteos (un turno abierto de alguien con «Conteo
+ * completo de un departamento»). Si no, [porQue] lo dice tal cual ([codigo]: `sin-turno`, `sin-permiso`, `piloto-eleventa`).
+ */
+@Serializable
+data class CajaParaContarDto(
+    val id: String,
+    val nombre: String = "",
+    val serie: String = "",
+    val recibe: Boolean = false,
+    val atiende: String? = null,
+    val codigo: String? = null,
+    val porQue: String? = null,
+    val pendientes: Int = 0,
+)
+
+/**
+ * Un renglón del conteo: el producto de la copia (variante y presentación) o, sin ellas, su código; [cantidadMilesimas] en
+ * la presentación del renglón (2 cajas de 12 son 2000) y es lo que hay en total. [contadoUtc]: la hora del último escaneo
+ * de ese producto (el POS la usa desde su entrega 1; antes la ignora).
+ */
+@Serializable
+data class RenglonContado(
+    val varianteId: String? = null,
+    val presentacionId: String? = null,
+    val codigo: String? = null,
+    val cantidadMilesimas: Long,
+    val contadoUtc: String? = null,
+)
+
+/**
+ * `POST /api/cajas/{id}/mandar-conteo`: [id], uno por lista y guardado con ella (mandarla otra vez con el mismo no la
+ * duplica). [enviadoUtc]: la hora del celular al mandarla, para que el POS corrija si su reloj va adelantado o atrasado.
+ */
+@Serializable
+data class SolicitudMandarConteo(
+    val id: String,
+    val destino: String,
+    val contadoUtc: String?,
+    val usuarioId: String? = null,
+    val enviadoUtc: String? = null,
+    val renglones: List<RenglonContado>,
+)
+
+/**
+ * Un producto de un conteo mandado, como quedó: [contado] y [aceptado] en piezas; [nota], para enseñarse tal cual.
+ * [eleventa] (desde la entrega 1 del POS): `por-capturar`, `pendiente`, `enviado`, `por-revisar` o null; solo para el
+ * ícono o el color.
+ */
+@Serializable
+data class RenglonDeConteoDto(
+    val varianteId: String? = null,
+    val descripcion: String = "",
+    val contado: Double = 0.0,
+    val aceptado: Double? = null,
+    val aplicado: Boolean = false,
+    val nota: String? = null,
+    val eleventa: String? = null,
+)
+
+/**
+ * Un conteo mandado y cómo va: [estado] `recibida`, `aceptada`, `aceptada-con-cambios` o `rechazada` (con [motivo]).
+ * Lo contesta `mandar-conteo` y también `GET …/conteos` y `GET …/conteos/{conteoId}`.
+ */
+@Serializable
+data class ConteoMandadoDto(
+    val id: String,
+    val destino: String = "",
+    val caja: String = "",
+    val estado: String = "",
+    val contadoUtc: String? = null,
+    val recibidoUtc: String? = null,
+    val resueltoUtc: String? = null,
+    val resolvio: String? = null,
+    val motivo: String? = null,
+    val productos: Int = 0,
+    val aplicados: Int = 0,
+    val renglones: List<RenglonDeConteoDto> = emptyList(),
+)

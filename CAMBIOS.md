@@ -2,6 +2,33 @@
 
 Qué trae cada versión de la app ([versiones](docs/plan.md#versiones)). La más nueva va arriba.
 
+## 0.5.6 (sin publicar)
+
+**El conteo se manda a una caja** (dueño, 2026-11-27), con «Mandar un conteo a una caja» del documento del POS (PR 200 de
+ese repo, ya en su main). El celular nunca cambia existencias: la lista llega a una caja de la sucursal y ahí quien tiene
+«Conteo completo de un departamento» la aplica (tal cual o con cambios) o la rechaza.
+
+- **«Terminar conteo»** (con algo contado) abre **«¿A qué caja va el conteo?»**: cada caja con quién atiende y cuántos
+  conteos esperan ahí; la que no recibe (sin turno, o quien atiende no puede aceptar conteos) sale apagada con la razón del
+  POS. «Mandar a Caja 2», o «Volver a vender sin mandar», que deja lo contado guardado. La última caja se recuerda por
+  sucursal.
+- **Lo que viaja:** cada producto por su variante y presentación de la copia (2 cajas de 12 van como 2 cajas), la cantidad
+  es lo que hay en total, la hora del último escaneo de cada producto y la hora del envío (el POS las usa desde su entrega 1
+  del conteo a eleventa; antes las ignora). Lo que no se contó no se manda.
+- **El id de la lista se guarda en el disco con ella:** si la respuesta se pierde, mandarla otra vez no la duplica, aunque
+  Android haya cerrado la app. Sin red, la lista se queda en el celular.
+- **Al llegar,** el conteo se vacía (ya está en la caja) y se regresa a vender: «Conteo mandado a Caja 2 · 14 productos».
+- **Este celular › «Conteos mandados»:** las últimas listas y cómo van (por revisar, aplicado, aplicado con cambios,
+  rechazado con su motivo); tocando una, cada producto con lo contado, lo que quedó y la nota de la caja. Se pregunta al
+  abrirla, nunca sola.
+- Con otra sucursal enlazada, «¿Estás en Sucursal 2? Cambiar» también sale aquí.
+- Pruebas: `MandarConteoTest`, `ContarClienteTest` (los ejemplos del documento del POS), `HojaMandarConteoTest` y
+  `TarjetaTest`.
+
+**En la tienda todavía no:** mientras dure el piloto con eleventa, el POS no recibe conteos (`piloto-eleventa`, y la hoja lo
+dice tal cual). Se abre con la entrega 1 del plan del POS (`docs/propuestas/conteo-del-celular-a-eleventa.md`, PR 218 de ese
+repo).
+
 ## 0.5.5 (sin publicar)
 
 **El celular enlazado a dos sucursales** (dueño, 2026-11-26; fase 1 de la propuesta, solo la app). Cada sucursal tiene su

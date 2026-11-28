@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -625,6 +626,8 @@ class AccionesMenu(
     val actualizar: () -> Unit = {},
     /** «Fotos de productos»: tomar o elegir la foto de cada uno. */
     val fotos: () -> Unit = {},
+    /** «Conteos mandados»: cómo va en la caja cada lista que se mandó. */
+    val conteos: () -> Unit = {},
     val conexion: () -> Unit = {},
     val ajustes: () -> Unit = {},
 )
@@ -663,6 +666,7 @@ fun HojaMenu(modo: ModoApp, contadas: Int, version: String, conexion: String, ac
                         "menu-contar", acciones.contar,
                     )
                 }
+                OpcionDelMenu(Icons.AutoMirrored.Filled.ListAlt, "Conteos mandados", "Cómo va en la caja cada lista que mandaste", "menu-conteos", acciones.conteos)
                 if (contadas > 0) {
                     OpcionDelMenu(Icons.Filled.RestartAlt, "Empezar otro conteo", "Vacía lo contado; se puede deshacer", "menu-otro-conteo", acciones.otroConteo)
                 }

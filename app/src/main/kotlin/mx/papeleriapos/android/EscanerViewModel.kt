@@ -39,6 +39,8 @@ import mx.papeleriapos.android.principal.ModoApp
 import mx.papeleriapos.android.principal.Piso
 import mx.papeleriapos.android.principal.CambioDeSucursal
 import mx.papeleriapos.android.principal.Cobrador
+import mx.papeleriapos.android.principal.Contador
+import mx.papeleriapos.android.principal.IdDeConteo
 import mx.papeleriapos.android.principal.IdsDeTicket
 import mx.papeleriapos.android.principal.Mandador
 import mx.papeleriapos.android.caja.Conexion
@@ -112,6 +114,29 @@ class EscanerViewModel(
             ultima = { ultima.getString(deLaSucursal(ULTIMA_CAJA, conexion), null) ?: ultima.getString(ULTIMA_CAJA, null) },
             guardarUltima = { ultima.edit().putString(deLaSucursal(ULTIMA_CAJA, conexion), it).apply() },
             ids = idsDeTicket,
+        )
+    }
+
+    /**
+     * «¿A qué caja va el conteo?»: manda lo contado con la llave del alta; recuerda la última caja por sucursal y el id de
+     * la lista que se está mandando (en el disco, para no duplicarla si la respuesta se perdió).
+     */
+    val contador: Contador by lazy {
+        val ultima = app.getSharedPreferences(ARCHIVO_MANDAR, Context.MODE_PRIVATE)
+        val conexion = Conexion.del(app)
+        Contador(
+            conexion, viewModelScope,
+            ultima = { ultima.getString(deLaSucursal(ULTIMA_CAJA_CONTEO, conexion), null) },
+            guardarUltima = { ultima.edit().putString(deLaSucursal(ULTIMA_CAJA_CONTEO, conexion), it).apply() },
+            ids = IdDeConteo(
+                leer = {
+                    val id = ultima.getString(ID_CONTEO, null)
+                    val firma = ultima.getString(FIRMA_CONTEO, null)
+                    if (id != null && firma != null) id to firma else null
+                },
+                guardar = { id, firma -> ultima.edit().putString(ID_CONTEO, id).putString(FIRMA_CONTEO, firma).commit() },
+                borrar = { ultima.edit().remove(ID_CONTEO).remove(FIRMA_CONTEO).apply() },
+            ),
         )
     }
 
@@ -428,3 +453,8 @@ private fun deLaSucursal(llave: String, conexion: Conexion): String =
     conexion.estado.value.alta?.caja?.id?.lowercase()?.let { "$llave@$it" } ?: llave
 private const val ULTIMA_CAJA = "ultima-caja"
 private const val ULTIMA_CAJA_COBRO = "ultima-caja-cobro"
+private const val ULTIMA_CAJA_CONTEO = "ultima-caja-conteo"
+
+/** El id de la lista de conteo que se está mandando y la firma de esa lista ([IdDeConteo]). */
+private const val ID_CONTEO = "conteo-id"
+private const val FIRMA_CONTEO = "conteo-firma"

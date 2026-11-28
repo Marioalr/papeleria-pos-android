@@ -86,6 +86,20 @@ class ClienteCaja(private val base: OkHttpClient = clienteBase(), private val ms
     suspend fun imprimirVenta(direccion: Direccion, llave: String, cajaId: String, ventaId: String, solicitud: SolicitudImprimir): ImpresionDto =
         pedir(direccion, "api/cajas/$cajaId/ventas/$ventaId/imprimir", llave, MS_COBRAR, cuerpo = JsonDelPos.encodeToString(SolicitudImprimir.serializer(), solicitud))
 
+    // ---- Mandar un conteo a una caja ----
+
+    /** `GET /api/cajas/{id}/para-contar`: las cajas de la sucursal y si reciben conteos. */
+    suspend fun paraContar(direccion: Direccion, llave: String, cajaId: String): List<CajaParaContarDto> =
+        pedir(direccion, "api/cajas/$cajaId/para-contar", llave, msRespuesta)
+
+    /** `POST /api/cajas/{id}/mandar-conteo`: la lista queda guardada en la caja principal (hasta 500 renglones). */
+    suspend fun mandarConteo(direccion: Direccion, llave: String, cajaId: String, solicitud: SolicitudMandarConteo): ConteoMandadoDto =
+        pedir(direccion, "api/cajas/$cajaId/mandar-conteo", llave, MS_MANDAR, cuerpo = JsonDelPos.encodeToString(SolicitudMandarConteo.serializer(), solicitud))
+
+    /** `GET /api/cajas/{id}/conteos`: las últimas 20 listas de este celular, de la más reciente. */
+    suspend fun conteos(direccion: Direccion, llave: String, cajaId: String): List<ConteoMandadoDto> =
+        pedir(direccion, "api/cajas/$cajaId/conteos", llave, msRespuesta)
+
     // ---- La foto del producto (paso 12) ----
 
     /** `PUT /api/fotos/{varianteId}`: el servicio las prepara de una en una y cada una espera su turno hasta 30 s. */
